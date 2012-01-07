@@ -1,0 +1,8 @@
+(define qnet-path (getenv "QNET"))
+
+    
+(reset-component-library)
+(component-library (string-append qnet-path path-sep "gEDA_support" path-sep "gschem_qhdl_symbols"))
+(display "Changing component library to include only the QNET symbols.")
+(newline)
+
