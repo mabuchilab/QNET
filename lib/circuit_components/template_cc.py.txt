@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+# encoding: utf-8
+"""
+{filename}
+
+Created automatically
+"""
+from circuit_components.library import make_namespace_string
+from algebra.circuit_algebra import cid, P_sigma, FB
+from sympy import symbols
+from component import Component
+
+
+class {entity_name}(Component):
+    
+    # total number of field channels
+    CDIM = {CDIM}
+    
+    # parameters on which the model depends
+    GENERIC_DEFAULT_VALUES = dict(
+        {GENERIC_DEFAULT_VALUES}
+                                )
+    # list of input port names
+    PORTSIN = {PORTSIN}
+    
+    # list of output port names
+    PORTSOUT = {PORTSOUT}
+    
+    # architecture to use for reduce(), 
+    # only needed, when there are multiple architectures
+    arch = "default"
+    
+    def __init__(self, name = "", arch = "default", **params):
+        super({entity_name}, self).__init__(name, **params)
+        self.arch = arch
+    
+    def toSLH(self):
+        return self.reduce().toSLH()
+        
+    def reduce(self):
+        return getattr(self, "arch_" + self.arch)()
+
+    # Architectures, i.e. actual implementation of circuit
+    {architectures}
+    
+    arch_default = arch_{first_arch_name}
+    
+def test():
+    a = {entity_name}()
+    print a
+    print "=" * 80
+    print a.reduce()
+    print "=" * 80
+    print a.toSLH()
+    
+if __name__ == "__main__":
+    test()
