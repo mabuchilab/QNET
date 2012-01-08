@@ -613,7 +613,7 @@ class Concatenation(Circuit, AssociativeOperation):
     
     @classmethod
     def check_operands(cls, *operands, **rules):
-        MultiaryOperation.check_operands(*operands)
+        MultiaryOperation.check_operands(*operands, **rules)
         cls.check_associatively_expanded(*operands)
         cid_0 = CircuitZero()
         if any((op == cid_0 for op in operands)):

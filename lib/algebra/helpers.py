@@ -36,6 +36,9 @@ filter_out_zeros = lambda cls, ops: filter(non_zero, ops)
 filter_out_ones = lambda cls, ops: filter(not_one, ops)
 
 
+def product(sequence, neutral = 1):
+    return reduce(lambda a, b: a * b, sequence, neutral)
+
 
 
 def subtract(a, b):
