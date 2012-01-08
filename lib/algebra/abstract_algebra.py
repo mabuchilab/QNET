@@ -381,8 +381,8 @@ class Symbol(Expression):
         """
         return self is other
     
-    def expand(self):
-        return self
+    # def expand(self):
+    #     return self
     
     def substitute(self, var_map):
         if self in var_map:
@@ -672,6 +672,13 @@ class AssociativeOperation(MultiaryOperation):
         return operands
     
 
+def expand(obj):
+    try:
+        return obj.expand()
+    except AttributeError:
+        return obj
+
+
                 
         
 
@@ -692,8 +699,8 @@ class Addition(AssociativeOperation):
     def handle_zero_operands(cls):
         return 0
         
-    def diff(self, wrt):
-        return sum([diff(op, wrt) for op in self.operands])
+    # def diff(self, wrt):
+    #     return sum([diff(op, wrt) for op in self.operands])
     
     def expand(self):
         return self.apply_with_rules(*map(expand, self.operands))
@@ -721,11 +728,11 @@ class Multiplication(AssociativeOperation):
                 return o.__class__.apply_with_rules(*new_summands).expand()
         return self.__class__.apply_with_rules(*operands)
     
-    def diff(self, wrt):
-        result = 0
-        for i, op in self.operands:
-            result += (self.__class__.apply_with_rules(*(self.operands[i:] + (diff(op, wrt),) + operands[i+1:])))
-        return result
+    # def diff(self, wrt):
+    #     result = 0
+    #     for i, op in self.operands:
+    #         result += (self.__class__.apply_with_rules(*(self.operands[i:] + (diff(op, wrt),) + operands[i+1:])))
+    #     return result
     
     def evalf(self):
         return reduce(lambda a, b: a * b, map(evalf, self.operands))
@@ -807,13 +814,13 @@ class Power(BinaryOperation):
         return self._operands[1]
 
     
-    def diff(self, wrt):
-        """The exponent is always assumed to be a constant integer, so it is not differentiated."""
-        base, exponent = self.operands
-
-        d_b = diff(base, wrt)
-        
-        return exponent * base**(exponent - 1) * d_b
+    # def diff(self, wrt):
+    #     """The exponent is always assumed to be a constant integer, so it is not differentiated."""
+    #     base, exponent = self.operands
+    # 
+    #     d_b = diff(base, wrt)
+    #     
+    #     return exponent * base**(exponent - 1) * d_b
     
         
     def evalf(self):        
@@ -845,8 +852,8 @@ class CoefficientTermProduct(BinaryOperation):
             return term.__class__.apply_with_rules(*(map( lambda t: self.__class__.apply_with_rules(coeff, t), term.operands)))
         return self.__class__.apply_with_rules(coeff, term)
     
-    def diff(self, wrt):
-        return diff(self.coeff, wrt) * self.term + self.coeff * diff(self.term, wrt) 
+    # def diff(self, wrt):
+    #     return diff(self.coeff, wrt) * self.term + self.coeff * diff(self.term, wrt) 
 
 
 

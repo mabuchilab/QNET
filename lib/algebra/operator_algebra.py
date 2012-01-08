@@ -4,7 +4,7 @@ from helpers import *
 from sympy import exp, log, cos, sin, cosh, sinh, tan, cot, \
                             acos, asin, acosh, asinh, atan, atan2, atanh, acot, sqrt, \
                             factorial, pi
-
+import qutip
 
 
 
@@ -213,6 +213,10 @@ class Operator(Algebra):
         
     def representation_matrix(self):
         raise NotImplementedError(str(self.__class__))
+        
+        
+    def to_qutip(self, full_space = None):
+        raise NotImplementedError(str(self.__class__))
     
     def extend_to_space(self, space):
         # print space, self.space
@@ -312,6 +316,9 @@ def representation_matrix(obj, full_space = None):
     
 
 
+
+
+
 def extend_to_space(obj, space):
     if isinstance(obj, Operator):
         return obj.extend_to_space(space)
@@ -321,6 +328,7 @@ def extend_to_space(obj, space):
         return obj * OperatorMultiplication.apply_with_rules(*[explicit_identity_operator(s) for s in space])
     else:
         raise Exception("algebra(%r) = %s" % (obj, algebra(obj)))
+
 
 class OperatorSymbol(Operator, Symbol):
     symbol_cache = {}
@@ -343,6 +351,9 @@ class OperatorSymbol(Operator, Symbol):
         self._space = space
         if not isinstance(space, HilbertSpace):
             raise Exception
+            
+    def to_qutip(self, full_space = None):
+        raise AlgebraError("Cannot convert operator symbol to representation matrix. Substitute first.")
         
     @property
     def space(self):
@@ -378,6 +389,9 @@ class IdentityOperator(OperatorSymbol):
         
     def map(self, rep_dict):
         return rep_dict
+        
+    def to_qutip(self, full_space):
+        return qutip.tensor(*[qutip.qeye(HilbertSpace((s,)).dimension) for s in full_space])
         
     # def map_rep(self, rep):
     #     return {rep:1}
@@ -488,6 +502,13 @@ class LocalProjector(LocalOperator):
         coo_m = coo_matrix((np_array([1+0j]*len(indices)), index_array), shape = (len(states), len(states)), dtype = complex)
         return coo_m.tolil()
         
+    def to_qutip(self, full_space = None):
+        if full_space == None or full_space == self.space:
+            states = self.get_local_basis()
+            indices = sorted([states.index(r) for r in self._reps])
+            return sum((qutip.fock_dm(self.space.dimension, index) for index in indices), 0) 
+        else:
+            return self.extend_to_space(full_space).to_qutip()
         
     
     def __str__(self):
@@ -559,6 +580,17 @@ class LocalSigma(LocalOperator):
         values = np_array([1+0j])
         coo_m = coo_matrix((values, indices), shape = (len(states), len(states)), dtype = complex)
         return coo_m.tolil()
+        
+    def to_qutip(self, full_space = None):
+        if full_space == None or full_space == self.space:
+            D = self.space.dimension
+            to_rep, from_rep = self._rep_pair
+            states = self.get_local_basis()
+            nto, nfrom = states.index(to_rep), states.index(from_rep)
+            sto, sfrom = qutip.basis(self.space.dimension, nto), qutip.basis(self.space.dimension, nfrom)
+            return sto * qutip.dag(sfrom)
+        else:
+            return self.extend_to_space(full_space).to_qutip()
     
 class Destroy(LocalOperator):
     def __new__(cls, local_space):
@@ -590,6 +622,14 @@ class Destroy(LocalOperator):
         indices = np_array([states[:-1], states[1:]])
         coo_m = coo_matrix((values, indices), shape = (len(states), len(states)), dtype = complex)
         return coo_m.tolil()
+        
+    def to_qutip(self, full_space = None):
+        if full_space == None or full_space == self.space:
+            D = self.space.dimension
+            return qutip.destroy(D)
+        else:
+            return self.extend_to_space(full_space).to_qutip()
+
         
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.local_space)
@@ -629,6 +669,14 @@ class Create(LocalOperator):
         indices = np_array([states[1:], states[:-1]])
         coo_m = coo_matrix((values, indices), shape = (len(states), len(states)), dtype = complex)
         return coo_m.tolil()
+
+    def to_qutip(self, full_space = None):
+        if full_space == None or full_space == self.space:
+            D = self.space.dimension
+            return qutip.create(D)
+        else:
+            return self.extend_to_space(full_space).to_qutip()
+
 
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.local_space)
@@ -709,8 +757,16 @@ class OperatorAddition(OperatorOperation, Addition):
         matrices = [op.representation_matrix() for op in lifted_operands]
         # print lifted_operands, matrices
         return sum(matrices[1:], matrices[0])
+        
+    def to_qutip(self, full_space = None):
+        if full_space == None:
+            full_space = self.space
+        assert self.space <= full_space
+        return sum((op.to_qutip(full_space) for op in self.operands), 0)
+        
+        
     
-    def check_operands(self, *operands):
+    def check_operands(self, *operands, **rules):
         if any((algebra(op) != Operator  for op in operands)):
             raise Exception()
         
@@ -736,7 +792,7 @@ def factors_sorted_by_space(operands):
 class OperatorMultiplication(OperatorOperation, Multiplication):
     
     @classmethod
-    def check_operands(cls, *operands):
+    def check_operands(cls, *operands, **rules):
         if any((algebra(op) != Operator for op in operands)):
             raise Exception()
             
@@ -858,6 +914,19 @@ class OperatorMultiplication(OperatorOperation, Multiplication):
             # #print lifted_operands
             # matrices = [op.representation_matrix().tolil() for op in lifted_operands]
             # return reduce(lambda a, b: a * b, matrices, 1).tolil()        
+            
+    def to_qutip(self, full_space = None):
+        if any(len(op.space) > 1 for op in self.operands):
+            return self.expand().to_qutip(full_space)
+        if full_space == None or full_space == self.space:
+            if len(self.space) == 1: # if only operands from same space
+                return product((op.to_qutip(self.space) for op in self.operands), 1)
+            else: # otherwise group by space and return tensor product
+                ops_by_space = operands_by_space(self.operands)
+                return qutip.tensor(*[OperatorMultiplication(*ops_by_space[HilbertSpace((hspc,))]).to_qutip() for hspc in self.space])
+        else:
+            return self.extend_to_space(full_space).to_qutip()
+    
 
 def operands_by_space(operands):
     ret_dict = {}
@@ -921,6 +990,9 @@ class ScalarOperatorProduct(OperatorOperation, CoefficientTermProduct):
         else:
             coeff = self.coeff
         return coeff * self.term.representation_matrix()
+        
+    def to_qutip(self, full_space = None):
+        return self.coeff * self.term.to_qutip(full_space)
     
     def evalf(self):
         return self.coeff * self.term.evalf()
@@ -1026,4 +1098,6 @@ class Adjoint(Operator, UnaryOperation):
     def space(self):
         return self.operand.space
     
+    def to_qutip(self, full_space = None):
+        return qutip.dag(self.operand.to_qutip(full_space))
     
