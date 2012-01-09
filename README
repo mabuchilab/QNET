@@ -1,0 +1,251 @@
+QNET:
+The QNET package consists of the following components:
+
+1) A symbolic computer algebra for Hilbert Space operators and the Gough-James circuit algebra
+2) A parser that can convert a QHDL-file into a circuit component library file.
+
+In addition to these core components, the software draws on and extends the following existing packages:
+1) gEDA for graphic creation of circuits end exporting these to QHDL (using our own plugin)
+2) sympy for the symbolic 'scalar' algebra, i.e. the number coefficients of operator expressions can be symbolic as well
+3) QuTiP as the numerical backend, operator expressions where all scalar parameters have been replaced by numeric ones, can be converted to (sparse) numeric matrix representations, which are then used to solve for the system dynamics using the tools provided by QuTiP
+
+
+The full workflow is thus:
+I) use gschem (of gEDA) to model a circuit
+II) export the schematic to QHDL using gnetlist (of gEDA)
+III) parse the QHDL-circuit file into a Python circuit library component
+IV) Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP.
+
+Obviously this package is still very much work in progress and as it is developed by a single developer, documentation and comprehensive testing code is still lacking. Any contributions and feedback from end-users would thus be highly appreciated.
+
+
+Howto set up QNET:
+
+What you'll need:
+1) A Python installation with the following additional packages installed
+- scipy, numpy, matplotlib, ply, sympy
+- PyX       http://pyx.sourceforge.net/
+- QuTiP     http://code.google.com/p/qutip/
+The easiest way to achieve this is to download the (optimized) Enthought python distribution (EPD) 
+which is free for academic use:
+    http://www.enthought.com/products/epd.php
+But you will still need to install PyX and QuTiP manually.
+
+2) GIT and a user account on Bitbucket https://bitbucket.org
+I will then give you access to our repository
+
+3) (optional, but useful) The open source gEDA toolsuite which allows for schematic capture of photonic circuits
+    http://www.gpleda.org/
+On many linux distributions there should exists packages, on OSX I recommend using the package managers 
+MacPorts, Fink or Brew 
+
+
+4) Once, you have cloned the GIT repository into a local directory, you should set up some environment variables for your shell:
+export QNET=/path/to/cloned/repository
+export PYTHONPATH=$QNET/lib
+
+5) Configure gEDA to include our special quantum circuit component symbols. To do this you will need to copy the configuration files from the $QNET/gEDA_support/config directory to $HOME/.gEDA
+    ~/.gEDA/gafrc
+    ~/.gEDA/gschemrc
+
+
+6) Install the QHDL netlister plugin within gEDA by creating a symbolic link
+	
+	ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
+
+	in my case /path/to/gEDA_resources_folder == /opt/local/share/gEDA, simply look for the folder that contains the file named "system-gafrc".
+
+7) At this point you have set up everything you need to create circuits with gschem and export them to our QHDL-format using gnetlist. To get started with this, just read the attached tutorial I wrote for our group's internal blog.
+
+8) test that everything is installed and working, e.g. run the enhanced python shell 'ipython' and do
+>> import algebra.circuit_algebra
+if this does not fail, it should work.
+
+
+9) Using gschem, gnetlist
+see the file 
+schematic_capture_howto.pdf
+
+10) The QHDL-syntax
+
+In the previous part of the circuit design intro I explained how to use the graphical gschem tool to design a circuit and subsequently export it to QHDL with gnetlist. Here I will explain the basic syntax and structure of the QHDL language, which is (almost) a strict subset of the VHDL language.
+
+QHDL can be used to describe a circuit by specifying
+
+* its external ports,
+* a dependence on some set of (usually numerical) parameters, called 'generic's, for which one may provide default values,
+* its architecture, i.e., how the circuit is constructed from instances of more basic components.
+
+
+The first two of these are specified in the so-called entity declaration. When viewing the overall circuit as a black box, the entity declaration provides the interface with the outside world.
+######## code ####################
+-- this is a comment
+entity Mach_Zehnder is
+    generic (
+        -- identifier : type [:= default_value];
+        relative_phase: real;
+        coherent_amp: complex := 1.
+        );
+    port (
+        -- identifiers : direction type;
+        a, b: in fieldmode;
+        c, d: out fieldmode
+        );
+end Mach_Zehnder;
+######## end code ####################
+
+A QHDL-file must contain a single entity in addition to one or more <strong><em>architecture</em></strong> declarations describing the implementation of that entity.
+
+######## code ####################
+architecture structure_MZ of Mach_Zehnder is
+    -- component and signal definitions
+    -- [...]
+
+begin
+    -- instance and signal declarations
+    -- [...]
+    
+end structure_MZ;
+######## end code ####################
+
+Within the head of the architecture declaration, externally defined components are defined by specifying their respective external ports and generics. Each component declaration is syntactically very similar to the global entity definition and this makes a lot of sense, since due to the hierarchical design principle of QHDL, our newly defined circuit could in principle also be referenced by another QHDL file as a component.
+Also included in the architecture header are the definitions of all internally used signals.
+
+######## code ####################
+component beamsplitter
+        port (s1, s2: in fieldmode; s3, s4: out fieldmode);
+    end component beamsplitter;
+
+    component displacement
+        generic (alpha: complex);
+        port (
+            a: in fieldmode;
+            b: out fieldmode
+            );
+    end component displacement;
+
+    component phase
+        generic (phi: real);
+        port (
+            a: in fieldmode;
+            b: out fieldmode
+            );
+    end component phase;    
+
+    signal m, n, q, r: fieldmode;
+######## end code ####################
+
+Within the body of the architecture declaration, one can define as many named <em><strong>instances </strong></em>of each component as desired and connect their respective ports either to an internal signal or a global external port of the entity. Moreover, globally defined generics can be passed on as generics of component instances, in fact, in our case that is basically the only reasonable use for a generic, it gets passed along through the hierarchies until it ends up being passed into an irreducible component (e.g., am beamsplitter or a cavity) that is defined by our basic component library.
+
+######## code ####################
+-- instance_name: component_type
+        -- [generic map statement;]
+        -- port map statement;
+
+    source: displacement
+        generic map (alpha => coherent_amp);
+        port map (a => a, b => m);
+
+    BS1: beamsplitter
+        port map (
+            -- name within component => name within entity
+            a => m,
+            b => b,
+            c => n,
+            d => q
+        );
+
+    phase: phase
+        generic map (phi => relative_phase);
+        port map (a => n, b => r);
+
+    BS2: beamsplitter
+        port map (
+            a => q,
+            b => r,
+            c => d,
+            d => c
+        );
+######## end code ####################
+There are a number of strict requirements as well as some best practices for designing photonic circuits. All of these carry over to the case of hand-writing QHDL:
+
+* The entity and all referenced components must have an equal number of input and output ports
+* In the list of ports all input ports should occur before all output ports
+* All internal signals must be connecting either a global input (output) port to an instance input (output) port or an instance output port to an instance input port.
+These requirements will  most likely be dropped/softened in the next iteration.
+
+Furthermore, as mentioned before, the ordering of the external signals should be chosen such that sub circuits without optical scattering have corresponding ranges of input and output ports.
+
+Putting it all together we get:
+
+######## code ####################
+architecture structure_MZ of Mach_Zehnder is
+    component beamsplitter
+        port (s1, s2: in fieldmode; s3, s4: out fieldmode);
+    end component beamsplitter;
+
+    component displacement
+        generic (alpha: complex);
+        port (
+            a: in fieldmode;
+            b: out fieldmode
+            );
+    end component displacement;
+
+    component phase
+        generic (phi: real);
+        port (
+            a: in fieldmode;
+            b: out fieldmode
+            );
+    end component phase;    
+
+    signal m, n, q, r: fieldmode;
+
+begin
+    source: displacement
+        generic map (alpha => coherent_amp);
+        port map (a => a, b => m);
+
+    BS1: beamsplitter
+        port map (
+            a => m,
+            b => b,
+            c => n,
+            d => q
+        );
+
+    phase: phase
+        generic map (phi => relative_phase);
+        port map (a => n, b => r);
+
+    BS2: beamsplitter
+        port map (
+            a => q,
+            b => r,
+            c => d,
+            d => c
+        );
+end structure_MZ;
+######## end code ####################
+
+
+11) Creating your own primitive component files (such as cavity models) and corresponding gschem symbols
+Although our workflow is hierarchical and you can embed circuits within circuits, you obviously have to start from some set of primitive components. For these your will need to create two things:
+a) create a symbol file for use within gschem (alternatively, if you only have components with 1, 2 or 3 numbers of input-output port pairs, you can use my blackbox-N symbols as placeholders for now and simply edit the "device" attribute (see below)
+	save this .sym file in the folder $QNET/gEDA_support/gschem_qhdl_symbols (also check out the files in their as good starting points for creating your own). 
+	Basically you need to create some nice symbolic representation of the device with the correct numbers of inputs/outputs and then edit the "device" attribute value and enter some meaningful name such as "TransmonQubit".
+b) for each primitive component create a python model file under $QNET/lib/circuit_components with the filename corresponding to the "device" attribute of the symbol:
+	e.g. $QNET/qhdl_component_lib/transmon_qubit_cc.py
+	check out the existing files (especially the different cavity models) to figure our how to create your specific model within my algebra syntax
+IMPORTANT: Please follow the same naming conventions as I did:
+the actual circuit components are python classes and should thus be named in the CamelCaseStyle.
+The filenames, however, should follow the lowercase_underscore_convention.
+
+
+Some additional remarks:
+	- As a convention, I would not include any non-constant coherent input fields as "displace" devices in the circuit. You can easily include these at the very end at the level of the circuit algebra
+	
+
+To get started, please also see the examples in the corresponding directory AND check out the existing gschem symbol files as well as the existing circuit component models.
+
