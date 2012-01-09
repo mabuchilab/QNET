@@ -1,0 +1,25 @@
+--pseudo-NAND latch without explicit parameter dependence
+entity PseudoNANDLatch is
+    port (NS, W1, kerr2_extra, NR, W2, kerr1_extra : in fieldmode;
+          BS1_1_out, kerr1_out2, OUT2_2, BS1_2_out, kerr2_out2, OUT2_1 : out fieldmode);
+end PseudoNANDLatch;
+
+architecture latch_netlist of PseudoNANDLatch is
+    component PseudoNAND
+        port (A, B, W_in, kerr_in2 : in fieldmode; 
+              uo1, kerr_out1, NAND_AB, OUT2 : out fieldmode);
+    end component;    
+
+    signal FB12, FB21 : fieldmode;      -- feedback signals
+
+begin
+    NAND2 : PseudoNAND
+    port map (
+        A => NR, B => FB12, W_in => W2, kerr_in2 => kerr2_extra,
+        uo1 => BS1_2_out, kerr_out1 => kerr2_out2, NAND_AB => FB21, OUT2 => OUT2_2);
+
+    NAND1 : PseudoNAND
+    port map (
+        A => NS, B => FB21, W_in => W1, kerr_in2 => kerr1_extra,
+        uo1 => BS1_1_out, kerr_out1 => kerr1_out2, NAND_AB => FB12, OUT2 => OUT2_1);
+end latch_netlist;
