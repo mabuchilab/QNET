@@ -224,7 +224,7 @@ def substitute(expr, var_map):
     except AttributeError:
         try:
             # try substituting sympy_objects
-            var_map = dict((k,v) for (k,v) in var_map.items() if not isinstance(k, Expression))
+            var_map = dict((k,v) for (k,v) in var_map.items() if not isinstance(k, Expression) and not isinstance(v, Expression))
             return expr.subs(var_map)
         except AttributeError:
             return expr

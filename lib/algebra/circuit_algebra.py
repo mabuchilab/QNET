@@ -286,8 +286,31 @@ class SLH(Circuit, Expression):
         L = [extend_to_space(Lk, space) for Lk in self._L.array.flatten()]
         H = extend_to_space(self._H, space)
         return S, L, H
+        
+    
+    def symbolic_lindbladian_schroedinger(self, rho = None):
+        L, H = self.L, self.H
+        if rho is None:
+            rho = ca.OperatorSymbol('rho', L.space | H.space)
+        return -1j*(H*rho - rho*H) + sum( Lk * rho * ca.adjoint(Lk)
+                             -  (ca.adjoint(Lk)*Lk * rho + rho * ca.adjoint(Lk)*Lk) / 2
+                                                for Lk in L.array.flatten())
 
 
+    def symbolic_lindbladian_heisenberg(self, M = None):
+        L, H = self.L, self.H
+        
+        if M is None:
+            M = ca.OperatorSymbol('M', L.space | H.space)            
+        return 1j*(H*M - M*H) + sum(ca.adjoint(Lk)* M * Lk \
+                    -  (ca.adjoint(Lk)*Lk * M + M * ca.adjoint(Lk)*Lk) / 2 \
+                                                            for Lk in L.array.flatten())
+
+    def __iter__(self):
+        return iter((self.S, self.L, self.H))
+    
+    def __len__(self):
+        return 3
     
 class CSymbol(Circuit, Symbol):
     

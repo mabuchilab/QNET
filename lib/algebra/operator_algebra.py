@@ -965,6 +965,9 @@ class ScalarOperatorProduct(OperatorOperation, CoefficientTermProduct):
             return "(-%s)" % tex(self.term)
         return "(%s)  %s" % (tex(self.coeff), tex(self.term))
         
+    # def substitute(self, var_map):
+    #     pass
+        
     @classmethod
     def apply_with_rules(cls, coeff, term):
         if coeff == 0:
@@ -992,7 +995,7 @@ class ScalarOperatorProduct(OperatorOperation, CoefficientTermProduct):
         return coeff * self.term.representation_matrix()
         
     def to_qutip(self, full_space = None):
-        return self.coeff * self.term.to_qutip(full_space)
+        return complex(n(self.coeff)) * self.term.to_qutip(full_space)
     
     def evalf(self):
         return self.coeff * self.term.evalf()
