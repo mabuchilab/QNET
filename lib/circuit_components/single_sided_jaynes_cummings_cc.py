@@ -17,13 +17,13 @@ from sympy.core.symbol import symbols
 class SingleSidedJaynesCummings(Component):
     """
     Typical CQED Jaynes-Cummings model with a single input port with coupling coefficient kappa
-    and a single atomic excitation decay 'port' with rate gamma.
+    and a single atomic excitation decay 'port' with rate gamma_0.
     """
     
     CDIM = 2
     GENERIC_DEFAULT_VALUES = dict(
             kappa = symbols('kappa', real = True, each_char = False), # decay of cavity mode through cavity mirror
-            gamma = symbols('gamma', real = True, each_char = False), # decay rate into transverse modes
+            gamma_0 = symbols('gamma_0', real = True, each_char = False), # decay rate into transverse modes
             g_c = symbols('g_c', real = True, each_char = False),   # coupling between cavity mode and two-level-system
             Delta = symbols('Delta', real = True, each_char = False), # detuning between the cavity (mode) and the atomic transition
             FOCK_DIM = 20,
@@ -83,7 +83,7 @@ class DecayChannel(SubComponent):
         sigma_m = sigma_p.adjoint()
         
         # vacuum coupling / spontaneous decay
-        L = sqrt(self.gamma) * sigma_m
+        L = sqrt(self.gamma_0) * sigma_m
         
         return SLH(OperatorMatrixInstance([[1]]), OperatorMatrixInstance([[L]]), 0)
 
