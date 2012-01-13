@@ -1378,10 +1378,10 @@ class Feedback(Circuit, MultiaryOperation):
         return of
         
     def toSLH(self):
-        return self.op.toSLH().feedback(*self.out_in_pair)
+        return self.operand.toSLH().feedback(*self.out_in_pair)
     
     def reduce(self):
-        return self.op.reduce().feedback(*self.out_in_pair)
+        return self.operand.reduce().feedback(*self.out_in_pair)
     
     
     def substitute(self, var_map):
