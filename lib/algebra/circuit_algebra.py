@@ -189,7 +189,9 @@ class SLH(Circuit, Expression):
         return SLH(new_S, new_L, new_H)
     
     def concatenate_triplets(self, other):
-        new_S = block_diagonal(evalf(self.S), evalf(other.S))
+        selfS = self.S if isinstance(self.S, OperatorMatrixInstance) else evalf(self.S)
+        otherS = other.S if isinstance(other.S, OperatorMatrixInstance) else evalf(other.S)        
+        new_S = block_diagonal(selfS, otherS)
         new_L = concatenate((self.L, other.L))
         new_H = self.H + other.H
         
