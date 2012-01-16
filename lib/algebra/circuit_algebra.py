@@ -291,9 +291,9 @@ class SLH(Circuit, Expression):
     def symbolic_lindbladian_schroedinger(self, rho = None):
         L, H = self.L, self.H
         if rho is None:
-            rho = ca.OperatorSymbol('rho', L.space | H.space)
-        return -1j*(H*rho - rho*H) + sum( Lk * rho * ca.adjoint(Lk)
-                             -  (ca.adjoint(Lk)*Lk * rho + rho * ca.adjoint(Lk)*Lk) / 2
+            rho = OperatorSymbol('rho', L.space | H.space)
+        return -1j*(H*rho - rho*H) + sum( Lk * rho * adjoint(Lk)
+                             -  (adjoint(Lk)*Lk * rho + rho * adjoint(Lk)*Lk) / 2
                                                 for Lk in L.array.flatten())
 
 
@@ -301,9 +301,9 @@ class SLH(Circuit, Expression):
         L, H = self.L, self.H
         
         if M is None:
-            M = ca.OperatorSymbol('M', L.space | H.space)            
-        return 1j*(H*M - M*H) + sum(ca.adjoint(Lk)* M * Lk \
-                    -  (ca.adjoint(Lk)*Lk * M + M * ca.adjoint(Lk)*Lk) / 2 \
+            M = OperatorSymbol('M', L.space | H.space)            
+        return 1j*(H*M - M*H) + sum(adjoint(Lk)* M * Lk \
+                    -  (adjoint(Lk)*Lk * M + M * adjoint(Lk)*Lk) / 2 \
                                                             for Lk in L.array.flatten())
 
     def __iter__(self):
