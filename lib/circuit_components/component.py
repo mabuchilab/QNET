@@ -26,7 +26,8 @@ None.
 
 """
 
-from algebra.circuit_algebra import Circuit, Expression
+from algebra.circuit_algebra import Circuit, Expression, tex
+from library import camelcase_to_acronym
 
 
 class Component(Circuit, Expression):
@@ -79,14 +80,19 @@ class Component(Circuit, Expression):
         raise NotImplementedError(self.__class__.__name__)
     
     def __repr__(self):
-        return "%s(%r, %s)" % (self.__class__.__name__, self.name, ", ".join("%s = %r" % (k, getattr(self, k)) for k in sorted(self.GENERIC_DEFAULT_VALUES)))
+        return "%s(%r%s)" % (self.__class__.__name__, self.name, "".join(", %s = %r" % (k, getattr(self, k)) for k in sorted(self.GENERIC_DEFAULT_VALUES)))
 
     def __str__(self):
         return "%s(%r)" % (self.__class__.__name__, self.name)
     
+    @property
+    def tex_name(self):
+        """
+        """
+        return camelcase_to_acronym(self.__class__.__name__)
+    
     def tex(self):
-        raise NotImplementedError(self.__class__.__name__) 
-
+        return r"%s\left(%r%s\right)" % (self.__class__.__name__, self.tex_name, "".join(", %s" % tex(getattr(self, k)) for k in sorted(self.GENERIC_DEFAULT_VALUES)))
     
 
 class SubComponent(Circuit, Expression):

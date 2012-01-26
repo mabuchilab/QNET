@@ -10,7 +10,7 @@ Copyright (c) 2011 . All rights reserved.
 
 from component import Component, SubComponent
 
-from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, IdentityMatrix, OperatorMatrixInstance, sqrt, SLH
+from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, IdentityMatrix, OperatorMatrixInstance, sqrt, SLH, tex
 from sympy.core.symbol import symbols
 
 
@@ -47,6 +47,7 @@ class KerrCavity(Component):
     
     def toSLH(self):        
         return self.reduce().toSLH()
+    
         
 
 class KerrPort(SubComponent):

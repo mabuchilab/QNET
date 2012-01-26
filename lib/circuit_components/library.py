@@ -49,7 +49,7 @@ def _make_default_value_string(name, type, default):
 
 import re
 camelcase_to_underscore = lambda str: re.sub('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', '_\\1', str).lower().strip('_')
-    
+camelcase_to_acronym = lambda str: re.sub('([a-z])', '', str)
 
 def write_component(entity, architectures, default_architecture = None):
     

@@ -35,6 +35,10 @@ class Displace(Component):
         H = 0
         
         return SLH(S, L, H)
+        
+        
+    def tex(self):
+        return r"{W(%s)}" % tex(self.alpha)
 
 if __name__ == '__main__':
     a = Displace("W")
