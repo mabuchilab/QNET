@@ -92,7 +92,7 @@ class Component(Circuit, Expression):
         return camelcase_to_acronym(self.__class__.__name__)
     
     def tex(self):
-        return r"%s\left(%r%s\right)" % (self.__class__.__name__, self.tex_name, "".join(", %s" % tex(getattr(self, k)) for k in sorted(self.GENERIC_DEFAULT_VALUES)))
+        return r"%s\left(%r%s\right)" % (self.tex_name, self.name, "".join(", %s" % tex(getattr(self, k)) for k in sorted(self.GENERIC_DEFAULT_VALUES)))
     
 
 class SubComponent(Circuit, Expression):
