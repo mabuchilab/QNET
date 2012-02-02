@@ -8,7 +8,7 @@ Copyright (c) 2011 . All rights reserved.
 """
 
 from algebra.circuit_algebra import SLH, OperatorMatrixInstance, pi, sin, cos, tex
-from component import Component
+from circuit_components.component import Component, SubComponent
 
 class Beamsplitter(Component):
     """
@@ -43,6 +43,7 @@ def test():
     print a.reduce()
     print "=" * 80
     print a.toSLH()
+    print a.tex()
     
 if __name__ == "__main__":
     test()

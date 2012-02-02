@@ -9,7 +9,7 @@ Copyright (c) 2011 . All rights reserved.
 
 from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, OperatorMatrixInstance, sqrt, SLH, LocalSigma
 from library import make_namespace_string
-from component import Component, SubComponent
+from circuit_components.component import Component, SubComponent
 
 from sympy.core.symbol import symbols
 

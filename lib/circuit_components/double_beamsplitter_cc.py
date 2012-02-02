@@ -8,7 +8,7 @@ Created automatically
 from circuit_components.library import make_namespace_string
 from algebra.circuit_algebra import cid, P_sigma, FB
 from sympy import symbols
-from component import Component
+from circuit_components.component import Component
 
 
 class DoubleBeamsplitter(Component):

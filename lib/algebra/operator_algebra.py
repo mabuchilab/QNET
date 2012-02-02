@@ -1001,6 +1001,7 @@ class ScalarOperatorProduct(OperatorOperation, CoefficientTermProduct):
         return self.coeff * self.term.evalf()
     
 
+
 scalar_as_operator = lambda n: (ScalarOperatorProduct.apply_with_rules(n, IdentityOperator()))
 # number_as_operator = lambda n: scalar_as_operator(number_as_scalar(n))
 

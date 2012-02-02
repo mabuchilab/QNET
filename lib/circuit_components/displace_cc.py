@@ -7,7 +7,7 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from component import Component
+from circuit_components.component import Component
 from algebra.circuit_algebra import *
 from sympy.core.symbol import symbols
 

@@ -251,8 +251,7 @@ def tex(obj):
     if is_number(obj):
         return format_number_for_tex(obj)
     if isinstance(obj, SympyBasic):
-        # TODO fix bracketing
-        return sympy_latex(obj)[1:-1] #trim '$' at beginning and end of returned string
+        return sympy_latex(obj)#[1:-1] #trim '$' at beginning and end of returned string
     try:
         return obj.tex()
     except AttributeError:
