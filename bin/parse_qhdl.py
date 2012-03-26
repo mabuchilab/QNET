@@ -18,19 +18,21 @@ Run as {executable} -f path/to/file.qhdl [options]
     inserted as comments.
     
     The options are:
-
+    
     --write-lib or -l : parse and install as new circuit library component
     --help or -h : display this message
-    --graph-only or -g : do not attempt to parse into a circuit expression, 
+    --graph-only or -g : do not attempt to parse into a circuit expression,
                          but generate the GraphViz graph for the circuit
-    
 
     
-'''.format(executable = sys.argv[0])
+
+'''.format(executable=sys.argv[0])
 
 parser = None
 
+
 class Usage(Exception):
+    
     def __init__(self, msg):
         self.msg = msg
 
@@ -38,9 +40,9 @@ from qhdl_parser.qparse import QHDLParser
 
 
 def set_up_parser(debug = False):
-    global parser 
+    global parser
     parser = QHDLParser(debug = debug)
-    
+
 def keys_dict(dd):
     return dict(((k, v.keys()) for k,v in dd.items()))
 
@@ -84,7 +86,7 @@ def circuit_generator():
     elif len(archs) == 1:
         name, a = archs.items().pop()
         yield name, a.to_circuit()
-        
+
 def write_modules():
     from circuit_components.library import write_component
     entities = parser.entities.keys()
@@ -93,8 +95,8 @@ def write_modules():
         architectures_by_entity[a.entity.identifier][a_name] = a
     for e, e_archs in architectures_by_entity.items():
         yield write_component(parser.entities[e], e_archs)
-
         
+
 
 def main(argv=None):
     if argv is None:
@@ -112,7 +114,7 @@ def main(argv=None):
             # option processing
             for option, value in opts:
             
-            
+                
                 if option in ("-d", "--debug"):
                     debug = True
                 
@@ -121,16 +123,16 @@ def main(argv=None):
                 
                 if option in ("-f", "--file"):
                     input_file = value
-            
+                
                 if option in ("-g", "--graph-only"):
                     graph_only = True
-            
+                
                 if option in ("-l", "--write-lib"):
                     write_lib = True
-                        
 
+            
             set_up_parser(debug)
-        
+            
             if input_file:
                 try:
                     p_dict = parse_qhdl_file(input_file)
@@ -139,7 +141,7 @@ def main(argv=None):
             else:
                  print "No input file supplied"
                  raise Usage(help_message)
-             
+            
             print "/* " + "-"*37
             for name, lst in p_dict.items():
                 print "-"*40
@@ -147,7 +149,7 @@ def main(argv=None):
                 print "\t" + ", ".join(lst)
                 print "-"*40
 
-
+            
             if not graph_only:
                 print "Creating algebraic Circuit expressions for all architectures..."
                 for name, (circuit, circuit_symbols, assignments) in circuit_generator():
@@ -160,21 +162,21 @@ def main(argv=None):
                     print "LaTeX expression"
                     print circuit.tex()
                     print "-"*40
-        
+            
             if write_lib:
                 print "Wrting library file for all entities..."
                 for file_name in write_modules():
                     print "Wrote %s" % file_name
-                print "-"*40            
+                print "-"*40
             print "Creating graphviz/dot expressions for all architectures"
             print "-"*37+ "*/"
-        
-            print "// "+ "-"*37            
+            
+            print "// "+ "-"*37
             for name, g in graphs_generator():
                 print "//  Graph for entity '%s':" % name
                 print "// "+ "-"*37
                 print g
-                print "// "+ "-"*37    
+                print "// "+ "-"*37
     
     except Usage, err:
         print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
