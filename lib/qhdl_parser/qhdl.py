@@ -102,15 +102,15 @@ class BasicInterface(QHDLObject):
                                     complex:(lambda v: "(%g, %g)" % (v.real, v.imag))}
         default_str = lambda default: " := %s" % default_formatter_by_type[type(default)](default) \
                                             if default else ""
-        g_str = "generic (%s);\n" % ("; ".join(["%s: %s%s" % (identifier, gtype, default_str(default)) \
+        g_str = "generic (%s);\n" % (";\n    ".join(["%s: %s%s" % (identifier, gtype, default_str(default)) \
                                                 for identifier,(gtype, default) in self.generics.items()]))
         return (tab_level*"\t") + g_str
     
     def ports_to_qhdl(self, tab_level):
         
-        in_str = "%s: in fieldmode" % ", ".join(self.port_identifiers[ : self.cdim/2])
-        out_str = "%s: out fieldmode" % ", ".join(self.port_identifiers[self.cdim/2 : ])
-        p_str = "port (%s; %s);" % (in_str, out_str)
+        in_str = "%s: in fieldmode" % ",\n    ".join(self.port_identifiers[ : self.cdim/2])
+        out_str = "%s: out fieldmode" % ",\n    ".join(self.port_identifiers[self.cdim/2 : ])
+        p_str = "port (%s;\n    %s);" % (in_str, out_str)
         
         return (tab_level*"\t") + p_str
         
@@ -172,20 +172,20 @@ class BasicInterface(QHDLObject):
     @property
     def cdim(self):
         return len(self.in_ports)
-    
-    def port_identifiers():
-        doc = "The port_identifiers property."
-        def fget(self):
-            return self._port_identifiers
-        return locals()
-    pids = port_identifiers = property(**port_identifiers())
-    
-    def generic_identifiers():
-        doc = "The generic_identifiers property."
-        def fget(self):
-            return self._generic_identifiers
-        return locals()
-    gids = generic_identifiers = property(**generic_identifiers())
+
+    @property
+    def port_identifiers(self):
+        """The port_identifiers property."""
+        return self._port_identifiers
+
+    pids = port_identifiers
+
+    @property
+    def generic_identifiers(self):
+        """The generic_identifiers property."""
+        return self._generic_identifiers
+
+    gids = generic_identifiers
         
     
     def __getitem__(self, key):
@@ -341,6 +341,7 @@ class Architecture(QHDLObject):
                 #as a signal in the architecture or a port of the entity
                 entity_p = entity.ports.get(name_in_e, False)
                 signal = self.signals.get(name_in_e, False)
+
                 if not entity_p and not signal:
                     raise QHDLError('The entity %s does not define a port\
                                     and the architecture %s\
@@ -420,7 +421,7 @@ class Architecture(QHDLObject):
                 
                 mediated_inport_map[('entity', target_id)] = outfrom + (None,)
                 mediated_outport_map[outfrom[0:2]] = 'entity', target_id, self.entity.ports.get(target_id)[1], self.entity, None
-                del self.signals[source_id]
+#                del self.signals[source_id]
                 
             elif target_id in self.signals:
                 if not source_id in self.entity.in_port_identifiers:
@@ -433,15 +434,41 @@ class Architecture(QHDLObject):
                 
                 mediated_outport_map[('entity', source_id)] = into + (None,)
                 mediated_inport_map[into[0:2]] = 'entity', source_id, self.entity.ports.get(source_id)[1], self.entity, None
-                del self.signals[target_id]
+#                del self.signals[target_id]
             else:
                 raise QHDLError('Global Assignment Error')
                     
         
         #combine lookup tables
         self.mediated_port_map = {'in': mediated_inport_map, 'out': mediated_outport_map}
-    
+
+
     def to_circuit(self, identifier_postfix = ''):
+        if self._circuit:
+            return self._circuit
+        from algebra import circuit_algebra as ca
+
+
+        # initialize trivial circuit
+        circuit = ca.cid(0)
+
+        II = []
+        OO = []
+        SS = sorted(self.signals.keys())
+
+
+        #create symbols for all instances
+        circuit_symbols = {}
+        for (instance_name, (component, generic_map, port_map)) in self.instance_assignments.items():
+            QQ = ca.CSymbol(instance_name+identifier_postfix, component.cdim)
+            circuit_symbols[instance_name] = QQ
+            circuit  = circuit + QQ
+            II = II + [(component.in_port_identifiers)]
+
+
+
+
+    def to_circuit2(self, identifier_postfix = ''):
         if self._circuit:
             return self._circuit
         from algebra import circuit_algebra as ca
@@ -842,8 +869,7 @@ class Architecture(QHDLObject):
     
     
     
-    # def to_circuit(self, identifier_postfix = ''):
-        
+
         
         
         
