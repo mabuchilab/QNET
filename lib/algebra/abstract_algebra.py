@@ -793,10 +793,7 @@ class Power(BinaryOperation):
             
         if isinstance(base, CoefficientTermProduct):
             return cls.apply_with_rules(base.coeff, exponent) * cls.apply_with_rules(base.term, exponent)
-        
-        if isinstance(base, Fraction):
-            cls.apply_with_rules(base.numerator, exponent) / cls.apply_with_rules(base.denominator, exponent)
-            
+                    
         return cls(base, exponent, **rules)
     
     def tex(self):
@@ -963,15 +960,15 @@ class AlgebraType(type):
         MyAlgebraSubclass.algebra == MyAlgebra    # True, because this class attribute is inherited from MyAlgebra
     
     """
-    def __new__(clsmeta, clsname, clssuper, clsdict):
+    def __new__(cls, clsname, clssuper, clsdict):
         """
         Called when a new class is defined with the name clsname, 
         the superclasses clssuper, and the properties and methods defined in clsdict.
-        clsmeta points to the metaclass, i.e. to AlgebraType (or a submetaclass of this).
+        cls points to the metaclass, i.e. to AlgebraType (or a submetaclass of this).
         """
         
         #create the actual class
-        cls = type.__new__(clsmeta, clsname, clssuper, clsdict)
+        cls = type.__new__(cls, clsname, clssuper, clsdict)
         
         # If we're creating the Algebra class itself, then skip ahead.
         if clsname != 'Algebra': 
@@ -993,8 +990,8 @@ class AlgebraType(type):
     
     # make a read-only public property for the specific algebra class itself
     @property
-    def algebra(cls):
-        return cls._algebra
+    def algebra(self):
+        return self._algebra
 
 
 def make_binary_operation_method(operation_map_name, operation_string = ''):
