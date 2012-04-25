@@ -148,7 +148,7 @@ class BasicInterface(QHDLObject):
                     raise QHDLError("Generic identifier non-unique: %s" % identifier)
                 self.generics[gid] = gtype, default_val
                 
-        
+#        print ports
         for (identifier_list, direction, signal_type) in ports:
             if direction not in ('in', 'out'):
                 raise QHDLError(str((identifier_list, direction, signal_type)))
