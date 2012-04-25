@@ -57,7 +57,8 @@ class Component(Circuit, Expression):
     @property
     def sub_blockstructure(self):
         """
-        If the component is reducible, this property should give the correct block structure. 
+        If the component is reducible, this property should 
+        be overwritten to give the correct block structure. 
         See some examples (kerr_cavity,...) for more details.
         """
         return (self.CDIM,)

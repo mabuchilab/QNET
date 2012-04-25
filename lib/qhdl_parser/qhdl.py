@@ -58,6 +58,11 @@ generic_type = int | real | complex
 
 """
 
+from collections import OrderedDict
+from circuit_components.library import getCDIM
+
+
+
 def my_debug(msg):
     pass
     # print msg
@@ -87,6 +92,7 @@ def gtype_compatible(c_t, g_t):
 
 class BasicInterface(QHDLObject):
     
+    
     def __repr__(self):
         return "%s('%s', %r, %r)" % (self.__class__.__name__, self.identifier, self.generics, self.ports)
     
@@ -113,19 +119,24 @@ class BasicInterface(QHDLObject):
         p_str = "port (%s;\n    %s);" % (in_str, out_str)
         
         return (tab_level*"\t") + p_str
+    
+    @property
+    def in_port_identifiers(self):
+        return self.in_ports.keys()
         
+    @property
+    def out_port_identifiers(self):
+        return self.out_ports.keys()
+    
+    cid = 0
     
     def __init__(self, identifier, generics, ports):
         self.identifier = identifier
-        
-        self.generics = {}
-        self.in_ports = {}
-        self.out_ports = {}
-        self.ports = {}
-        port_identifiers = []
-        generic_identifiers = []
-        self.in_port_identifiers = []
-        self.out_port_identifiers = []
+        self.cid = 0
+        self.generics = OrderedDict()
+        self.in_ports = OrderedDict()
+        self.out_ports = OrderedDict()
+        self.ports = OrderedDict()
 
         
         for (identifier_list, gtype, default_val) in generics:
@@ -135,16 +146,15 @@ class BasicInterface(QHDLObject):
             for gid in identifier_list:
                 if gid in self.generics:
                     raise QHDLError("Generic identifier non-unique: %s" % identifier)
-                
                 self.generics[gid] = gtype, default_val
-                generic_identifiers.append(gid)
+                
         
         for (identifier_list, direction, signal_type) in ports:
             if direction not in ('in', 'out'):
                 raise QHDLError(str((identifier_list, direction, signal_type)))
             
             if signal_type != "fieldmode":
-                raise NotImplementedError
+                raise QHDLError("We currently only support signals of type 'fieldmode': " + str(identifier_list))
             for pid in identifier_list:
                 if pid in self.generics:
                     raise QHDLError("There already exists a generic with the same identifier : %s" % pid)
@@ -154,59 +164,57 @@ class BasicInterface(QHDLObject):
                 if direction == 'in':
                     pindex = len(self.in_ports)
                     self.in_ports[pid] = pindex
-                    self.in_port_identifiers.append(pid)
+                    
                 else:
                     pindex = len(self.out_ports)
                     self.out_ports[pid] = pindex
-                    self.out_port_identifiers.append(pid)
+                    
                 self.ports[pid] = direction, pindex
                 
-                port_identifiers.append(pid)
-        
-        if not len(self.in_ports) == len(self.out_ports):
-            raise QHDLError('The numbers of input and output channels do not match.')
-        self._port_identifiers = tuple(port_identifiers)
-        self._generic_identifiers = tuple(generic_identifiers)
+#        if not len(self.in_ports) == len(self.out_ports):
+#            raise QHDLError('The numbers of input and output channels do not match.')
+#        self._port_identifiers = tuple(port_identifiers)
+#        self._generic_identifiers = tuple(generic_identifiers)
                                     
     
-    @property
-    def cdim(self):
-        return len(self.in_ports)
+#    @property
+#    def cdim(self):
+#        return len(self.in_ports)
 
     @property
     def port_identifiers(self):
         """The port_identifiers property."""
-        return self._port_identifiers
+        return self.ports.keys()
 
     pids = port_identifiers
 
     @property
     def generic_identifiers(self):
         """The generic_identifiers property."""
-        return self._generic_identifiers
+        return self.generics.keys()
 
     gids = generic_identifiers
         
     
-    def __getitem__(self, key):
-        if key in self.ports:
-            return self.ports[key]
-        elif key in self.generics:
-            return self.generics[key]
-        else:
-            raise KeyError(str(key))
-    
-    def get(self, key, default_val = None):
-        try:
-            return self[key]
-        except KeyError:
-            return default_val
-    
-    def has_generic(self, gid):
-        return gid in self.generics
-    
-    def has_port(self, pid):
-        return pid in self.ports
+#    def __getitem__(self, key):
+#        if key in self.ports:
+#            return self.ports[key]
+#        elif key in self.generics:
+#            return self.generics[key]
+#        else:
+#            raise KeyError(str(key))
+#    
+#    def get(self, key, default_val = None):
+#        try:
+#            return self[key]
+#        except KeyError:
+#            return default_val
+#    
+#    def has_generic(self, gid):
+#        return gid in self.generics
+#    
+#    def has_port(self, pid):
+#        return pid in self.ports
         
         
 
@@ -236,23 +244,29 @@ class Architecture(QHDLObject):
     def __init__(self, identifier, entity, components, signals, assignments, global_assignments = {}):
         self.identifier = identifier
         self.entity = entity
-        self.components = {}
-        self.signals = {}
-        self.instance_assignments = {}
+        self.components = OrderedDict()
+        self.signals = OrderedDict()
+        self.instance_assignments = OrderedDict()
         self._circuit = False
         
         # lookuptables format
         # (instance_name, instance_port_name)
         #       => ((target_instance_name|'entity'), port_name, port_id, (connecting_signal_name|None))
-        mediated_inport_map = {}
-        mediated_outport_map = {}
+#        mediated_inport_map = {}
+#        mediated_outport_map = {}
+        global_out = {}
+        global_in = {}
+        out_to_signal = {}
+        in_to_signal = {}
         
         #process components
         for component in components:
             #check for duplicate component identifiers
             if component.identifier in self.components:
                 raise QHDLError('Component ID non-unique: %s' % component.identifier)
+            component.cdim = getCDIM(component.identifier)
             self.components[component.identifier] = component
+            
         
         #process signals
         for signal_ids, signal_type in signals:
@@ -293,7 +307,7 @@ class Architecture(QHDLObject):
             # if no generic map statement but the component definition has some generics defined
             elif generic_map == {} and len(component.generics) > 0:
                 # assert that there are default values for all generics
-                for gname, (gtype, default) in component.generics.items():
+                for gname, (_, default) in component.generics.items():
                     if default is None:
                         raise QHDLError(('No default value defined for generic %s of component %s,\n' % (gname, component.identifier)) 
                                     + 'either define this or add a generic map statement to the instance assigment of %s' % (instance_name,))
@@ -325,546 +339,698 @@ class Architecture(QHDLObject):
             #convert port map (a,b,c,...) into port map (q=>a, r=>b,...)
             #based on the ports of the component
             if not isinstance(port_map, dict):
-                if not len(port_map) == len(component.port_identifiers):
+                if len(port_map) != len(component.port_identifiers):
                     raise QHDLError('All ports of instance %s(%s) must be mapped' % (instance_name, component.identifier))
                 port_map = dict(zip(component.port_identifiers, port_map))
             
             #if port map is already in explicit form, assert that the
             #assigned q,r,... coincide those defined in the component
-            elif sorted(port_map.keys()) != sorted(component.ports.keys()):
-                raise QHDLError('All ports of instance %s(%s) must be mapped' % (instance_name, component.identifier))
+#            elif sorted(port_map.keys()) != sorted(component.ports.keys()):
+#                raise QHDLError('All ports of instance %s(%s) must be mapped' % (instance_name, component.identifier))
+            
+
             
             #create lookup tables
             for name_in_c, name_in_e in port_map.items():
+                
                 
                 #any referenced a,b,c,... must either exist
                 #as a signal in the architecture or a port of the entity
                 entity_p = entity.ports.get(name_in_e, False)
                 signal = self.signals.get(name_in_e, False)
-
+                
                 if not entity_p and not signal:
-                    raise QHDLError('The entity %s does not define a port\
+                    if name_in_e == 'OPEN':
+                        continue
+                    else:
+                        raise QHDLError('The entity %s does not define a port\
                                     and the architecture %s\
                                     does not any define any signal of\
                                     name %s ' % (entity.identifier, self.identifier, name_in_e))
-                                    
+                if signal and entity_p:
+                    raise QHDLError("Duplicate name for a signal and an entity port: %s" % name_in_e)                    
+
                 
                 component_p = component.ports.get(name_in_c, False)
                 #probably redundant
                 if not component_p:
                     raise QHDLError('Component %s does not define a port of name %s' % (component.identifier, name_in_c))
                 
-                c_dir, c_id = component_p
-                
-                #any signal may only connect two ports, one in-port and one out-port
-                #if port is mapped to a signal, then on the other end of that
-                if signal:
-                    
-                    #if port is ingoing
-                    if c_dir == 'in':
-                        
-                        #assert that signal is not already connected to some other ingoing port
-                        if signal['into'] != None:
-                            raise QHDLError('Signal %s is connected to more than one ingoing ports' % name_in_e)
-                        
-                        signal['into'] = instance_name, name_in_c, c_id, component
-                        
-                        #if 'other end' of signal is already connected, add entries to lookup table
-                        if signal['outfrom'] != None:
-                            mediated_inport_map[(instance_name, name_in_c)] = signal['outfrom'] + (name_in_e,)
-                            mediated_outport_map[(signal['outfrom'][0:2])] = instance_name, name_in_c, c_id, component, name_in_e
-                    else:
-                        #assert that signal is not already connected to some other outgoing port
-                        if signal['outfrom'] != None:
-                            raise QHDLError('Signal %s is connected to more than one outgoing ports' % name_in_e)
-                        signal['outfrom'] = instance_name, name_in_c, c_id, component
-                        
-                        #if 'other end' of signal is already connected, add entries to lookup table
-                        if signal['into'] != None:
-                            mediated_outport_map[(instance_name, name_in_c)] = signal['into'] + (name_in_e,)
-                            mediated_inport_map[(signal['into'][0:2])] = instance_name, name_in_c, c_id, component, name_in_e
-                
-                else: #port is directly mapped to an entity port
-                    e_dir, e_id = entity_p
-                    
-                    #entity port must have same direction
-                    if c_dir != e_dir:
+                c_dir, _ = component_p
+
+                if entity_p:
+                    e_dir, _ = entity_p
+                    if not e_dir == c_dir:
                         raise QHDLError('Component port %s.%s must be connected to entity port of same direction' % (component.identifier, name_in_c))
                     
-                    #add lookup table entries
-                    if c_dir == 'in':
-                        mediated_inport_map[(instance_name, name_in_c)] = 'entity', name_in_e, e_id, entity, None
-                        if ('entity', name_in_e) in mediated_outport_map:
-                            raise QHDLError('The entity in-port %s.%s is connected to multiple instance ports' \
-                                                        % (entity.identifier, name_in_e))
-                        mediated_outport_map[('entity', name_in_e)] = instance_name, name_in_c, c_id, component, None
-                    else: #c_dir == 'out'
-                        mediated_outport_map[(instance_name, name_in_c)] = 'entity', name_in_e, e_id, entity, None
-                        if ('entity', name_in_e) in mediated_inport_map:
-                            raise QHDLError('The entity out-port %s.%s is connected to multiple instance ports' \
-                                                        % (entity.identifier, name_in_e))
-                        
-                        mediated_inport_map[('entity', name_in_e)] = instance_name, name_in_c, c_id, component, None
-                
-                #store (redundant) information for book-keeping and string representations
+                    if c_dir == "in":
+                        global_in[(instance_name, name_in_c)] = name_in_e
+                    else:
+                        assert c_dir == "out"
+                        global_out[(instance_name, name_in_c)] = name_in_e
+                else:
+                    if c_dir == "in":
+                        in_to_signal[(instance_name, name_in_c)] = name_in_e
+                    else:
+                        assert c_dir == "out"
+                        out_to_signal[(instance_name, name_in_c)] = name_in_e
                 self.instance_assignments[instance_name] = component, generic_map, port_map
-                
+        
+        signal_to_global_in = {}
+        signal_to_global_out = {}
         for source_id, target_id in global_assignments.items():
             if target_id in self.entity.out_port_identifiers:
                 if not source_id in self.signals:
                     raise QHDLError('Global Out-Ports may only be assigned to signals')
-                outfrom = self.signals[source_id].get('outfrom', False)
-                if not outfrom:
-                    raise QHDLError('GLobal Out-Port can only be connected to instance out port')
-                if self.signals[source_id].get('into', False):
-                    raise QHDLError('Signal connects into several different ports')
-                
-                mediated_inport_map[('entity', target_id)] = outfrom + (None,)
-                mediated_outport_map[outfrom[0:2]] = 'entity', target_id, self.entity.ports.get(target_id)[1], self.entity, None
-#                del self.signals[source_id]
+                signal_to_global_out[source_id] = target_id
                 
             elif target_id in self.signals:
                 if not source_id in self.entity.in_port_identifiers:
                     raise QHDLError('Signals can only be assigned to global In-Ports')
-                into = self.signals[target_id].get('into', False)
-                if not into:
-                    raise QHDLError('GLobal In-port can only be connected to instance in-port')
-                if self.signals[target_id].get('outfrom', False):
-                    raise QHDLError('Signal connects into several different ports')
-                
-                mediated_outport_map[('entity', source_id)] = into + (None,)
-                mediated_inport_map[into[0:2]] = 'entity', source_id, self.entity.ports.get(source_id)[1], self.entity, None
-#                del self.signals[target_id]
+                signal_to_global_in[source_id] = target_id
             else:
-                raise QHDLError('Global Assignment Error')
-                    
+                raise QHDLError('Global Assignment Error: %s => %s' % (source_id, target_id))
+            
+        self.global_in = global_in
+        self.global_out = global_out
+        self.in_to_signal = in_to_signal
+        self.out_to_signal = out_to_signal
+        self.signal_to_global_out = signal_to_global_out
+        self.signal_to_global_in = signal_to_global_in
         
-        #combine lookup tables
-        self.mediated_port_map = {'in': mediated_inport_map, 'out': mediated_outport_map}
+        
+                    
+                
+#                if not entity_p and not signal:
+#                    if name_in_e == 'OPEN':
+#                        continue
+#                    else:
+#                        raise QHDLError('The entity %s does not define a port\
+#                                    and the architecture %s\
+#                                    does not any define any signal of\
+#                                    name %s ' % (entity.identifier, self.identifier, name_in_e))
+#                if signal and entity_p:
+#                    raise QHDLError("Duplicate name for a signal and an entity port: %s" % name_in_e)                    
+#                
+#                component_p = component.ports.get(name_in_c, False)
+#                #probably redundant
+#                if not component_p:
+#                    raise QHDLError('Component %s does not define a port of name %s' % (component.identifier, name_in_c))
+#                
+#                c_dir, c_id = component_p
+#                
+#                #any signal may only connect two ports, one in-port and one out-port
+#                #if port is mapped to a signal, then on the other end of that
+#                if signal:
+#                    
+#                    #if port is ingoing
+#                    if c_dir == 'in':
+#                        
+#                        #assert that signal is not already connected to some other ingoing port
+#                        if signal['into'] != None:
+#                            raise QHDLError('Signal %s is connected to more than one ingoing ports' % name_in_e)
+#                        
+#                        signal['into'] = instance_name, name_in_c, c_id, component
+#                        
+#                        #if 'other end' of signal is already connected, add entries to lookup table
+#                        if signal['outfrom'] != None:
+#                            mediated_inport_map[(instance_name, name_in_c)] = signal['outfrom'] + (name_in_e,)
+#                            mediated_outport_map[(signal['outfrom'][0:2])] = instance_name, name_in_c, c_id, component, name_in_e
+#                    else:
+#                        assert c_dir == "out"
+#                        
+#                        #assert that signal is not already connected to some other outgoing port
+#                        if signal['outfrom'] != None:
+#                            raise QHDLError('Signal %s is connected to more than one outgoing ports' % name_in_e)
+#                        signal['outfrom'] = instance_name, name_in_c, c_id, component
+#                        
+#                        #if 'other end' of signal is already connected, add entries to lookup table
+#                        if signal['into'] != None:
+#                            mediated_outport_map[(instance_name, name_in_c)] = signal['into'] + (name_in_e,)
+#                            mediated_inport_map[(signal['into'][0:2])] = instance_name, name_in_c, c_id, component, name_in_e
+#                
+#                else: #port is directly mapped to an entity port
+#                    e_dir, e_id = entity_p
+#                    
+#                    #entity port must have same direction
+#                    if c_dir != e_dir:
+#                        raise QHDLError('Component port %s.%s must be connected to entity port of same direction' % (component.identifier, name_in_c))
+#                    
+#                    #add lookup table entries
+#                    if c_dir == 'in':
+#                        mediated_inport_map[(instance_name, name_in_c)] = 'entity', name_in_e, e_id, entity, None
+#                        if ('entity', name_in_e) in mediated_outport_map:
+#                            raise QHDLError('The entity in-port %s.%s is connected to multiple instance ports' \
+#                                                        % (entity.identifier, name_in_e))
+#                        mediated_outport_map[('entity', name_in_e)] = instance_name, name_in_c, c_id, component, None
+#                    else: #c_dir == 'out'
+#                        mediated_outport_map[(instance_name, name_in_c)] = 'entity', name_in_e, e_id, entity, None
+#                        if ('entity', name_in_e) in mediated_inport_map:
+#                            raise QHDLError('The entity out-port %s.%s is connected to multiple instance ports' \
+#                                                        % (entity.identifier, name_in_e))
+#                        
+#                        mediated_inport_map[('entity', name_in_e)] = instance_name, name_in_c, c_id, component, None
+#                
+#                #store (redundant) information for book-keeping and string representations
+#                self.instance_assignments[instance_name] = component, generic_map, port_map
+#                
+#        for source_id, target_id in global_assignments.items():
+#            if target_id in self.entity.out_port_identifiers:
+#                if not source_id in self.signals:
+#                    raise QHDLError('Global Out-Ports may only be assigned to signals')
+#                outfrom = self.signals[source_id].get('outfrom', False)
+#                if not outfrom:
+#                    raise QHDLError('Global Out-Port can only be connected to instance out port')
+#                if self.signals[source_id].get('into', False):
+#                    raise QHDLError('Signal connects into several different ports')
+#                
+#                mediated_inport_map[('entity', target_id)] = outfrom + (None,)
+#                mediated_outport_map[outfrom[0:2]] = 'entity', target_id, self.entity.ports.get(target_id)[1], self.entity, None
+##                del self.signals[source_id]
+#                
+#            elif target_id in self.signals:
+#                if not source_id in self.entity.in_port_identifiers:
+#                    raise QHDLError('Signals can only be assigned to global In-Ports')
+#                into = self.signals[target_id].get('into', False)
+#                if not into:
+#                    raise QHDLError('GLobal In-port can only be connected to instance in-port')
+#                if self.signals[target_id].get('outfrom', False):
+#                    raise QHDLError('Signal connects into several different ports')
+#                
+#                mediated_outport_map[('entity', source_id)] = into + (None,)
+#                mediated_inport_map[into[0:2]] = 'entity', source_id, self.entity.ports.get(source_id)[1], self.entity, None
+##                del self.signals[target_id]
+#            else:
+#                raise QHDLError('Global Assignment Error: %s => %s' % (source_id, target_id))
+#        
+#        
+#        #combine lookup tables
+#        self.mediated_port_map = {'in': mediated_inport_map, 'out': mediated_outport_map}
 
 
     def to_circuit(self, identifier_postfix = ''):
+        
         if self._circuit:
             return self._circuit
         from algebra import circuit_algebra as ca
-
+        
+#        mip = self.mediated_port_map['in']
+#        mop = self.mediated_port_map['out']
 
         # initialize trivial circuit
         circuit = ca.cid(0)
 
         II = []
         OO = []
-        SS = sorted(self.signals.keys())
-
-
+        SS = list(self.signals.keys())
+        
+        
+        OPEN = object()
         #create symbols for all instances
         circuit_symbols = {}
-        for (instance_name, (component, generic_map, port_map)) in self.instance_assignments.items():
-            QQ = ca.CSymbol(instance_name+identifier_postfix, component.cdim)
+        for (instance_name, (component, _, _)) in self.instance_assignments.items():
+            QQ = ca.CSymbol(instance_name + identifier_postfix, component.cdim)
             circuit_symbols[instance_name] = QQ
+            
             circuit  = circuit + QQ
-            II = II + [(component.in_port_identifiers)]
-
-
-
-
-    def to_circuit2(self, identifier_postfix = ''):
-        if self._circuit:
-            return self._circuit
-        from algebra import circuit_algebra as ca
-        
-        #shortcut
-        pm = self.mediated_port_map
-        pmi = pm['in']
-        pmo = pm['out']
-        
-        cdim = self.entity.cdim
-        reached_entity = {}
-        
-        #initial circuit values
-        current_circuit = ca.circuit_identity(cdim)
-        
-        current_channel = ca.circuit_identity(1)
-        
-        #create symbols for all instances
-        circuit_symbols = {}
-        for (instance_name, (component, generic_map, port_map)) in self.instance_assignments.items():
-            circuit_symbols[instance_name] = ca.CSymbol(instance_name+identifier_postfix, component.cdim)
-        
-        
-        #initial global in ports
-
-        current_global_in_ports = [('entity', port_name) for port_name in self.entity.in_port_identifiers]
-        # print 'initial current_global_in_ports', current_global_in_ports
-        # unvisited_instances = self.instance_assignments.keys()
-        complex_instance_stack = {}
-        feedback_stack = {}
-        feedback_stack_order = []
-        blocked_channels = set([])
-        
-        
-        while True:
+            II = II + [(instance_name, port_name) for port_name in component.in_port_identifiers]
+            OO = OO + [(instance_name, port_name) for port_name in component.out_port_identifiers]
             
-            #iterate over all 'channels', i.e. current_global_in_ports
-            for channel_index, (instance_name, port_name) in enumerate(current_global_in_ports):
-                
-                #a channel may be blocked from a previous iteration of the outer
-                #while loop if an unfinished complex component is at its end
-                if channel_index in blocked_channels or channel_index in reached_entity:
-                    # my_debug("skipping channel index: %d" % channel_index)
-                    continue
-                
-                reached_complex = False
-                
-                
-                while(not reached_complex):
-                    
-                    (next_instance, next_port_name, next_port_id, next_component, signal) = pmo[(instance_name, port_name)]
-                    # print instance_name, port_name , "->", next_instance, next_port_name
-                    # a, b = pmi[(next_instance, next_port_name)][0:2]
-                    # print  a,b, "->", next_instance, next_port_name
-                    assert pmi[(next_instance, next_port_name)][0:2] == (instance_name, port_name)
-                    
-                    my_debug("in channel %d visited instance: %r" % (channel_index, (next_instance, next_port_name, next_port_id)))
-                    # my_debug(blocked_channels)
-                    
-                    if next_instance == 'entity':
-                        reached_entity[channel_index] = next_port_id
-                        # print reached_entity, next_port_id
-                        break
-                    
-                    if next_component.cdim == 1:
-                        assert next_port_id == 0
-                        
-                        #replace global in port by the output port of this instance
-                        current_global_in_ports[channel_index] = (instance_name, port_name) \
-                                                                = (next_instance, next_component.out_ports.keys().pop())
-                        
-                        #calculate the next layer of circuit for the current instance
-                        next_circuit = (ca.circuit_identity(channel_index) \
-                                            + circuit_symbols[next_instance] \
-                                            + ca.circuit_identity(cdim - channel_index - 1))
-                        # print "="*100
-                        # print next_circuit, "<<", current_circuit
-                        #feed the existing system into the new layer
-                        current_circuit =  next_circuit << current_circuit
-                        # print current_circuit
-                        # print "="*100 
-                        my_debug("# processed instance %s(%s)" % (next_instance, next_component.identifier))
-                    
-                    else: #component.cdim >= 2
-                        
-                        reached_complex = True
-                        
-                        
-                        
-                
-                if reached_complex:
-                    my_debug("channel blocked by %s:%s" % (next_instance, next_port_name))
-                    blocked_channels.add(channel_index)
-                    if next_instance in feedback_stack:
-                        if next_instance == feedback_stack_order[-1]:
-                            
-                            stored_current_circuit, P_inv_perm, feedback_channels, bypassed_channels, feedback_map = feedback_stack[next_instance]
-                            
-                            
-                            # my_debug(permutation)
-                            # my_debug(bypassed_channels)
-                            # my_debug(next_port_id)
-                            feedback_map[channel_index] = P_inv_perm[bypassed_channels + next_port_id]
-                            
-                            
-                            
-                            if len(feedback_map) == feedback_channels:
-                                if len(complex_instance_stack) == 0:
-                                    # inverted_permutation = ca.invert_permutation(permutation)
-                                    
-                                    # my_debug(feedback_stack_order)
-                                    # my_debug(feedback_map)
-                                    # my_debug(cdim)
-                                    # my_debug(feedback_channels)
-                                    # my_debug(current_global_in_ports)
-                                    assert all((v >= cdim - feedback_channels for v in feedback_map.values()))
-                                    
-                                    
-                                    #can close feedback loops!
-                                    new_permutation = ca.map_signals(feedback_map, cdim)
-                                    new_map_circuit = ca.CPermutation(new_permutation)
-                                    
-                                    current_circuit = new_map_circuit << current_circuit
-                                    
-                                    
-                                    for k in xrange(feedback_channels):
-                                        current_circuit = current_circuit.feedback()
-                                    # print "="*100
-                                    # print current_circuit, "<<", stored_current_circuit
-                                    current_circuit = current_circuit << stored_current_circuit
-                                    # print current_circuit
-                                    # print "="*100
-
-                                    
-                                    blocked_channels = set()
-                                    reached_entity = {}
-                                    current_global_in_ports = [p for k,p in enumerate(current_global_in_ports) if k not in feedback_map]
-                                                                        
-                                    del feedback_stack[next_instance]
-                                    
-                                    feedback_stack_order.pop()
-                                    
-                                    cdim = cdim - feedback_channels
-                                    
-                                    break # restart iteration over current_global_in_ports because it was changed!
-                                    
-                                    my_debug("closed feedback loop of entity %s" % next_instance)
-                                    my_debug("feedback stack %s" % feedback_stack)
-                                    my_debug("blocked channels %s" % blocked_channels)
-                                    my_debug("reached entity %s" % reached_entity.keys())
-                                    my_debug("current global in ports %s" % current_global_in_ports)
-                                    my_debug("next ports: %s" % [pmo[cgi][0:2] for cgi in current_global_in_ports])
-                                    
-                                else:
-                                    my_debug("instances blocking feedback: %r" % feedback_stack.keys())
-                                
-                            else:
-                                my_debug("instance too low on stack: %s" % next_instance)
-                        continue
-                            
-                    
-                    #handle case where next_instance is a new complex instance
-                    elif next_instance not in complex_instance_stack:
-                        complex_instance_stack[next_instance] = {channel_index: next_port_id}
-                        # at this time the instance cannot be further handled, because only one port is connected
-                    else:
-                        
-                        port_map = complex_instance_stack[next_instance]
-                        
-                        if channel_index in port_map and port_map[channel_index] != next_port_id:
-                            raise Exception('Can only connect to target port %s.%s once!' % (next_instance, next_port_name))
-                        
-                        port_map[channel_index] = next_port_id
-                        
-                        
-                        i_cdim = next_component.cdim
-                        
-                        
-                        #if all incoming ports for the complex instance are resolved
-                        if len(port_map) == i_cdim:
-                            
-                            #remove this instance from the complex instance stack
-                            del complex_instance_stack[next_instance]
-                            
-                            #remove the blockade of this instance's channels
-                            blocked_channels.difference_update(set(port_map.keys()))
-                            
-                            
-                            """
-                            ####### circuit  alignment #################################################################
-                            channel index ################################### permutation # instance # inverse perm.
-                             
-                             0                                          ----------------------------------------
-                                                                        ----------------------------------------
-                                                                        ----------------------------------------
-                                                                                      ...                    ...
-                                                                        ----------------------------------------
-                             min_port                                   ----    ---------   --------   ---------
-                                                                        ----    |       |   |       |  |       |
-                                                                        ----    |       |   | Inst. |  |    -1 |
-                                                                        ----    | Perm. |   |       |  | Perm. |
-                                                                        ...        ...         ...        ...
-                                                                        ----    |       |   |       |  |       |
-                             min_port + i_cdim - 1                 ----    |       |   ---------  |       |
-                                                                        ----    |       |   ---------  |       |
-                                                                        ----    |       |   ---------  |       |
-                                                                        ----    |       |      ...     |       |
-                             max_port                                   ----    ---------   ---------  ---------
-                                                                        ----------------------------------------
-                                                                        ----------------------------------------
-                                                                                      ...                    ...
-                             cdim-1                                ----------------------------------------
-                            ################################################# permutation # instance # inverse perm.
-                            """
-                            assert sorted(port_map.values()) == range(i_cdim)
-                            
-                            
-                            #construct permutation
-                            min_port = min(port_map.keys())
-                            max_port = max(port_map.keys())
-                            permutation = []
-                            
-                            # keep track how many previous ports
-                            # were not mapped to the instance ports
-                            not_in_map_count = 0
-                            
-                            for p in range(min_port, max_port + 1):
-                                
-                                if p in port_map:
-                                    permutation.append(port_map[p])
-                                else:
-                                    #the relative order of bypassed channels is not changed!
-                                    #p is mapped to i_cdim + not_in_map_count (+ min_port)
-                                    permutation.append(i_cdim + not_in_map_count)
-                                    not_in_map_count += 1
-                            
-                            permutation = tuple(permutation)
-                            
-                            # my_debug(next_instance, permutation)
-                            
-                            assert sorted(permutation) == range(max_port - min_port + 1)
-                            
-                            #construct new current_circuit
-                            instance_block = circuit_symbols[next_instance] \
-                                                + ca.circuit_identity(max_port - min_port - i_cdim + 1)
-                            
-                            perm_instance_block = instance_block << ca.CPermutation(permutation)
-                            
-                            
-                            #restore the original port-channel mapping
-                            #for all unaffected (bypassed) ports
-                            perm_instance_block = ca.CPermutation(ca.invert_permutation(permutation)) << perm_instance_block
-                            
-                            #update only the affected channels of the global in ports
-                            c_out_port_map = next_component.out_port_identifiers
-                            
-                            for channel_index, instance_port_index in port_map.items():
-                                current_global_in_ports[channel_index] = next_instance, c_out_port_map[instance_port_index]
-                                
-                            blocked_channels.difference_update(set(port_map.keys()))
-                            blocked_channels = set()
-                            
-                            my_debug("# processed instance %s(%s)" % (next_instance, next_component.identifier))
-                            
-                            #full block including the padding below and above
-                            next_circuit = ca.circuit_identity(min_port) \
-                                                + perm_instance_block \
-                                                        + ca.circuit_identity(cdim - max_port - 1)
-                            #feed full system into block
-                            # print "="*100
-                            # print next_circuit, "<<", current_circuit
-                            current_circuit = next_circuit << current_circuit
-                            # print current_circuit
-                            # print "="*100                            
+            if len(component.in_port_identifiers) < component.cdim:
+                II = II + [(OPEN,OPEN)] * ( component.cdim - len(component.in_port_identifiers))
             
-                            
-            
-            if len(reached_entity) == self.entity.cdim and len(feedback_stack) == 0:
-                break
-            
-            assert len(reached_entity) <= self.entity.cdim
-            
-            if len(blocked_channels) + len(reached_entity) == cdim:
-                # there must be a feedback loop
-
-                #take the first entry of the complex instance stack
-                feedback_instance = complex_instance_stack.keys().pop()
-                
-                my_debug("pushing %s onto feedback stack" % feedback_instance)
-                
-                
-                feedback_port_map = complex_instance_stack[feedback_instance]
-                # print "="*100
-                # print "FEEDBACK PORT MAP"
-                # print "="*100                
-                # print feedback_port_map
-                # print "="*100
-                
-                feedback_component = self.instance_assignments[feedback_instance][0]
-                
-                #number of channels that require a feedback loop
-                feedback_channels = feedback_component.cdim - len(feedback_port_map)
-                
-                # print cdim
-                #number of channels to be bypassed 'above' the component
-                bypassed_channels = cdim - len(feedback_port_map)
-
-            
-
-                #                  ___________               ___________                ___________
-                #      --->--------|         |---------------|         |-         ------|         |-------->------
-                #      --->--------|         |---------------|         |-         ------|         |-------->------
-                #                               ...                                                          
-                #      --->--------|    P    |---------------|  P^-1   |-         ------|    P*   |-------->------
-                #                               ___________                                                      
-                #      --->--------|         |--|         |--|         |-   ....  ------|         |-------->------
-                #                      ...          ...          ...                        ...                  
-                #      --->--------|         |--|         |--|         |-         ------|         |-------->------
-                #          /-------|         |--|         |--|         |-         ->----|         |--------\ 
-                #          |           ...          ...          ...                        ...            |
-                #          | /-----|_________|--|_________|--|_________|-         ->----|_________|-----\  |
-                #          | |                                                                          |  |
-                #          | \--------------------------------------------------------------------------/  |
-                #          \-------------------------------------------------------------------------------/
-                #
-                
-                # permute channels such that feedback_instance extends outwards below main channels with all virtual channels
-                # cf. P in the figure in the comment above
-                mapping = dict(((channel, port_index + bypassed_channels) for channel, port_index in feedback_port_map.items()))
-                
-                
-                # print "="*100
-                # print "bypassed channels, mapping"
-                # print "="*100                
-                # print bypassed_channels, mapping
-                # print "="*100
-                
-                
-                
-                # this also guarantees that all of the added feedback_channels are mapped to channels that
-                # feed into the component
-                P_perm = ca.map_signals(mapping, cdim + feedback_channels)
-                # print P_perm
-                
-                P = ca.CPermutation(P_perm)
-                # print P
-                
-                feedback_mapping = dict(((k, P_perm[k + cdim] - bypassed_channels) \
-                                            for k in xrange(feedback_channels)))
-                                            
-                assert all((v >= 0 for v in feedback_mapping.values()))
-                                
-                P_inv_perm = ca.invert_permutation(P_perm)
-                try:
-                    last_item_on_fstack = feedback_stack_order[-1]
-                    #reset channel mapping because it could change after closing this feedback loop
-                    feedback_stack[last_item_on_fstack][4].clear()
-                except IndexError:
-                    pass
-                    
-                # print "="*100
-                # print "CIRCUIT BEFORE FEEDBACK"                
-                # print "="*100
-                # print current_circuit
-                # print "="*100
-                feedback_stack[feedback_instance] = (current_circuit, P_inv_perm, feedback_channels, bypassed_channels, {})                
-                feedback_stack_order.append(feedback_instance)
-                
-                current_circuit = P.series_inverse() << (ca.circuit_identity(bypassed_channels) + circuit_symbols[feedback_instance]) << P
-                # print "="*100
-                # print "NEW INITIAL Circuit WITHIN FEEDBACK LOOP"
-                # print "="*100
-                # print current_circuit
-                # print "="*100
-                
-                for k in xrange(cdim):
-                    if k in feedback_port_map:
-                        current_global_in_ports[k] = (feedback_instance, feedback_component.out_port_identifiers[feedback_port_map[k]])
-                
-                for k in xrange(feedback_channels):
-                    current_global_in_ports.append((feedback_instance, \
-                                                    feedback_component.out_port_identifiers[feedback_mapping[k]]))
-                cdim += feedback_channels
-                del complex_instance_stack[feedback_instance]
-                ####
-                # complex_instance_stack.clear()
-                ####
-                # for k in feedback_port_map:
-                #     blocked_channels.remove(k)
-                # blocked_channels.difference_update(set(feedback_port_map.keys()))
-                blocked_channels = set()
-                reached_entity = {}
+            if len(component.out_port_identifiers) < component.cdim:
+                OO = OO + [(OPEN,OPEN)] * ( component.cdim - len(component.out_port_identifiers))
         
-        entity_map = ca.map_signals_circuit(reached_entity, cdim)
-        self._circuit =  entity_map << current_circuit, circuit_symbols, self.instance_assignments
+        assert circuit.cdim == len(OO) == len(II)    
+        
+        # Add signals as passthru lines below rest
+        circuit = circuit + ca.cid(len(SS))
+#        print circuit
+        
+        # Do feedback from instance output to signals
+        SSp = list(SS)
+        OOp = list(OO)
+        M = len(OO)
+        for iname, pname in OO:
+            if iname is OPEN:
+                continue
+            sname = self.out_to_signal.get((iname, pname), False)
+            if sname:
+                k = OOp.index((iname, pname))
+                l = SSp.index(sname) + M
+                
+                circuit = circuit.feedback(k,l)
+                SSp.remove(sname)
+                OOp.remove((iname, pname))
+#        print circuit
+        # Do feedback from signal output to instance inputs
+        IIp = list(II)
+        SSpp = list(SS)
+        Mf = len(OOp)
+        
+        for iname, pname in II:
+            if iname is OPEN:
+                continue
+            sname = self.in_to_signal.get((iname, pname), False)
+            if sname:
+                k = SSpp.index(sname) + Mf
+                l = IIp.index((iname, pname))
+                
+                circuit = circuit.feedback(k,l)
+                SSpp.remove(sname)
+                IIp.remove((iname, pname))
+        
+        SIGNAL = object()
+        OO_effective = OOp + [(SIGNAL, s) for s in SSpp]
+        II_effective = IIp + [(SIGNAL, s) for s in SSp]
+        
+        
+        omapping = {}
+        # construct output permutation
+        for i, (iname, pname) in enumerate(OO_effective):
+            if iname is not SIGNAL:
+                eport = self.global_out.get((iname, pname), False)
+            else:
+                eport = self.signal_to_global_out.get(pname, False)
+            if eport:
+                omapping[i] = list(self.entity.out_port_identifiers).index(eport)
+        
+        imapping = {}
+        # construct output permutation
+        for i, (iname, pname) in enumerate(II_effective):
+            if iname is not SIGNAL:
+                eport = self.global_in.get((iname, pname), False)
+            else:
+                eport = self.signal_to_global_in.get(pname, False)
+            if eport:
+                k = list(self.entity.in_port_identifiers).index(eport)
+                imapping[k] = i
+        circuit = ca.map_signals_circuit(omapping, circuit.cdim) << circuit << ca.map_signals_circuit(imapping, circuit.cdim)
+
+        self._circuit = circuit, circuit_symbols, self.instance_assignments
+        self.entity.cdim = circuit.cdim
         return self._circuit
+
+
+
+#    def to_circuit2(self, identifier_postfix = ''):
+#        if self._circuit:
+#            return self._circuit
+#        from algebra import circuit_algebra as ca
+#        
+#        #shortcut
+#        pm = self.mediated_port_map
+#        pmi = pm['in']
+#        pmo = pm['out']
+#        
+#        cdim = self.entity.cdim
+#        reached_entity = {}
+#        
+#        #initial circuit values
+#        current_circuit = ca.circuit_identity(cdim)
+#        
+#        current_channel = ca.circuit_identity(1)
+#        
+#        #create symbols for all instances
+#        circuit_symbols = {}
+#        for (instance_name, (component, generic_map, port_map)) in self.instance_assignments.items():
+#            circuit_symbols[instance_name] = ca.CSymbol(instance_name+identifier_postfix, component.cdim)
+#        
+#        
+#        #initial global in ports
+#
+#        current_global_in_ports = [('entity', port_name) for port_name in self.entity.in_port_identifiers]
+#        # print 'initial current_global_in_ports', current_global_in_ports
+#        # unvisited_instances = self.instance_assignments.keys()
+#        complex_instance_stack = {}
+#        feedback_stack = {}
+#        feedback_stack_order = []
+#        blocked_channels = set([])
+#        
+#        
+#        while True:
+#            
+#            #iterate over all 'channels', i.e. current_global_in_ports
+#            for channel_index, (instance_name, port_name) in enumerate(current_global_in_ports):
+#                
+#                #a channel may be blocked from a previous iteration of the outer
+#                #while loop if an unfinished complex component is at its end
+#                if channel_index in blocked_channels or channel_index in reached_entity:
+#                    # my_debug("skipping channel index: %d" % channel_index)
+#                    continue
+#                
+#                reached_complex = False
+#                
+#                
+#                while(not reached_complex):
+#                    
+#                    (next_instance, next_port_name, next_port_id, next_component, signal) = pmo[(instance_name, port_name)]
+#                    # print instance_name, port_name , "->", next_instance, next_port_name
+#                    # a, b = pmi[(next_instance, next_port_name)][0:2]
+#                    # print  a,b, "->", next_instance, next_port_name
+#                    assert pmi[(next_instance, next_port_name)][0:2] == (instance_name, port_name)
+#                    
+#                    my_debug("in channel %d visited instance: %r" % (channel_index, (next_instance, next_port_name, next_port_id)))
+#                    # my_debug(blocked_channels)
+#                    
+#                    if next_instance == 'entity':
+#                        reached_entity[channel_index] = next_port_id
+#                        # print reached_entity, next_port_id
+#                        break
+#                    
+#                    if next_component.cdim == 1:
+#                        assert next_port_id == 0
+#                        
+#                        #replace global in port by the output port of this instance
+#                        current_global_in_ports[channel_index] = (instance_name, port_name) \
+#                                                                = (next_instance, next_component.out_ports.keys().pop())
+#                        
+#                        #calculate the next layer of circuit for the current instance
+#                        next_circuit = (ca.circuit_identity(channel_index) \
+#                                            + circuit_symbols[next_instance] \
+#                                            + ca.circuit_identity(cdim - channel_index - 1))
+#                        # print "="*100
+#                        # print next_circuit, "<<", current_circuit
+#                        #feed the existing system into the new layer
+#                        current_circuit =  next_circuit << current_circuit
+#                        # print current_circuit
+#                        # print "="*100 
+#                        my_debug("# processed instance %s(%s)" % (next_instance, next_component.identifier))
+#                    
+#                    else: #component.cdim >= 2
+#                        
+#                        reached_complex = True
+#                        
+#                        
+#                        
+#                
+#                if reached_complex:
+#                    my_debug("channel blocked by %s:%s" % (next_instance, next_port_name))
+#                    blocked_channels.add(channel_index)
+#                    if next_instance in feedback_stack:
+#                        if next_instance == feedback_stack_order[-1]:
+#                            
+#                            stored_current_circuit, P_inv_perm, feedback_channels, bypassed_channels, feedback_map = feedback_stack[next_instance]
+#                            
+#                            
+#                            # my_debug(permutation)
+#                            # my_debug(bypassed_channels)
+#                            # my_debug(next_port_id)
+#                            feedback_map[channel_index] = P_inv_perm[bypassed_channels + next_port_id]
+#                            
+#                            
+#                            
+#                            if len(feedback_map) == feedback_channels:
+#                                if len(complex_instance_stack) == 0:
+#                                    # inverted_permutation = ca.invert_permutation(permutation)
+#                                    
+#                                    # my_debug(feedback_stack_order)
+#                                    # my_debug(feedback_map)
+#                                    # my_debug(cdim)
+#                                    # my_debug(feedback_channels)
+#                                    # my_debug(current_global_in_ports)
+#                                    assert all((v >= cdim - feedback_channels for v in feedback_map.values()))
+#                                    
+#                                    
+#                                    #can close feedback loops!
+#                                    new_permutation = ca.map_signals(feedback_map, cdim)
+#                                    new_map_circuit = ca.CPermutation(new_permutation)
+#                                    
+#                                    current_circuit = new_map_circuit << current_circuit
+#                                    
+#                                    
+#                                    for k in xrange(feedback_channels):
+#                                        current_circuit = current_circuit.feedback()
+#                                    # print "="*100
+#                                    # print current_circuit, "<<", stored_current_circuit
+#                                    current_circuit = current_circuit << stored_current_circuit
+#                                    # print current_circuit
+#                                    # print "="*100
+#
+#                                    
+#                                    blocked_channels = set()
+#                                    reached_entity = {}
+#                                    current_global_in_ports = [p for k,p in enumerate(current_global_in_ports) if k not in feedback_map]
+#                                                                        
+#                                    del feedback_stack[next_instance]
+#                                    
+#                                    feedback_stack_order.pop()
+#                                    
+#                                    cdim = cdim - feedback_channels
+#                                    
+#                                    break # restart iteration over current_global_in_ports because it was changed!
+#                                    
+#                                    my_debug("closed feedback loop of entity %s" % next_instance)
+#                                    my_debug("feedback stack %s" % feedback_stack)
+#                                    my_debug("blocked channels %s" % blocked_channels)
+#                                    my_debug("reached entity %s" % reached_entity.keys())
+#                                    my_debug("current global in ports %s" % current_global_in_ports)
+#                                    my_debug("next ports: %s" % [pmo[cgi][0:2] for cgi in current_global_in_ports])
+#                                    
+#                                else:
+#                                    my_debug("instances blocking feedback: %r" % feedback_stack.keys())
+#                                
+#                            else:
+#                                my_debug("instance too low on stack: %s" % next_instance)
+#                        continue
+#                            
+#                    
+#                    #handle case where next_instance is a new complex instance
+#                    elif next_instance not in complex_instance_stack:
+#                        complex_instance_stack[next_instance] = {channel_index: next_port_id}
+#                        # at this time the instance cannot be further handled, because only one port is connected
+#                    else:
+#                        
+#                        port_map = complex_instance_stack[next_instance]
+#                        
+#                        if channel_index in port_map and port_map[channel_index] != next_port_id:
+#                            raise Exception('Can only connect to target port %s.%s once!' % (next_instance, next_port_name))
+#                        
+#                        port_map[channel_index] = next_port_id
+#                        
+#                        
+#                        i_cdim = next_component.cdim
+#                        
+#                        
+#                        #if all incoming ports for the complex instance are resolved
+#                        if len(port_map) == i_cdim:
+#                            
+#                            #remove this instance from the complex instance stack
+#                            del complex_instance_stack[next_instance]
+#                            
+#                            #remove the blockade of this instance's channels
+#                            blocked_channels.difference_update(set(port_map.keys()))
+#                            
+#                            
+#                            """
+#                            ####### circuit  alignment #################################################################
+#                            channel index ################################### permutation # instance # inverse perm.
+#                             
+#                             0                                          ----------------------------------------
+#                                                                        ----------------------------------------
+#                                                                        ----------------------------------------
+#                                                                                      ...                    ...
+#                                                                        ----------------------------------------
+#                             min_port                                   ----    ---------   --------   ---------
+#                                                                        ----    |       |   |       |  |       |
+#                                                                        ----    |       |   | Inst. |  |    -1 |
+#                                                                        ----    | Perm. |   |       |  | Perm. |
+#                                                                        ...        ...         ...        ...
+#                                                                        ----    |       |   |       |  |       |
+#                             min_port + i_cdim - 1                 ----    |       |   ---------  |       |
+#                                                                        ----    |       |   ---------  |       |
+#                                                                        ----    |       |   ---------  |       |
+#                                                                        ----    |       |      ...     |       |
+#                             max_port                                   ----    ---------   ---------  ---------
+#                                                                        ----------------------------------------
+#                                                                        ----------------------------------------
+#                                                                                      ...                    ...
+#                             cdim-1                                ----------------------------------------
+#                            ################################################# permutation # instance # inverse perm.
+#                            """
+#                            assert sorted(port_map.values()) == range(i_cdim)
+#                            
+#                            
+#                            #construct permutation
+#                            min_port = min(port_map.keys())
+#                            max_port = max(port_map.keys())
+#                            permutation = []
+#                            
+#                            # keep track how many previous ports
+#                            # were not mapped to the instance ports
+#                            not_in_map_count = 0
+#                            
+#                            for p in range(min_port, max_port + 1):
+#                                
+#                                if p in port_map:
+#                                    permutation.append(port_map[p])
+#                                else:
+#                                    #the relative order of bypassed channels is not changed!
+#                                    #p is mapped to i_cdim + not_in_map_count (+ min_port)
+#                                    permutation.append(i_cdim + not_in_map_count)
+#                                    not_in_map_count += 1
+#                            
+#                            permutation = tuple(permutation)
+#                            
+#                            # my_debug(next_instance, permutation)
+#                            
+#                            assert sorted(permutation) == range(max_port - min_port + 1)
+#                            
+#                            #construct new current_circuit
+#                            instance_block = circuit_symbols[next_instance] \
+#                                                + ca.circuit_identity(max_port - min_port - i_cdim + 1)
+#                            
+#                            perm_instance_block = instance_block << ca.CPermutation(permutation)
+#                            
+#                            
+#                            #restore the original port-channel mapping
+#                            #for all unaffected (bypassed) ports
+#                            perm_instance_block = ca.CPermutation(ca.invert_permutation(permutation)) << perm_instance_block
+#                            
+#                            #update only the affected channels of the global in ports
+#                            c_out_port_map = next_component.out_port_identifiers
+#                            
+#                            for channel_index, instance_port_index in port_map.items():
+#                                current_global_in_ports[channel_index] = next_instance, c_out_port_map[instance_port_index]
+#                                
+#                            blocked_channels.difference_update(set(port_map.keys()))
+#                            blocked_channels = set()
+#                            
+#                            my_debug("# processed instance %s(%s)" % (next_instance, next_component.identifier))
+#                            
+#                            #full block including the padding below and above
+#                            next_circuit = ca.circuit_identity(min_port) \
+#                                                + perm_instance_block \
+#                                                        + ca.circuit_identity(cdim - max_port - 1)
+#                            #feed full system into block
+#                            # print "="*100
+#                            # print next_circuit, "<<", current_circuit
+#                            current_circuit = next_circuit << current_circuit
+#                            # print current_circuit
+#                            # print "="*100                            
+#            
+#                            
+#            
+#            if len(reached_entity) == self.entity.cdim and len(feedback_stack) == 0:
+#                break
+#            
+#            assert len(reached_entity) <= self.entity.cdim
+#            
+#            if len(blocked_channels) + len(reached_entity) == cdim:
+#                # there must be a feedback loop
+#
+#                #take the first entry of the complex instance stack
+#                feedback_instance = complex_instance_stack.keys().pop()
+#                
+#                my_debug("pushing %s onto feedback stack" % feedback_instance)
+#                
+#                
+#                feedback_port_map = complex_instance_stack[feedback_instance]
+#                # print "="*100
+#                # print "FEEDBACK PORT MAP"
+#                # print "="*100                
+#                # print feedback_port_map
+#                # print "="*100
+#                
+#                feedback_component = self.instance_assignments[feedback_instance][0]
+#                
+#                #number of channels that require a feedback loop
+#                feedback_channels = feedback_component.cdim - len(feedback_port_map)
+#                
+#                # print cdim
+#                #number of channels to be bypassed 'above' the component
+#                bypassed_channels = cdim - len(feedback_port_map)
+#
+#            
+#
+#                #                  ___________               ___________                ___________
+#                #      --->--------|         |---------------|         |-         ------|         |-------->------
+#                #      --->--------|         |---------------|         |-         ------|         |-------->------
+#                #                               ...                                                          
+#                #      --->--------|    P    |---------------|  P^-1   |-         ------|    P*   |-------->------
+#                #                               ___________                                                      
+#                #      --->--------|         |--|         |--|         |-   ....  ------|         |-------->------
+#                #                      ...          ...          ...                        ...                  
+#                #      --->--------|         |--|         |--|         |-         ------|         |-------->------
+#                #          /-------|         |--|         |--|         |-         ->----|         |--------\ 
+#                #          |           ...          ...          ...                        ...            |
+#                #          | /-----|_________|--|_________|--|_________|-         ->----|_________|-----\  |
+#                #          | |                                                                          |  |
+#                #          | \--------------------------------------------------------------------------/  |
+#                #          \-------------------------------------------------------------------------------/
+#                #
+#                
+#                # permute channels such that feedback_instance extends outwards below main channels with all virtual channels
+#                # cf. P in the figure in the comment above
+#                mapping = dict(((channel, port_index + bypassed_channels) for channel, port_index in feedback_port_map.items()))
+#                
+#                
+#                # print "="*100
+#                # print "bypassed channels, mapping"
+#                # print "="*100                
+#                # print bypassed_channels, mapping
+#                # print "="*100
+#                
+#                
+#                
+#                # this also guarantees that all of the added feedback_channels are mapped to channels that
+#                # feed into the component
+#                P_perm = ca.map_signals(mapping, cdim + feedback_channels)
+#                # print P_perm
+#                
+#                P = ca.CPermutation(P_perm)
+#                # print P
+#                
+#                feedback_mapping = dict(((k, P_perm[k + cdim] - bypassed_channels) \
+#                                            for k in xrange(feedback_channels)))
+#                                            
+#                assert all((v >= 0 for v in feedback_mapping.values()))
+#                                
+#                P_inv_perm = ca.invert_permutation(P_perm)
+#                try:
+#                    last_item_on_fstack = feedback_stack_order[-1]
+#                    #reset channel mapping because it could change after closing this feedback loop
+#                    feedback_stack[last_item_on_fstack][4].clear()
+#                except IndexError:
+#                    pass
+#                    
+#                # print "="*100
+#                # print "CIRCUIT BEFORE FEEDBACK"                
+#                # print "="*100
+#                # print current_circuit
+#                # print "="*100
+#                feedback_stack[feedback_instance] = (current_circuit, P_inv_perm, feedback_channels, bypassed_channels, {})                
+#                feedback_stack_order.append(feedback_instance)
+#                
+#                current_circuit = P.series_inverse() << (ca.circuit_identity(bypassed_channels) + circuit_symbols[feedback_instance]) << P
+#                # print "="*100
+#                # print "NEW INITIAL Circuit WITHIN FEEDBACK LOOP"
+#                # print "="*100
+#                # print current_circuit
+#                # print "="*100
+#                
+#                for k in xrange(cdim):
+#                    if k in feedback_port_map:
+#                        current_global_in_ports[k] = (feedback_instance, feedback_component.out_port_identifiers[feedback_port_map[k]])
+#                
+#                for k in xrange(feedback_channels):
+#                    current_global_in_ports.append((feedback_instance, \
+#                                                    feedback_component.out_port_identifiers[feedback_mapping[k]]))
+#                cdim += feedback_channels
+#                del complex_instance_stack[feedback_instance]
+#                ####
+#                # complex_instance_stack.clear()
+#                ####
+#                # for k in feedback_port_map:
+#                #     blocked_channels.remove(k)
+#                # blocked_channels.difference_update(set(feedback_port_map.keys()))
+#                blocked_channels = set()
+#                reached_entity = {}
+#        
+#        entity_map = ca.map_signals_circuit(reached_entity, cdim)
+#        self._circuit =  entity_map << current_circuit, circuit_symbols, self.instance_assignments
+#        return self._circuit
 
     
     
@@ -974,5 +1140,8 @@ architecture %s of %s is %s %s
 
 
 
-        
+if __name__ == "__main__":
+    from testing.test_qhdl import *
+    unittest.main()
+            
                 
