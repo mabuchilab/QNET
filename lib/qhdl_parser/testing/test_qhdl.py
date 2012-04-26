@@ -155,6 +155,29 @@ begin
         port map (a=>n,b=>OPEN,c=>t,d=>c);
 end redheffer_structure;
 """
+
+
+qhdl_example_Open3 = \
+"""
+entity redheffer is
+    port    (a: in fieldmode; c: out fieldmode);
+end redheffer;
+
+architecture redheffer_structure of redheffer is
+    
+    component Beamsplitter
+        port (a, b: in fieldmode; c, d: out fieldmode);
+    end component;
+
+    signal n,t: fieldmode;
+
+begin
+    BS1:    Beamsplitter
+        port map (a=>a,b=>t,c=>OPEN,d=>n);
+    BS2:    Beamsplitter
+        port map (a=>n,b=>OPEN,c=>t,d=>c);
+end redheffer_structure;
+"""
     
 
 class TestQHDLtoCircuit(unittest.TestCase):
