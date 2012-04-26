@@ -40,16 +40,23 @@ def make_namespace_string(name_space, sub_name):
 #     return dict(((v,k) for k,v in d.items()))
 
 
-def _make_default_value_string(name, type, default):
+def _make_default_value_string(name, tp, default):
     if default is not None:
         return str(default)
-    if type == 'real':
+    if tp == 'real':
         return 'symbols(%r, real = True, each_char = False)' % (name,)
     return 'symbols(%r, each_char = False)' % (name,)
 
 import re
-camelcase_to_underscore = lambda str: re.sub('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', '_\\1', str).lower().strip('_')
-camelcase_to_acronym = lambda str: re.sub('([a-z])', '', str)
+camelcase_to_underscore = lambda st: re.sub('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', '_\\1', st).lower().strip('_')
+    
+def getCDIM(component_name):
+    try:
+        component_module = __import__("circuit_components.%s_cc" % camelcase_to_underscore(component_name), fromlist = ['circuit_components'])
+    except ImportError, e:
+        raise ImportError("Could not retrieve Circuit file: %s" % e)
+    return getattr(component_module,component_name).CDIM
+
 
 def write_component(entity, architectures, default_architecture = None):
     

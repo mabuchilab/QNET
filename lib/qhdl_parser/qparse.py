@@ -84,7 +84,9 @@ class QHDLParser(Parser):
         'port': 'PORT',
         'in': 'IN',
         'out': 'OUT',
+        'inout': 'INOUT',
         'fieldmode': 'FIELDMODE',
+        'lossy_fieldmode': 'LOSSY_FIELDMODE',
         'generic': 'GENERIC',
         'signal': 'SIGNAL',
         'map': 'MAP',
@@ -337,19 +339,48 @@ class QHDLParser(Parser):
 
     def p_port_list(self, p):
         """
-        port_list : port_list SEMI port_entry_group
-                  | port_entry_group
+        port_list : with_io_port_list
+                  | non_io_port_list
+        """
+#        if len(p) == 2:
+        p[0] = p[1]
+#        else:
+#            p[0] = p[1] + [p[3]]
+
+
+    def p_with_io_port_list(self, p):
+        """
+        with_io_port_list : io_port_entry_group SEMI non_io_port_list 
+                          | io_port_entry_group
         """
         if len(p) == 2:
             p[0] = [p[1]]
         else:
-            p[0] = p[1] + [p[3]]
-
-    def p_port_entry_group(self, p):
+            p[0] = [p[1]] + p[3]
+            
+    def p_non_io_port_list(self, p):
         """
-        port_entry_group : id_list COLON signal_direction signal_type
+        non_io_port_list : non_io_port_entry_group SEMI non_io_port_list 
+                          | non_io_port_entry_group
+        """
+        if len(p) == 2:
+            p[0] = [p[1]]
+        else:
+            p[0] = [p[1]] + p[3]
+
+
+    def p_non_io_port_entry_group(self, p):
+        """
+        non_io_port_entry_group : id_list COLON signal_direction signal_type
         """
         p[0] = p[1], p[3], p[4]
+
+    def p_io_port_entry_group(self, p):
+        """
+        io_port_entry_group : id_list COLON INOUT signal_type
+        """
+        p[0] = p[1], p[3], p[4]        
+
 
     def p_signal_direction(self, p):
         """
@@ -360,7 +391,8 @@ class QHDLParser(Parser):
 
     def p_signal_type(self, p):
         """
-        signal_type : FIELDMODE
+        signal_type : FIELDMODE 
+                    | LOSSY_FIELDMODE
         """
         p[0] = p[1]
 

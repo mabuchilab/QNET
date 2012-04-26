@@ -15,6 +15,7 @@ from sympy.printing.latex import latex as sympy_latex
 from numpy import ndarray
 
 
+
 def n(obj):
     try:
         # print obj, obj.n()
@@ -83,7 +84,7 @@ class SymbolIdentifierTaken(AlgebraError):
     Raised on an attempt to create a new symbol with an existing identifier.
     """
     def __init__(self, existing_symbol, existing_args, new_args):
-        AlgebraError.__init__("A symbol with identifier %s was already defined (%s).\n Newly requested args: %r" 
+        AlgebraError.__init__(self, "A symbol with identifier %s was already defined (%s).\n Newly requested args: %r" 
                                         % (existing_symbol.identifier, existing_symbol, new_args))
 
 
