@@ -599,12 +599,18 @@
     (begin
       (for-each
        (lambda (signal)
-     (begin
-       (display "    SIGNAL " p)
-       (display signal p)
-       (display " : fieldmode;" p)
-       (newline p)
-     )
+         (begin
+           (display "    SIGNAL " p)
+           (display signal p)
+           (let ((sl (string-length signal)))
+               (if (and (>= sl 3) (string=? (substring signal (- sl 3)) "_ls"))
+                    (display " : lossy_fieldmode;" p)
+                    (display " : fieldmode;" p)
+                )
+            )
+           ;(display " : fieldmode;" p)
+           (newline p)
+         )
        )
        all-unique-nets)
     )

@@ -7,7 +7,7 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from algebra.circuit_algebra import SLH, OperatorMatrixInstance, pi, sin, cos
+from algebra.circuit_algebra import SLH, OperatorMatrixInstance, pi, sin, cos, tex
 from component import Component
 
 class Beamsplitter(Component):
@@ -34,6 +34,7 @@ class Beamsplitter(Component):
         L = OperatorMatrixInstance([[0],
                                     [0]])
         return SLH(S, L, 0)
+        
 
 def test():
     a = Beamsplitter()

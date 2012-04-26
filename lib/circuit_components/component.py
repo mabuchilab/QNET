@@ -26,7 +26,7 @@ None.
 
 """
 
-from algebra.circuit_algebra import Circuit, Expression
+from algebra.circuit_algebra import Circuit, Expression, tex
 
 
 class Component(Circuit, Expression):
@@ -86,7 +86,8 @@ class Component(Circuit, Expression):
         return "%s(%r)" % (self.__class__.__name__, self.name)
     
     def tex(self):
-        raise NotImplementedError(self.__class__.__name__) 
+        return tex(self.name)
+        # raise NotImplementedError(self.__class__.__name__) 
 
     
 
