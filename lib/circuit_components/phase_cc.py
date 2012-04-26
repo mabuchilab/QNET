@@ -10,6 +10,7 @@ Copyright (c) 2011 . All rights reserved.
 from circuit_components.component import Component
 from algebra.circuit_algebra import OperatorMatrixInstance, exp, SLH
 from sympy.core.symbol import symbols
+from sympy import I
 
 
 
@@ -23,7 +24,7 @@ class Phase(Component):
     
     def toSLH(self):
         
-        S = OperatorMatrixInstance([[exp(1j * self.phi)]])
+        S = OperatorMatrixInstance([[exp(I * self.phi)]])
         L = OperatorMatrixInstance([[0]])
         H = 0
         

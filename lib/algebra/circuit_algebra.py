@@ -2,7 +2,7 @@
 
 from operator_matrix_algebra import *
 import abstract_algebra
-
+from sympy import I
 
 def cdim(circuit):
     return circuit.cdim
@@ -10,6 +10,20 @@ def cdim(circuit):
 
 class CannotConvertToSLH(Exception):
     pass
+
+class CircuitVisualizer(object):
+    
+    def __init__(self, circuit):
+        self.circuit = circuit
+        
+    def _repr_png_(self):
+        import tempfile, circuit_visualization
+        tmp_dir = tempfile.gettempdir()
+        fname = tmp_dir + "/visualize_circuit.png" 
+    
+        if circuit_visualization.draw_circuit(self.circuit, fname):
+            with open(fname, "rb") as png_file:
+                return png_file.read()
 
 
 class Circuit(Algebra):
@@ -62,12 +76,16 @@ class Circuit(Algebra):
             import warnings
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                tmp_file = ".png" 
+                tmp_file = "visualize.png" 
                 import circuit_visualization
                 circuit_visualization.draw_circuit(self, tmp_file, direction = 'rl')
         except ImportError, e:
             print e
             return
+        
+    def show(self):
+        
+        return CircuitVisualizer(self)
         
     
     def reduce(self):
@@ -176,8 +194,8 @@ class SLH(Circuit, Expression):
     def series_with_triplets(self, other):
         new_S = self.S * other.S
         new_L = self.S * other.L + self.L
-
-        delta =  - 1j*(self.L.adjoint()*self.S*other.L - other.L.adjoint()*self.S.adjoint()*self.L) / 2
+        
+        delta =  - I*(self.L.adjoint()*self.S*other.L - other.L.adjoint()*self.S.adjoint()*self.L) / 2
 
         if isinstance(delta, OperatorMatrixInstance):
             new_H = self.H + other.H + delta.array[0,0]
@@ -251,11 +269,11 @@ class SLH(Circuit, Expression):
         S, L, H = self._S, self._L, self._H
         one_minus_Snn = 1. - S[n,n]
         if algebra(one_minus_Snn) == Operator:
-            if isinstance(one_minus_Snn, ScalarOperatorProduct) and one_minus_Snn.term == IdentityOperator():
+            if isinstance(one_minus_Snn, ScalarTimesOperator) and one_minus_Snn.term == IdentityOperator():
                 one_minus_Snn = one_minus_Snn.coeff
             else:
                 raise AlgebraError('Invertion not implemented for general operators')
-        one_minus_Snn_inv = 1./one_minus_Snn
+        one_minus_Snn_inv = sympyOne/one_minus_Snn
         
         new_S = S[:n,:n] + S[0:n , n:] * one_minus_Snn_inv * S[n:, 0 : n]
         new_L = L[:n] + S[0:n, n]*one_minus_Snn_inv*L[n]
@@ -294,7 +312,7 @@ class SLH(Circuit, Expression):
         L, H = self.L, self.H
         if rho is None:
             rho = OperatorSymbol('rho', L.space | H.space)
-        return -1j*(H*rho - rho*H) + sum( Lk * rho * adjoint(Lk)
+        return -I*(H*rho - rho*H) + sum( Lk * rho * adjoint(Lk)
                              -  (adjoint(Lk)*Lk * rho + rho * adjoint(Lk)*Lk) / 2
                                                 for Lk in L.array.flatten())
 
@@ -304,7 +322,7 @@ class SLH(Circuit, Expression):
         
         if M is None:
             M = OperatorSymbol('M', L.space | H.space)            
-        return 1j*(H*M - M*H) + sum(adjoint(Lk)* M * Lk \
+        return I*(H*M - M*H) + sum(adjoint(Lk)* M * Lk \
                     -  (adjoint(Lk)*Lk * M + M * adjoint(Lk)*Lk) / 2 \
                                                             for Lk in L.array.flatten())
 
@@ -313,6 +331,9 @@ class SLH(Circuit, Expression):
     
     def __len__(self):
         return 3
+    
+    def mathematica(self):
+        return "SLH[%s, %s, %s]" % (mathematica(self.S), mathematica(self.L), mathematica(self.H))
     
 class CSymbol(Circuit, Symbol):
     
@@ -374,6 +395,9 @@ class CIdentity(CSymbol):
     
     def series_inverse(self):
         return self
+    
+    def mathematica(self):
+        return "CIdentity[1]"
     
     # def scatter(self, index):
     #     assert index == 0
@@ -961,6 +985,7 @@ class CPermutation(Circuit, Expression):
             block_perms.append(tuple(current_perm))
             current_perm = []
         return tuple(map(CPermutation, block_perms))
+    
 
     
     
@@ -1165,7 +1190,9 @@ class CPermutation(Circuit, Expression):
     
     def simplify(self, **rules):
         return self
-
+    
+    def mathematica(self):
+        return "CPermutation[%s]" % (",". join(self._permutation))  
 
 def P_sigma(*permutation):
     return CPermutation(permutation)

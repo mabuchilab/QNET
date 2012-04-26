@@ -7,8 +7,9 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from algebra.circuit_algebra import SLH, OperatorMatrixInstance, pi, sin, cos, tex
-from circuit_components.component import Component, SubComponent
+from algebra.circuit_algebra import SLH, OperatorMatrixInstance, pi, sin, cos, mathematica
+from circuit_components.component import Component
+from collections import OrderedDict
 
 class Beamsplitter(Component):
     """
@@ -22,7 +23,7 @@ class Beamsplitter(Component):
     [1] http://dx.doi.org/10.1109/TAC.2009.2031205
     """
     CDIM = 2
-    GENERIC_DEFAULT_VALUES = dict(
+    GENERIC_DEFAULT_VALUES = OrderedDict(
                                 theta = pi/4, # mixing angle, default 50% mixing.
                                 )
     PORTSIN = ['In1', 'In2']
@@ -34,6 +35,9 @@ class Beamsplitter(Component):
         L = OperatorMatrixInstance([[0],
                                     [0]])
         return SLH(S, L, 0)
+    
+    def mathematica(self):
+        return r"Beamsplitter[Rule[\[theta],%s]]" % mathematica(self.theta)
         
 
 def test():

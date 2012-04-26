@@ -27,7 +27,8 @@ None.
 """
 
 from algebra.circuit_algebra import Circuit, Expression, tex
-from library import camelcase_to_acronym
+from collections import  OrderedDict
+
 
 
 class Component(Circuit, Expression):
@@ -46,7 +47,7 @@ class Component(Circuit, Expression):
     name = ''
 
     # parameters on which the model depends
-    GENERIC_DEFAULT_VALUES = {}
+    GENERIC_DEFAULT_VALUES = OrderedDict
 
     # ingoing port names
     PORTSIN = []
@@ -100,6 +101,9 @@ class Component(Circuit, Expression):
             return tex_string
         except Exception:
             return tex(self.name)
+        
+#    def mathematica(self):
+#        return self.__class__.__name__ + "[" + 
 
 
 class SubComponent(Circuit, Expression):
