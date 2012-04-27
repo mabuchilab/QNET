@@ -7,6 +7,7 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
+
 from algebra.circuit_algebra import SLH, OperatorMatrixInstance, pi, sin, cos, mathematica
 from circuit_components.component import Component
 from collections import OrderedDict

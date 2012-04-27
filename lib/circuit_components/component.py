@@ -27,10 +27,9 @@ None.
 """
 
 from algebra.circuit_algebra import Circuit, Expression, tex
+
 from collections import  OrderedDict
 from algebra.abstract_algebra import mathematica
-
-
 
 class Component(Circuit, Expression):
     """
@@ -91,6 +90,7 @@ class Component(Circuit, Expression):
 
 
     def tex(self):
+
         """
         Return a tex representation of the component, including its parameters.
         """
@@ -106,6 +106,10 @@ class Component(Circuit, Expression):
     def mathematica(self):
         return  "%s[%s, %s]" % (self.__class__.__name__, mathematica(self.name), 
                                 ", ".join(["Rule[%s,%s]" % (str(gp), mathematica(getattr(self, str(gp)))) for gp in self.GENERIC_DEFAULT_VALUES]))
+
+        return tex(self.name)
+        # raise NotImplementedError(self.__class__.__name__) 
+
 
 
 class SubComponent(Circuit, Expression):
