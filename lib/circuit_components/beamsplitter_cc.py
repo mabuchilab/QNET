@@ -37,7 +37,7 @@ class Beamsplitter(Component):
         return SLH(S, L, 0)
     
     def mathematica(self):
-        return r"Beamsplitter[Rule[\[theta],%s]]" % mathematica(self.theta)
+        return r"Beamsplitter[%s, Rule[\[Theta],%s]]" % (self.name, mathematica(self.theta))
         
 
 def test():

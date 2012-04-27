@@ -28,6 +28,7 @@ None.
 
 from algebra.circuit_algebra import Circuit, Expression, tex
 from collections import  OrderedDict
+from algebra.abstract_algebra import mathematica
 
 
 
@@ -102,8 +103,8 @@ class Component(Circuit, Expression):
         except Exception:
             return tex(self.name)
         
-#    def mathematica(self):
-#        return self.__class__.__name__ + "[" + 
+    def mathematica(self):
+        return self.__class__.__name__ 
 
 
 class SubComponent(Circuit, Expression):
@@ -155,4 +156,5 @@ class SubComponent(Circuit, Expression):
     def tex(self):
         return "{%s}_{%d}" % (self.parent_component.tex(), self.sub_index)
 
-
+    def mathematica(self):
+        return "SubBlock[%s, %d]" % (mathematica(self.parent_component, self.sub_index))
