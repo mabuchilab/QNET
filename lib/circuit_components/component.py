@@ -104,8 +104,8 @@ class Component(Circuit, Expression):
             return tex(self.name)
         
     def mathematica(self):
-        return  "%s[%s, %s]" % (self.__class__.__name__, self.name, 
-                                ", ".join(["Rule[%s,%s]" % (mathematica(str(gp)), mathematica(getattr(self, str(gp)))) for gp in self.GENERIC_DEFAULT_VALUES]))
+        return  "%s[%s, %s]" % (self.__class__.__name__, mathematica(self.name), 
+                                ", ".join(["Rule[%s,%s]" % (str(gp), mathematica(getattr(self, str(gp)))) for gp in self.GENERIC_DEFAULT_VALUES]))
 
 
 class SubComponent(Circuit, Expression):

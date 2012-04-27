@@ -49,10 +49,10 @@ class KerrCavity(Component):
     def toSLH(self):        
         return self.reduce().toSLH()
     
-    def mathematica(self):
-        return ("KerrCavity[%s, Rule[\[CapitalDelta],%s], Rule[\[Chi],%s], Rule[Subscript[\[Kappa],1],%s], Rule[Subscript[\[Kappa],2],%s], Rule[FockDim,%s]]"
-                    % (self.name, mathematica(self.Delta), mathematica(self.chi), mathematica(self.kappa_1), mathematica(self.kappa_2), mathematica(self.FOCK_DIM))) 
-    
+#    def mathematica(self):
+#        return ("KerrCavity[%s, Rule[\[CapitalDelta],%s], Rule[\[Chi],%s], Rule[Subscript[\[Kappa],1],%s], Rule[Subscript[\[Kappa],2],%s], Rule[FockDim,%s]]"
+#                    % (self.name, mathematica(self.Delta), mathematica(self.chi), mathematica(self.kappa_1), mathematica(self.kappa_2), mathematica(self.FOCK_DIM))) 
+#    
         
 
 class KerrPort(SubComponent):

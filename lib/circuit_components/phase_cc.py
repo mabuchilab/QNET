@@ -31,8 +31,8 @@ class Phase(Component):
         
         return SLH(S, L, H)
     
-    def mathematica(self):
-        return "CPhase[%s, Rule[\[Phi],%s]]" % (self.name, mathematica(self.phi))
+#    def mathematica(self):
+#        return "CPhase[%s, Rule[\[Phi],%s]]" % (self.name, mathematica(self.phi))
 
 def test():
     a = Phase('P')

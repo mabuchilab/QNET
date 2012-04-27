@@ -137,7 +137,7 @@ def main(argv=None):
                 try:
                     p_dict = parse_qhdl_file(input_file)
                 except Exception, e:
-                    print "An Error occurred while parsing: ", str(e)
+                    print "An Error occurred while parsing: ", type(e), str(e)
             else:
                  print "No input file supplied"
                  raise Usage(help_message)

@@ -1192,7 +1192,7 @@ class CPermutation(Circuit, Expression):
         return self
     
     def mathematica(self):
-        return "CPermutation[%s]" % (",". join(self._permutation))  
+        return "CPermutation[%s]" % (",". join(map(str,self._permutation)))  
 
 def P_sigma(*permutation):
     return CPermutation(permutation)

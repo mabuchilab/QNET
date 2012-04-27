@@ -40,8 +40,8 @@ class Displace(Component):
     def tex(self):
         return r"{W(%s)}" % tex(self.alpha)
     
-    def mathematica(self):
-        return "CDisplace[%s, Rule[\[Alpha],%s]]" % (self.name, mathematica(self.alpha))
+#    def mathematica(self):
+#        return "CDisplace[%s, Rule[\[Alpha],%s]]" % (self.name, mathematica(self.alpha))
 
 if __name__ == '__main__':
     a = Displace("W")
