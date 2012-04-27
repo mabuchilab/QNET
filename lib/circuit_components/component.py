@@ -48,7 +48,7 @@ class Component(Circuit, Expression):
     name = ''
 
     # parameters on which the model depends
-    GENERIC_DEFAULT_VALUES = OrderedDict
+    GENERIC_DEFAULT_VALUES = OrderedDict()
 
     # ingoing port names
     PORTSIN = []
@@ -104,7 +104,8 @@ class Component(Circuit, Expression):
             return tex(self.name)
         
     def mathematica(self):
-        return self.__class__.__name__ 
+        return  "%s[%s, %s]" % (self.__class__.__name__, self.name, 
+                                ", ".join(["Rule[%s,%s]" % (mathematica(str(gp)), mathematica(getattr(self, str(gp)))) for gp in self.GENERIC_DEFAULT_VALUES]))
 
 
 class SubComponent(Circuit, Expression):
