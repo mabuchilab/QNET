@@ -120,24 +120,28 @@ class BasicInterface(QHDLObject):
         
         return (tab_level*"\t") + p_str
     
-    @property
-    def in_port_identifiers(self):
-        return self.in_ports.keys()
-        
-    @property
-    def out_port_identifiers(self):
-        return self.out_ports.keys()
-    
+#    @property
+#    def in_port_identifiers(self):
+#        return self.in_ports.keys()
+#        
+#    @property
+#    def out_port_identifiers(self):
+#        return self.out_ports.keys()
+#    
     cid = 0
+    in_port_identifiers = []
+    out_port_identifiers = []
+    inout_port_identifiers = []
+    
     
     def __init__(self, identifier, generics, ports):
         self.identifier = identifier
         self.cid = 0
         self.generics = OrderedDict()
-        self.in_ports = OrderedDict()
-        self.out_ports = OrderedDict()
+        self.in_port_identifiers = []
+        self.out_port_identifiers = []
         self.ports = OrderedDict()
-
+        self.inout_port_identifiers = []
         
         for (identifier_list, gtype, default_val) in generics:
             if gtype not in GENERIC_TYPES:
@@ -147,10 +151,19 @@ class BasicInterface(QHDLObject):
                 if gid in self.generics:
                     raise QHDLError("Generic identifier non-unique: %s" % identifier)
                 self.generics[gid] = gtype, default_val
-                
-#        print ports
+        
+        
+#        # rewrite the port list and replace inout ports by a separate in and out port 
+#        for (identifier_list, direction, signal_type) in list(ports):
+#            if direction == "inout":
+#                self.inout_port_names += identifier_list
+#                identifier_list_i = [identifier + "_i" for identifier in identifier_list]
+#                identifier_list_o = [identifier + "_o" for identifier in identifier_list]
+#                ports = [(identifier_list_i, 'in', signal_type), (identifier_list_o, 'out', signal_type)]
+#        
+        
         for (identifier_list, direction, signal_type) in ports:
-            if direction not in ('in', 'out'):
+            if direction not in ('in', 'out','inout'):
                 raise QHDLError(str((identifier_list, direction, signal_type)))
             
             if signal_type != "fieldmode":
@@ -161,15 +174,16 @@ class BasicInterface(QHDLObject):
                 if pid in self.ports:
                     raise QHDLError("Port identifier non-unique: %s" % pid)
                 
-                if direction == 'in':
-                    pindex = len(self.in_ports)
-                    self.in_ports[pid] = pindex
+                if direction == 'inout':
+                    self.inout_port_identifiers.append(pid)
+                elif direction == 'in':
+                    self.in_port_identifiers.append(pid)
+                else: # direction == 'out'
+                    self.out_port_identifiers.append(pid)
+                
+                self.ports[pid] = direction, signal_type
                     
-                else:
-                    pindex = len(self.out_ports)
-                    self.out_ports[pid] = pindex
-                    
-                self.ports[pid] = direction, pindex
+                
                 
 #        if not len(self.in_ports) == len(self.out_ports):
 #            raise QHDLError('The numbers of input and output channels do not match.')
@@ -180,13 +194,13 @@ class BasicInterface(QHDLObject):
 #    @property
 #    def cdim(self):
 #        return len(self.in_ports)
-
+#
     @property
     def port_identifiers(self):
         """The port_identifiers property."""
-        return self.ports.keys()
-
-    pids = port_identifiers
+        return self.inout_port_identifiers + self.in_port_identifiers + self.out_port_identifiers
+#
+#    pids = port_identifiers
 
     @property
     def generic_identifiers(self):
@@ -240,12 +254,26 @@ def dict_keys_sorted_by_val(dd):
     return sorted(dd.keys(), key = dd.get)
 
 class Architecture(QHDLObject):
+    global_inout = {}
+    global_out = {}
+    global_in = {}
+    inout_to_signal = {} 
+    out_to_signal = {}
+    in_to_signal = {}
+    signal_to_global_in = {}
+    signal_to_global_out = {}
+    
+    signals = []
+    lossy_signals = []
+    
+    
     
     def __init__(self, identifier, entity, components, signals, assignments, global_assignments = {}):
         self.identifier = identifier
         self.entity = entity
         self.components = OrderedDict()
-        self.signals = OrderedDict()
+        self.signals = []
+        self.lossy_signals = []
         self.instance_assignments = OrderedDict()
         self._circuit = False
         
@@ -254,10 +282,15 @@ class Architecture(QHDLObject):
         #       => ((target_instance_name|'entity'), port_name, port_id, (connecting_signal_name|None))
 #        mediated_inport_map = {}
 #        mediated_outport_map = {}
-        global_out = {}
-        global_in = {}
-        out_to_signal = {}
-        in_to_signal = {}
+        self.global_inout = {}
+        self.global_out = {}
+        self.global_in = {}
+        self.inout_to_signal = {}
+        self.out_to_signal = {}
+        self.in_to_signal = {}
+        self.signal_to_global_in = {}
+        self.signal_to_global_out = {}
+        
         
         #process components
         for component in components:
@@ -270,8 +303,8 @@ class Architecture(QHDLObject):
         
         #process signals
         for signal_ids, signal_type in signals:
-            if signal_type != 'fieldmode':
-                raise NotImplementedError
+            if signal_type not in ('fieldmode','lossy_fieldmode'):
+                raise QHDLError("Currently only fieldmode and lossy_fieldmode are accepted as signal types: \n %s : %s" % (", ".join(signal_ids), signal_type))
             
             for sid in signal_ids:
                 #check if signal identifier coincides with entity port name
@@ -279,12 +312,15 @@ class Architecture(QHDLObject):
                     raise QHDLError('Signal identifier already used as an entity port identifier: %s' % sid)
                 
                 #check for duplicate signal identifiers
-                if sid in self.signals:
+                if (sid in self.signals) or (sid in self.lossy_signals):
                     raise QHDLError('Signal identifier non-unique: %s' % sid)
                 #every signal can only connect two ports of component instances,
                 #one in-port and one out-port
-                self.signals[sid] = {'into': None, 'outfrom': None}
-        
+                if signal_type == 'fieldmode':
+                    self.signals.append(sid)
+                else:
+                    self.lossy_signals.append(sid)
+                    
         #process instance definitions, assignments
         for instance_name, component_name, generic_map, port_map in assignments:
             #check for duplicate instance identifier
@@ -336,6 +372,10 @@ class Architecture(QHDLObject):
                     raise QHDLError('Mapped generics are of incompatible type.' \
                                         + 'Change the generic\'s type in the entity to %s' % component_g[0])
             
+            
+            # rewrite port map based on whether a port is inout
+            
+            
             #convert port map (a,b,c,...) into port map (q=>a, r=>b,...)
             #based on the ports of the component
             if not isinstance(port_map, dict):
@@ -357,16 +397,27 @@ class Architecture(QHDLObject):
                 #any referenced a,b,c,... must either exist
                 #as a signal in the architecture or a port of the entity
                 entity_p = entity.ports.get(name_in_e, False)
-                signal = self.signals.get(name_in_e, False)
+                try:
+                    self.signals.index(name_in_e)
+                    signal = name_in_e
+                    
+                except ValueError:
+                    try:
+                        self.lossy_signals.index(name_in_e)
+                        signal = name_in_e
+                    except ValueError:
+                        signal = False
                 
                 if not entity_p and not signal:
                     if name_in_e == 'OPEN':
                         continue
                     else:
+                        print self.signals, self.lossy_signals
+                        
                         raise QHDLError('The entity %s does not define a port\
-                                    and the architecture %s\
-                                    does not any define any signal of\
-                                    name %s ' % (entity.identifier, self.identifier, name_in_e))
+and the architecture %s \
+does not any define any signal of \
+name %s ' % (entity.identifier, self.identifier, name_in_e))
                 if signal and entity_p:
                     raise QHDLError("Duplicate name for a signal and an entity port: %s" % name_in_e)                    
 
@@ -377,46 +428,46 @@ class Architecture(QHDLObject):
                     raise QHDLError('Component %s does not define a port of name %s' % (component.identifier, name_in_c))
                 
                 c_dir, _ = component_p
-
+                
                 if entity_p:
                     e_dir, _ = entity_p
+                    if c_dir ==  "inout":
+                        raise QHDLError('Component inout port %s.%s must be connected to signal' % (component.identifier, name_in_c))
+                    
                     if not e_dir == c_dir:
                         raise QHDLError('Component port %s.%s must be connected to entity port of same direction' % (component.identifier, name_in_c))
                     
+#                    if c_dir == "inout":
+#                        self.global_inout[(instance_name, name_in_c)] = name_in_e
+#                    
                     if c_dir == "in":
-                        global_in[(instance_name, name_in_c)] = name_in_e
+                        self.global_in[(instance_name, name_in_c)] = name_in_e
                     else:
                         assert c_dir == "out"
-                        global_out[(instance_name, name_in_c)] = name_in_e
+                        self.global_out[(instance_name, name_in_c)] = name_in_e
                 else:
-                    if c_dir == "in":
-                        in_to_signal[(instance_name, name_in_c)] = name_in_e
+                    if c_dir == "inout":
+                        self.inout_to_signal[(instance_name, name_in_c)] = name_in_e
+                    elif c_dir == "in":
+                        self.in_to_signal[(instance_name, name_in_c)] = name_in_e
                     else:
                         assert c_dir == "out"
-                        out_to_signal[(instance_name, name_in_c)] = name_in_e
+                        self.out_to_signal[(instance_name, name_in_c)] = name_in_e
                 self.instance_assignments[instance_name] = component, generic_map, port_map
         
-        signal_to_global_in = {}
-        signal_to_global_out = {}
         for source_id, target_id in global_assignments.items():
+            # TODO: handle signals to INOUT ports
             if target_id in self.entity.out_port_identifiers:
                 if not source_id in self.signals:
                     raise QHDLError('Global Out-Ports may only be assigned to signals')
-                signal_to_global_out[source_id] = target_id
+                self.signal_to_global_out[source_id] = target_id
                 
             elif target_id in self.signals:
                 if not source_id in self.entity.in_port_identifiers:
                     raise QHDLError('Signals can only be assigned to global In-Ports')
-                signal_to_global_in[source_id] = target_id
+                self.signal_to_global_in[target_id] = source_id
             else:
                 raise QHDLError('Global Assignment Error: %s => %s' % (source_id, target_id))
-            
-        self.global_in = global_in
-        self.global_out = global_out
-        self.in_to_signal = in_to_signal
-        self.out_to_signal = out_to_signal
-        self.signal_to_global_out = signal_to_global_out
-        self.signal_to_global_in = signal_to_global_in
         
         
                     
@@ -533,16 +584,30 @@ class Architecture(QHDLObject):
         if self._circuit:
             return self._circuit
         from algebra import circuit_algebra as ca
+
         
-#        mip = self.mediated_port_map['in']
-#        mop = self.mediated_port_map['out']
+
+
 
         # initialize trivial circuit
         circuit = ca.cid(0)
 
         II = []
         OO = []
-        SS = list(self.signals.keys())
+        
+        
+        
+#        inout_signals = {}
+        
+        
+#        for (iname, pname),sname in self.inout_to_signal.items():
+#            pass
+#            
+        
+        if len(self.lossy_signals):
+            if not self.components.get('Beamsplitter', False):
+                self.components['Beamsplitter'] = Component('Beamsplitter', [('theta','real')],[(['In1','In2'],'in','fieldmode'),(['Out1','Out2'],'out','fieldmode')])
+                self.components['Beamsplitter'].cdim = 2
         
         
         OPEN = object()
@@ -552,17 +617,63 @@ class Architecture(QHDLObject):
             QQ = ca.CSymbol(instance_name + identifier_postfix, component.cdim)
             circuit_symbols[instance_name] = QQ
             
+            assert component.inout_port_identifiers == []
+            
             circuit  = circuit + QQ
+#            II = II + [(instance_name, port_name + "_i" ) for port_name in component.inout_port_identifiers]
             II = II + [(instance_name, port_name) for port_name in component.in_port_identifiers]
+            
+#            OO = OO + [(instance_name, port_name + "_o") for port_name in component.inout_port_identifiers]
             OO = OO + [(instance_name, port_name) for port_name in component.out_port_identifiers]
             
-            if len(component.in_port_identifiers) < component.cdim:
-                II = II + [(OPEN,OPEN)] * ( component.cdim - len(component.in_port_identifiers))
+            if len(component.in_port_identifiers) + len(component.inout_port_identifiers) < component.cdim:
+                II = II + [(OPEN,OPEN)] * ( component.cdim - len(component.in_port_identifiers) - len(component.inout_port_identifiers))
             
             if len(component.out_port_identifiers) < component.cdim:
-                OO = OO + [(OPEN,OPEN)] * ( component.cdim - len(component.out_port_identifiers))
+                OO = OO + [(OPEN,OPEN)] * ( component.cdim - len(component.out_port_identifiers) - len(component.inout_port_identifiers))
         
-        assert circuit.cdim == len(OO) == len(II)    
+        
+        # Add loss-beamsplitters
+        for k, s in enumerate(self.lossy_signals):
+        
+#            while "LSS%s_%d%s" % (s, j, identifier_postfix) in circuit_symbols:
+#                j += 1
+            LBS = ca.CSymbol("LSS_%s%s" % (s,identifier_postfix), 2)
+            circuit = circuit + LBS
+            
+            
+            II = II + [('LSS_%s' % s, 'In1'),(OPEN, OPEN)]
+            OO = OO + [('LSS_%s' % s, 'Out1'),(OPEN, OPEN)]
+            
+            self.signals.append(s+"__from_loss")
+            self.signals.append(s)
+            
+            
+            # modify assignment of original component that leads into signal
+            try:
+                # exploit enforced order of dictionaries
+                jj = list(self.in_to_signal.values()).index(s)
+                ipnames = list(self.in_to_signal.keys())[jj]
+                assert self.in_to_signal[ipnames] == s
+                self.in_to_signal[ipnames] = s + "__from_loss"
+            except ValueError:
+                jj = list(self.global_out.values()).index(s)
+                ipnames = list(self.global_out.keys())[jj]
+                assert self.global_out[ipnames] == s
+                self.global_out[ipnames] = s + "__from_loss"
+            # Update lookup tables
+            self.in_to_signal[('LSS_%s' % s, 'In1')] = s
+            self.out_to_signal[('LSS_%s' % s, 'Out1')] = s + "__from_loss"
+            
+            # Create artificial instance assignment
+            self.instance_assignments['LSS_%s' % s] = self.components['Beamsplitter'], {'theta': 'theta_LS%d' % k},{"In1": s, "Out1": s + "__from_loss"}
+            circuit_symbols['LSS_%s' % s] = LBS
+            self.entity.generics['theta_LS%d' % k] = "real", None
+            
+        
+        assert circuit.cdim == len(OO) == len(II)
+        SS = list(self.signals)
+        
         
         # Add signals as passthru lines below rest
         circuit = circuit + ca.cid(len(SS))
@@ -618,14 +729,17 @@ class Architecture(QHDLObject):
         
         imapping = {}
         # construct output permutation
+        
         for i, (iname, pname) in enumerate(II_effective):
-            if iname is not SIGNAL:
+            if not (iname is SIGNAL):
                 eport = self.global_in.get((iname, pname), False)
             else:
                 eport = self.signal_to_global_in.get(pname, False)
             if eport:
                 k = list(self.entity.in_port_identifiers).index(eport)
                 imapping[k] = i
+#        print imapping, II_effective,self.signal_to_global_in
+        
         circuit = ca.map_signals_circuit(omapping, circuit.cdim) << circuit << ca.map_signals_circuit(imapping, circuit.cdim)
 
         self._circuit = circuit, circuit_symbols, self.instance_assignments
@@ -1047,6 +1161,7 @@ class Architecture(QHDLObject):
 
     
     def to_qhdl(self, tab_level = 0):
+        
         components_qhdl = "\n".join([c.to_qhdl(tab_level = tab_level + 1) for c in self.components.values()])
         signals_qhdl = "    signal %s: fieldmode;\n" % ", ".join(self.signals.keys())
         format_map = lambda dd: ", ".join(["%s=>%s" % mm for mm in dd.items()])
@@ -1070,71 +1185,76 @@ architecture %s of %s is %s %s
         
         return ("\t"*tab_level) + ret_str.replace('\n', "\n"+ ("\t"*tab_level))
     
-    def to_dot_graph(self, prefix = ''):
-        in_node = """
-    {node [shape=record label="in | %s"] %sinput}
-    {rank=source; %sinput}""" \
-            % (" | ".join(["<%s>%s" % (p_name, p_name) for  p_name in self.entity.in_port_identifiers]),\
-                prefix, prefix)
-        
-        out_node = """
-    {node [shape=record label="out | %s"] %soutput}
-    {rank=sink; %soutput}""" \
-            % (" | ".join(["<%s>%s" % (p_name, p_name) for p_name in self.entity.out_port_identifiers]),\
-                prefix, prefix)
-        
-        intermediate_nodes = ["{node [shape=record label=\"{{%s}|{%s (%s)}|{%s}}\"] %s;}" \
-            %  (" | ".join(["<%s>%s" % (p_name, p_name) for p_name in component.in_port_identifiers]),\
-                instance, component.identifier,\
-                " | ".join(["<%s>%s" % (p_name, p_name) for p_name in component.out_port_identifiers]),\
-                prefix + instance) for instance, (component, generic_map, port_map) in self.instance_assignments.items()]
-        
-        edges = []
-
-        
-        for (source_instance, ns_i), (target_instance, nt_i, k_i, c, s) in self.mediated_port_map['out'].items():
-            if source_instance =="entity":
-                edges.append("%sinput:%s -> %s:%s" % (prefix, ns_i, prefix + target_instance, nt_i))
-            elif target_instance == 'entity':
-                edges.append("%s:%s -> %soutput:%s" % (prefix + source_instance, ns_i, prefix, nt_i))
-            else:
-                edges.append("{edge [label = \"%s\"] %s:%s -> %s:%s}" % (s, prefix + source_instance, ns_i, prefix + target_instance, nt_i))
-        
-        # for (source_instance, ns_i), (target_instance, nt_i, k_i, c, s) in self.mediated_port_map['in'].items():
-        #     if source_instance =="entity":
-        #
-        #         edges.append("{ edge in_ports:%s -> %s:%s}" % (ns_i, target_instance, nt_i))
-        #     else:
-        #         edges.append("{ edge [label = \"%s\"] %s:%s -> %s:%s}" % (s, source_instance, ns_i, target_instance, nt_i))
-                
-                
-        
-        dot = """digraph %s {
-	graph [center rankdir=LR nodesep=.5 ranksep=.5 label="architecture %s of entity %s"]
-	edge [shape=normal]
-	%s
-	
-	%s
-	%s
-	%s
-}"""    % (prefix + "layout", self.identifier, self.entity.identifier, in_node, "\n\t".join(intermediate_nodes), out_node, "\n\t".join(edges))
-        return dot
     
-    def save_dot_graph(self, filename, overwrite = True):
-        
-        if not filename.endswith('.dot') or filename.endswith('.gv'):
-            filename += ".gv"
-        from os import path
-        if path.exists(filename):
-            if not overwrite:
-                my_debug("File already exists. Aborting")
-                return
-            
-            if not path.isfile(filename):
-                raise Exception('The file %s already exists but it is not a regular file.')
-        with open(filename, 'w') as dot_file:
-            dot_file.write(self.to_dot_graph())
-        my_debug("output written to draphviz-file")
+    
+    
+    
+#    def to_dot_graph(self, prefix = ''):
+##        return ""
+#        in_node = """
+#    {node [shape=record label="in | %s"] %sinput}
+#    {rank=source; %sinput}""" \
+#            % (" | ".join(["<%s>%s" % (p_name, p_name) for  p_name in self.entity.in_port_identifiers]),\
+#                prefix, prefix)
+#        
+#        out_node = """
+#    {node [shape=record label="out | %s"] %soutput}
+#    {rank=sink; %soutput}""" \
+#            % (" | ".join(["<%s>%s" % (p_name, p_name) for p_name in self.entity.out_port_identifiers]),\
+#                prefix, prefix)
+#        
+#        intermediate_nodes = ["{node [shape=record label=\"{{%s}|{%s (%s)}|{%s}}\"] %s;}" \
+#            %  (" | ".join(["<%s>%s" % (p_name, p_name) for p_name in component.in_port_identifiers]),\
+#                instance, component.identifier,\
+#                " | ".join(["<%s>%s" % (p_name, p_name) for p_name in component.out_port_identifiers]),\
+#                prefix + instance) for instance, (component, generic_map, port_map) in self.instance_assignments.items()]
+#        
+#        edges = []
+#
+#        
+#        for (source_instance, ns_i), (target_instance, nt_i, k_i, c, s) in self.mediated_port_map['out'].items():
+#            if source_instance =="entity":
+#                edges.append("%sinput:%s -> %s:%s" % (prefix, ns_i, prefix + target_instance, nt_i))
+#            elif target_instance == 'entity':
+#                edges.append("%s:%s -> %soutput:%s" % (prefix + source_instance, ns_i, prefix, nt_i))
+#            else:
+#                edges.append("{edge [label = \"%s\"] %s:%s -> %s:%s}" % (s, prefix + source_instance, ns_i, prefix + target_instance, nt_i))
+#        
+#        # for (source_instance, ns_i), (target_instance, nt_i, k_i, c, s) in self.mediated_port_map['in'].items():
+#        #     if source_instance =="entity":
+#        #
+#        #         edges.append("{ edge in_ports:%s -> %s:%s}" % (ns_i, target_instance, nt_i))
+#        #     else:
+#        #         edges.append("{ edge [label = \"%s\"] %s:%s -> %s:%s}" % (s, source_instance, ns_i, target_instance, nt_i))
+#                
+#                
+#        
+#        dot = """digraph %s {
+#	graph [center rankdir=LR nodesep=.5 ranksep=.5 label="architecture %s of entity %s"]
+#	edge [shape=normal]
+#	%s
+#	
+#	%s
+#	%s
+#	%s
+#}"""    % (prefix + "layout", self.identifier, self.entity.identifier, in_node, "\n\t".join(intermediate_nodes), out_node, "\n\t".join(edges))
+#        return dot
+#    
+#    def save_dot_graph(self, filename, overwrite = True):
+#        
+#        if not filename.endswith('.dot') or filename.endswith('.gv'):
+#            filename += ".gv"
+#        from os import path
+#        if path.exists(filename):
+#            if not overwrite:
+#                my_debug("File already exists. Aborting")
+#                return
+#            
+#            if not path.isfile(filename):
+#                raise Exception('The file %s already exists but it is not a regular file.')
+#        with open(filename, 'w') as dot_file:
+#            dot_file.write(self.to_dot_graph())
+#        my_debug("output written to draphviz-file")
 
 
 

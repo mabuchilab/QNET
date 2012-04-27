@@ -3,7 +3,10 @@ from abstract_algebra import *
 from helpers import *
 from sympy import exp, log, cos, sin, cosh, sinh, tan, cot, \
                             acos, asin, acosh, asinh, atan, atan2, atanh, acot, sqrt, \
-                            factorial, pi
+                            factorial, pi, I, sympify
+
+sympyOne = sympify(1)
+
 import qutip
 
 
@@ -87,7 +90,7 @@ class HilbertSpace(frozenset):
     
     @classmethod
     def set_states(cls, identifier, new_states):
-        descriptor, sid, states = cls.retrieve(identifier)
+        descriptor, sid, _ = cls.retrieve(identifier)
         cls._local_spaces[descriptor] = sid, new_states
         
         
@@ -104,7 +107,7 @@ class HilbertSpace(frozenset):
     
     def __cmp__(self, other):
         """
-        When the OperatorMultiplication tries to permute commuting operators, it 
+        When the OperatorTimes tries to permute commuting operators, it 
         compares their respective HilbertSpace sets. The resulting operator order is determined 
         by the order of the spaces.
         
@@ -143,7 +146,9 @@ class HilbertSpace(frozenset):
     def dimension(self):
         bases = [self.__class__.retrieve_by_sid(s)[1] for s in self]
         return reduce(lambda a,b: a*b, [len(b) for b in bases], 1)
-
+    
+    def mathematica(self):
+        return "ProductSpace[%s]" % (", ".join(self))
 
 
 
@@ -222,7 +227,7 @@ class Operator(Algebra):
         # print space, self.space
         missing_spaces = space.difference(self.space)
         # print self, missing_spaces
-        return OperatorMultiplication.apply_with_rules(self, *[explicit_identity_operator(s) for s in missing_spaces])
+        return OperatorTimes.apply_with_rules(self, *[explicit_identity_operator(s) for s in missing_spaces])
         
         
     # def map(self, rep_amplitude_dict):
@@ -292,13 +297,13 @@ def representation_matrix(obj, full_space = None):
             assert full_space >= obj.space
 
                 
-        if isinstance(obj, ScalarOperatorProduct):
+        if isinstance(obj, ScalarTimesOperator):
             coeff = obj.coeff
             obj = obj.term
         else:
             coeff = 1
             
-        if isinstance(obj, OperatorMultiplication):
+        if isinstance(obj, OperatorTimes):
             if (obj, full_space) in matrix_cache:
                 if coeff == 1:
                     return matrix_cache[obj, full_space]
@@ -325,7 +330,7 @@ def extend_to_space(obj, space):
     elif obj == 0:
         return 0
     elif algebra(obj) in (SympyBasic, Number):
-        return obj * OperatorMultiplication.apply_with_rules(*[explicit_identity_operator(s) for s in space])
+        return obj * OperatorTimes.apply_with_rules(*[explicit_identity_operator(s) for s in space])
     else:
         raise Exception("algebra(%r) = %s" % (obj, algebra(obj)))
 
@@ -392,6 +397,9 @@ class IdentityOperator(OperatorSymbol):
         
     def to_qutip(self, full_space):
         return qutip.tensor(*[qutip.qeye(HilbertSpace((s,)).dimension) for s in full_space])
+    
+    def mathematica(self):
+        return "IdentityOperator"
         
     # def map_rep(self, rep):
     #     return {rep:1}
@@ -470,23 +478,6 @@ class LocalProjector(LocalOperator):
     def __init__(self, local_space, reps):
         LocalOperator.__init__(self, 'Pi_{%s}' % (",".join(map(str, reps))), local_space)
         self._reps = set(reps)
-        
-    # def map_local_rep(self, local_rep):
-    #     if local_rep in self._reps:
-    #         return {rep:1 }
-    
-    # def __mul__(self, other):
-    #     if isinstance(other, LocalOperator) and other.local_space == self.local_space:
-    #         if isinstance(other, LocalProjector):
-    #             c_reps = self._reps & other._reps
-    #             if len(c_reps) > 0:
-    #                 return LocalProjector(self.local_space, c_reps)
-    #             return 0
-    #         if isinstance(other, LocalSigma):
-    #             if other.rep_pair[0] in self.local_reps:
-    #                 return other
-    #         
-    #     return Operator.__mul__(self, other)
     
     @property
     def reps(self):
@@ -522,7 +513,8 @@ class LocalProjector(LocalOperator):
     def tex(self):
         return "{%s}" % (" + ".join(("\Pi_{%s}^{[%s]}" % (r, tex(self.space)) for r in self.reps)))
 
-
+    def mathematica(self):
+        return "(%s)" % (" + ".join(["Sigma[%s,%s]" % (self.local_space, r) for r in self.reps]))
 
 def explicit_identity_operator(local_space):
     space_descriptor, states = HilbertSpace.retrieve_by_sid(local_space)
@@ -530,6 +522,7 @@ def explicit_identity_operator(local_space):
 
 class LocalSigma(LocalOperator):
     __slots__ = ['_rep_pair']
+    
     def __new__(cls, local_space, rep_lhs, rep_rhs):
         return LocalOperator.__new__(cls, 'sigma_%s%s' % (rep_lhs, rep_rhs), local_space)
     
@@ -540,29 +533,9 @@ class LocalSigma(LocalOperator):
     @property
     def rep_pair(self):
         return self._rep_pair
-    
-    # def map_local_rep(self, local_rep):
-    #     if local_rep == self._rep_pair[1]:
-    #         return {self._rep_pair[0]:1}
-    #     return {}
-    
+
     def adjoint(self):
         return LocalSigma(self.local_space, *reversed(self._rep_pair))
-        
-    # def __mul__(self, other):
-    #     if isinstance(other, LocalOperator) and other.local_space == self.local_space:
-    #         if isinstance(other, LocalProjector):
-    #             if self._rep_pair[1] in other.reps:
-    #                 return self
-    #             return 0
-    #         if isinstance(other, LocalSigma):
-    #             if self._rep_pair[1] == other._rep_pair[0]:
-    #                 rep_lhs, rep_rhs = self._rep_pair[0], other._rep_pair[1]
-    #                 if rep_lhs == rep_rhs:
-    #                     return LocalProjector(self.local_space, [rep_lhs])
-    #                 return LocalSigma(self.local_space, rep_lhs, rep_rhs)
-    #         
-    #     return Operator.__mul__(self, other)
     
     def __str__(self):
         return "sigma_%s%s^%s" % (self._rep_pair + (self.space,))
@@ -572,6 +545,9 @@ class LocalSigma(LocalOperator):
 
     def tex(self):
         return "\sigma_{%s%s}^{[%s]}" % (self._rep_pair +  (tex(self.space),))
+    
+    def mathematica(self):
+        return "Sigma[%s,%s,%s]" % ((self.local_space,) + self.rep_pair)
         
     def representation_matrix(self):
         states = self.get_local_basis()
@@ -639,6 +615,9 @@ class Destroy(LocalOperator):
 
     def tex(self):
         return "a^{[%s]}" % (tex(self.space),)
+    
+    def mathematica(self):
+        return "Destroy[%s]" % self.local_space
             
 
 #just for symbolic calculation, does not affect creation of representation matrices
@@ -686,6 +665,10 @@ class Create(LocalOperator):
         
     def tex(self):
         return "{a^{[%s]}}^*" % (tex(self.space),)
+    
+    def mathematica(self):
+        return "Create[%s]" % self.local_space
+    
         
 
 def Z(local_space):
@@ -723,7 +706,7 @@ class OperatorOperation(Operator):
     def n(self):
         return self.__class__.apply_with_rules(*map(n, self.operands))
 
-class OperatorAddition(OperatorOperation, Addition):
+class OperatorPlus(OperatorOperation, Addition):
     
     @classmethod
     def simplify_binary(cls, lhs, rhs, **rules):
@@ -733,10 +716,10 @@ class OperatorAddition(OperatorOperation, Addition):
             return rhs
         if rhs == 0:
             return lhs
-        if isinstance(lhs, ScalarOperatorProduct):
+        if isinstance(lhs, ScalarTimesOperator):
             lcoeff = lhs.coeff
             lhs = lhs.term
-        if isinstance(rhs, ScalarOperatorProduct):
+        if isinstance(rhs, ScalarTimesOperator):
             rcoeff = rhs.coeff
             rhs = rhs.term
         if lhs == rhs:
@@ -789,7 +772,7 @@ def factors_sorted_by_space(operands):
     return tuple(sorted(operands, cmp = cmp_by_space))
     
     
-class OperatorMultiplication(OperatorOperation, Multiplication):
+class OperatorTimes(OperatorOperation, Multiplication):
     
     @classmethod
     def check_operands(cls, *operands, **rules):
@@ -810,10 +793,10 @@ class OperatorMultiplication(OperatorOperation, Multiplication):
         coeff = 1
         if lhs == 0 or rhs == 0:
             return 0
-        if isinstance(lhs, ScalarOperatorProduct):
+        if isinstance(lhs, ScalarTimesOperator):
             coeff *= lhs.coeff
             lhs = lhs.term
-        if isinstance(rhs, ScalarOperatorProduct):
+        if isinstance(rhs, ScalarTimesOperator):
             coeff *= rhs.coeff
             rhs = rhs.term
         if not (isinstance(lhs, Operator) and isinstance(rhs, Operator)):
@@ -854,15 +837,15 @@ class OperatorMultiplication(OperatorOperation, Multiplication):
                     elif isinstance(lhs, Destroy) and isinstance(rhs, Create):
                         return coeff * (rhs * lhs + 1)
             
-                if isinstance(rhs, OperatorAddition):
-                    return coeff * OperatorAddition.apply_with_rules(*[lhs*rhs_s for rhs_s in rhs.operands])
+                if isinstance(rhs, OperatorPlus):
+                    return coeff * OperatorPlus.apply_with_rules(*[lhs*rhs_s for rhs_s in rhs.operands])
         elif isinstance(rhs, LocalOperator):
             if lhs.space == rhs.space:
-                if isinstance(lhs, OperatorAddition):
-                    return coeff * OperatorAddition.apply_with_rules(*[lhs_s * rhs for lhs_s in lhs.operands])
+                if isinstance(lhs, OperatorPlus):
+                    return coeff * OperatorPlus.apply_with_rules(*[lhs_s * rhs for lhs_s in lhs.operands])
         elif lhs.space == rhs.space and len(lhs.space) == 1:
-            if isinstance(lhs, OperatorAddition) and isinstance(rhs, OperatorAddition):
-                return coeff * OperatorAddition.apply_with_rules(*[lhs_s*rhs_s for lhs_s in lhs.operands for rhs_s in rhs.operands])
+            if isinstance(lhs, OperatorPlus) and isinstance(rhs, OperatorPlus):
+                return coeff * OperatorPlus.apply_with_rules(*[lhs_s*rhs_s for lhs_s in lhs.operands for rhs_s in rhs.operands])
         if coeff != 1:
             return coeff*(lhs * rhs)
         raise CannotSimplify()
@@ -877,32 +860,32 @@ class OperatorMultiplication(OperatorOperation, Multiplication):
         id_op = IdentityOperator()
         return filter(lambda op: op != 1 and op != id_op, operands)
     
-    def representation_matrix(self):
-        from qsolve.qsolve import sparse_kron
-        if any(isinstance(op, OperatorSymbol) and not isinstance(op, LocalOperator) for op in self.operands):
-            raise Exception('Convert all placeholder symbols to specified operators first')
-            
-        if len(self.space) == len(self.operands) and all((len(op.space) == 1 for op in self.operands)):
-            matrices = [op.representation_matrix() for op in self.operands]
-            return reduce(lambda a, b: sparse_kron(a, b, 'lil'), matrices)
-        else:
-            
-
-            # this code might still produce infinite loops
-            if any(len(op.space) > 1 for op in self.operands):
-                return self.expand().representation_matrix()
-                
-            ops_by_space = operands_by_space(self.operands)
-            result = id_lil_matrix(1)
-            for spc in self.space:
-                hspc = HilbertSpace((spc,)) #convert from sid to actual HilbertSpace obj
-                ops = ops_by_space[hspc]
-                spc_result = id_lil_matrix(hspc.dimension)
-                assert len(ops) >= 1
-                for op in ops:
-                    spc_result = spc_result * op.representation_matrix().tolil()
-                result = sparse_kron(result, spc_result)
-            return result
+#    def representation_matrix(self):
+#        from qsolve.qsolve import sparse_kron
+#        if any(isinstance(op, OperatorSymbol) and not isinstance(op, LocalOperator) for op in self.operands):
+#            raise Exception('Convert all placeholder symbols to specified operators first')
+#            
+#        if len(self.space) == len(self.operands) and all((len(op.space) == 1 for op in self.operands)):
+#            matrices = [op.representation_matrix() for op in self.operands]
+#            return reduce(lambda a, b: sparse_kron(a, b, 'lil'), matrices)
+#        else:
+#            
+#
+#            # this code might still produce infinite loops
+#            if any(len(op.space) > 1 for op in self.operands):
+#                return self.expand().representation_matrix()
+#                
+#            ops_by_space = operands_by_space(self.operands)
+#            result = id_lil_matrix(1)
+#            for spc in self.space:
+#                hspc = HilbertSpace((spc,)) #convert from sid to actual HilbertSpace obj
+#                ops = ops_by_space[hspc]
+#                spc_result = id_lil_matrix(hspc.dimension)
+#                assert len(ops) >= 1
+#                for op in ops:
+#                    spc_result = spc_result * op.representation_matrix().tolil()
+#                result = sparse_kron(result, spc_result)
+#            return result
             #     
             # 
             # #print lifted_operands
@@ -923,7 +906,7 @@ class OperatorMultiplication(OperatorOperation, Multiplication):
                 return product((op.to_qutip(self.space) for op in self.operands), 1)
             else: # otherwise group by space and return tensor product
                 ops_by_space = operands_by_space(self.operands)
-                return qutip.tensor(*[OperatorMultiplication(*ops_by_space[HilbertSpace((hspc,))]).to_qutip() for hspc in self.space])
+                return qutip.tensor(*[OperatorTimes(*ops_by_space[HilbertSpace((hspc,))]).to_qutip() for hspc in self.space])
         else:
             return self.extend_to_space(full_space).to_qutip()
     
@@ -931,7 +914,7 @@ class OperatorMultiplication(OperatorOperation, Multiplication):
 def operands_by_space(operands):
     ret_dict = {}
     spaces = map(space, operands)
-    full_space = set_union(spaces)
+#    full_space = set_union(spaces)
     assert all(len(spc) == 1 for spc in spaces)
     for spc in spaces:
         space_ops = filter(lambda op: op.space == spc, operands)
@@ -940,7 +923,7 @@ def operands_by_space(operands):
     return ret_dict
         
 
-class ScalarOperatorProduct(OperatorOperation, CoefficientTermProduct):
+class ScalarTimesOperator(OperatorOperation, CoefficientTermProduct):
 
     
     @property
@@ -978,9 +961,9 @@ class ScalarOperatorProduct(OperatorOperation, CoefficientTermProduct):
         if coeff == 1:
             # print "1 == ", coeff
             return term
-        if isinstance(term, ScalarOperatorProduct):
+        if isinstance(term, ScalarTimesOperator):
             return (coeff * term.coeff) * term.term
-        return ScalarOperatorProduct(coeff, term)
+        return ScalarTimesOperator(coeff, term)
         
     def representation_matrix(self):
         if self.coeff == 1:
@@ -1002,41 +985,41 @@ class ScalarOperatorProduct(OperatorOperation, CoefficientTermProduct):
     
 
 
-scalar_as_operator = lambda n: (ScalarOperatorProduct.apply_with_rules(n, IdentityOperator()))
+scalar_as_operator = lambda n: (ScalarTimesOperator.apply_with_rules(n, IdentityOperator()))
 # number_as_operator = lambda n: scalar_as_operator(number_as_scalar(n))
 
 
 second_arg_as_operator = lambda fn: modify_second_arg(fn, scalar_as_operator)
             
-# operator_collect_distributively = lambda cls, ops: collect_distributively(cls, ScalarOperatorProduct, ops)
+# operator_collect_distributively = lambda cls, ops: collect_distributively(cls, ScalarTimesOperator, ops)
 
-Operator.add_map[Operator] = OperatorAddition.apply_with_rules
-# Operator.add_map[Scalar] = second_arg_as_operator(OperatorAddition.apply_with_rules)
-Operator.add_map[SympyBasic] = second_arg_as_operator(OperatorAddition.apply_with_rules)
-Operator.add_map[Number] = second_arg_as_operator(OperatorAddition.apply_with_rules)
+Operator.add_map[Operator] = OperatorPlus.apply_with_rules
+# Operator.add_map[Scalar] = second_arg_as_operator(OperatorPlus.apply_with_rules)
+Operator.add_map[SympyBasic] = second_arg_as_operator(OperatorPlus.apply_with_rules)
+Operator.add_map[Number] = second_arg_as_operator(OperatorPlus.apply_with_rules)
 # Operator.add_map[Number] = lambda op, n: op + sympify(n)
 
 
 def operator_factor_out_coeffs(cls, operands):
-    return factor_out_coeffs(cls, ScalarOperatorProduct, operands)
+    return factor_out_coeffs(cls, ScalarTimesOperator, operands)
 
 def sympify_if_not_pure_complex(obj):
     if isinstance(obj, complex):
         return obj
     return sympify(obj)
 
-Operator.mul_map[Operator] = OperatorMultiplication.apply_with_rules
+Operator.mul_map[Operator] = OperatorTimes.apply_with_rules
 
-# Operator.mul_map[Scalar] = reverse_args(ScalarOperatorProduct.apply_with_rules)
-Operator.mul_map[Number] = reverse_args(ScalarOperatorProduct.apply_with_rules)
-# print reverse_args(ScalarOperatorProduct.apply_with_rules)
+# Operator.mul_map[Scalar] = reverse_args(ScalarTimesOperator.apply_with_rules)
+Operator.mul_map[Number] = reverse_args(ScalarTimesOperator.apply_with_rules)
+# print reverse_args(ScalarTimesOperator.apply_with_rules)
 # Operator.mul_map[Number] = lambda op, number: op * sympify_if_not_pure_complex(number)
-Operator.mul_map[SympyBasic] = reverse_args(ScalarOperatorProduct.apply_with_rules)
+Operator.mul_map[SympyBasic] = reverse_args(ScalarTimesOperator.apply_with_rules)
 
-# Operator.rmul_map[Scalar] = reverse_args(ScalarOperatorProduct.apply_with_rules)
-Operator.rmul_map[Number] = reverse_args(ScalarOperatorProduct.apply_with_rules)
+# Operator.rmul_map[Scalar] = reverse_args(ScalarTimesOperator.apply_with_rules)
+Operator.rmul_map[Number] = reverse_args(ScalarTimesOperator.apply_with_rules)
 # Operator.rmul_map[Number] = lambda op, number: op * sympify_if_not_pure_complex(number)
-Operator.rmul_map[SympyBasic] = reverse_args(ScalarOperatorProduct.apply_with_rules)
+Operator.rmul_map[SympyBasic] = reverse_args(ScalarTimesOperator.apply_with_rules)
 
 
 
@@ -1059,11 +1042,11 @@ Operator.rsub_map[Number] = reverse_args(subtract)
 Operator.rsub_map[SympyBasic] = reverse_args(subtract)
 
 # divide_by_scalar = lambda op, s: ScalarFraction.apply_with_rules(1, s) * op
-divide_by_sympy_expr = lambda op, se: (1/se) * op
+divide_by_sympy_expr = lambda op, se: (sympyOne/se) * op
 
 # Operator.div_map[Scalar] = divide_by_scalar
 # Operator.div_map[Number] = lambda op, number: op / sympify(number)
-Operator.div_map[Number] = lambda op, number: op * (1./number)
+Operator.div_map[Number] = lambda op, number: op * (sympyOne/number)
 Operator.div_map[SympyBasic] = divide_by_sympy_expr
 
 
@@ -1087,9 +1070,9 @@ class Adjoint(Operator, UnaryOperation):
             return operand.conjugate()
         if isinstance(operand, Adjoint):
             return operand.operand
-        if isinstance(operand, (OperatorAddition, ScalarOperatorProduct)):
+        if isinstance(operand, (OperatorPlus, ScalarTimesOperator)):
             return operand.__class__(*map(adjoint, operand.operands))
-        if isinstance(operand, OperatorMultiplication):
+        if isinstance(operand, OperatorTimes):
             return operand.__class__(*map(adjoint, reversed(operand.operands)))
         if isinstance(operand, LocalOperator):
             return operand.adjoint()

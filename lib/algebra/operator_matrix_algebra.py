@@ -1,5 +1,6 @@
 from operator_algebra import *
 
+    
 
 class OperatorMatrix(Algebra):
     
@@ -59,11 +60,11 @@ class OperatorMatrix(Algebra):
     def transpose(self):
         return TransposeMatrix(self)
     
-    def __getitem__(self, key):
-        if isinstance(key, tuple) and len(key) == 2 \
-            and isinstance(key[0], int) and isinstance(key[1], int):
-                return MatrixEntry(self, key)
-        return SubMatrix(self, key)
+#    def __getitem__(self, key):
+#        if isinstance(key, tuple) and len(key) == 2 \
+#            and isinstance(key[0], int) and isinstance(key[1], int):
+#                return MatrixEntry(self, key)
+#        return SubMatrix(self, key)
         
     def __len__(self):
         return self.nrows
@@ -312,13 +313,13 @@ class MatrixMultiplication(MatrixOperation, Multiplication):
 
 def Im(obj):
     if isinstance(obj, Operator):
-        return (.5j) * (obj.adjoint() - obj)
-    return (.5j) * (obj.conjugate() - obj)
+        return (I/2) * (obj.adjoint() - obj)
+    return (I/2) * (obj.conjugate() - obj)
 
 def Re(obj):
     if isinstance(obj, Operator):
-        return .5 * (obj.adjoint() + obj)
-    return .5 * (obj.conjugate() + obj)
+        return (sympyOne/2) * (obj.adjoint() + obj)
+    return (sympyOne/2) * (obj.conjugate() + obj)
 
 
 class OpOpMatrixProduct(MatrixOperation, CoefficientTermProduct):
@@ -732,7 +733,7 @@ class AdjointMatrix(OperatorMatrix, UnaryOperation):
     def tex(self):
         return "{%s}^\dagger" % self.operand
 
-from numpy import array as np_array, ndarray, zeros as np_zeros, ones as np_ones, \
+from numpy import array as np_array, ndarray, zeros as np_zeros, ones as np_ones, eye as np_eye, \
                 diag as np_diag, dot as np_dot, concatenate as np_concatenate, \
                 conjugate as np_conjugate, ravel as np_ravel
 
@@ -796,6 +797,9 @@ class OperatorMatrixInstance(OperatorMatrix, Expression):
     def __str__(self):
         return str(self.array)
     
+    def mathematica(self):
+        return "{{ %s }}" % "},{".join((", ".join(map(mathematica, row)) for row in self._array[:]))
+    
     def tex(self):
         # print "YAY"
         return "\\begin{pmatrix} %s \\end{pmatrix}" % " \\\ \n ".join((" & ".join(map(tex, row)) for row in self._array[:]))
@@ -858,16 +862,16 @@ def block_matrix(A, B, C, D, handle_non_matrices = 'fill'):
         if not isinstance(B, OperatorMatrix):
             assert is_number(B) or isinstance(B, (SympyBasic, Operator))
             if handle_non_matrices == 'fill':
-                B = OperatorMatrixInstance(B*np_ones((rdiv, shape[1] - cdiv)))
+                B = OperatorMatrixInstance(B*np_ones((rdiv, shape[1] - cdiv), dtype = int))
             elif handle_non_matrices == 'diag':
-                B = OperatorMatrixInstance(B*np.eye(rdiv, shape[1]- cdiv))
+                B = OperatorMatrixInstance(B*np_eye(rdiv, shape[1]- cdiv, dtype = int))
                 
         if not isinstance(C, OperatorMatrix):
             assert is_number(C) or isinstance(C, (SympyBasic, Operator))            
             if handle_non_matrices == 'fill':
-                C = OperatorMatrixInstance(C*np_ones((shape[0] - rdiv, cdiv)))
+                C = OperatorMatrixInstance(C*np_ones((shape[0] - rdiv, cdiv), dtype = int))
             elif handle_non_matrices == 'diag':
-                C = OperatorMatrixInstance(C*np.eye(shape[0] - rdiv, cdiv))
+                C = OperatorMatrixInstance(C*np_eye(shape[0] - rdiv, cdiv, dtype = int))
 
     elif isinstance(B, OperatorMatrix) and isinstance(C, OperatorMatrix):
         shape = B.shape[0] + C.shape[0], B.shape[1] + C.shape[1]
@@ -876,16 +880,16 @@ def block_matrix(A, B, C, D, handle_non_matrices = 'fill'):
         if not isinstance(A, OperatorMatrix):
             assert is_number(A) or isinstance(A, (SympyBasic, Operator))            
             if handle_non_matrices == 'fill':
-                A = OperatorMatrixInstance(A*np_ones((rdiv, cdiv)))
+                A = OperatorMatrixInstance(A*np_ones((rdiv, cdiv), dtype = int))
             elif handle_non_matrices == 'diag':
-                A = OperatorMatrixInstance(A*np.eye(rdiv, cdiv))
+                A = OperatorMatrixInstance(A*np_eye(rdiv, cdiv, dtype = int))
                 
         if not isinstance(D, OperatorMatrix):
             assert is_number(D) or isinstance(D, (SympyBasic, Operator))
             if handle_non_matrices == 'fill':
-                D = OperatorMatrixInstance(D*np_ones((shape[0] - rdiv, shape[1] - cdiv)))
+                D = OperatorMatrixInstance(D*np_ones((shape[0] - rdiv, shape[1] - cdiv), dtype = int))
             elif handle_non_matrices == 'diag':
-                D = OperatorMatrixInstance(D*np.eye(shape[0] - rdiv, shape[1] - cdiv))                
+                D = OperatorMatrixInstance(D*np_eye(shape[0] - rdiv, shape[1] - cdiv, dtype = int))                
 
     else:
         raise Exception('At least either  A and D  or  B and C  need to be actual operator matrix instances' \

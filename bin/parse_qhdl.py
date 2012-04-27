@@ -66,7 +66,7 @@ def parse_qhdl(qhdl_string):
 def graphs_generator():
     archs = parser.architectures
     for name, a in archs.items():
-        yield name, a.to_dot_graph(name + "_")
+        yield name, "DOT EXPORTER DISABLED" #a.to_dot_graph(name + "_")
 
 
 known_names = []
@@ -137,7 +137,7 @@ def main(argv=None):
                 try:
                     p_dict = parse_qhdl_file(input_file)
                 except Exception, e:
-                    print "An Error occurred while parsing: ", str(e)
+                    print "An Error occurred while parsing: ", type(e), str(e)
             else:
                  print "No input file supplied"
                  raise Usage(help_message)
@@ -164,7 +164,7 @@ def main(argv=None):
                     print "-"*40
             
             if write_lib:
-                print "Wrting library file for all entities..."
+                print "Writing library file for all entities..."
                 for file_name in write_modules():
                     print "Wrote %s" % file_name
                 print "-"*40
