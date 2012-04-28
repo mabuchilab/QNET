@@ -565,7 +565,7 @@ class Operation(Expression):
         (with these rules) to the simplified operands.
         """
         s_ops = []
-
+        
         for o in self.operands:
             try:
                 s_ops.append(simplify(o, **rules))
@@ -573,7 +573,8 @@ class Operation(Expression):
             except CannotSimplify:
                 s_ops.append(o)
         
-        return self.apply_with_rules(*s_ops, **rules)
+        return self.__class__.apply_with_rules(*s_ops, **rules)
+        
         
     
     

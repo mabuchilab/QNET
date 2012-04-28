@@ -791,14 +791,20 @@ class OperatorTimes(OperatorOperation, Multiplication):
     @classmethod
     def simplify_binary(cls, lhs, rhs, **rules):
         coeff = 1
+        was_sto = False
         if lhs == 0 or rhs == 0:
             return 0
+        
         if isinstance(lhs, ScalarTimesOperator):
+            was_sto = True
             coeff *= lhs.coeff
             lhs = lhs.term
+        
         if isinstance(rhs, ScalarTimesOperator):
+            was_sto = True
             coeff *= rhs.coeff
             rhs = rhs.term
+         
         if not (isinstance(lhs, Operator) and isinstance(rhs, Operator)):
             print lhs, rhs
             raise Exception()
@@ -807,7 +813,7 @@ class OperatorTimes(OperatorOperation, Multiplication):
             return coeff * rhs
         if rhs == id_o:
             return coeff * lhs
-        # print lhs, rhs
+#        print lhs, rhs, coeff
         if isinstance(lhs, LocalOperator):
             if lhs.space == rhs.space:
                 if isinstance(rhs, LocalOperator):
@@ -837,7 +843,7 @@ class OperatorTimes(OperatorOperation, Multiplication):
                     elif isinstance(lhs, Destroy) and isinstance(rhs, Create):
                         return coeff * (rhs * lhs + 1)
             
-                if isinstance(rhs, OperatorPlus):
+                if isinstance(rhs, OperatorPlus) and rhs.space == lhs.space:
                     return coeff * OperatorPlus.apply_with_rules(*[lhs*rhs_s for rhs_s in rhs.operands])
         elif isinstance(rhs, LocalOperator):
             if lhs.space == rhs.space:
@@ -848,6 +854,8 @@ class OperatorTimes(OperatorOperation, Multiplication):
                 return coeff * OperatorPlus.apply_with_rules(*[lhs_s*rhs_s for lhs_s in lhs.operands for rhs_s in rhs.operands])
         if coeff != 1:
             return coeff*(lhs * rhs)
+        if was_sto:
+            return lhs * rhs
         raise CannotSimplify()
         
         
