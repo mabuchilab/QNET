@@ -8,10 +8,11 @@ Copyright (c) 2011 . All rights reserved.
 """
 
 
-from component import Component, SubComponent
+from circuit_components.component import Component, SubComponent
 
-from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, IdentityMatrix, OperatorMatrixInstance, sqrt, SLH
+from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, IdentityMatrix, OperatorMatrixInstance, sqrt, SLH, tex
 from sympy.core.symbol import symbols
+from algebra.abstract_algebra import mathematica
 
 
 
@@ -47,6 +48,11 @@ class KerrCavity(Component):
     
     def toSLH(self):        
         return self.reduce().toSLH()
+    
+#    def mathematica(self):
+#        return ("KerrCavity[%s, Rule[\[CapitalDelta],%s], Rule[\[Chi],%s], Rule[Subscript[\[Kappa],1],%s], Rule[Subscript[\[Kappa],2],%s], Rule[FockDim,%s]]"
+#                    % (self.name, mathematica(self.Delta), mathematica(self.chi), mathematica(self.kappa_1), mathematica(self.kappa_2), mathematica(self.FOCK_DIM))) 
+#    
         
 
 class KerrPort(SubComponent):

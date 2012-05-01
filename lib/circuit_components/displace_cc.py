@@ -7,7 +7,7 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from component import Component
+from circuit_components.component import Component
 from algebra.circuit_algebra import *
 from sympy.core.symbol import symbols
 
@@ -35,6 +35,13 @@ class Displace(Component):
         H = 0
         
         return SLH(S, L, H)
+        
+        
+    def tex(self):
+        return r"{W(%s)}" % tex(self.alpha)
+    
+#    def mathematica(self):
+#        return "CDisplace[%s, Rule[\[Alpha],%s]]" % (self.name, mathematica(self.alpha))
 
 if __name__ == '__main__':
     a = Displace("W")

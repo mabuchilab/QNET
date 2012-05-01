@@ -9,7 +9,7 @@ Copyright (c) 2011 . All rights reserved.
 
 from algebra.circuit_algebra import (HilbertSpace, SpaceExists, SLH, OperatorMatrixInstance, 
                                     LocalProjector, Z, sqrt, IdentityMatrix, LocalSigma)
-from component import Component, SubComponent
+from circuit_components.component import Component, SubComponent
 from sympy.core.symbol import symbols
 
 

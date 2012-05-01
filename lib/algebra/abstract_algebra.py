@@ -15,6 +15,7 @@ from sympy.printing.latex import latex as sympy_latex
 from numpy import ndarray
 
 
+
 def n(obj):
     try:
         # print obj, obj.n()
@@ -83,7 +84,7 @@ class SymbolIdentifierTaken(AlgebraError):
     Raised on an attempt to create a new symbol with an existing identifier.
     """
     def __init__(self, existing_symbol, existing_args, new_args):
-        AlgebraError.__init__("A symbol with identifier %s was already defined (%s).\n Newly requested args: %r" 
+        AlgebraError.__init__(self, "A symbol with identifier %s was already defined (%s).\n Newly requested args: %r" 
                                         % (existing_symbol.identifier, existing_symbol, new_args))
 
 
@@ -126,6 +127,9 @@ class Expression(object):
     def _latex_(self):
         # print "called _latex_ on %s" % self
         return self.tex()
+    
+    def _repr_latex_(self):
+        return "$%s$" % self.tex()
         
         
     # def diff(self, wrt):
@@ -203,7 +207,9 @@ class Expression(object):
     
     def simplify(self):
         raise NotImplementedError(self.__class__.__name__)
-
+    
+    def mathematica(self):
+        raise NotImplementedError(self.__class__.__name__)
 
 # def expand(expr):
 #     """
@@ -251,8 +257,7 @@ def tex(obj):
     if is_number(obj):
         return format_number_for_tex(obj)
     if isinstance(obj, SympyBasic):
-        # TODO fix bracketing
-        return sympy_latex(obj)[1:-1] #trim '$' at beginning and end of returned string
+        return sympy_latex(obj)#[1:-1] #trim '$' at beginning and end of returned string
     try:
         return obj.tex()
     except AttributeError:
@@ -261,6 +266,27 @@ def tex(obj):
         except AttributeError:
             return str(obj)
             
+def mathematica(obj):
+    """
+    Return a Mathematica string-representation of obj
+    """
+    if isinstance(obj, str):
+        return identifier_to_mathematica(obj)
+    if is_number(obj):
+        return format_number_for_mathematica(obj)
+    if isinstance(obj, SympyBasic):
+        return capitalize_sympy_functions_for_mathematica(
+                        re.compile(r'([A-Za-z0-9]+)\(([^\)]+)\)').sub(
+                                        r"\1[\2]", identifier_to_mathematica(str(obj)).replace("**","^")))
+    try:
+        return obj.mathematica()
+    except AttributeError:
+        return str(obj)
+
+def capitalize_sympy_functions_for_mathematica(string):
+    words = ("cos", "sin", "exp", "sqrt", "conjugate")
+    return reduce(lambda a, b: a.replace(b, b[0].upper() + b[1:]), words, string)
+
     
 # def diff(expr, wrt, n = 1):
 #     """
@@ -316,6 +342,19 @@ def format_number_for_tex(num):
         return "(%g)" % num
     return "%g" % num
 
+def format_number_for_mathematica(num):
+    if num == 0: #also True for 0., 0j
+        return "0"
+    if isinstance(num, complex):
+        if num.imag == 0:
+            return format_number_for_tex(num.real)
+        return "Complex[%g,%g]" % (num.real, num.imag)
+    
+    return "%g" % num
+
+
+
+
 greek_letter_strings = ["alpha", "beta", "gamma", "delta", "epsilon", "varepsilon", \
                         "zeta", "eta", "theta", "vartheta", "iota", "kappa", \
                         "lambda", "mu", "nu", "xi", "pi", "varpi", "rho", \
@@ -323,6 +362,14 @@ greek_letter_strings = ["alpha", "beta", "gamma", "delta", "epsilon", "varepsilo
                         "varphi", "chi", "psi", "omega", \
                         "Gamma", "Delta", "Theta", "Lambda", "Xi", \
                         "Pi", "Sigma", "Upsilon", "Phi", "Psi", "Omega"]
+greekToLatex = {"alpha":"Alpha", "beta":"Beta", "gamma":"Gamma", "delta":"Delta", "epsilon":"Epsilon", "varepsilon":"Epsilon", \
+                        "zeta":"Zeta", "eta":"Eta", "theta":"Theta", "vartheta":"Theta", "iota":"Iota", "kappa":"Kappa", \
+                        "lambda":"Lambda", "mu":"Mu", "nu":"Nu", "xi":"Xi", "pi":"Pi", "varpi":"Pi", "rho":"Rho", \
+                        "varrho":"Rho", "sigma":"Sigma", "varsigma":"Sigma", "tau":"Tau", "upsilon":"Upsilon", "phi": "Phi", \
+                        "varphi":"Phi", "chi":"Chi", "psi":"Psi", "omega":"Omega", \
+                        "Gamma":"CapitalGamma", "Delta":"CapitalDelta", "Theta":"CapitalTheta", "Lambda":"CapitalLambda", "Xi":"CapitalXi", \
+                        "Pi":"CapitalPi", "Sigma":"CapitalSigma", "Upsilon":"CapitalUpsilon", "Phi":"CapitalPhi", "Psi":"CapitalPsi", "Omega":"CapitalOmega"
+                }
 
 import re
 def identifier_to_tex(identifier):
@@ -334,6 +381,21 @@ def identifier_to_tex(identifier):
     identifier = reduce(lambda a,b: "{%s_%s}" % (b, a), ["{%s}" % part for part in reversed(identifier.split("__"))])
     p = re.compile(r'([^\\A-Za-z]?)(%s)\b' % "|".join(greek_letter_strings))
     return p.sub(r'\1{\\\2}', identifier)
+
+
+    
+
+
+def identifier_to_mathematica(identifier):
+    """
+    If an identifier contains a greek symbol name as a separate word,
+    (e.g. 'my_alpha_1' contains 'alpha' as a separate word, but 'alphaman' doesn't)
+    add a backslash in front.
+    """
+    identifier = reduce(lambda a,b: "Subscript[%s,%s]" % (b, a), reversed(identifier.split("__")))
+    p = re.compile(r'\b(%s)\b' % "|".join(greek_letter_strings))
+    repl = lambda m:  r"\[" + greekToLatex[m.group(1)] + "]"
+    return p.sub(repl, identifier)
 
 
 
@@ -413,6 +475,9 @@ class Symbol(Expression):
     def identifier(self):
         return self._identifier
     
+    def mathematica(self):
+        return self.identifier
+    
 
 CHECK_OPERANDS = False
 
@@ -473,6 +538,9 @@ class Operation(Expression):
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, ", ".join(map(repr, self.operands)))
     
+    def mathematica(self):
+        return "%s[%s]" % (self.__class__.__name__, ", ".join(map(mathematica, self.operands)))
+    
     # def expand(self):
     #     return self.__class__.apply_with_rules(*map(expand, self.operands))
     
@@ -497,7 +565,7 @@ class Operation(Expression):
         (with these rules) to the simplified operands.
         """
         s_ops = []
-
+        
         for o in self.operands:
             try:
                 s_ops.append(simplify(o, **rules))
@@ -505,7 +573,8 @@ class Operation(Expression):
             except CannotSimplify:
                 s_ops.append(o)
         
-        return self.apply_with_rules(*s_ops, **rules)
+        return self.__class__.apply_with_rules(*s_ops, **rules)
+        
         
     
     
@@ -793,10 +862,7 @@ class Power(BinaryOperation):
             
         if isinstance(base, CoefficientTermProduct):
             return cls.apply_with_rules(base.coeff, exponent) * cls.apply_with_rules(base.term, exponent)
-        
-        if isinstance(base, Fraction):
-            cls.apply_with_rules(base.numerator, exponent) / cls.apply_with_rules(base.denominator, exponent)
-            
+                    
         return cls(base, exponent, **rules)
     
     def tex(self):
@@ -963,15 +1029,15 @@ class AlgebraType(type):
         MyAlgebraSubclass.algebra == MyAlgebra    # True, because this class attribute is inherited from MyAlgebra
     
     """
-    def __new__(clsmeta, clsname, clssuper, clsdict):
+    def __new__(cls, clsname, clssuper, clsdict):
         """
         Called when a new class is defined with the name clsname, 
         the superclasses clssuper, and the properties and methods defined in clsdict.
-        clsmeta points to the metaclass, i.e. to AlgebraType (or a submetaclass of this).
+        cls points to the metaclass, i.e. to AlgebraType (or a submetaclass of this).
         """
         
         #create the actual class
-        cls = type.__new__(clsmeta, clsname, clssuper, clsdict)
+        cls = type.__new__(cls, clsname, clssuper, clsdict)
         
         # If we're creating the Algebra class itself, then skip ahead.
         if clsname != 'Algebra': 
@@ -993,8 +1059,8 @@ class AlgebraType(type):
     
     # make a read-only public property for the specific algebra class itself
     @property
-    def algebra(cls):
-        return cls._algebra
+    def algebra(self):
+        return self._algebra
 
 
 def make_binary_operation_method(operation_map_name, operation_string = ''):

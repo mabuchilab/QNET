@@ -7,7 +7,7 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from component import Component, SubComponent
+from circuit_components.component import Component, SubComponent
 
 from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, IdentityMatrix, OperatorMatrixInstance, sqrt, SLH
 from sympy.core.symbol import symbols

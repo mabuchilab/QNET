@@ -13,8 +13,9 @@ Visualize Circuit objects.
 import algebra.circuit_algebra as ca
 from circuit_components.component import Component, SubComponent
 import pyx
-from itertools import izip
 
+from itertools import izip
+texrunner = pyx.text.texrunner(mode = 'latex')
 
 
 HUNIT = +4      # Basic unit for the width of a single Circuit object
@@ -65,16 +66,17 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
     nc = circuit.cdim
     c = pyx.canvas.canvas()
     
+    
     if isinstance(circuit, ca.CIdentity):
         # simply create a line going through
         c.stroke(pyx.path.line(0, vunit/2, hunit, vunit/2))
         return c, (1, 1), (.5,), (.5,)
     
     elif isinstance(circuit, (ca.CSymbol, ca.SeriesInverse, ca.SLH, Component, SubComponent)):
-        
         # draw box
         b = pyx.path.rect(rhmargin * hunit, rvmargin * vunit, hunit - 2 * rhmargin * hunit, nc * vunit - 2 * rvmargin * vunit)
         c.stroke(b)
+        
         
         # draw symbol name
         c.text(hunit/2., nc * vunit/2., "$%s$" % circuit.tex() , [pyx.text.halign.boxcenter, pyx.text.valign.middle])
