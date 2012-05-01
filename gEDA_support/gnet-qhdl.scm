@@ -151,10 +151,11 @@
 
 (define qhdl:write-generic
   (lambda (generic p)
-    (if  (not (null? generic)) 
+    (if  (and (not (null? generic)) (not (string=? (car generic) "not found"))) 
         (begin
          (display (car generic) p)
          (display " : " p)
+         
          (display (string-downcase (cadr generic)) p)
          (if (not (null? (cddr generic)))
              (begin
@@ -197,7 +198,7 @@
 
 (define qhdl:write-generic-list
   (lambda (list p)
-    (if (not (null? list))
+    (if (and (not (null? list)) (not (string=? (car (car list)) "not found")))
    (begin
      (display "    GENERIC (" p)
      (newline p)
