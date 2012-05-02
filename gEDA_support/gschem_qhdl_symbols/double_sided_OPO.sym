@@ -32,7 +32,7 @@ L 1100 1200 1200 1300 3 20 0 0 -1 -1
 A 2000 1300 800 315 90 3 10 0 0 -1 -1
 A 2200 1300 800 135 90 3 10 0 0 -1 -1
 T 600 2500 8 8 0 0 0 0 1
-params=alpha:complex;gamma1:real;gamma2:real;chi:real;Delta:real;FOCK_DIM:int:25
+params=alpha:complex;kappa_1:real;kappa_2:real;Delta:real;FOCK_DIM:int:25
 P 3300 1200 2800 1200 1 0 0
 {
 T 3500 800 5 8 0 0 180 0 1
