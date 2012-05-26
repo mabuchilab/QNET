@@ -105,7 +105,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         if draw_boxes:
             b = pyx.path.rect(.5* rhmargin * hunit, .5* rvmargin * vunit, rpermutation_length * hunit -  rhmargin * hunit, nc * vunit -  rvmargin * vunit)
             c.stroke(b, [pyx.style.linewidth.thin, pyx.style.linestyle.dashed, pyx.color.rgb.green])
-
+            
         
         return c, (rpermutation_length, nc), connector_positions, connector_positions
     
@@ -197,7 +197,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
                 ax, ax_to = x * hunit, max_width * hunit
                 ay = y * vunit
                 c.stroke(pyx.path.line(ax, ay, ax_to, ay))
-
+                
         if draw_boxes:
             b = pyx.path.rect(.5 * rhmargin * hunit, .5 * rvmargin * vunit, max_width * hunit - 1. * rhmargin * hunit, voffset * vunit -  rvmargin * vunit)
             c.stroke(b, [pyx.style.linewidth.thin, pyx.style.linestyle.dashed, pyx.color.rgb.blue])
@@ -242,6 +242,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         return c, (width + rhmargin, height + rhmargin), new_c_in, new_c_out
     
     raise Exception('Visualization not implemented for type %s' % type(circuit))
+
 
 
 def draw_circuit(circuit, filename, direction = 'lr',

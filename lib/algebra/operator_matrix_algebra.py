@@ -842,6 +842,10 @@ class OperatorMatrixInstance(OperatorMatrix, Expression):
     @property
     def space(self):
         return set_union(*map(space, self._array.ravel()))
+        
+    def trace(self):
+        assert self.shape[0] == self.shape[1]
+        return sum(self.array[k,k] for k in range(self.shape[0]))
 
 def concatenate_instances(operator_matrices, axis = 0):
     return OperatorMatrixInstance(np_concatenate(map(lambda om: om.array, operator_matrices), axis = axis))

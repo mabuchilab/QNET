@@ -12,21 +12,30 @@ from circuit_components.component import Component
 
 
 class PseudoNAND(Component):
+    
+    # total number of field channels
     CDIM = 4
+    
+    # parameters on which the model depends
     GENERIC_DEFAULT_VALUES = dict(
-        phi = symbols('phi', real = True, each_char = False),
-        kappa = symbols('kappa', real = True, each_char = False),
-        chi = symbols('chi', real = True, each_char = False),
-        beta = symbols('beta', each_char = False),
         Delta = symbols('Delta', real = True, each_char = False),
-        theta = symbols('theta', real = True, each_char = False)
+        chi = symbols('chi', real = True, each_char = False),
+        kappa = symbols('kappa', real = True, each_char = False),
+        phi = symbols('phi', real = True, each_char = False),
+        theta = symbols('theta', real = True, each_char = False),
+        beta = symbols('beta', each_char = False)
                                 )
+    # list of input port names
     PORTSIN = ['A', 'B', 'VIn1', 'VIn2']
+    
+    # list of output port names
     PORTSOUT = ['UOut1', 'UOut2', 'NAND_AB', 'OUT2']
     
+    # architecture to use for reduce(), 
+    # only needed, when there are multiple architectures
     arch = "default"
     
-    def __init__(self, name = "Q", arch = "default", **params):
+    def __init__(self, name = "", arch = "default", **params):
         super(PseudoNAND, self).__init__(name, **params)
         self.arch = arch
     
@@ -35,29 +44,35 @@ class PseudoNAND(Component):
         
     def reduce(self):
         return getattr(self, "arch_" + self.arch)()
+
+    # Architectures, i.e. actual implementation of circuit
     
     def arch_netlist(self):
         # import referenced components
+        from circuit_components.kerr_cavity_cc import KerrCavity
         from circuit_components.phase_cc import Phase
         from circuit_components.beamsplitter_cc import Beamsplitter
-        from circuit_components.kerr_cavity_cc import KerrCavity
         from circuit_components.displace_cc import Displace
         
         # instantiate circuit components
-        P = Phase(make_namespace_string(self.name, 'P'), phi = self.phi)
         K = KerrCavity(make_namespace_string(self.name, 'K'), kappa_2 = self.kappa, chi = self.chi, kappa_1 = self.kappa, Delta = self.Delta)
+        P = Phase(make_namespace_string(self.name, 'P'), phi = self.phi)
         W_beta = Displace(make_namespace_string(self.name, 'W_beta'), alpha = self.beta)
-        BS2 = Beamsplitter(make_namespace_string(self.name, 'BS2'), theta = self.theta)
         BS1 = Beamsplitter(make_namespace_string(self.name, 'BS1'))
+        BS2 = Beamsplitter(make_namespace_string(self.name, 'BS2'), theta = self.theta)
         
-        return ((cid(1) + ((cid(1) + ((P + cid(1)) << BS2)) << P_sigma(0, 2, 1) << (K + cid(1)))) << (BS1 + cid(1) + W_beta) << (cid(2) + P_sigma(1, 0)))
+        return ((cid(1) + ((cid(1) + ((P + cid(1)) << BS2 << (W_beta + cid(1)))) << P_sigma(0, 2, 1) << (K + cid(1)))) << (BS1 + cid(2)) << (cid(2) + P_sigma(1, 0)))
     
     
     arch_default = arch_netlist
     
-    
-if __name__ == "__main__":
+def test():
     a = PseudoNAND()
     print a
-    sa = a.toSLH()
-    print sa
+    print "=" * 80
+    print a.reduce()
+    print "=" * 80
+    print a.toSLH()
+    
+if __name__ == "__main__":
+    test()

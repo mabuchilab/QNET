@@ -19,8 +19,8 @@ class CircuitVisualizer(object):
     def _repr_png_(self):
         import tempfile, circuit_visualization
         tmp_dir = tempfile.gettempdir()
-        fname = tmp_dir + "/visualize_circuit.png" 
-    
+        fname = tmp_dir + "/tmp_%s.png" % hash(str(self.circuit))
+        
         if circuit_visualization.draw_circuit(self.circuit, fname):
             with open(fname, "rb") as png_file:
                 return png_file.read()
@@ -83,8 +83,7 @@ class Circuit(Algebra):
             print e
             return
         
-    def show(self):
-        
+    def show(self):        
         return CircuitVisualizer(self)
         
     
@@ -276,8 +275,8 @@ class SLH(Circuit, Expression):
         one_minus_Snn_inv = sympyOne/one_minus_Snn
         
         new_S = S[:n,:n] + S[0:n , n:] * one_minus_Snn_inv * S[n:, 0 : n]
-        new_L = L[:n] + S[0:n, n]*one_minus_Snn_inv*L[n]
-        delta_H  = Im( (L.adjoint() * S[:,n:]) *one_minus_Snn_inv*L[n] )
+        new_L = L[:n] + S[0:n, n] * one_minus_Snn_inv * L[n]
+        delta_H  = Im( (L.adjoint() * S[:,n:]) * one_minus_Snn_inv * L[n] )
         
         if isinstance(delta_H, OperatorMatrixInstance):
             delta_H = delta_H[0,0]
@@ -317,14 +316,28 @@ class SLH(Circuit, Expression):
                                                 for Lk in L.array.flatten())
 
 
-    def symbolic_lindbladian_heisenberg(self, M = None):
+    def symbolic_lindbladian_heisenberg(self, M = None, noises = None):
         L, H = self.L, self.H
         
         if M is None:
-            M = OperatorSymbol('M', L.space | H.space)            
-        return I*(H*M - M*H) + sum(adjoint(Lk)* M * Lk \
+            M = OperatorSymbol('M', L.space | H.space)
+            
+        ret =  I*(H*M - M*H) + sum(adjoint(Lk)* M * Lk \
                     -  (adjoint(Lk)*Lk * M + M * adjoint(Lk)*Lk) / 2 \
                                                             for Lk in L.array.flatten())
+        if noises is not None:
+            if not isinstance(noises, OperatorMatrixInstance):
+                noises = OperatorMatrixInstance(noises)
+            LambdaT = (noises.conjugate() * noises.transpose()).transpose()
+            assert noises.shape == L.shape
+            S = self.S
+            ret += (adjoint(noises) * S.adjoint() * (M * L - L * M)).evalf()[0,0] \
+                    + ((L.adjoint() *M - M * L.adjoint()) * S * noises).evalf()[0,0]
+            if len(S.space & M.space):
+                comm = (S.adjoint() * M * S - M)
+                ret +=  (comm * LambdaT).evalf().trace()        
+        return ret
+
 
     def __iter__(self):
         return iter((self.S, self.L, self.H))
