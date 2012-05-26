@@ -7,7 +7,7 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, OperatorMatrixInstance, sqrt, SLH, LocalSigma
+from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, OperatorMatrixInstance, sqrt, SLH, LocalSigma, IdentityMatrix
 from library import make_namespace_string
 from circuit_components.component import Component, SubComponent
 
@@ -30,28 +30,41 @@ class DoubleSidedOPO(Component):
     
     PORTSIN = ['In1', 'In2']
     PORTSOUT = ['Out1', 'Out2']        
-        
-    # def reduce(self):
-    #     return self
+    
+    sub_blockstructure = (1, 1)
+    
+    def reduce(self):        
+        try:
+            self.fock_id = HilbertSpace.register_local_space(self.name, range(self.FOCK_DIM))
+        except SpaceExists:
+            self.fock_id = HilbertSpace.retrieve_by_descriptor(self.name)[0]
+            HilbertSpace.set_states(self.name, range(self.FOCK_DIM))
+            
+        return OPOPort(self, 0) + OPOPort(self, 1)
         
     def toSLH(self):
-        try:
-            #hilbert space for two-level-system
-            self.s_id = HilbertSpace.register_local_space(self.name, range(self.FOCK_DIM))
-        except SpaceExists:
-            self.s_id = HilbertSpace.retrieve_by_descriptor(self.name)[0]
-            HilbertSpace.set_states(self.name, range(self.FOCK_DIM))
+        return self.reduce().toSLH()
+        
 
-        a = Destroy(self.s_id)
+class OPOPort(SubComponent):
+
+    def toSLH(self):
+
+        a = Destroy(self.fock_id)
         a_d = a.adjoint()
+        S = IdentityMatrix(1)
 
-        #coupling to external mode
-        L1 = sqrt(self.kappa_1) * a
-        L2 = sqrt(self.kappa_2) * a
+        if self.sub_index == 0: 
+            # Include the Hamiltonian only with the first port of the kerr cavity circuit object
+            H = self.Delta * a_d * a + I * (self.alpha * a_d * a_d - self.alpha.conjugate() * a * a)
+            L = OperatorMatrixInstance([[sqrt(self.kappa_1) * a]])
+        else:
+            H = 0
+            L = OperatorMatrixInstance([[sqrt(self.kappa_2) * a]])
 
-        H = self.Delta * a_d * a + I * (self.alpha * a_d * a_d - self.alpha.conjugate() * a * a)
-        return SLH(OperatorMatrixInstance([[1,0],[0,1]]),OperatorMatrixInstance([[L1],[L2]]), H)
- 
+        return SLH(S, L, H)
+
+
 
 def test():
     a = DoubleSidedOPO(Delta = symbols("MyDelta", real = True))
