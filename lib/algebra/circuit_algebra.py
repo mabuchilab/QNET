@@ -19,8 +19,8 @@ class CircuitVisualizer(object):
     def _repr_png_(self):
         import tempfile, circuit_visualization
         tmp_dir = tempfile.gettempdir()
-        fname = tmp_dir + "/visualize_circuit.png" 
-    
+        fname = tmp_dir + "/tmp_%s.png" % hash(str(self.circuit))
+        
         if circuit_visualization.draw_circuit(self.circuit, fname):
             with open(fname, "rb") as png_file:
                 return png_file.read()
@@ -83,8 +83,7 @@ class Circuit(Algebra):
             print e
             return
         
-    def show(self):
-        
+    def show(self):        
         return CircuitVisualizer(self)
         
     
