@@ -794,7 +794,7 @@ class Multiplication(AssociativeOperation):
                 pre_factor = operands[:i]
                 post_factor = operands[i+1:]
                 new_summands = map(lambda f: self.__class__.apply_with_rules(*(pre_factor + [f] + post_factor)), o._operands)
-                return o.__class__.apply_with_rules(*new_summands).expand()
+                return expand(o.__class__.apply_with_rules(*new_summands))
         return self.__class__.apply_with_rules(*operands)
     
     # def diff(self, wrt):
