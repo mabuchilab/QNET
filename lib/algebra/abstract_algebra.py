@@ -13,6 +13,7 @@ from sympy.core.basic import Basic as SympyBasic
 from sympy.core.sympify import sympify, SympifyError
 from sympy.printing.latex import latex as sympy_latex
 from numpy import ndarray
+from functools import reduce as freduce
 
 
 
@@ -24,19 +25,24 @@ def n(obj):
         return obj
 
 def is_number(obj):
+    "Check for Python number type"
     return isinstance(obj, (int, long, float, complex))
 
+
 def is_integral(obj):
+    "Check for Python integral number type"
     return isinstance(obj, (int, long))
-    
 
 def set_union(*sets):
-    return reduce(lambda set1, set2: set1 | set2, sets, set(()))
+    "Return the union of an arbitrary number of sets."
+    return freduce(lambda set1, set2: set1 | set2, sets, set(()))
 
 def set_intersection(*sets):
-    return reduce(lambda set1, set2: set1 & set2, sets, set(()))
+    "Return the intersection of an arbitrary number of sets"
+    return freduce(lambda set1, set2: set1 & set2, sets, set(()))
     
 def simplify(obj, **rules):
+
     try:
         return obj.simplify(**rules)
     except AttributeError:
@@ -284,7 +290,7 @@ def mathematica(obj):
         return str(obj)
 
 def capitalize_sympy_functions_for_mathematica(string):
-    words = ("cos", "sin", "exp", "sqrt", "conjugate")
+    words = ("cos", "sin", "exp", "sqrt", "conjugate", "cosh", "sinh")
     return reduce(lambda a, b: a.replace(b, b[0].upper() + b[1:]), words, string)
 
     

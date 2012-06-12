@@ -12,15 +12,15 @@ class CannotConvertToSLH(Exception):
     pass
 
 class CircuitVisualizer(object):
-    
+
     def __init__(self, circuit):
         self.circuit = circuit
-        
+
     def _repr_png_(self):
         import tempfile, circuit_visualization
         tmp_dir = tempfile.gettempdir()
         fname = tmp_dir + "/tmp_%s.png" % hash(str(self.circuit))
-        
+
         if circuit_visualization.draw_circuit(self.circuit, fname):
             with open(fname, "rb") as png_file:
                 return png_file.read()
@@ -42,11 +42,11 @@ class Circuit(Algebra):
     @property
     def block_structure(self):
         return (self.cdim,)
-    
+
     def index_in_block(self, channel_index):
         if channel_index < 0 or channel_index >= self.cdim:
             raise AlgebraError()
-        
+
         struct = self.block_structure
         if len(struct) == 1:
             return channel_index, 0
@@ -252,7 +252,7 @@ class SLH(Circuit, Expression):
         if not isinstance(self.S, OperatorMatrixInstance) or not isinstance(self.L, OperatorMatrixInstance):
             return Feedback(self, out_index, in_index)
         
-        if out_index == None:
+        if out_index is None:
             out_index = self.cdim - 1
         
         if in_index == None:
@@ -501,7 +501,7 @@ def get_common_block_structure(lhs_bs, rhs_bs):
             j += 1
         else:
             break
-    
+
     return (lsum, ) + get_common_block_structure(lhs_bs[i:], rhs_bs[j:])
 
 
