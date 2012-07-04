@@ -7,82 +7,68 @@ Created by Nikolas Tezak on 2012-01-07.
 Copyright (c) 2012 . All rights reserved.
 """
 
-from algebra.operator_algebra import Create, LocalProjector, LocalSigma, HilbertSpace, SpaceExists
+from qnet.algebra.operator_algebra import *
 import qutip
-from math import sqrt
+import unittest
 
-try:
-    H2id = HilbertSpace.register_local_space('H2', ('e','g','h'))
-    H2 = HilbertSpace((H2id,))
-except SpaceExists:
-    H2 = HilbertSpace(("H2",))
+class TestQutipConversion(unittest.TestCase):
 
-try:
-    Hid = HilbertSpace.register_local_space('H', range(5))
-    H = HilbertSpace((Hid,))
-except SpaceExists:
-    H = HilbertSpace(("H",))
+    def testCreateDestoy(self):
+        H = LocalSpace("H", dimension = 5)
+        ad = Create(H)
+        a = Create(H).adjoint()
+        aq = a.to_qutip()
+        for k in range(H.dimension - 1):
+            self.assertLess(abs(aq[k, k+1] - sqrt(k + 1)), 1e-10)
+        self.assertEqual(ad.to_qutip(),qutip.dag(a.to_qutip()))
 
+    def testN(self):
+        H = LocalSpace("H", dimension = 5)
+        ad = Create(H)
+        a = Create(H).adjoint()
+        aq = a.to_qutip()
+        n = ad * a
+        nq = n.to_qutip()
+        for k in range(H.dimension):
+            self.assertLess(abs(nq[k,k] - k), 1e-10)
 
-ad = Create(H)
-a = Create(H).adjoint()
+    def testSigma(self):
+        H = LocalSpace("H", basis = ("e","g","h"))
+        sigma = LocalSigma(H, 'g', 'e')
+        sq = sigma.to_qutip()
+        self.assertEqual(sq[1,0], 1)
+        self.assertEqual((sq**2).norm(), 0)
 
+    def testPi(self):
+        H = LocalSpace("H", basis = ("e","g","h"))
+        Pi_h = LocalProjector(H, 'h')
+        self.assertEqual(Pi_h.to_qutip().tr(), 1)
+        self.assertEqual(Pi_h.to_qutip()**2, Pi_h.to_qutip())
 
-def test_destroy():
-    aq = a.to_qutip()
-    for k in range(H.dimension - 1):
-        assert abs(aq[k, k+1] - sqrt(k + 1)) < 1e-10
+    def testTensorProduct(self):
+        H = LocalSpace("H1", dimension = 5)
+        ad = Create(H)
+        a = Create(H).adjoint()
+        H2 = LocalSpace("H2", basis = ("e","g","h"))
+        sigma = LocalSigma(H2, 'g', 'e')
+        self.assertEqual((sigma * a).to_qutip(), qutip.tensor(a.to_qutip(), sigma.to_qutip()))
 
+    def testLocalSum(self):
+        H = LocalSpace("H1", dimension = 5)
+        ad = Create(H)
+        a = Create(H).adjoint()
+        self.assertEqual((a + ad).to_qutip(), a.to_qutip() + ad.to_qutip())
 
-def test_create():
-    assert ad.to_qutip() == qutip.dag(a.to_qutip())
-    
+    def testNonlocalSum(self):
+        H = LocalSpace("H1", dimension = 5)
+        ad = Create(H)
+        a = Create(H).adjoint()
+        H2 = LocalSpace("H2", basis = ("e","g","h"))
+        sigma = LocalSigma(H2, 'g', 'e')
+        self.assertEqual((a + sigma).to_qutip()**2, ((a + sigma)*(a + sigma)).to_qutip())
 
-n = ad * a
-
-def test_n():
-    nq = n.to_qutip()
-    for k in range(H.dimension):
-        assert abs(nq[k,k] - k) < 1e-10
-
-
-sigma = LocalSigma(H2, 'g', 'e')
-
-def test_sigma():
-    sq = sigma.to_qutip()
-    assert sq[1,0] == 1
-    assert (sq**2).norm() == 0
-
-
-
-Pi_h = LocalProjector(H2, 'h')
-def test_Pi():
-    assert Pi_h.to_qutip().tr() == 1
-    assert Pi_h.to_qutip()**2 == Pi_h.to_qutip()
-
-
-def test_tensor_product():    
-    assert (sigma * a).to_qutip() == qutip.tensor(sigma.to_qutip(), a.to_qutip())
-
-
-
-
-def test_local_sum():
-    assert (a + ad).to_qutip() == a.to_qutip() + ad.to_qutip()
-
-
-
-def test_nonlocal_sum():
-    assert (a + sigma).to_qutip()**2 == ((a + sigma)*(a + sigma)).to_qutip()
-
-
-
-
-def test_scalar_coeffs():
-    assert 2 * a.to_qutip() == (2 * a).to_qutip()
-
-if __name__ == '__main__':
-    keys = globals().keys()
-    for fn in keys:
-        if fn.startswith('test_'):
-            globals()[fn]()
+    def testScalarCoeffs():
+        H = LocalSpace("H1", dimension = 5)
+        ad = Create(H)
+        a = Create(H).adjoint()
+        self.assertEqual(2 * a.to_qutip(), (2 * a).to_qutip())

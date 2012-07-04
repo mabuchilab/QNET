@@ -104,11 +104,8 @@ class WrongSignature(AlgebraError):
 #
 class Expression(object):
     """Abstract base class defining the basic methods any Expression object should implement."""
-#
-#    # def expand(self):
-#    #     """Expand out sums distributively."""
-#    #     return self
-#
+
+
     def substitute(self, var_map):
         """
         Substitute symbols for other expressions via
@@ -119,21 +116,7 @@ class Expression(object):
             return var_map[self]
 
         return self
-#
-#    subs = substitute
-#
-#    def __call__(self, **kwargs):
-#        """
-#        Substitute some values for symbols into the expression and subsequently call evalf(.) for the result.
-#        """
-#        return evalf(self.substitute(kwargs))
-#
-#    def evalf(self):
-#        """
-#        Force evaluation of all expressions where this is possible.
-#        """
-#        return self
-#
+
     def tex(self):
         """
         Return a string containing a TeX-representation of self.
@@ -146,18 +129,7 @@ class Expression(object):
 
     def _repr_latex_(self):
         return "$%s$" % self.tex()
-#
-#
-#    # def diff(self, wrt):
-#    #     """
-#    #     Differentiate expression with respect to 'wrt'.
-#    #     """
-#    #     # as long as there exist no symbolic derivatives, this is fine
-#    #     if self.free_of(wrt):
-#    #         return 0
-#    #
-#    #     raise NotImplementedError(self.__class__.__name__)
-#
+
     def free_of(self, *symbols):
         """
         Check if expression is independent of all passed symbols
@@ -169,8 +141,8 @@ class Expression(object):
         Return set of symbols contained within the expression.
         """
         raise NotImplementedError(self.__class__.__name__)
-#
-#
+
+
     def __hash__(self):
         """
         Provide a hashing mechanism for self.
@@ -196,6 +168,10 @@ class Expression(object):
         if type(eq) is bool:
             return not eq
         return NotImplemented
+
+    def simplify(self):
+        return self
+
 #
 #    def __cmp__(self, other):
 #        """
@@ -237,22 +213,22 @@ class Expression(object):
 #         return expr
 #
 #
-#def substitute(expr, var_map):
-#    """
-#    (Safe) substitute: Substitute objects for symbols
-#    """
-#    try:
-#        return expr.substitute(var_map)
-#    except AttributeError:
-#        try:
-#            # try substituting sympy_objects
-#            var_map = dict((k,v) for (k,v) in var_map.items() if not isinstance(k, Expression) and not isinstance(v, Expression))
-#            return expr.subs(var_map)
-#        except AttributeError:
-#            return expr
-#        except Exception, e:
-#            print "Warning while trying to substitute in %s an error occured: %s" % (expr, e)
-#            return expr
+def substitute(expr, var_map):
+    """
+    (Safe) substitute: Substitute objects for symbols
+    """
+    try:
+        return expr.substitute(var_map)
+    except AttributeError:
+        try:
+            # try substituting sympy_objects
+            var_map = dict((k,v) for (k,v) in var_map.items() if not isinstance(k, Expression) and not isinstance(v, Expression))
+            return expr.subs(var_map)
+        except AttributeError:
+            return expr
+        except Exception, e:
+            print "Warning while trying to substitute in %s an error occured: %s" % (expr, e)
+            return expr
 #
 #def evalf(expr):
 #    """
@@ -264,23 +240,23 @@ class Expression(object):
 #        return expr
 #
 #
-#def tex(obj):
-#    """
-#    Return a LaTeX string-representation of obj.
-#    """
-#    if isinstance(obj, str):
-#        return identifier_to_tex(obj)
-#    if is_number(obj):
-#        return format_number_for_tex(obj)
-#    if isinstance(obj, SympyBasic):
-#        return sympy_latex(obj)#[1:-1] #trim '$' at beginning and end of returned string
-#    try:
-#        return obj.tex()
-#    except AttributeError:
-#        try:
-#            return obj._latex_()
-#        except AttributeError:
-#            return str(obj)
+def tex(obj):
+    """
+    Return a LaTeX string-representation of obj.
+    """
+    if isinstance(obj, str):
+        return identifier_to_tex(obj)
+    if is_number(obj):
+        return format_number_for_tex(obj)
+    if isinstance(obj, SympyBasic):
+        return sympy_latex(obj)#[1:-1] #trim '$' at beginning and end of returned string
+    try:
+        return obj.tex()
+    except AttributeError:
+        try:
+            return obj._latex_()
+        except AttributeError:
+            return str(obj)
 #
 #def mathematica(obj):
 #    """
@@ -513,7 +489,8 @@ class Expression(object):
 #
 #        return function_with_default_rules
 #
-    
+
+
 
 class Operation(Expression):
     """
@@ -607,6 +584,16 @@ class Operation(Expression):
         all (default) rules. This ensures that no invalid expressions are created.
         """
         return cls(*operands)
+
+    @classmethod
+    def order_key(cls, a):
+        if hasattr(a, "_key_"):
+            return a._key_()
+        return a
+
+
+    def _key_(self):
+        return (self.__class__.__name__,) + self.operands
 
         
              
@@ -1277,10 +1264,196 @@ class Operation(Expression):
 #        raise CannotCompare(repr((self, other)))
 #
 
+inf = float('inf')
+
+def match_range(pattern):
+    if isinstance(pattern, Wildcard):
+        if pattern.mode == Wildcard.single:
+            return 1,1
+        if pattern.mode == Wildcard.one_or_more:
+            return 1, inf
+        if pattern.mode == Wildcard.zero_or_more:
+            return 0, inf
+        raise ValueError()
+    if isinstance(pattern, PatternTuple):
+        if len(pattern):
+            a0, b0 = match_range(pattern[0])
+            a1, b1 = match_range(pattern[1:])
+#            a1, b1 = match_range(PatternTuple(pattern[1:]))
+            return a0 + a1, b0 + b1
+        return 0, 0
+    return 1, 1
 
 
-def match(pattern, expr):
+class OperandsTuple(tuple):
+#    def __new__(cls, arg):
+#        arg = tuple(arg)
+#        if len(arg) == 1:
+#            return arg[0]
+#        return tuple.__new__(cls, arg)
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            return OperandsTuple(super(OperandsTuple, self).__getitem__(item))
+        return super(OperandsTuple, self).__getitem__(item)
+
+    def __getslice__(self, i, j):
+        return OperandsTuple(super(OperandsTuple, self).__getslice__(i,j))
+
+class PatternTuple(tuple):
+
+#    def __new__(cls, arg):
+#        arg = tuple(arg)
+#        if len(arg) == 1:
+#            return arg[0]
+#        return tuple.__new__(cls, arg)
+
+
+    def __getitem__(self, item):
+        if isinstance(item, slice):
+            return OperandsTuple(super(PatternTuple, self).__getitem__(item))
+        return super(PatternTuple, self).__getitem__(item)
+
+    def __getslice__(self, i, j):
+        return PatternTuple(super(PatternTuple, self).__getslice__(i,j))
+
+
+class NamedPattern(Operation):
     pass
+
+def trace(fn):
+    def tfn(*args, **kwargs):
+        print "[", "-"* 40
+        ret =  fn(*args, **kwargs)
+        print "{}({},{}) called".format(fn.__name__, ", ".join(repr(a) for a in args),
+                                        ", ".join(str(k)+"="+repr(v) for k,v in kwargs.items()))
+        print "-->", repr(ret)
+        print "-"* 40,"]"
+        return ret
+
+
+    return tfn
+
+def flatten(seq):
+    sres = []
+    for s in seq:
+        if isinstance(s, (PatternTuple, OperandsTuple)):
+            sres += list(s)
+        else:
+            sres.append(s)
+    return sres
+
+#@trace
+def update_pattern(expr, match_obj):
+
+    if isinstance(expr, Wildcard):
+        if expr.name in match_obj:
+            return match_obj[expr.name]
+    elif isinstance(expr, (PatternTuple, OperandsTuple)):
+        return expr.__class__(flatten([update_pattern(o, match_obj) for o in expr]))
+    elif isinstance(expr, Operation):
+        return expr.__class__(*flatten([update_pattern(o, match_obj) for o in expr.operands]))
+
+    return expr
+
+
+
+#@trace
+def match(pattern, expr):
+
+    if pattern is expr:
+        return Match()
+
+    a, b = match_range(pattern)
+
+    if isinstance(expr, OperandsTuple):
+        l = len(expr)
+    else:
+        l = 1
+
+    if not a <= l <= b:
+        return False
+
+    if isinstance(pattern, PatternTuple):
+        if not len(pattern):
+            assert l == 0
+            return Match()
+
+        p0 = pattern[0]
+        prest = pattern[1:]
+
+        if isinstance(expr, OperandsTuple):
+
+            if isinstance(p0, Wildcard) and p0.mode != Wildcard.single:
+                a0, b0 = match_range(p0)
+                for k in range(a0, min(l,b0)+1):
+                    o0 = expr[:k]
+                    orest = expr[k:]
+                    m0 = match(p0, o0)
+                    if m0:
+                        if len(m0):
+                            mrest = match(update_pattern(prest, m0), orest)
+                        else:
+                            mrest = match(prest, orest)
+                        if mrest:
+                            return m0 + mrest
+
+                return False
+            else:
+                m0 = match(p0, expr[0])
+                if m0:
+                    orest = expr[1:]
+                    if len(m0):
+                        mrest = match(update_pattern(prest, m0), orest)
+                    else:
+                        mrest = match(prest, orest)
+#                    print m0, update_pattern(prest, m0), mrest
+                    if mrest:
+                        return m0 + mrest
+                return False
+
+    elif isinstance(pattern, Wildcard):
+        if pattern.mode == Wildcard.single:
+            if isinstance(expr, OperandsTuple):
+                assert len(expr) == 1
+                expr = expr[0]
+            if pattern.head and not isinstance(expr, pattern.head):
+                return False
+            if pattern.condition and not pattern.condition(expr):
+                return False
+            if pattern.name:
+                return Match({pattern.name: expr})
+            return Match()
+        else:
+            if not isinstance(expr, OperandsTuple):
+                expr = OperandsTuple((expr,))
+            if pattern.head and not all(isinstance(e, pattern.head) for e in expr):
+                return False
+            if pattern.condition and not all(pattern.condition(e) for e in expr):
+                return False
+            if pattern.name:
+                return Match({pattern.name: expr})
+            return Match()
+    elif isinstance(pattern, NamedPattern):
+        name, p =  pattern.operands
+        m = match(p, expr)
+        if m:
+            return m + Match({name: expr })
+        return False
+    elif isinstance(pattern, Operation):
+        if isinstance(expr,Operation) and type(pattern) is type(expr):
+            return match(PatternTuple(pattern.operands), OperandsTuple(expr.operands))
+    else:
+        return Match() if pattern == expr else False
+
+
+
+
+
+
+
+
+
 
 class Wildcard(Expression):
     single = 1
@@ -1301,15 +1474,28 @@ class Wildcard(Expression):
         self.condition = condition
 
     def __str__(self):
+        if isinstance(self.head, tuple):
+            head_string = "({})".format("|".join(h.__name__ for h in self.head))
+        elif self.head is not None:
+            head_string = self.head.__name__
+        else:
+            head_string = ""
         return "{}{}{}{}".format(self.name,
                                  "_" * self.mode,
-                                 self.head.__name__ if self.head else "",
+                                 head_string,
                                  self.condition.__name__ if self.condition else "")
 
     def __repr__(self):
+        if isinstance(self.head, tuple):
+            head_string = "({})".format(", ".join(h.__name__ for h in self.head))
+        elif self.head is not None:
+            head_string = self.head.__name__
+        else:
+            head_string = "None"
+
         return "Wildcard({}, {}, {}, {})".format(repr(self.name),
                                                  "_" * self.mode,
-                                                 self.head.__name__ if self.head else "None",
+                                                 head_string,
                                                  self.condition.__name__ if self.condition else "None")
 
     def __eq__(self, other):
@@ -1346,11 +1532,17 @@ class Match(dict):
         ret.update(other)
         return ret
 
-    def __repr__(self):
-        return "Match({})".format(dict.__repr__(self))
+#    def __repr__(self):
+#        return "Match({})".format(dict.__repr__(self))
+#
+#    def __str__(self):
+#        return "Match({})".format(dict.__str__(self))
 
-    def __str__(self):
-        return "Match({})".format(dict.__str__(self))
+    def __bool__(self):
+        return True
+
+    __nonzero__ = __bool__
+
 
 
 import re
@@ -1396,8 +1588,15 @@ def flat_mtd(dcls, clsmtd, cls, *ops):
 
 flat = decorate_classmethod(flat_mtd)
 
+
+def idem_mtd(dcls, clsmtd, cls, *ops):
+    return clsmtd(cls, *sorted(set(ops), key = cls.order_key))
+
+idem = decorate_classmethod(idem_mtd)
+
+
 def orderless_mtd(dcls, clsmtd, cls, *ops):
-    return clsmtd(cls, *sorted(ops))
+    return clsmtd(cls, *sorted(ops, key = cls.order_key))
 orderless = decorate_classmethod(orderless_mtd)
 
 
@@ -1421,10 +1620,10 @@ DCLS = object()
 def extended_isinstance(obj, class_info, dcls, cls):
     if isinstance(class_info, tuple):
         return any(extended_isinstance(obj, cli, dcls, cls) for cli in class_info)
-    if class_info == CLS:
+    if class_info is CLS:
         class_info = cls
-    elif class_info == DCLS:
-        dcls
+    elif class_info is DCLS:
+        class_info = dcls
     return isinstance(obj, class_info)
 
 def check_signature_mtd(dcls, clsmtd, cls, *ops):
@@ -1452,14 +1651,19 @@ def match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
     while j < len(ops):
         first, second = ops[j-1], ops[j]
         m = False
+        r = False
         for patterns, replacement in rules:
-            m = Operation.match_operands(patterns, (first, second))
-            if m is not False:
-                r = replacement(**m)
-                break
-        if m is not False:
+            m = match(PatternTuple(patterns), OperandsTuple((first, second)))
+            if m:
+                try:
+                    r = replacement(**m)
+                    break
+                except CannotSimplify:
+                    continue
+
+        if r is not False:
             ops = ops[:j-1] + (r,) + ops[j+1:]
-            if j > 0:
+            if j > 1:
                 j -= 1
         else:
             j += 1
@@ -1467,3 +1671,21 @@ def match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
     return clsmtd(cls, *ops)
 
 match_replace_binary = decorate_classmethod(match_replace_binary_mtd)
+
+
+def match_replace_mtd(dcls, clsmtd, cls, *ops):
+    rules = cls.rules
+    ops = OperandsTuple(ops)
+    r = False
+    for patterns, replacement in rules:
+        m = match(PatternTuple(patterns), ops)
+
+        if m:
+            try:
+                return replacement(**m)
+            except CannotSimplify:
+                continue
+    return clsmtd(cls, *ops)
+
+match_replace = decorate_classmethod(match_replace_mtd)
+
