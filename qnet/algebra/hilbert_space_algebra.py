@@ -23,6 +23,8 @@ class HilbertSpace(object):
     def local_factors(self):
         raise NotImplementedError(self.__class__.__name__)
 
+    def __len__(self):
+        return len(self.local_factors())
 
     def __mul__(self, other):
         return self.tensor(other)
@@ -117,17 +119,25 @@ class FullSpace(HilbertSpace):
 
 
 
+@singleton
+class InfiniteNumbers(object):
+    def __iter__(self):
+        def infinite_numbers():
+            i = 0
+            while True:
+                yield i
+                i += 1
+        return infinite_numbers()
 
+    def index(self, state):
+        if isinstance(state, int):
+            return state
+        raise ValueError()
 
-def infinite_numbers():
-    i = 0
-    while True:
-        yield i
-        i += 1
 
 class Basis(object):
     dimension = inf
-    states = infinite_numbers()
+    states = InfiniteNumbers
 
     def __init__(self, states = None):
         if states:
@@ -141,12 +151,17 @@ class Basis(object):
             return "Basis(xrange({}))".format(str(self.dimension))
         return "Basis()"
 
+    def __eq__(self, other):
+        return other.__class__ == Basis and self.states == other.states and self.dimension == other.dimension
+
 
 
 
 
 def local_space(name, namespace = "", dimension = None, basis = None):
     if basis:
+        if not isinstance(basis, Basis):
+            basis = Basis(basis)
         if dimension:
             assert basis.dimension == dimension
         return LocalSpace.create(name, namespace, basis)
@@ -188,7 +203,15 @@ class LocalSpace(HilbertSpace, Operation):
 
     @property
     def dimension(self):
-        return self.operands[2].dimension
+        return self.basis.dimension
+
+    @property
+    def basis(self):
+        return self.operands[2]
+
+    @property
+    def states(self):
+        return self.basis.states
 
     def __lt__(self, other):
         if not isinstance(other, HilbertSpace):

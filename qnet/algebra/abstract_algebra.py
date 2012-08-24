@@ -1574,9 +1574,16 @@ def decorate_classmethod(method, clsmethodname = "create", setup = None):
         dclsmtd.method = method
         dclsmtd.decorated = clsmtd
         dclsmtd.dcls = dcls
-
+        dclsmtd.decorators = (method,) + getattr(clsmtd, "decorators", ())
         dclsmtd.__name__ = clsmethodname
-        setattr(dcls, clsmethodname, make_classmethod(dclsmtd, dcls))
+
+        nmtd = make_classmethod(dclsmtd, dcls)
+#        assert nmtd.im_func is dclsmtd
+        setattr(dcls, clsmethodname, nmtd)
+#        if method.__name__.endswith("_mtd"):
+#            cls_flag = "_" + method.__name__[:-4]
+#        if cls_flag:
+#            setattr(dcls, cls_flag, True)
         return dcls
     return decorator
 
@@ -1597,20 +1604,25 @@ idem = decorate_classmethod(idem_mtd)
 
 def orderless_mtd(dcls, clsmtd, cls, *ops):
     return clsmtd(cls, *sorted(ops, key = cls.order_key))
-orderless = decorate_classmethod(orderless_mtd)
+orderby = decorate_classmethod(orderless_mtd)
 
 
 unequals = lambda x: (lambda y: x != y)
 
 def filter_neutral_mtd(dcls, clsmtd, cls, *ops):
     c_n = cls.neutral_element
-    ops = tuple(filter(unequals(c_n), ops))
-    if len(ops) > 1:
-        return clsmtd(cls, *ops)
-    elif len(ops) == 1:
-        return ops[0]
-    else:
+    if len(ops) == 0:
         return c_n
+    fops = tuple(filter(unequals(c_n), ops))
+    if len(fops) > 1:
+        return clsmtd(cls, *fops)
+    elif len(fops) == 1:
+        # the remaining operand is the single non-trivial one
+        return fops[0]
+    else:
+        # the original list of operands consists only of neutral elements
+        return ops[0]
+
 filter_neutral = decorate_classmethod(filter_neutral_mtd)
 
 
@@ -1662,7 +1674,11 @@ def match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
                     continue
 
         if r is not False:
-            ops = ops[:j-1] + (r,) + ops[j+1:]
+            # if Operation is also "flat", then expand out the operands of a binary-simplified result
+            if flat_mtd in getattr(cls.create.im_func, "decorators",()) and isinstance(r, cls):
+                ops = ops[:j-1] + r.operands + ops[j+1:]
+            else:
+                ops = ops[:j-1] + (r,) + ops[j+1:]
             if j > 1:
                 j -= 1
         else:

@@ -1,79 +1,78 @@
 from operator_algebra import *
 
-    
-
-class OperatorMatrix(Algebra):
-    
-    @property
-    def shape(self):
-        raise NotImplementedError('Please implement the shape property for the class %s' % self.__class__.__name__)
-
-    @property
-    def nrows(self):
-        return self.shape[0]
-
-    @property
-    def ncols(self):
-        return self.shape[1]
-
-    
-    @property
-    def space(self):
-        raise NotImplementedError('Please implement the space property for the class %s' % self.__class__.__name__)
-    
-    @property
-    def algebra(self):
-        return OperatorMatrix
-        # 
-        # zero = 0
-        # one = None
-
-    
-    
-    mul_map = {}
-    rmul_map = {}
-    
-    add_map = {}
-    radd_map = add_map #commutative add
-    
-    sub_map = {}
-    rsub_map = {}
-    
-    div_map = {}
-    rdiv_map = {}
-    
-    pow_map = {}
-    rpow_map = {}
-    
-    lshift_map = {}
-    rlshift_map = {}
-    
-    rshift_map = {}
-    rrshift_map = {}        
-    
-    def conjugate(self):
-        return ConjugateMatrix(self)
-    
-    def adjoint(self):
-        return AdjointMatrix(self)
-    
-    def transpose(self):
-        return TransposeMatrix(self)
-    
-#    def __getitem__(self, key):
-#        if isinstance(key, tuple) and len(key) == 2 \
-#            and isinstance(key[0], int) and isinstance(key[1], int):
-#                return MatrixEntry(self, key)
-#        return SubMatrix(self, key)
-        
-    def __len__(self):
-        return self.nrows
-    
-    def inverse(self):
-        raise NotImplementedError('Not Implemented for class %s' % self.__class__.__name__)
-
-    def __neg__(self):
-        return (-1)*self
+#
+#class OperatorMatrix(Algebra):
+#
+#    @property
+#    def shape(self):
+#        raise NotImplementedError('Please implement the shape property for the class %s' % self.__class__.__name__)
+#
+#    @property
+#    def nrows(self):
+#        return self.shape[0]
+#
+#    @property
+#    def ncols(self):
+#        return self.shape[1]
+#
+#
+#    @property
+#    def space(self):
+#        raise NotImplementedError('Please implement the space property for the class %s' % self.__class__.__name__)
+#
+#    @property
+#    def algebra(self):
+#        return OperatorMatrix
+#        #
+#        # zero = 0
+#        # one = None
+#
+#
+#
+#    mul_map = {}
+#    rmul_map = {}
+#
+#    add_map = {}
+#    radd_map = add_map #commutative add
+#
+#    sub_map = {}
+#    rsub_map = {}
+#
+#    div_map = {}
+#    rdiv_map = {}
+#
+#    pow_map = {}
+#    rpow_map = {}
+#
+#    lshift_map = {}
+#    rlshift_map = {}
+#
+#    rshift_map = {}
+#    rrshift_map = {}
+#
+#    def conjugate(self):
+#        return ConjugateMatrix(self)
+#
+#    def adjoint(self):
+#        return AdjointMatrix(self)
+#
+#    def transpose(self):
+#        return TransposeMatrix(self)
+#
+##    def __getitem__(self, key):
+##        if isinstance(key, tuple) and len(key) == 2 \
+##            and isinstance(key[0], int) and isinstance(key[1], int):
+##                return MatrixEntry(self, key)
+##        return SubMatrix(self, key)
+#
+#    def __len__(self):
+#        return self.nrows
+#
+#    def inverse(self):
+#        raise NotImplementedError('Not Implemented for class %s' % self.__class__.__name__)
+#
+#    def __neg__(self):
+#        return (-1)*self
             
 
 

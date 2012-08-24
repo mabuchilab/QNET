@@ -63,6 +63,7 @@ class TestPatternMatching(unittest.TestCase):
         a = wc("a", head = int)
         b = wc("b")
         c = wc("c", head = Dummy2)
+        self.assertEqual(match(PatternTuple((b,b)), OperandsTuple((("hallo",[]), ("hallo",[])))), Match(b = ("hallo",[])))
         self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,"hallo",2)), Match(b = "hallo"))
         self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,3,2)), Match(a = 3))
         self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,"hallo",2)), False)
@@ -132,7 +133,7 @@ class TestOperationDecorators(unittest.TestCase):
             pass
 
 
-        @orderless
+        @orderby
         class Orderless(Operation):
             pass
 
