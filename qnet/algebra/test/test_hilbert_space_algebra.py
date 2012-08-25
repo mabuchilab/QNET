@@ -33,7 +33,7 @@ class TestHilbertSpaces(unittest.TestCase):
         h4 = local_space("h4", dimension = 100)
 
         self.assertEqual((h1*h2).dimension, h1.dimension * h2.dimension)
-        self.assertEqual(h3.dimension, inf)
+        self.assertRaises(BasisNotSetError,lambda : h3.dimension)
         self.assertEqual(h4.dimension, 100)
 
 

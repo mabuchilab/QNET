@@ -556,7 +556,7 @@ def check_cdims_mtd(dcls, clsmtd, cls, *ops):
     if not len({o.cdim for o in ops}) == 1:
         raise ValueError("Not all operands have the same cdim:" + str(ops))
     return clsmtd(cls, *ops)
-check_cdims = decorate_classmethod(check_cdims_mtd)
+check_cdims = preprocess_create_with(check_cdims_mtd)
 
 
 
