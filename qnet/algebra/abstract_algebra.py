@@ -723,9 +723,26 @@ from itertools import izip
 from types import FunctionType, MethodType
 
 def make_classmethod(method, cls):
+    """
+    Make a bound classmethod from an unbound method taking an additional first argument `cls`
+    :param method: The unbound method
+    :type method: FunctionType
+    :param cls: The class to bind it to
+    :type cls: type
+    :return: Bound class method
+    :rtype: MethodType
+    """
     return MethodType(method, cls, type(cls))
 
 def preprocess_create_with(method):
+    """
+    This is a factory method that allows for adding argument pre-processing decorators the a class's create classmethod.
+    :param method: A decorating create classmethod f() with signature:
+            f(decorated_class, decorated_method, cls, *args)
+    :type method: FunctionType
+    :return: A class decorator function that decorates the 'create' classmethod of the decorated class.
+    :rtype: FunctionType
+    """
 
     def decorator(dcls):
         clsmtd = getattr(dcls, "create").im_func
@@ -736,6 +753,8 @@ def preprocess_create_with(method):
         dclsmtd.decorated = clsmtd
         dclsmtd.dcls = dcls
         dclsmtd.__doc__ = clsmtd.__doc__
+
+        # store a list of all applied decorators as an attribute of the new create method's im_func.
         dclsmtd.decorators = (method,) + getattr(clsmtd, "decorators", ())
         dclsmtd.__name__ = "create"
 
@@ -743,11 +762,30 @@ def preprocess_create_with(method):
         setattr(dcls, "create", nmtd)
         return dcls
 
+    # Copy docstring from method to class decorator
+    decorator.__doc__ = """
+Automatically generated class decorator based on the method
+    {}(dcls, clsmtd, cls, *ops)
+with docstring:
+
+{}
+""".format(method.__name__, method.__doc__)
+
     return decorator
 
 
 
 def flat_mtd(dcls, clsmtd, cls, *ops):
+    """
+    Associatively expand out nested arguments of the flat class.
+
+        @flat
+        class Plus(Operation):
+            pass
+
+        Plus.create(1,Plus(2,3))
+        # -> Plus(1,2,3)
+    """
     nops = sum(((o,) if not isinstance(o,cls) else o.operands for o in ops),())
     return clsmtd(cls, *nops)
 
@@ -755,19 +793,55 @@ flat = preprocess_create_with(flat_mtd)
 
 
 def idem_mtd(dcls, clsmtd, cls, *ops):
+    """
+    Remove duplicate arguments and order them via the cls's order_key key object/function.
+    E.g.
+
+        @idem
+        class Set(Operation):
+            pass
+
+        Set.create(1,2,3,1,3)
+        # -> Set(1,2,3)
+    """
     return clsmtd(cls, *sorted(set(ops), key = cls.order_key))
 
 idem = preprocess_create_with(idem_mtd)
 
 
 def orderless_mtd(dcls, clsmtd, cls, *ops):
+    """
+    Re-order arguments via the cls's order_key key object/function.
+    Use this for commutative operations:
+    E.g.
+        @orderless
+        class Times(Operation):
+            pass
+
+        Times.create(2,1)
+        # -> Times(1,2)
+    """
     return clsmtd(cls, *sorted(ops, key = cls.order_key))
+
 orderby = preprocess_create_with(orderless_mtd)
 
 
 unequals = lambda x: (lambda y: x != y)
 
 def filter_neutral_mtd(dcls, clsmtd, cls, *ops):
+    """
+    Remove occurrences of a neutral element from the argument/operand list, if that list has at least two elements.
+    To use this, one must also specify a neutral element, which can be anything that allows for an equality check with each argument.
+    E.g.
+
+        @filter_neutral
+        class X(Operation):
+            neutral_element = 1
+
+        X.create(2,1,3,1)
+        # -> X(2,3)
+
+    """
     c_n = cls.neutral_element
     if len(ops) == 0:
         return c_n
@@ -788,6 +862,31 @@ CLS = object()
 DCLS = object()
 
 def extended_isinstance(obj, class_info, dcls, cls):
+    """
+    Like isinstance but with two extra arguments to allow for placeholder objects (DCLS, CLS)
+    to stand for the class objects passed as extra arguments dcls, cls. This allows one to specify a self-referential
+    `signature` class attribute to allow for recursive Operation signatures.
+    E.g.
+
+        @check_signature
+        class X(Operation):
+            signature = str, X
+
+    will yield an exception, because X within the class body refers to a class object that has not been defined yet.
+    Instead, one can do
+
+        @check_signature
+        class X(Operation):
+            signature = str, CLS
+
+    to refer to the class of the object being instantiated (could be a subclass of X), or
+
+        @check_signature
+        class X(Operation):
+            signature = str, DCLS
+
+    to always refer to X itself and not a subclass.
+    """
     if isinstance(class_info, tuple):
         return any(extended_isinstance(obj, cli, dcls, cls) for cli in class_info)
     if class_info is CLS:
@@ -797,24 +896,124 @@ def extended_isinstance(obj, class_info, dcls, cls):
     return isinstance(obj, class_info)
 
 def check_signature_mtd(dcls, clsmtd, cls, *ops):
+    """
+    Check that the operands passed to the create classmethod of an Operation type conform to certain types.
+    For each allowed argument/operand, provide a tuple of types (or CLS, DCLS, see extended_isinstance docs).
+    E.g.
+
+        @check_signature
+        class X(Operation):
+            signature = str, (int, str)
+
+        X.create("1", 2)
+        # works, --> X("1", 2)
+        X.create("1", "2")
+        # works, --> X("1", "2")
+
+        X.create("1")
+        X.create(1, "1")
+        X.create("1", 2, 3)
+        # all raise WrongSignatureError
+    """
     sgn = cls.signature
     if not len(ops) == len(sgn):
         raise WrongSignature()
     if not all(extended_isinstance(o, s, dcls, cls) for o, s in izip(ops, sgn)):
         raise WrongSignature()
     return clsmtd(cls, *ops)
+
 check_signature = preprocess_create_with(check_signature_mtd)
 
 
 def check_signature_flat_mtd(dcls, clsmtd, cls, *ops):
+    """
+    Like `check_signature` but for `flat` Operations. In this case the signature need only contain a single entry.
+
+        @flat
+        @check_signature
+        class X(Operation):
+            signature = str
+
+        X.create("hello", "you")
+        # -> X("hello", "you")
+
+        X.create("hello", "you", 2)
+        # -> raises WrongSignature()
+    """
     sgn = cls.signature[0]
     if not all(extended_isinstance(o, sgn, dcls, cls) for o in ops):
         raise WrongSignature()
     return clsmtd(cls, *ops)
 check_signature_flat = preprocess_create_with(check_signature_flat_mtd)
 
+def match_replace_mtd(dcls, clsmtd, cls, *ops):
+    """
+    Match and replace a full operand specification to a function that provides a replacement for the whole expression
+    or raises a CannotSimplify() exception.
+    E.g.
+
+        @match_replace
+        class Invert(Operation):
+            rules = []
+
+        Invert.rules += [
+            ((Invert(wc("A"),), lambda A: A),
+            ((Invert(wc("A", head = float),), lambda A: 1./A),
+        ]
+
+        Invert.create(Invert("hallo"))
+        # -> "hallo"
+
+        Invert.create(.2)
+        # -> 5.
+
+
+        A = wc("A")
+
+        @match_replace
+        class X(Operation):
+            rules = [
+                ((A, A), lambda A: A),
+            ]
+
+        X.create(1,2)
+        # -> X(1,2)
+
+        X.create(1,1)
+        # -> 1
+
+    """
+
+    for patterns, replacement in cls.rules:
+        m = match(PatternTuple(patterns), OperandsTuple(ops))
+        if m:
+            try:
+                return replacement(**m)
+            except CannotSimplify:
+                continue
+    return clsmtd(cls, *ops)
+
+match_replace = preprocess_create_with(match_replace_mtd)
+
 
 def match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
+    """
+    Like match and replace, but for arbitrary length operations, such that each two pairs of subsequent operands are matched pairwise.
+
+        A = wc("A")
+
+        @match_replace_binary
+        class FilterDupes(Operation):
+            rules = [
+                ((A,A), lambda A: A),
+            ]
+
+        FilterDupes.create(1,2,3,4)
+        # -> FilterDupes(1,2,3,4)
+
+        FilterDupes.create(1,2,2,3,4)
+        # -> FilterDupes(1,2,3,4)
+    """
     rules = cls.binary_rules
     j = 1
     while j < len(ops):
@@ -844,17 +1043,3 @@ def match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
     return clsmtd(cls, *ops)
 
 match_replace_binary = preprocess_create_with(match_replace_binary_mtd)
-
-
-def match_replace_mtd(dcls, clsmtd, cls, *ops):
-    for patterns, replacement in cls.rules:
-        m = match(PatternTuple(patterns), OperandsTuple(ops))
-        if m:
-            try:
-                return replacement(**m)
-            except CannotSimplify:
-                continue
-    return clsmtd(cls, *ops)
-
-match_replace = preprocess_create_with(match_replace_mtd)
-
