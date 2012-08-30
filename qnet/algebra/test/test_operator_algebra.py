@@ -11,25 +11,33 @@ from qnet.algebra.operator_algebra import *
 
 
 class TestOperatorCreation(unittest.TestCase):
-    def testImplicitHilbertSpace(self):
-        hs = local_space("hs")
-        h2 = local_space("h2")
-        aa = OperatorSymbol("aa",hs)
-        bb = OperatorSymbol("aa",hs*h2)
-        a = Destroy(hs)
-        self.assertEqual(aa, OperatorSymbol("aa","hs"))
-        self.assertEqual(bb, OperatorSymbol("aa",("hs","h2")))
-        self.assertEqual(a, Destroy("hs"))
 
     def testIdentity(self):
         self.assertEqual(Create("1"), Create("1"))
+        self.assertEqual(OperatorSymbol("a", 1), OperatorSymbol("a",1))
+
+    def testImplicitHilbertSpaceCreation(self):
+        hs = local_space("hs")
+        h2 = local_space("h2")
+        aa = OperatorSymbol("aa", hs)
+        bb = OperatorSymbol("aa", hs * h2)
+        a = Destroy(hs)
+        self.assertEqual(aa, OperatorSymbol("aa", "hs"))
+        self.assertEqual(bb, OperatorSymbol("aa", ("hs", "h2")))
+        self.assertEqual(a, Destroy("hs"))
+        self.assertEqual(Destroy(1), Destroy("1"))
+        self.assertEqual(OperatorSymbol("a", 1), OperatorSymbol("a","1"))
 
     def testMatch(self):
+
         A = wc("A", head = Operator)
         a = Create("1")
         c = Create("1")
         b = OperatorSymbol("b","hs")
         b2 = OperatorSymbol("b","hs")
+        n = wc("n", head = int)
+        m = wc("m", head = int)
+
         self.assertEqual(a,c)
         self.assertEqual(b,b2)
         self.assertEqual(match(A, a),Match(A = a))
@@ -37,12 +45,10 @@ class TestOperatorCreation(unittest.TestCase):
         self.assertEqual(match(PatternTuple((A,A)), OperandsTuple((b, b))),Match(A = b))
         self.assertEqual(match(PatternTuple((A,A)), OperandsTuple((b, b2))),Match(A = b))
         self.assertEqual(match(PatternTuple((A,A)), OperandsTuple((a, c))),Match(A = a))
-
+        self.assertEqual(match(PatternTuple((Phase(ls, u), LocalSigma(ls, n, m))), OperandsTuple((Phase.create(1, 5),LocalSigma.create(1, 3, 4)))), Match(ls = local_space(1), u = 5, n = 3, m = 4))
 
 
 class TestOperatorAddition(unittest.TestCase):
-
-
 
     def testAdditionToScalar(self):
         hs = local_space("hs")
@@ -77,6 +83,10 @@ class TestOperatorAddition(unittest.TestCase):
         self.assertEqual(a.space, h1)
         self.assertEqual((a + b).space, h1*h2)
 
+    def testEquality(self):
+        self.assertEqual(Create(1)+Create(2), Create(2)+Create(1))
+
+
 
 
 
@@ -107,6 +117,10 @@ class TestOperatorTimes(unittest.TestCase):
         self.assertEqual((a * b).space, h1*h2)
 
 
+    def testEquality(self):
+        self.assertEqual(Create(1)*Create(2), Create(1)*Create(2))
+
+
 
 
 
@@ -131,6 +145,9 @@ class TestScalarTimesOperator(unittest.TestCase):
         self.assertEqual(a*0, z)
         self.assertEqual(10 * z, z)
 
+    def testEquality(self):
+        self.assertEqual(5*Create(1), (6-1)* Create(1))
+
     def testScalarCombination(self):
         a = OperatorSymbol("a", "h1")
         self.assertEqual(a+a, 2*a)
@@ -146,10 +163,30 @@ class TestScalarTimesOperator(unittest.TestCase):
 
 
 class TestLocalOperatorRelations(unittest.TestCase):
-    def testNormalOrdering(self):
+    def testCommutatorAAdag(self):
         h = local_space("h")
         ii = IdentityOperator
         self.assertEqual(Destroy(h) * Create(h) - Create(h) * Destroy(h), ii )
+
+    def testPhase(self):
+        self.assertEqual(Phase(1, 5).adjoint(), Phase(1, -5))
+        self.assertEqual(Phase(1, 5) * Phase(1, -5), 1)
+        self.assertEqual(Phase(1, 5) * Create(1) * Phase(1, -5), exp(I * 5) * Create(1))
+        self.assertEqual(Phase(1, 5) * LocalSigma(1, 3, 4), exp(15 * I) * LocalSigma(1,3,4))
+        self.assertEqual(LocalSigma(1,3,4) * Phase(1, 5), exp(20 * I) * LocalSigma(1,3,4))
+        self.assertEqual(Phase(1, 5) * LocalSigma(1,0,4), LocalSigma(1,0,4))
+        self.assertEqual(LocalSigma(1,3,0) * Phase(1, 5), LocalSigma(1,3,0))
+
+    def testDisplace(self):
+        self.assertEqual(Displace(1, 5 + 6j).adjoint(), Displace(1, -5-6j))
+        self.assertEqual(Displace(1, 5+6j) * Displace(1, -5-6j), 1)
+        self.assertEqual(Displace(1, 5+6j) * Create(1) * Displace(1, -5-6j), Create(1) - (5-6j))
+
+#    def testSqueeze(self):
+#        self.assertEqual(Squeeze(1, 5 + 6j).adjoint(), Squeeze(1, -5-6j))
+#        self.assertEqual(Squeeze(1, 5+6j) * Squeeze(1, -5-6j), 1)
+#        self.assertEqual(Squeeze(1, 1 + I) * Create(1) * Squeeze(1, -1 - I), cosh(sqrt(2)) * Create(1) - sinh(sqrt(2)) * exp(-I*pi/4)* Destroy(1))
+
 
     def testLocalSigmaPi(self):
         h = local_space("h")
@@ -162,6 +199,72 @@ class TestLocalOperatorRelations(unittest.TestCase):
         self.assertEqual(Destroy(h) * LocalSigma(h, 0, 1), z)
         self.assertEqual(LocalSigma(h, 1, 0) * Create(h), z)
 
+
+class TestOperatorTrace(unittest.TestCase):
+
+    def testConstruction(self):
+        M = OperatorSymbol("M", 1)
+        N = OperatorSymbol("N", ProductSpace(local_space(1), local_space(2)))
+        self.assertEqual(OperatorTrace.create(1, M), OperatorTrace(1, M))
+        self.assertEqual(OperatorTrace(1, M).space, TrivialSpace)
+        self.assertEqual(OperatorTrace(1, N).space, local_space(2))
+
+    def testSimplificationPlus(self):
+        M = OperatorSymbol("M", 1)
+        N = OperatorSymbol("N", 1)
+        O = OperatorSymbol("O", 1)
+
+        self.assertEqual(OperatorTrace.create(1, M+N), OperatorTrace(1, M) + OperatorTrace(1,N))
+        self.assertEqual(OperatorTrace.create(1, (M+N)*O).expand(), OperatorTrace(1, M*O) + OperatorTrace(1,N*O))
+
+    def testSimplificationTimes(self):
+        M = OperatorSymbol("M", 1)
+        N = OperatorSymbol("N", 2)
+        O = OperatorSymbol("O", ProductSpace(local_space(1), local_space(2), local_space(3)))
+        self.assertEqual(OperatorTrace.create(1, M * N), OperatorTrace(1, M) * N)
+        self.assertEqual(OperatorTrace.create(ProductSpace(local_space(2),local_space(3)), M*N*O), M * OperatorTrace(2, N * OperatorTrace(3,O)))
+        self.assertEqual(match(PatternTuple((wc("h", head = LocalSpace), wc("A", head = Operator))), OperandsTuple((local_space(1),OperatorTrace.create(2, N) * M))), Match(h = local_space(1), A = (OperatorTrace.create(2, N) * M)))
+        self.assertEqual(OperatorTrace.create(1, OperatorTrace.create(2, N) * M), OperatorTrace(1, M) * OperatorTrace(2, N))
+        self.assertEqual(OperatorTrace.create(ProductSpace(local_space(1),local_space(2)), M * N), OperatorTrace(1, M) * OperatorTrace(2,N))
+
+    def testSimplificationScalarTimesOperator(self):
+        M = OperatorSymbol("M", 1)
+        self.assertEqual(OperatorTrace.create(1, 10 * M), 10 * OperatorTrace(1, M))
+
+    def testSimplificationAdjoint(self):
+        M = OperatorSymbol("M", 1)
+        self.assertEqual(OperatorTrace.create(1, M.adjoint()), Adjoint(OperatorTrace(1, M)))
+
+
+    def testLocalOps(self):
+        self.assertEqual(OperatorTrace.create(1, Create(1)), OperatorZero)
+        self.assertEqual(OperatorTrace.create(1, Destroy(1)), OperatorZero)
+        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 1,2)), OperatorZero)
+        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 1,1)), IdentityOperator)
+        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 'e','g')), OperatorZero)
+        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 'e','e')), IdentityOperator)
+
+    def testSimplificationMaxwellBloch(self):
+
+        a = local_space("a", basis=('h','g'))
+        f = local_space("f")
+        from sympy import symbols
+        x,y,z = symbols("x,y,z", real = True)
+        alpha = symbols("alpha")
+        rho_a = (IdentityOperator + x * X(a) + y * Y(a) + z * Z(a)) / 2
+        sigma = X(a) + I*Y(a)
+        rho_f = Displace(f, alpha) * LocalProjector(f, 0) * Displace(f, -alpha)
+        rho = rho_a * rho_f
+
+
+        self.assertEqual(OperatorTrace.create(ProductSpace(a, f), rho).expand(), IdentityOperator)
+
+
+
+    def testDimensionPrefactor(self):
+        h1 = local_space(1, dimension = 10)
+        P = OperatorSymbol("P", 2)
+        self.assertEqual(OperatorTrace.create(h1, P), 10 * P)
 
 class TestOperatorMatrices(unittest.TestCase):
     def testConstruction(self):
@@ -185,5 +288,11 @@ class TestOperatorMatrices(unittest.TestCase):
         self.assertEqual(IdentityOperator * M, M)
         self.assertEqual(1 * M, M)
         self.assertEqual(Create("1") * identity_matrix(2), OperatorMatrix([[Create("1"),0],[0,Create("1")]]))
+
+
+    def testElementExpand(self):
+        self.assertEqual(OperatorMatrix([[(Create(1) + Create(2))*Create(3)]]).expand(), OperatorMatrix([[Create(1)*Create(3) + Create(2)*Create(3)]]))
+
+
 
 

@@ -337,15 +337,24 @@ class Operation(Expression):
         """
         Provide a default ordering mechanism for achieving canonical ordering of expressions sequences.
         """
-        if hasattr(a, "_key_"):
-            return a._key_()
-        return a
+        return order_key(a)
+#        try:
+#            return a._order_key()
+#        except AttributeError:
+#            return hash(a)
 
 
-    def _key_(self):
-        return (self.__class__.__name__,) + self.operands
+    def _order_key(self):
+        return (self.__class__.__name__,) + tuple(map(order_key, self.operands))
 
-        
+
+
+def order_key(obj):
+    try:
+        return obj._order_key()
+    except AttributeError:
+        return hash(obj)
+
 ########################################################################################################################
 ########################### WILDCARDS AND PATTERN MATCHING FUNCTIONS ###################################################
 ########################################################################################################################
@@ -919,7 +928,7 @@ def check_signature_mtd(dcls, clsmtd, cls, *ops):
     if not len(ops) == len(sgn):
         raise WrongSignature()
     if not all(extended_isinstance(o, s, dcls, cls) for o, s in izip(ops, sgn)):
-        raise WrongSignature()
+        raise WrongSignature("class: {}, operands: {}".format(str(cls), str(ops)))
     return clsmtd(cls, *ops)
 
 check_signature = preprocess_create_with(check_signature_mtd)

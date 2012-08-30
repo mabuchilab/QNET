@@ -50,3 +50,19 @@ class TestHilbertSpaces(unittest.TestCase):
         self.assertTrue(h1>= h1)
         self.assertTrue(h1 * h2 > h2)
         self.assertFalse(h1 * h2 > h3)
+
+    def testOperations(self):
+        h1 = local_space("h1")
+        h2 = local_space("h2")
+        h3 = local_space("h3")
+
+        h123 = h1 * h2 * h3
+        h12 = h1 * h2
+        h23 = h2 * h3
+        h13 = h1 * h3
+        self.assertEqual(h12 * h13, h123)
+        self.assertEqual(h12 / h13, h2)
+        self.assertEqual(h12 & h13, h1)
+        self.assertEqual((h12 / h13) * (h13 & h12), h12)
+        self.assertEqual(h1 & h12, h1)
+

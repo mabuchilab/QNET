@@ -93,6 +93,8 @@ class HilbertSpace(object):
     def __div__(self, other):
         return self.remove(other)
 
+    __truediv__ = __div__
+
     def __and__(self, other):
         return self.intersect(other)
 
@@ -155,6 +157,9 @@ class TrivialSpace(HilbertSpace):
     def __eq__(self, other):
         return self is other
 
+    def _tex(self):
+        return r"\mathcal{H}_{\rm null}"
+
 
 
 
@@ -190,6 +195,8 @@ class FullSpace(HilbertSpace):
     def __gt__(self, other):
         return True
 
+    def _tex(self):
+        return r"\mathcal{H}_{\rm total}"
 
 
 
@@ -213,7 +220,7 @@ class LocalSpace(HilbertSpace, Operation):
         return self
 
     def _intersect(self, other):
-        if other == self:
+        if self in other.local_factors():
             return self
         return TrivialSpace
 
@@ -244,6 +251,12 @@ class LocalSpace(HilbertSpace, Operation):
         """
         return BasisRegistry.get_basis(self)
 
+    def _tex(self):
+        name, namespace = self.operands
+        if namespace:
+            return "{{{}}}_{{{}}}".format(tex(name), tex(namespace))
+        return "{{{}}}".format(tex(name))
+
 
 
 #
@@ -263,6 +276,8 @@ def local_space(name, namespace = "", dimension = None, basis = None):
     :param basis: Basis state labels for local space
     :type basis: sequence of int or str
     """
+    if isinstance(name, int):
+        name = str(name)
     s = LocalSpace.create(name, namespace)
     if dimension:
         if basis:
@@ -362,6 +377,9 @@ class ProductSpace(HilbertSpace, Operation):
         if isinstance(other, LocalSpace):
             return other in self.operands
         return False
+
+    def _tex(self):
+        return " \otimes ".join(map(tex, self.operands))
 
 class BasisNotSetError(AlgebraError):
     def __init__(self, local_space):

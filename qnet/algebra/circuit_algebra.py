@@ -827,7 +827,7 @@ class Concatenation(Circuit, Operation):
     def block_structure(self):
         return sum((circuit.block_structure for circuit in self.operands), ())
         
-    @trace
+#    @trace
     def get_blocks(self, block_structure = None):
         if block_structure is None:
             return tuple(self.operands)
@@ -1639,7 +1639,7 @@ class SeriesInverse(Circuit, Operation):
     def tex(self):
         return r"\left[ %s \right]^{-1}" % tex(self.operand)
 
-@trace
+#@trace
 def tensor_decompose_series(lhs, rhs):
     if isinstance(rhs, CPermutation):
         raise CannotSimplify
