@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-pseudo_nand_cc.py
+pseudo_nand_open_cc.py
 
 Created automatically
 """
@@ -11,7 +11,7 @@ from sympy import symbols
 from circuit_components.component import Component
 
 
-class PseudoNAND(Component):
+class PseudoNANDOpen(Component):
     
     # total number of field channels
     CDIM = 4
@@ -26,17 +26,17 @@ class PseudoNAND(Component):
         beta = symbols('beta', each_char = False)
                                 )
     # list of input port names
-    PORTSIN = ['A', 'B', 'VIn1', 'VIn2']
+    PORTSIN = ['A', 'B']
     
     # list of output port names
-    PORTSOUT = ['UOut1', 'UOut2', 'NAND_AB', 'OUT2']
+    PORTSOUT = ['NAND_AB', 'OUT2']
     
     # architecture to use for creduce(),
     # only needed, when there are multiple architectures
     arch = "default"
     
     def __init__(self, name = "", arch = "default", **params):
-        super(PseudoNAND, self).__init__(name, **params)
+        super(PseudoNANDOpen, self).__init__(name, **params)
         self.arch = arch
     
     def toSLH(self):
@@ -61,13 +61,13 @@ class PseudoNAND(Component):
         BS1 = Beamsplitter(make_namespace_string(self.name, 'BS1'))
         BS2 = Beamsplitter(make_namespace_string(self.name, 'BS2'), theta = self.theta)
         
-        return ((cid(1) + ((cid(1) + ((P + cid(1)) << BS2 << (W_beta + cid(1)))) << P_sigma(0, 2, 1) << (K + cid(1)))) << (BS1 + cid(2)) << (cid(2) + P_sigma(1, 0)))
+        return ((cid(2) + P_sigma(1, 0)) << (((((P + cid(1)) << BS2 << (W_beta + cid(1))) + cid(1)) << (cid(1) + (P_sigma(1, 0) << K))) + cid(1)) << (cid(1) + (P_sigma(0, 2, 1) << ((P_sigma(1, 0) << BS1) + cid(1)))) << P_sigma(0, 3, 2, 1))
     
     
     arch_default = arch_netlist
     
 def test():
-    a = PseudoNAND()
+    a = PseudoNANDOpen()
     print a
     print "=" * 80
     print a.reduce()

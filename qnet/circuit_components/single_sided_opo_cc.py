@@ -30,7 +30,7 @@ class SingleSidedOPO(Component):
     PORTSIN = ['In1', 'In2']
     PORTSOUT = ['Out1', 'Out2']        
         
-    # def reduce(self):
+    # def creduce(self):
     #     return self
         
     def toSLH(self):

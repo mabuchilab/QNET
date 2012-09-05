@@ -37,7 +37,7 @@ class Component(Circuit, Expression):
     both primitive components such as beamsplitters 
     and cavity models and also composite circuit models 
     that are built up from these.
-    Via the reduce() method, an object can be decomposed into its parts.
+    Via the creduce() method, an object can be decomposed into its parts.
     """
 
     CDIM = 0
@@ -107,8 +107,7 @@ class Component(Circuit, Expression):
         return  "%s[%s, %s]" % (self.__class__.__name__, mathematica(self.name), 
                                 ", ".join(["Rule[%s,%s]" % (str(gp), mathematica(getattr(self, str(gp)))) for gp in self.GENERIC_DEFAULT_VALUES]))
 
-        return tex(self.name)
-        # raise NotImplementedError(self.__class__.__name__) 
+        # raise NotImplementedError(self.__class__.__name__)
 
 
 

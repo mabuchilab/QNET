@@ -128,7 +128,7 @@ def write_component(entity, architectures, default_architecture = None):
 # # This file was initially generated from a QHDL source.
 # 
 # from circuit_components.library import retrieve_component, make_namespace_string
-# from algebra.circuit_algebra import CSymbol, P_sigma, cid, FB
+# from algebra.circuit_algebra import CircuitSymbol, P_sigma, cid, FB
 # from sympy.core.symbol import symbols
 # 
 # CDIM = %d

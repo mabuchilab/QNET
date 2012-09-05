@@ -769,7 +769,7 @@ name %s ' % (entity.identifier, self.identifier, name_in_e))
 #        #create symbols for all instances
 #        circuit_symbols = {}
 #        for (instance_name, (component, generic_map, port_map)) in self.instance_assignments.items():
-#            circuit_symbols[instance_name] = ca.CSymbol(instance_name+identifier_postfix, component.cdim)
+#            circuit_symbols[instance_name] = ca.CircuitSymbol(instance_name+identifier_postfix, component.cdim)
 #        
 #        
 #        #initial global in ports
