@@ -67,19 +67,19 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
     c = pyx.canvas.canvas()
     
     
-    if isinstance(circuit, ca.CIdentity):
+    if circuit is ca.CIdentity:
         # simply create a line going through
         c.stroke(pyx.path.line(0, vunit/2, hunit, vunit/2))
         return c, (1, 1), (.5,), (.5,)
     
-    elif isinstance(circuit, (ca.CSymbol, ca.SeriesInverse, ca.SLH, Component, SubComponent)):
+    elif isinstance(circuit, (ca.CircuitSymbol, ca.SeriesInverse, ca.SLH, Component, SubComponent)):
         # draw box
         b = pyx.path.rect(rhmargin * hunit, rvmargin * vunit, hunit - 2 * rhmargin * hunit, nc * vunit - 2 * rvmargin * vunit)
         c.stroke(b)
         
         
         # draw symbol name
-        c.text(hunit/2., nc * vunit/2., "$%s$" % circuit.tex() , [pyx.text.halign.boxcenter, pyx.text.valign.middle])
+        c.text(hunit/2., nc * vunit/2., "${}$".format(circuit.tex() if not isinstance(circuit, ca.SLH) else r"{\rm SLH}") , [pyx.text.halign.boxcenter, pyx.text.valign.middle])
         
         # draw connectors at half-unit positions
         connector_positions = tuple((.5 + k) for k in xrange(nc))
@@ -259,7 +259,7 @@ def draw_circuit(circuit, filename, direction = 'lr',
     the hunit parameter is passed to the draw_circuit_canvas function as its absolute value.
     In the second case it is passed as its negative absolute value.
     """
-    
+
     if direction == 'lr':
         hunit = abs(hunit)
     
@@ -271,8 +271,8 @@ def draw_circuit(circuit, filename, direction = 'lr',
                                             rpermutation_length = rpermutation_length, 
                                             draw_boxes = draw_boxes,
                                             permutation_arrows = permutation_arrows)
-    except ValueError:
-        "Print no graphics returned for circuit %r" % circuit
+    except ValueError as e:
+        print ("No graphics returned for circuit {!r}".format(circuit))
         return False
     if any(filename.endswith(suffix) for suffix in ('.pdf', '.eps', '.ps')):
         c.writetofile(filename)

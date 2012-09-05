@@ -128,7 +128,7 @@ class TestOperationDecorators(unittest.TestCase):
 
     def setUp(self):
 
-        @flat
+        @assoc
         class Flat(Operation):
             pass
 
@@ -147,8 +147,8 @@ class TestOperationDecorators(unittest.TestCase):
         class CheckSignature(Operation):
             signature = (int, long, float, complex), str
 
-        @flat
-        @check_signature_flat
+        @assoc
+        @check_signature_assoc
         class CheckSignatureFlat(Operation):
             signature = (int, long, float, complex),
 
@@ -166,7 +166,7 @@ class TestOperationDecorators(unittest.TestCase):
         b_int = wc("b",head = int)
         c_str = wc("c",head = str)
 
-        @flat
+        @assoc
         @match_replace_binary
         class MatchReplaceBinary(Operation):
             binary_rules = [
@@ -176,7 +176,7 @@ class TestOperationDecorators(unittest.TestCase):
             ]
 
 
-        @flat
+        @assoc
         @idem
         class Idem(Operation):
             pass
@@ -218,9 +218,9 @@ class TestOperationDecorators(unittest.TestCase):
     def testCheckSignature(self):
         self.assertEqual(self.CheckSignature.create(1,"a"), self.CheckSignature(1,"a"))
         self.assertEqual(self.CheckSignature.create(1.,"a"), self.CheckSignature(1.,"a"))
-        self.assertRaises(WrongSignature, self.CheckSignature.create, "hallo")
+        self.assertRaises(WrongSignatureError, self.CheckSignature.create, "hallo")
         self.assertEqual(self.CheckSignatureFlat.create(1,2.,3j), self.CheckSignatureFlat(1,2.,3j))
-        self.assertRaises(WrongSignature, self.CheckSignatureFlat.create, 1, 2, "hallo")
+        self.assertRaises(WrongSignatureError, self.CheckSignatureFlat.create, 1, 2, "hallo")
 
 
     def testIdem(self):

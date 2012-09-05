@@ -3,29 +3,38 @@
 """
 abstract_algebra.py
 
-Created by Nikolas Tezak on 2011-02-17.
-Copyright (c) 2011 . All rights reserved.
+Created by Nikolas Tezak
+Copyright (c) 2011 - 2012 . All rights reserved.
 """
-
+#TODO UPDATE DOCSTRING
 from __future__ import division
 from itertools import izip
 
+from abc import ABCMeta, abstractmethod, abstractproperty
 
+#define our own exceptions/errors
 
-#define our own errors
-class AlgebraError(Exception):
+class AlgebraException(Exception):
     """
     Base class for all errors concerning the mathematical definitions and rules of an algebra.
     """
     pass
+
+
+class AlgebraError(AlgebraException):
+    """
+    Base class for all errors concerning the mathematical definitions and rules of an algebra.
+    """
+    pass
+
     
-class CannotSimplify(AlgebraError):
+class CannotSimplify(AlgebraException):
     """
     Raised when an expression cannot be further simplified
     """
     pass
 
-class WrongSignature(AlgebraError):
+class WrongSignatureError(AlgebraError):
     """
     Raise when an operation is instantiated with operands of the wrong signature.
     """
@@ -36,12 +45,14 @@ class Expression(object):
     """
     Basic class defining the basic methods any Expression object should implement.
     """
+    __metaclass__ = ABCMeta
 
     def substitute(self, var_map):
         """
-        Substitute symbols for other expressions via
-        var_map = {Symbol_1_object:SubstituteExpression_1,... }
-        and return self with all substitutions carried out.
+        Substitute symbols for other expressions.
+        :param var_map: Dictionary with entries of the form
+            {symbol: substitution}
+        :type var_map: dict
         """
         return self._substitute(var_map)
 
@@ -56,6 +67,7 @@ class Expression(object):
         """
         return self._tex()
 
+    @abstractmethod
     def _tex(self):
         return str(self)
 
@@ -78,6 +90,7 @@ class Expression(object):
         """
         return self._symbols()
 
+    @abstractmethod
     def _symbols(self):
         raise NotImplementedError(self.__class__.__name__)
 
@@ -85,13 +98,13 @@ class Expression(object):
 #        return self._mathematica()
 ##        raise NotImplementedError(self.__class__.__name__)
 
-
+    @abstractmethod
     def __hash__(self):
         """
         Provide a hashing mechanism for self.
         """
         raise NotImplementedError(self.__class__.__name__)
-#
+
     def __eq__(self, other):
         """
         Implements a very strict definition of 'self == other'.
@@ -116,36 +129,27 @@ class Expression(object):
 def substitute(expr, var_map):
     """
     (Safe) substitute: Substitute objects for symbols
+    :param expr: The expression in which to perform the substitution
+    :param var_map: The substitution dictionary. See Expression.substitute documentation
+    :type var_map: dict
+
     """
     try:
         return expr.substitute(var_map)
     except AttributeError:
         return expr
 
-#        try:
-#            # try substituting sympy_objects
-#            var_map = dict((k,v) for (k,v) in var_map.items() if not isinstance(k, Expression) and not isinstance(v, Expression))
-#            return expr.subs(var_map)
-#        except AttributeError:
-#            return expr
-#        except Exception, e:
-#            print "Warning while trying to substitute in %s an error occured: %s" % (expr, e)
-#            return expr
-
 def tex(obj):
     """
-    Return a LaTeX string-representation of obj.
+    :param obj: Object to represent in LaTeX.
+    :return: Return a LaTeX string-representation of obj.
+    :rtype: str
     """
-    if isinstance(obj, str):
-        return identifier_to_tex(obj)
-    if is_number(obj):
-        return format_number_for_tex(obj)
-#    if isinstance(obj, SympyBasic):
-#        return sympy_latex(obj)#[1:-1] #trim '$' at beginning and end of returned string
     try:
         return obj.tex()
     except AttributeError:
-        return str(obj)
+        return r"{{\rm {!s}}}".format(obj)
+
 #
 #def mathematica(obj):
 #    """
@@ -166,7 +170,7 @@ def tex(obj):
 #
 #def capitalize_sympy_functions_for_mathematica(string):
 #    words = ("cos", "sin", "exp", "sqrt", "conjugate", "cosh", "sinh")
-#    return reduce(lambda a, b: a.replace(b, b[0].upper() + b[1:]), words, string)
+#    return creduce(lambda a, b: a.replace(b, b[0].upper() + b[1:]), words, string)
 #
 #
 
@@ -247,7 +251,7 @@ def tex(obj):
 #    (e.g. 'my_alpha_1' contains 'alpha' as a separate word, but 'alphaman' doesn't)
 #    add a backslash in front.
 #    """
-#    identifier = reduce(lambda a,b: "{%s_%s}" % (b, a), ["{%s}" % part for part in reversed(identifier.split("__"))])
+#    identifier = creduce(lambda a,b: "{%s_%s}" % (b, a), ["{%s}" % part for part in reversed(identifier.split("__"))])
 #    p = re.compile(r'([^\\A-Za-z]?)(%s)\b' % "|".join(greek_letter_strings))
 #    return p.sub(r'\1{\\\2}', identifier)
 #
@@ -261,7 +265,7 @@ def tex(obj):
 #    (e.g. 'my_alpha_1' contains 'alpha' as a separate word, but 'alphaman' doesn't)
 #    add a backslash in front.
 #    """
-#    identifier = reduce(lambda a,b: "Subscript[%s,%s]" % (b, a), reversed(identifier.split("__")))
+#    identifier = creduce(lambda a,b: "Subscript[%s,%s]" % (b, a), reversed(identifier.split("__")))
 #    p = re.compile(r'\b(%s)\b' % "|".join(greek_letter_strings))
 #    repl = lambda m:  r"\[" + greekToLatex[m.group(1)] + "]"
 #    return p.sub(repl, identifier)
@@ -278,27 +282,44 @@ def set_union(*sets):
     return reduce(lambda a, b: a.union(b), sets, set(()))
 
 
+def all_symbols(expr):
+    """
+    Return all symbols featured within an expression.
+    :param expr: The expression to find symbols in.
+    :return: A set of symbols within expr.
+    :rtype: set
+    """
+    try:
+        return expr.symbols()
+    except AttributeError:
+        return set(())
+
 class Operation(Expression):
     """
     Abstract base class for all operations,
     where the operands themselves are also expressions.
     """
+
     # hash str, is generated on demand (lazily)
-    _hash = None
+    __hash = None
 
     def __init__(self, *operands):
         """
-        Create a symbolic operation with the operands. No filtering/simplification
-        of operands is performed at this stage.
+        Create a symbolic operation with the given operands.
         """
         self._operands = operands
 
     @property
     def operands(self):
+        """
+        :return: The operands of the operation.
+        :rtype: tuple
+        """
         return self._operands
 
     def _symbols(self):
-        return set_union(*[symbols(op) for op in self.operands])
+        return set_union(*[all_symbols(op) for op in self.operands])
+
 
     def _substitute(self, var_map):
         if self in var_map:
@@ -319,41 +340,39 @@ class Operation(Expression):
         return type(self) == type(other) and self.operands == other.operands
 
     def __hash__(self):
-        if not self._hash:
-            self._hash = hash((self.__class__, self.operands))
-        return self._hash
+        if not self.__hash:
+            self.__hash = hash((self.__class__, self.operands))
+        return self.__hash
 
     @classmethod
     def create(cls, *operands):
         """
-        Instead of directly instantiating an Operation object,
-        it should always be instantiated by applying the operations with
-        all (default) rules. This ensures that no invalid expressions are created.
+        Instead of directly instantiating an instance of any subclass of Operation,
+        it is advised to call the create() classmethod instead.
+        This method takes the same arguments as the constructor, but can preprocess them and even return an object
+        of a different type based on the operands.
+
+        :param operands: The operands for the operation.
         """
         return cls(*operands)
 
     @classmethod
-    def order_key(cls, a):
+    def order_key(cls, obj):
         """
         Provide a default ordering mechanism for achieving canonical ordering of expressions sequences.
+        :param obj: The object to create a key for.
         """
-        return order_key(a)
-#        try:
-#            return a._order_key()
-#        except AttributeError:
-#            return hash(a)
+        try:
+            return obj._order_key()
+        except AttributeError:
+            return hash(obj)
 
 
     def _order_key(self):
-        return (self.__class__.__name__,) + tuple(map(order_key, self.operands))
+        return (self.__class__.__name__,) + tuple(map(Operation.order_key, self.operands))
 
 
 
-def order_key(obj):
-    try:
-        return obj._order_key()
-    except AttributeError:
-        return hash(obj)
 
 ########################################################################################################################
 ########################### WILDCARDS AND PATTERN MATCHING FUNCTIONS ###################################################
@@ -364,6 +383,13 @@ def order_key(obj):
 inf = float('inf')
 
 def match_range(pattern):
+    """
+    Compute how many objects/operands a given pattern can minimally and maximally match.
+    :param pattern: The pattern object
+    :return: min_number, max_number
+    :rtype: tuple
+    :raise: ValueError, if unknown pattern mode for Wildcard object
+    """
     if isinstance(pattern, Wildcard):
         if pattern.mode == Wildcard.single:
             return 1,1
@@ -388,6 +414,7 @@ class OperandsTuple(tuple):
     """
     def __getitem__(self, item):
         if isinstance(item, slice):
+            #noinspection PyTypeChecker
             return OperandsTuple(super(OperandsTuple, self).__getitem__(item))
         return super(OperandsTuple, self).__getitem__(item)
 
@@ -400,6 +427,7 @@ class PatternTuple(tuple):
     """
     def __getitem__(self, item):
         if isinstance(item, slice):
+            #noinspection PyTypeChecker
             return OperandsTuple(super(PatternTuple, self).__getitem__(item))
         return super(PatternTuple, self).__getitem__(item)
 
@@ -430,7 +458,7 @@ def trace(fn):
     :rtype: FunctionType
     """
 
-    def tfn(*args, **kwargs):
+    def _tfn(*args, **kwargs):
         print "[", "-"* 40
         ret =  fn(*args, **kwargs)
         print "{}({},{}) called".format(fn.__name__, ", ".join(repr(a) for a in args),
@@ -438,7 +466,7 @@ def trace(fn):
         print "-->", repr(ret)
         print "-"* 40,"]"
         return ret
-    return tfn
+    return _tfn
 
 
 def flatten(seq):
@@ -462,11 +490,11 @@ def update_pattern(expr, match_obj):
     """
     Replace all wildcards in the pattern expression with their matched values as specified in a Match object.
     :param expr: Pattern expression
-    :type expr: Expression
+    :type expr: Expression or PatternTuple
     :param match_obj: Match object
     :type match_obj: Match
     :return: Expression with replaced wildcards
-    :rtype: Expression
+    :rtype: Expression or PatternTuple
     """
     if isinstance(expr, Wildcard):
         if expr.name in match_obj:
@@ -487,9 +515,9 @@ def match(pattern, expr):
     Match a pattern against an expression and return a Match object if successful or False, if not.
     Works recursively.
     :param pattern: Pattern expression
-    :type pattern: (Expression, PatternTuple)
+    :type pattern: Expression or PatternTuple
     :param expr: Expression to match against the pattern.
-    :type expr: (Expression, OperandsTuple)
+    :type expr: Expression or OperandsTuple
     :return: Match object or False
     :rtype: Match or False
     """
@@ -515,22 +543,34 @@ def match(pattern, expr):
         prest = pattern[1:]
 
         if isinstance(expr, OperandsTuple):
+            if isinstance(p0, Wildcard):
+                if p0.mode != Wildcard.single:
+                    a0, b0 = match_range(p0)
+                    for k in range(a0, min(l,b0)+1):
+                        o0 = expr[:k]
+                        orest = expr[k:]
+                        m0 = match(p0, o0)
+                        if m0:
+                            if len(m0):
+                                mrest = match(update_pattern(prest, m0), orest)
+                            else:
+                                mrest = match(prest, orest)
+                            if mrest:
+                                return m0 + mrest
 
-            if isinstance(p0, Wildcard) and p0.mode != Wildcard.single:
-                a0, b0 = match_range(p0)
-                for k in range(a0, min(l,b0)+1):
-                    o0 = expr[:k]
-                    orest = expr[k:]
-                    m0 = match(p0, o0)
+                    return False
+                else:
+                    m0 = match(p0, expr[0])
                     if m0:
+                        orest = expr[1:]
                         if len(m0):
                             mrest = match(update_pattern(prest, m0), orest)
                         else:
                             mrest = match(prest, orest)
+    #                    print m0, update_pattern(prest, m0), mrest
                         if mrest:
                             return m0 + mrest
-
-                return False
+                    return False
             else:
                 m0 = match(p0, expr[0])
                 if m0:
@@ -548,6 +588,7 @@ def match(pattern, expr):
         if pattern.mode == Wildcard.single:
             if isinstance(expr, OperandsTuple):
                 assert len(expr) == 1
+                #noinspection PyRedeclaration
                 expr = expr[0]
             if pattern.head and not isinstance(expr, pattern.head):
                 return False
@@ -600,13 +641,14 @@ class Wildcard(Expression):
     one_or_more= 2
     zero_or_more = 3
 
-    name = ""
-    mode = single
-    head = None
-    condition = None
+#    name = ""
+#    mode = single
+#    head = None
+#    condition = None
 
     _hash = None
 
+    #noinspection PyRedeclaration
     def __init__(self, name = "", mode = single, head = None, condition = None):
         """
         :param name: Wildcard name, default ""
@@ -614,7 +656,7 @@ class Wildcard(Expression):
         :param mode: The matching mode, i.e. how many objects/operands can the wildcard match.
         :type mode: One of Wildcard.single, Wildcard.one_or_more, Wildcard.zero_or_more
         :param head: Restriction of the type of the matched expression
-        :type head: tuple of class objects or None
+        :type head: tuple or type or None
         :param condition: An additional function that returns True if match should be accepted.
         :type condition: FunctionType or None
         """
@@ -660,6 +702,12 @@ class Wildcard(Expression):
             self._hash = hash((self.name, self.mode, self.head, self.condition))
         return self._hash
 
+    def _tex(self):
+        return r"{\rm " + self.name + ("\_" * self.mode) + self.head.__name__ + ("?{}".format(self.condition.__name__) if hasattr(self.condition, "__name__") else "") + "}"
+
+    def _symbols(self):
+        return set(())
+
 
 class Match(dict):
     """
@@ -669,9 +717,9 @@ class Match(dict):
     """
 
     def __add__(self, other):
-        if len(self) == 0:
+        if not len(self):
             return other
-        if len(other) == 0:
+        if not len(other):
             return self
             # make sure the sets of keys are disjoint
         overlap = set(self.keys()) & set(other.keys())
@@ -708,7 +756,7 @@ def wc(name_mode = "_", head = None, condition = None):
         * "B___" -> name="C", mode = Wildcard.zero_or_more
     :type name_mode: str
     :param head: See Wildcard doc
-    :type head: tuple of class objects or None
+    :type head: tuple or type or None
     :param condition:  See Wildcard doc
     :type condition: FunctionType or None
     :return: A Wildcard object
@@ -728,6 +776,7 @@ def wc(name_mode = "_", head = None, condition = None):
 ########################### CLASS DECORATORS TO ACHIEVE OPERAND PREPROCESSING ##########################################
 ########################################################################################################################
 
+#noinspection PyUnresolvedReferences
 from itertools import izip
 from types import FunctionType, MethodType
 
@@ -783,8 +832,8 @@ with docstring:
     return decorator
 
 
-
-def flat_mtd(dcls, clsmtd, cls, *ops):
+#noinspection PyUnusedLocal,PyDocstring
+def assoc_mtd(dcls, clsmtd, cls, *ops):
     """
     Associatively expand out nested arguments of the flat class.
 
@@ -798,9 +847,9 @@ def flat_mtd(dcls, clsmtd, cls, *ops):
     nops = sum(((o,) if not isinstance(o,cls) else o.operands for o in ops),())
     return clsmtd(cls, *nops)
 
-flat = preprocess_create_with(flat_mtd)
+assoc = preprocess_create_with(assoc_mtd)
 
-
+#noinspection PyUnusedLocal,PyDocstring
 def idem_mtd(dcls, clsmtd, cls, *ops):
     """
     Remove duplicate arguments and order them via the cls's order_key key object/function.
@@ -817,7 +866,7 @@ def idem_mtd(dcls, clsmtd, cls, *ops):
 
 idem = preprocess_create_with(idem_mtd)
 
-
+#noinspection PyUnusedLocal,PyDocstring
 def orderless_mtd(dcls, clsmtd, cls, *ops):
     """
     Re-order arguments via the cls's order_key key object/function.
@@ -837,6 +886,7 @@ orderby = preprocess_create_with(orderless_mtd)
 
 unequals = lambda x: (lambda y: x != y)
 
+#noinspection PyUnusedLocal,PyDocstring
 def filter_neutral_mtd(dcls, clsmtd, cls, *ops):
     """
     Remove occurrences of a neutral element from the argument/operand list, if that list has at least two elements.
@@ -852,7 +902,7 @@ def filter_neutral_mtd(dcls, clsmtd, cls, *ops):
 
     """
     c_n = cls.neutral_element
-    if len(ops) == 0:
+    if not len(ops):
         return c_n
     fops = tuple(filter(unequals(c_n), ops))
     if len(fops) > 1:
@@ -869,6 +919,7 @@ filter_neutral = preprocess_create_with(filter_neutral_mtd)
 
 CLS = object()
 DCLS = object()
+
 
 def extended_isinstance(obj, class_info, dcls, cls):
     """
@@ -895,15 +946,25 @@ def extended_isinstance(obj, class_info, dcls, cls):
             signature = str, DCLS
 
     to always refer to X itself and not a subclass.
+
+    :type obj: object
+    :type class_info: type or tuple of type-objects
+    :param dcls: The (super-)class that the signature is defined for.
+    :type dcls: type
+    :param cls: The concrete (sub-)class whose instance is being initialized.
+    :type cls: type
     """
     if isinstance(class_info, tuple):
         return any(extended_isinstance(obj, cli, dcls, cls) for cli in class_info)
     if class_info is CLS:
+        #noinspection PyRedeclaration
         class_info = cls
     elif class_info is DCLS:
+        #noinspection PyUnusedLocal
         class_info = dcls
     return isinstance(obj, class_info)
 
+#noinspection PyDocstring
 def check_signature_mtd(dcls, clsmtd, cls, *ops):
     """
     Check that the operands passed to the create classmethod of an Operation type conform to certain types.
@@ -926,15 +987,16 @@ def check_signature_mtd(dcls, clsmtd, cls, *ops):
     """
     sgn = cls.signature
     if not len(ops) == len(sgn):
-        raise WrongSignature()
+        raise WrongSignatureError()
     if not all(extended_isinstance(o, s, dcls, cls) for o, s in izip(ops, sgn)):
-        raise WrongSignature("class: {}, operands: {}".format(str(cls), str(ops)))
+        raise WrongSignatureError("class: {}, operands: {}".format(str(cls), str(ops)))
     return clsmtd(cls, *ops)
 
 check_signature = preprocess_create_with(check_signature_mtd)
 
 
-def check_signature_flat_mtd(dcls, clsmtd, cls, *ops):
+#noinspection PyDocstring
+def check_signature_assoc_mtd(dcls, clsmtd, cls, *ops):
     """
     Like `check_signature` but for `flat` Operations. In this case the signature need only contain a single entry.
 
@@ -947,14 +1009,15 @@ def check_signature_flat_mtd(dcls, clsmtd, cls, *ops):
         # -> X("hello", "you")
 
         X.create("hello", "you", 2)
-        # -> raises WrongSignature()
+        # -> raises WrongSignatureError()
     """
     sgn = cls.signature[0]
     if not all(extended_isinstance(o, sgn, dcls, cls) for o in ops):
-        raise WrongSignature()
+        raise WrongSignatureError()
     return clsmtd(cls, *ops)
-check_signature_flat = preprocess_create_with(check_signature_flat_mtd)
+check_signature_assoc = preprocess_create_with(check_signature_assoc_mtd)
 
+#noinspection PyDocstring
 def match_replace_mtd(dcls, clsmtd, cls, *ops):
     """
     Match and replace a full operand specification to a function that provides a replacement for the whole expression
@@ -1005,6 +1068,7 @@ def match_replace_mtd(dcls, clsmtd, cls, *ops):
 match_replace = preprocess_create_with(match_replace_mtd)
 
 
+#noinspection PyDocstring
 def match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
     """
     Like match and replace, but for arbitrary length operations, such that each two pairs of subsequent operands are matched pairwise.
@@ -1039,8 +1103,8 @@ def match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
                     continue
 
         if r is not False:
-            # if Operation is also "flat", then expand out the operands of a binary-simplified result
-            if flat_mtd in getattr(cls.create.im_func, "decorators",()) and isinstance(r, cls):
+            # if Operation is also "assoc", then expand out the operands of a binary-simplified result
+            if assoc_mtd in getattr(cls.create.im_func, "decorators",()) and isinstance(r, cls):
                 ops = ops[:j-1] + r.operands + ops[j+1:]
             else:
                 ops = ops[:j-1] + (r,) + ops[j+1:]
@@ -1052,3 +1116,30 @@ def match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
     return clsmtd(cls, *ops)
 
 match_replace_binary = preprocess_create_with(match_replace_binary_mtd)
+
+
+
+def singleton(cls):
+    """
+    Singleton class decorator. Turns a class object into a unique instance.
+    :param cls: Class to decorate
+    :type cls: type
+    :return: The singleton instance of that class
+    :rtype: cls
+    """
+
+    class S(cls):
+        __instance = None
+        def __hash__(self):
+            return hash(cls)
+        def _symbols(self):
+            return set(())
+        def __repr__(self):
+            return cls.__name__
+        def __call__(self):
+            return self.__instance
+
+    S.__name__ = cls.__name__
+    S.__instance = s = S()
+
+    return s

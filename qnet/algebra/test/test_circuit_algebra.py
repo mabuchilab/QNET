@@ -15,7 +15,7 @@ import qnet.algebra.abstract_algebra
 symbol_counter = 0
 def get_symbol(cdim):
     global symbol_counter
-    sym =  CSymbol('test_%d' % symbol_counter, cdim)
+    sym =  CircuitSymbol('test_%d' % symbol_counter, cdim)
     symbol_counter +=1
     return sym
 
@@ -134,25 +134,25 @@ class TestCircuitAlgebra(unittest.TestCase):
         self.assertEqual(permute(list(invert_permutation(test_perm)), test_perm), range(nt))
         
     def testFactorizePermutation(self):
-        self.assertEqual(CPermutation.full_block_perm((0,1,2), (1,1,1)), (0,1,2))
-        self.assertEqual(CPermutation.full_block_perm((0,2,1), (1,1,1)), (0,2,1))
-        self.assertEqual(CPermutation.full_block_perm((0,2,1), (1,1,2)), (0,3,1,2))
-        self.assertEqual(CPermutation.full_block_perm((0,2,1), (1,2,3)), (0,4,5,1,2,3))
-        self.assertEqual(CPermutation.full_block_perm((1,2,0), (1,2,3)), (3,4,5,0,1,2))
-        self.assertEqual(CPermutation.full_block_perm((3,1,2,0), (1,2,3,4)), (9, 4, 5, 6, 7, 8, 0, 1, 2, 3 ))
-        self.assertEqual(CPermutation.block_perm_and_perms_within_blocks((9, 4, 5, 6, 7, 8, 0, 1, 2, 3 ), (1,2,3,4)), \
+        self.assertEqual(full_block_perm((0,1,2), (1,1,1)), (0,1,2))
+        self.assertEqual(full_block_perm((0,2,1), (1,1,1)), (0,2,1))
+        self.assertEqual(full_block_perm((0,2,1), (1,1,2)), (0,3,1,2))
+        self.assertEqual(full_block_perm((0,2,1), (1,2,3)), (0,4,5,1,2,3))
+        self.assertEqual(full_block_perm((1,2,0), (1,2,3)), (3,4,5,0,1,2))
+        self.assertEqual(full_block_perm((3,1,2,0), (1,2,3,4)), (9, 4, 5, 6, 7, 8, 0, 1, 2, 3 ))
+        self.assertEqual(block_perm_and_perms_within_blocks((9, 4, 5, 6, 7, 8, 0, 1, 2, 3 ), (1,2,3,4)), \
                                                                         ((3,1,2,0), [(0,),(0,1),(0,1,2),(0,1,2,3)]))
     
         A1,A2,A3,A4 = get_symbols(1,2,3,4)
 
-        new_lhs, permuted_rhs, new_rhs = P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3 ).factorize_for_rhs(A1+A2+A3+A4)
+        new_lhs, permuted_rhs, new_rhs = P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3 )._factorize_for_rhs(A1+A2+A3+A4)
         self.assertEqual(new_lhs, cid(10))
         self.assertEqual(permuted_rhs, (A4+A2+A3+A1))
         self.assertEqual(new_rhs, P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3 ))
 
         p = P_sigma(0,1,4,2,3,5)
         expr = A2 + A3 + A1
-        new_lhs, permuted_rhs, new_rhs = p.factorize_for_rhs(expr)
+        new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(expr)
         self.assertEqual(new_lhs, cid(6))
         self.assertEqual(permuted_rhs, A2 + (P_sigma(2,0,1) << A3) + A1)
         self.assertEqual(new_rhs, cid(6))
@@ -166,14 +166,14 @@ class TestCircuitAlgebra(unittest.TestCase):
         
         
 
-        new_lhs, permuted_rhs, new_rhs = p.factorize_for_rhs(cid(1) + A+ cid(1))
+        new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(cid(1) + A+ cid(1))
 
         self.assertEqual(new_lhs, P_sigma(0,1,3,2))
         self.assertEqual(permuted_rhs, (cid(1) + (P_sigma(1,0) << A)  + cid(1)))
         self.assertEqual(new_rhs, cid(4))
         
         
-        new_lhs, permuted_rhs, new_rhs = p.factorize_for_rhs(cid(2) + A)
+        new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(cid(2) + A)
         
         self.assertEqual(new_lhs, cid(4))
         self.assertEqual(permuted_rhs, (cid(1) + A  + cid(1)))
@@ -183,7 +183,7 @@ class TestCircuitAlgebra(unittest.TestCase):
         
         self.assertEqual(p.series_inverse() << (cid(2) + A) << p, cid(1) + (p_r.series_inverse() << (cid(1) + A) << p_r))
 
-        new_lhs, permuted_rhs, new_rhs = P_sigma(4,2,1,3,0).factorize_for_rhs((A4 + cid(1)))
+        new_lhs, permuted_rhs, new_rhs = P_sigma(4,2,1,3,0)._factorize_for_rhs((A4 + cid(1)))
         self.assertEqual(new_lhs, cid(5))
         self.assertEqual(permuted_rhs, (cid(1) + (P_sigma(3,1,0,2) << A4)))
         self.assertEqual(new_rhs, map_signals_circuit({4:0}, 5))
@@ -191,11 +191,11 @@ class TestCircuitAlgebra(unittest.TestCase):
         
         ## special test case that helped find the major permutation block structure factorization bug
         p = P_sigma(3, 4, 5, 0, 1, 6, 2) 
-        q = cid(3) + CSymbol('NAND1', 4)
+        q = cid(3) + CircuitSymbol('NAND1', 4)
         
-        new_lhs, permuted_rhs, new_rhs = p.factorize_for_rhs(q)
+        new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(q)
         self.assertEqual(new_lhs, P_sigma(0,1,2,6,3,4,5))
-        self.assertEqual(permuted_rhs, (P_sigma(0,1,3,2) << CSymbol('NAND1', 4)) + cid(3))
+        self.assertEqual(permuted_rhs, (P_sigma(0,1,3,2) << CircuitSymbol('NAND1', 4)) + cid(3))
         self.assertEqual(new_rhs, P_sigma(4,5,6, 0,1,2,3))
 
         

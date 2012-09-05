@@ -17,14 +17,25 @@ def parse_circuit_string(circuit_string):
     """
     Parse strings for symbolic Circuit expressions into actual expression objects.
     
-    A string may contain multiple subsequent expressions. In any case a list of all parsed expressions is returned.
-    
+    :param circuit_string: A string containing one or more circuit expressions in the special syntax described below.
+    :return: A list of all parsed expressions.
+
     Examples:
-        'a_nice_name(3)' --> CSymbol('a_nice_name', 3)
-        'a(3) + b(5)' -> Concatenation(CSymbol('a', 3), CSymbol('b', 5))
-        'a(3) << b(3)' -> SeriesProduct(CSymbol('a', 3), CSymbol('b', 3))
-        '(a(3) + cid(1)) << b(4)' -> SeriesProduct(Concatenation(CSymbol('a', 3), CIdentity()), CSymbol('b', 3))
-        '[a(5)]_(1->2)' -> Feedback(CSymbol('a', 5), 1, 2)
+
+    >>> parse_circuit_string('a_nice_name(3)')
+        CircuitSymbol('a_nice_name', 3)
+
+    >>> parse_circuit_string('a(3) + b(5)')
+        Concatenation(CircuitSymbol('a', 3), CircuitSymbol('b', 5))
+
+    >>> parse_circuit_string('a(3) << b(3)')
+        SeriesProduct(CircuitSymbol('a', 3), CircuitSymbol('b', 3))
+
+    >>> parse_circuit_string('(a(3) + cid(1)) << b(4)')
+        SeriesProduct(Concatenation(CircuitSymbol('a', 3), CIdentity()), CircuitSymbol('b', 3))
+
+    >>> parse_circuit_string('[a(5)]_(1->2)')
+        Feedback(CircuitSymbol('a', 5), 1, 2)
     """
     p = CircuitExpressionParser()
     return p.parse(circuit_string)
@@ -151,7 +162,7 @@ class CircuitExpressionParser(Parser):
         """
         circuit_symbol : ID LPAREN int RPAREN
         """
-        p[0] = ca.CSymbol(p[1], p[3])
+        p[0] = ca.CircuitSymbol(p[1], p[3])
     
     def p_circuit_concatenation_1(self, p):
         """

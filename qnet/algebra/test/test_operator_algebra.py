@@ -272,26 +272,26 @@ class TestOperatorMatrices(unittest.TestCase):
         a, b, c = Destroy(h1), Destroy(h2), Destroy(h3)
         self.assertEqual(np_conjugate(a), a.dag())
 
-        M = OperatorMatrix([[a,b],[c,a]])
+        M = Matrix([[a,b],[c,a]])
 #        self.assertEqual(M.matrix, np_array([[a,b],[b,a]]))
-        self.assertEqual(M, OperatorMatrix(np_array([[a,b],[c,a]])))
-        self.assertEqual(M.T, OperatorMatrix(np_array([[a,c],[b,a]])))
-        self.assertEqual(M.conjugate(), OperatorMatrix(np_array([[a.dag(),b.dag()],[c.dag(),a.dag()]])))
-        self.assertEqual(M.H, OperatorMatrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]])))
-        self.assertEqual(M.H, OperatorMatrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]])))
+        self.assertEqual(M, Matrix(np_array([[a,b],[c,a]])))
+        self.assertEqual(M.T, Matrix(np_array([[a,c],[b,a]])))
+        self.assertEqual(M.conjugate(), Matrix(np_array([[a.dag(),b.dag()],[c.dag(),a.dag()]])))
+        self.assertEqual(M.H, Matrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]])))
+        self.assertEqual(M.H, Matrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]])))
 
     def testMathOperations(self):
-        M = OperatorMatrix([[Create("1"), 0],[0, Destroy("1")]])
-        N = OperatorMatrix([[Destroy("1"), Create("2")],[0, Destroy("1")]])
-        self.assertEqual(M+N, OperatorMatrix([[Create("1")+Destroy("1"), Create("2")],[0, 2*Destroy("1")]]))
-        self.assertEqual(M*N, OperatorMatrix([[Create("1")*Destroy("1"), Create("1")*Create("2")],[0, Destroy("1")*Destroy("1")]]))
+        M = Matrix([[Create("1"), 0],[0, Destroy("1")]])
+        N = Matrix([[Destroy("1"), Create("2")],[0, Destroy("1")]])
+        self.assertEqual(M+N, Matrix([[Create("1")+Destroy("1"), Create("2")],[0, 2*Destroy("1")]]))
+        self.assertEqual(M*N, Matrix([[Create("1")*Destroy("1"), Create("1")*Create("2")],[0, Destroy("1")*Destroy("1")]]))
         self.assertEqual(IdentityOperator * M, M)
         self.assertEqual(1 * M, M)
-        self.assertEqual(Create("1") * identity_matrix(2), OperatorMatrix([[Create("1"),0],[0,Create("1")]]))
+        self.assertEqual(Create("1") * identity_matrix(2), Matrix([[Create("1"),0],[0,Create("1")]]))
 
 
     def testElementExpand(self):
-        self.assertEqual(OperatorMatrix([[(Create(1) + Create(2))*Create(3)]]).expand(), OperatorMatrix([[Create(1)*Create(3) + Create(2)*Create(3)]]))
+        self.assertEqual(Matrix([[(Create(1) + Create(2))*Create(3)]]).expand(), Matrix([[Create(1)*Create(3) + Create(2)*Create(3)]]))
 
 
 

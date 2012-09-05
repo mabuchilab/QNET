@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 # encoding: utf-8
-
+#TODO UPDATE DOCSTRING
 from qnet.algebra.abstract_algebra import *
+from functools import reduce
+
 
 
 class HilbertSpace(object):
     """
     Basic Hilbert space class from which concrete classes are derived.
     """
+
+    __metaclass__ = ABCMeta
 
     def tensor(self, other):
         """
@@ -29,6 +33,7 @@ class HilbertSpace(object):
         """
         return self._remove(other)
 
+    @abstractmethod
     def _remove(self, other):
         raise NotImplementedError(self.__class__.__name__)
 
@@ -40,6 +45,7 @@ class HilbertSpace(object):
         """
         return self._intersect(other)
 
+    @abstractmethod
     def _intersect(self, other):
         raise NotImplementedError(self.__class__.__name__)
 
@@ -50,6 +56,7 @@ class HilbertSpace(object):
         """
         return self._local_factors()
 
+    @abstractmethod
     def _local_factors(self):
         raise NotImplementedError(self.__class__.__name__)
 
@@ -77,7 +84,20 @@ class HilbertSpace(object):
         :return: The full dimension of the Hilbert space
         :rtype: int
         """
+        #noinspection PyTypeChecker,PyCallByClass,PyArgumentList
         return BasisRegistry.dimension(self)
+
+
+    def is_strict_subfactor_of(self, other):
+        """
+        Test whether a Hilbert space occures as a strict sub-factor in (larger) Hilbert space
+        :type other: HilbertSpace
+        """
+        return self._is_strict_subfactor_of(other)
+
+    @abstractmethod
+    def _is_strict_subfactor_of(self, other):
+        raise NotImplementedError(self.__class__.__name__)
 
     def __len__(self):
         """
@@ -98,11 +118,12 @@ class HilbertSpace(object):
     def __and__(self, other):
         return self.intersect(other)
 
+
     def __lt__(self, other):
-        raise NotImplementedError(self.__class__.__name__)
+        return self.is_strict_subfactor_of(other)
 
     def __gt__(self, other):
-        raise NotImplementedError(self.__class__.__name__)
+        return other.is_strict_subfactor_of(self)
 
     def __le__(self, other):
         return self == other or self < other
@@ -115,17 +136,6 @@ class HilbertSpace(object):
 
 
 
-def singleton(cls):
-    """
-    Singleton class decorator. Turns a class object into a unique instance.
-    :param cls: Class to decorate
-    :type cls: type
-    :return: The singleton instance of that class
-    :rtype: cls
-    """
-    s = cls()
-    s.__call__ = lambda : s
-    return s
 
 @singleton
 class TrivialSpace(HilbertSpace):
@@ -133,8 +143,11 @@ class TrivialSpace(HilbertSpace):
     The 'nullspace', i.e. a one dimensional Hilbert space, which is a factor space of every other Hilbert space.
     """
 
-    def tensor(self, other):
-        return other
+    def _order_key(self):
+        return -1,
+
+#    def tensor(self, other):
+#        return other
 
     def _remove(self, other):
         return self
@@ -145,14 +158,10 @@ class TrivialSpace(HilbertSpace):
     def _local_factors(self):
         return ()
 
-    def __hash__(self):
-        return hash(self.__class__)
-
-    def __lt__(self, other):
+    def _is_strict_subfactor_of(self, other):
+        if other is TrivialSpace:
+            return False
         return True
-
-    def __gt__(self, other):
-        return False
 
     def __eq__(self, other):
         return self is other
@@ -170,8 +179,11 @@ class FullSpace(HilbertSpace):
     The 'full space', i.e. a Hilbert space, includes any other Hilbert space as a tensor factor.
     """
 
-    def tensor(self, other):
-        return self
+    def _order_key(self):
+        return inf,
+
+#    def tensor(self, other):
+#        return self
 
     def _remove(self, other):
         raise AlgebraError()
@@ -182,18 +194,11 @@ class FullSpace(HilbertSpace):
     def _intersect(self, other):
         return other
 
-
-    def __hash__(self):
-        return hash(self.__class__)
+    def _is_strict_subfactor_of(self, other):
+        return False
 
     def __eq__(self, other):
         return self is other
-
-    def __lt__(self, other):
-        return False
-
-    def __gt__(self, other):
-        return True
 
     def _tex(self):
         return r"\mathcal{H}_{\rm total}"
@@ -213,6 +218,8 @@ class LocalSpace(HilbertSpace, Operation):
     """
     signature = str, str
 
+    def _order_key(self):
+        return self.operands
 
     def _remove(self, other):
         if other == self:
@@ -225,23 +232,17 @@ class LocalSpace(HilbertSpace, Operation):
         return TrivialSpace
 
     def _local_factors(self):
-        return (self,)
+        return self,
 
-    def __lt__(self, other):
-        if not isinstance(other, HilbertSpace):
-            return NotImplemented
+    def _is_strict_subfactor_of(self, other):
         if isinstance(other, ProductSpace) and self in other.operands:
+            #noinspection PyTypeChecker
+            assert len(other.operands) > 1
             return True
         if other is FullSpace:
             return True
         return False
 
-    def __gt__(self, other):
-        if not isinstance(other, HilbertSpace):
-            return NotImplemented
-        if other is TrivialSpace:
-            return True
-        return False
 
     @property
     def basis(self):
@@ -249,6 +250,7 @@ class LocalSpace(HilbertSpace, Operation):
         :return: The set of basis states of the local Hilbert space
         :rtype: sequence of int or str
         """
+        #noinspection PyCallByClass,PyArgumentList,PyTypeChecker
         return BasisRegistry.get_basis(self)
 
     def _tex(self):
@@ -260,6 +262,7 @@ class LocalSpace(HilbertSpace, Operation):
 
 
 #
+#noinspection PyRedeclaration
 def local_space(name, namespace = "", dimension = None, basis = None):
     """
     Create a LocalSpace with by default empty namespace string.
@@ -268,7 +271,7 @@ def local_space(name, namespace = "", dimension = None, basis = None):
         [0, 1, 2, ..., dimension -1]
 
     :param name: Local space identifier
-    :type name: str
+    :type name: (str, int)
     :param namespace: Local space namespace, see LocalSpace documentation
     :type namespace: str
     :param dimension: Dimension of local space (optional)
@@ -277,14 +280,16 @@ def local_space(name, namespace = "", dimension = None, basis = None):
     :type basis: sequence of int or str
     """
     if isinstance(name, int):
-        name = str(name)
-    s = LocalSpace.create(name, namespace)
+        s = LocalSpace.create(str(name), namespace)
+    else:
+        s = LocalSpace.create(name, namespace)
     if dimension:
         if basis:
             assert len(basis) == dimension
         else:
-            basis = xrange(dimension)
+            basis = range(dimension)
     if basis:
+        #noinspection PyArgumentList,PyTypeChecker
         BasisRegistry.set_basis(s, basis)
     return  s
 
@@ -302,30 +307,32 @@ def prod(sequence, neutral = 1):
     return reduce(lambda a, b: a * b, sequence, neutral)
 
 
-@flat
+def convert_to_spaces_mtd(dcls, clsmtd, cls, *ops):
+    """
+    For all operands that are merely of type str or int, substitute LocalSpace objects with corresponding labels:
+    For a string, just itself, for an int, a string version of that int.
+    """
+    cops = [o if isinstance(o, HilbertSpace) else local_space(o) for o in ops]
+    return clsmtd(cls, *cops)
+convert_to_spaces = preprocess_create_with(convert_to_spaces_mtd)
+
+@assoc
+@convert_to_spaces
 @idem
-@check_signature_flat
+@check_signature_assoc
 @filter_neutral
 class ProductSpace(HilbertSpace, Operation):
     """
     Tensor product space class for an arbitrary number of local space factors.
+
         ProductSpace(*factor_spaces)
+
     :param factor_spaces: The Hilbert spaces to be tensored together.
     :type factor_spaces: HilbertSpace
-
     """
 
     signature = HilbertSpace,
     neutral_element = TrivialSpace
-
-    @classmethod
-    def order_key(cls, a):
-        if a is FullSpace:
-            return (inf,)
-        if a is TrivialSpace:
-            return (0,)
-        assert isinstance(a, LocalSpace)
-        return a.operands
 
     @classmethod
     def create(cls, *operands):
@@ -341,7 +348,7 @@ class ProductSpace(HilbertSpace, Operation):
         if isinstance(other, ProductSpace):
             oops = set(other.operands)
         else:
-            oops = set((other,))
+            oops = {other}
         return ProductSpace.create(*sorted(set(self.operands).difference(oops)))
 
     def _local_factors(self):
@@ -355,33 +362,27 @@ class ProductSpace(HilbertSpace, Operation):
         if isinstance(other, ProductSpace):
             other_ops = set(other.operands)
         else:
-            other_ops = set((other,))
+            other_ops = {other}
         return ProductSpace.create(*sorted(set(self.operands).intersection(other_ops)))
 
-    def __lt__(self, other):
-        if not isinstance(other, HilbertSpace):
-            return NotImplemented
+    def _is_strict_subfactor_of(self, other):
         if isinstance(other, ProductSpace):
             return set(self.operands) < set(other.operands)
         if other is FullSpace:
             return True
         return False
 
-    def __gt__(self, other):
-        if not isinstance(other, HilbertSpace):
-            return NotImplemented
-        if other is TrivialSpace:
-            return True
-        if isinstance(other, ProductSpace):
-            return set(self.operands) > set(other.operands)
-        if isinstance(other, LocalSpace):
-            return other in self.operands
-        return False
 
     def _tex(self):
         return " \otimes ".join(map(tex, self.operands))
 
 class BasisNotSetError(AlgebraError):
+    """
+    Is raised when the basis states of a LocalSpace are requested before being defined.
+    :param local_space:
+    :type local_space:
+    """
+
     def __init__(self, local_space):
         msg = """The basis for the local space {0!s} has not been set yet.
 Please set the basis states via the command:
@@ -401,7 +402,7 @@ class BasisRegistry(object):
         :param local_space: Local Hilbert space object
         :type local_space: LocalSpace
         :param basis: A sequence of state labels
-        :type basis: sequence of int or str
+        :type basis: sequence of int or sequence of str
         """
         previous = self.registry.get(local_space, basis)
         if basis != previous:
