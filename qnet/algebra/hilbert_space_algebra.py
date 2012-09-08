@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 #TODO UPDATE DOCSTRING
-from qnet.algebra.abstract_algebra import *
+
+from abstract_algebra import singleton, Operation, inf, AlgebraError, tex, check_signature, idem, assoc, preprocess_create_with, filter_neutral, check_signature_assoc, prod
 from functools import reduce
+from abc import ABCMeta, abstractproperty, abstractmethod
 
 
 
@@ -210,7 +212,9 @@ class FullSpace(HilbertSpace):
 class LocalSpace(HilbertSpace, Operation):
     """
     Basic class to instantiate a local Hilbert space, i.e., for a single degree of freedom.
-        LocalSpace(name, namespace)
+
+        ``LocalSpace(name, namespace)``
+
     :param name: The identifier of the local space / degree of freedom
     :type name: str
     :param namespace: The namespace for the degree of freedom, useful in hierarchical system models.
@@ -259,6 +263,11 @@ class LocalSpace(HilbertSpace, Operation):
             return "{{{}}}_{{{}}}".format(tex(name), tex(namespace))
         return "{{{}}}".format(tex(name))
 
+    def __str__(self):
+        name, namespace = self.operands
+        if namespace:
+            return "{}_{}".format(name, namespace)
+        return name
 
 
 #
@@ -268,7 +277,8 @@ def local_space(name, namespace = "", dimension = None, basis = None):
     Create a LocalSpace with by default empty namespace string.
     If one also provides a set of basis states, these get stored via the BasisRegistry object.
     ALternatively, one may provide a dimension such that the states are simply labeled by a range of integers:
-        [0, 1, 2, ..., dimension -1]
+
+        ``[0, 1, 2, ..., dimension -1]``
 
     :param name: Local space identifier
     :type name: (str, int)
@@ -295,16 +305,7 @@ def local_space(name, namespace = "", dimension = None, basis = None):
 
 
 
-def prod(sequence, neutral = 1):
-    """
-    Analog of the builtin `sum()` method.
-    :param sequence: Sequence of objects that support being multiplied to each other.
-    :type sequence: Any object that implements __mul__()
-    :param neutral: The initial return value, which is also returned for zero-length sequence arguments.
-    :type neutral: Any object that implements __mul__()
-    :return: The product of the elements of `sequence`
-    """
-    return reduce(lambda a, b: a * b, sequence, neutral)
+
 
 
 def convert_to_spaces_mtd(dcls, clsmtd, cls, *ops):
@@ -325,7 +326,7 @@ class ProductSpace(HilbertSpace, Operation):
     """
     Tensor product space class for an arbitrary number of local space factors.
 
-        ProductSpace(*factor_spaces)
+        ``ProductSpace(*factor_spaces)``
 
     :param factor_spaces: The Hilbert spaces to be tensored together.
     :type factor_spaces: HilbertSpace

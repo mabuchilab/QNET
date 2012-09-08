@@ -8,11 +8,11 @@ Copyright (c) 2011 . All rights reserved.
 """
 
 
-from circuit_components.component import Component, SubComponent
-
-from algebra.circuit_algebra import HilbertSpace, Destroy, SpaceExists, IdentityMatrix, OperatorMatrixInstance, sqrt, SLH, tex
+from qnet.circuit_components.component import Component, SubComponent
+from qnet.circuit_components.library import make_namespace_string
+from qnet.algebra.circuit_algebra import HilbertSpace, Destroy, local_space, IdentityMatrix, Matrix, sqrt, SLH, tex, identity_matrix
 from sympy.core.symbol import symbols
-from algebra.abstract_algebra import mathematica
+
 
 
 
@@ -27,49 +27,59 @@ class KerrCavity(Component):
     PORTSOUT = ['Out1', 'Out2']
     
     sub_blockstructure = (1, 1)
+
+    name = "K"
+    namespace = ""
+
+    Delta = symbols('Delta', real = True)       # Detuning from cavity
+    chi = symbols('chi', real = True)           # Kerr-nonlinear coefficient
+    kappa_1 = symbols('kappa_1', real = True)   # coupling through first port
+    kappa_2 = symbols('kappa_2', real = True)   # coupling through second port
+    FOCK_DIM = 75
+    _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', FOCK_DIM]
+
+
+
+
+
+    @property
+    def _space(self):
+        return local_space(self.name, self.namespace, dimension = self.FOCK_DIM)
+
+    @property
+    def port1(self):
+        return KerrPort(self, 0)
+
+    @property
+    def port2(self):
+        return KerrPort(self, 1)
+
+    def _creduce(self):
+        return self.port1 + self.port2
+
+    def _toSLH(self):
+        return self.creduce().toSLH()
+
+    def _toABCD(self, linearize):
+        return self.toSLH().toABCD(linearize)
     
-    GENERIC_DEFAULT_VALUES = dict(
-        Delta = symbols('Delta', real = True, each_char = False),       # Detuning from cavity
-        chi = symbols('chi', real = True, each_char = False),           # Kerr-nonlinear coefficient
-        kappa_1 = symbols('kappa_1', real = True, each_char = False),   # coupling through first port
-        kappa_2 = symbols('kappa_2', real = True, each_char = False),   # coupling through second port
-        FOCK_DIM = 75,                                                  # Truncated Fock dimension
-        )
-        
-    def reduce(self):
-        
-        try:
-            self.fock_id = HilbertSpace.register_local_space(self.name, range(self.FOCK_DIM))
-        except SpaceExists:
-            self.fock_id = HilbertSpace.retrieve_by_descriptor(self.name)[0]
-            HilbertSpace.set_states(self.name, range(self.FOCK_DIM))
-            
-        return KerrPort(self, 0) + KerrPort(self, 1)
-    
-    def toSLH(self):        
-        return self.reduce().toSLH()
-    
-#    def mathematica(self):
-#        return ("KerrCavity[%s, Rule[\[CapitalDelta],%s], Rule[\[Chi],%s], Rule[Subscript[\[Kappa],1],%s], Rule[Subscript[\[Kappa],2],%s], Rule[FockDim,%s]]"
-#                    % (self.name, mathematica(self.Delta), mathematica(self.chi), mathematica(self.kappa_1), mathematica(self.kappa_2), mathematica(self.FOCK_DIM))) 
-#    
-        
+
 
 class KerrPort(SubComponent):
     
-    def toSLH(self):
-        
-        a = Destroy(self.fock_id)
+    def _toSLH(self):
+
+        a = Destroy(self.space)
         a_d = a.adjoint()
-        S = IdentityMatrix(1)
+        S = identity_matrix(1)
         
         if self.sub_index == 0: 
             # Include the Hamiltonian only with the first port of the kerr cavity circuit object
             H = self.Delta * (a_d * a) + self.chi * (a_d * a_d * a * a)
-            L = OperatorMatrixInstance([[sqrt(self.kappa_1) * a]])
+            L = Matrix([[sqrt(self.kappa_1) * a]])
         else:
             H = 0
-            L = OperatorMatrixInstance([[sqrt(self.kappa_2) * a]])
+            L = Matrix([[sqrt(self.kappa_2) * a]])
         
         return SLH(S, L, H)
 
@@ -78,7 +88,7 @@ class KerrPort(SubComponent):
 if __name__ == '__main__':
     a = KerrCavity()
     print a
-    sa = a.reduce()
+    sa = a.creduce()
     print "-"*30
     print sa.__repr__()
     print "-"*30

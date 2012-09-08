@@ -169,7 +169,7 @@ class TestOperationDecorators(unittest.TestCase):
         @assoc
         @match_replace_binary
         class MatchReplaceBinary(Operation):
-            binary_rules = [
+            _binary_rules = [
                 ((a_int, b_int), lambda a,b: a + b),
                 ((a_int, c_str), lambda c,a: mult_str_int_if_pos(c,a)),
                 ((a_negint, c_str), lambda c,a: mult_inv_str_int_if_neg(c,a))

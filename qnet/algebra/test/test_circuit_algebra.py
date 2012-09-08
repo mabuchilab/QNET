@@ -9,7 +9,6 @@ Copyright (c) 2011 . All rights reserved.
 
 import unittest
 from qnet.algebra.circuit_algebra import *
-import qnet.algebra.abstract_algebra
 
 
 symbol_counter = 0

@@ -8,10 +8,10 @@ Copyright (c) 2011 . All rights reserved.
 
 Visualize Circuit objects.
 """
+import parse_circuit_strings
 
-
-import algebra.circuit_algebra as ca
-from circuit_components.component import Component, SubComponent
+import qnet.algebra.circuit_algebra as ca
+from qnet.circuit_components.component import Component, SubComponent
 import pyx
 
 from itertools import izip
@@ -44,22 +44,38 @@ def _curve(x1, y1, x2, y2, hunit = HUNIT, vunit = VUNIT):
 
 def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARGIN, rvmargin = RVMARGIN, rpermutation_length = RPLENGTH, draw_boxes = True, permutation_arrows = False):
     """
-    Return a PyX canvas, (rwidth, rheight), in_port_positions, out_port_positions visualizing circuit.
-    
-    (rwidth, rheight) are the relative width and height of the full objects visualization.
-    in_port_positions, out_port_positions are tuples that list the (relative) vertical coordinates of the ports of circuit.
+    Generate a PyX graphical representation of a circuit expression object.
+
+    :param circuit: The circuit expression
+    :type circuit: ca.Circuit
+    :param hunit: The horizontal length unit, default = ``HUNIT``
+    :type hunit: float
+    :param vunit: The vertical length unit, default = ``VUNIT``
+    :type vunit: float
+    :param rhmargin: relative horizontal margin, default = ``RHMARGIN``
+    :type rhmargin: float
+    :param rvmargin: relative vertical margin, default = ``RVMARGIN``
+    :type rvmargin: float
+    :param rpermutation_length: the relative length of a permutation circuit, default = ``RPLENGTH``
+    :type rpermutation_length: float
+    :param draw_boxes: Whether to draw indicator boxes to denote subexpressions (Concatenation, SeriesProduct, etc.), default = ``True``
+    :type draw_boxes: bool
+    :param permutation_arrows: Whether to draw arrows within the permutation visualization, default = ``False``
+    :type permutation_arrows: bool
+    :return: A PyX canvas object that can be further manipulated or printed to an output image.
+    :rtype: pyx.canvas.canvas
     """
+
     if isinstance(circuit, str):
         try:
-            import parse_circuit_strings
-            
-            parsed = parse_circuit_strings.parse_circuit_string(circuit)
+            parsed = parse_circuit_strings.parse_circuit_strings(circuit)
             if len(parsed) > 1:
-                raise Exception('Can currently only process a single expression.')
+                raise NotImplementedError('Can currently only process a single expression.')
             circuit = parsed[0]
-        except ImportError, e:
-            raise ValueError("Could not parse string %r into CircuitExpression: %s" % (circuit, e))
-            
+        except parse_circuit_strings.ParseCircuitStringError as e:
+            raise ValueError('Could not parse {}'.format(circuit))
+
+
     if not isinstance(circuit, ca.Circuit):
         raise ValueError()
     
@@ -77,9 +93,10 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         b = pyx.path.rect(rhmargin * hunit, rvmargin * vunit, hunit - 2 * rhmargin * hunit, nc * vunit - 2 * rvmargin * vunit)
         c.stroke(b)
         
-        
+        texstr = "${}$".format(circuit.tex() if not isinstance(circuit, ca.SLH) else r"{{\rm SLH}}_{{{}}}".format(circuit.space.tex()))
+
         # draw symbol name
-        c.text(hunit/2., nc * vunit/2., "${}$".format(circuit.tex() if not isinstance(circuit, ca.SLH) else r"{\rm SLH}") , [pyx.text.halign.boxcenter, pyx.text.valign.middle])
+        c.text(hunit/2., nc * vunit/2., texstr , [pyx.text.halign.boxcenter, pyx.text.valign.middle])
         
         # draw connectors at half-unit positions
         connector_positions = tuple((.5 + k) for k in xrange(nc))
@@ -110,6 +127,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         return c, (rpermutation_length, nc), connector_positions, connector_positions
     
     elif isinstance(circuit, ca.SeriesProduct):
+        assert len(circuit.operands) > 1
         
         # generate graphics of operad subsystems
         sub_graphics = [draw_circuit_canvas(op, hunit = hunit,
@@ -254,11 +272,31 @@ def draw_circuit(circuit, filename, direction = 'lr',
     """
     Generate a graphic representation of circuit and store them in a file.
     The graphics format is determined from the file extension.
-    
-    direction may be either 'lr'= left-to-right or 'rl' = right-to-left. In the first case,
-    the hunit parameter is passed to the draw_circuit_canvas function as its absolute value.
-    In the second case it is passed as its negative absolute value.
+
+    :param circuit: The circuit expression
+    :type circuit: ca.Circuit
+    :param filename: A filepath to store the output image under. The file name suffix determines the output graphics format
+    :type filename: str
+    :param direction: The horizontal direction of laying out series products. One of ``'lr'`` and ``'rl'``. This option overrides a negative value for ``hunit``,
+     default = ``'lr'``
+    :param hunit: The horizontal length unit, default = ``HUNIT``
+    :type hunit: float
+    :param vunit: The vertical length unit, default = ``VUNIT``
+    :type vunit: float
+    :param rhmargin: relative horizontal margin, default = ``RHMARGIN``
+    :type rhmargin: float
+    :param rvmargin: relative vertical margin, default = ``RVMARGIN``
+    :type rvmargin: float
+    :param rpermutation_length: the relative length of a permutation circuit, default = ``RPLENGTH``
+    :type rpermutation_length: float
+    :param draw_boxes: Whether to draw indicator boxes to denote subexpressions (Concatenation, SeriesProduct, etc.), default = ``True``
+    :type draw_boxes: bool
+    :param permutation_arrows: Whether to draw arrows within the permutation visualization, default = ``False``
+    :type permutation_arrows: bool
+    :return: ``True`` if printing was successful, ``False`` if not.
+    :rtype: bool
     """
+
 
     if direction == 'lr':
         hunit = abs(hunit)
@@ -281,57 +319,60 @@ def draw_circuit(circuit, filename, direction = 'lr',
     return True
 
 
-def display_circuit(circuit):
-    import os, subprocess, tempfile
-
-    tmp_dir = tempfile.gettempdir()
-    i = 0
-    while(os.path.exists(tmp_dir + "/visualize_circuit_%d.pdf" % i)):
-        i += 1
-
-    fname = tmp_dir + "/visualize_circuit_%d.pdf" % i
-    logname = tmp_dir + "/visualize_circuit_%d-python.log" % i
-
-
-    if draw_circuit(circuit, fname):
-        with open(logname, 'w') as logfile:
-            subprocess.call(("qlmanage", "-p", fname), stdout = logfile, stderr = logfile)
-
-
-
-
-
+#def display_circuit(circuit):
+#    """
+#    Under Mac OSX, bring up a visualization of a circuit on the screen.
+#    """
+#    import os, subprocess, tempfile
+#
+#    tmp_dir = tempfile.gettempdir()
+#    i = 0
+#    while(os.path.exists(tmp_dir + "/visualize_circuit_%d.pdf" % i)):
+#        i += 1
+#
+#    fname = tmp_dir + "/visualize_circuit_%d.pdf" % i
+#    logname = tmp_dir + "/visualize_circuit_%d-python.log" % i
+#
+#
+#    if draw_circuit(circuit, fname):
+#        with open(logname, 'w') as logfile:
+#            subprocess.call(("qlmanage", "-p", fname), stdout = logfile, stderr = logfile)
 
 
 
 
-def test():
-    # s = """
-    #       P_sigma(1,2,3,0)
-    #       a_nice_name(3)              # test comment
-    #       (a(3) + b(5))
-    #       (c(3) << d(3))
-    #       ((e(3) + cid(1)) << f(4))
-    #       [cid(1) + a(3)]_(1->2)
-    #       """
-    #   for q in filter(None, s.splitlines()):
-    #       display_circuit(q)
-    s2 = "(P_sigma(4, 0, 2, 3, 5, 1) << FB((((P_sigma(3, 4, 0, 5, 1, 2) << (NAND2(4) + cid(2))) + cid(1)) << (cid(2) + ((P_sigma(1, 0) + cid(1) + P_sigma(1, 0)) << (cid(1) + NAND1(4))))), 3, 5) << P_sigma(3, 4, 5, 0, 1, 2))"
-    s3 = "((cid(1) + (P_sigma(0, 2, 3, 4, 1) << (((cid(1) + FB(NAND2(4), 0, 0)) << P_sigma(0, 2, 3, 1) << NAND1(4)) + cid(1)))) << P_sigma(5, 0, 1, 2, 3, 4))"
-    
-    # ps2 = parse_circuit_strings.parse_circuit_string(s2).pop().simplify()
-    # display_circuit(s2)
-    # display_circuit(ps2)
-    # display_circuit(s3)
-    # display_circuit("((cid(2) + ((cid(3) + P_sigma(1, 0)) << ((P_sigma(0, 3, 2, 1) << NAND1(4)) + cid(1)))) << (cid(2) + P_sigma(1, 2, 3, 4, 0)))")
-    # display_circuit("(((P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(1, 2, 0, 3) << NAND2(4)) + cid(2))) + cid(1)) << P_sigma(2, 4, 5, 0, 1, 3, 6)) << ((cid(2) + ((cid(3) + P_sigma(1, 0)) << ((P_sigma(0, 3, 2, 1) << NAND1(4)) + cid(1)))) << (cid(2) + P_sigma(1, 2, 3, 4, 0)))")
-    # display_circuit("(((P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(1, 2, 0, 3) << NAND2(4)) + cid(2))) + cid(1)) << (cid(1) + ((cid(3) + P_sigma(1, 2, 0)) << (((cid(3) + P_sigma(1, 0)) << ((P_sigma(3, 1, 2, 0) << NAND1(4)) + cid(1))) + cid(1)))) << P_sigma(5, 6, 1, 2, 3, 4, 0))")
-    # display_circuit("((cid(1) + (P_sigma(0, 2, 3, 4, 1) << (((cid(1) + FB(NAND2(4), 0, 0)) << P_sigma(0, 2, 3, 1) << NAND1(4)) + cid(1)))) << P_sigma(5, 0, 1, 2, 3, 4))")
-    # display_circuit("((cid(1) + (P_sigma(0, 2, 3, 4, 1) << (((cid(1) + FB(NAND2(4), 0, 0)) << P_sigma(0, 2, 3, 1) << NAND1(4)) + cid(1)))) << P_sigma(5, 0, 1, 2, 3, 4))")
-    # display_circuit("FB(((BS1(2) + cid(1)) << (cid(1) + (BS2(2) << P_sigma(1, 0)))), 1, 2)")
-    # display_circuit("(P_sigma(4, 0, 2, 3, 5, 1) << FB(((cid(5) + P_sigma(1, 0)) << ((P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(3, 1, 0, 2) << NAND2(4)) + cid(2))) + cid(1)) << (cid(1) + ((cid(3) + P_sigma(1, 2, 0)) << (((cid(3) + P_sigma(1, 0)) << ((P_sigma(3, 1, 2, 0) << NAND1(4)) + cid(1))) + cid(1)))) << P_sigma(5, 6, 1, 2, 3, 4, 0))))")
-    display_circuit("(P_sigma(4, 0, 2, 3, 5, 1) << FB((((P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(3, 1, 0, 2) << NAND2(4)) + cid(2))) + cid(1)) << (cid(2) + (P_sigma(0, 2, 3, 4, 1) << (((cid(2) + P_sigma(1, 0)) << NAND1(4)) + cid(1))))), 5, 4) << P_sigma(2, 3, 4, 0, 1, 5))")
-if __name__ == '__main__':
-    test()
-    pass
 
+
+
+
+
+##    display_circuit("(P_sigma(4, 0, 2, 3, 5, 1) << FB((((P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(3, 1, 0, 2) << NAND2(4)) + cid(2))) + cid(1)) << (cid(2) + (P_sigma(0, 2, 3, 4, 1) << (((cid(2) + P_sigma(1, 0)) << NAND1(4)) + cid(1))))), 5, 4) << P_sigma(2, 3, 4, 0, 1, 5))")
+#    def test():
+#        # s = """
+#        #       P_sigma(1,2,3,0)
+#        #       a_nice_name(3)              # test comment
+#        #       (a(3) + b(5))
+#        #       (c(3) << d(3))
+#        #       ((e(3) + cid(1)) << f(4))
+#        #       [cid(1) + a(3)]_(1->2)
+#        #       """
+#        #   for q in filter(None, s.splitlines()):
+#        #       display_circuit(q)
+#        s2 = "(P_sigma(4, 0, 2, 3, 5, 1) << FB((((P_sigma(3, 4, 0, 5, 1, 2) << (NAND2(4) + cid(2))) + cid(1)) << (cid(2) + ((P_sigma(1, 0) + cid(1) + P_sigma(1, 0)) << (cid(1) + NAND1(4))))), 3, 5) << P_sigma(3, 4, 5, 0, 1, 2))"
+#        s3 = "((cid(1) + (P_sigma(0, 2, 3, 4, 1) << (((cid(1) + FB(NAND2(4), 0, 0)) << P_sigma(0, 2, 3, 1) << NAND1(4)) + cid(1)))) << P_sigma(5, 0, 1, 2, 3, 4))"
+#
+#        # ps2 = parse_circuit_strings.parse_circuit_strings(s2).pop().simplify()
+#        # display_circuit(s2)
+#        # display_circuit(ps2)
+#        # display_circuit(s3)
+#        # display_circuit("((cid(2) + ((cid(3) + P_sigma(1, 0)) << ((P_sigma(0, 3, 2, 1) << NAND1(4)) + cid(1)))) << (cid(2) + P_sigma(1, 2, 3, 4, 0)))")
+#        # display_circuit("(((P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(1, 2, 0, 3) << NAND2(4)) + cid(2))) + cid(1)) << P_sigma(2, 4, 5, 0, 1, 3, 6)) << ((cid(2) + ((cid(3) + P_sigma(1, 0)) << ((P_sigma(0, 3, 2, 1) << NAND1(4)) + cid(1)))) << (cid(2) + P_sigma(1, 2, 3, 4, 0)))")
+#        # display_circuit("(((P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(1, 2, 0, 3) << NAND2(4)) + cid(2))) + cid(1)) << (cid(1) + ((cid(3) + P_sigma(1, 2, 0)) << (((cid(3) + P_sigma(1, 0)) << ((P_sigma(3, 1, 2, 0) << NAND1(4)) + cid(1))) + cid(1)))) << P_sigma(5, 6, 1, 2, 3, 4, 0))")
+#        # display_circuit("((cid(1) + (P_sigma(0, 2, 3, 4, 1) << (((cid(1) + FB(NAND2(4), 0, 0)) << P_sigma(0, 2, 3, 1) << NAND1(4)) + cid(1)))) << P_sigma(5, 0, 1, 2, 3, 4))")
+#        # display_circuit("((cid(1) + (P_sigma(0, 2, 3, 4, 1) << (((cid(1) + FB(NAND2(4), 0, 0)) << P_sigma(0, 2, 3, 1) << NAND1(4)) + cid(1)))) << P_sigma(5, 0, 1, 2, 3, 4))")
+#        # display_circuit("FB(((BS1(2) + cid(1)) << (cid(1) + (BS2(2) << P_sigma(1, 0)))), 1, 2)")
+#        # display_circuit("(P_sigma(4, 0, 2, 3, 5, 1) << FB(((cid(5) + P_sigma(1, 0)) << ((P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(3, 1, 0, 2) << NAND2(4)) + cid(2))) + cid(1)) << (cid(1) + ((cid(3) + P_sigma(1, 2, 0)) << (((cid(3) + P_sigma(1, 0)) << ((P_sigma(3, 1, 2, 0) << NAND1(4)) + cid(1))) + cid(1)))) << P_sigma(5, 6, 1, 2, 3, 4, 0))))")
+#    if __name__ == '__main__':
+#    test()
+#    pass
+#

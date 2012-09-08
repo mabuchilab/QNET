@@ -7,8 +7,8 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from circuit_components.component import Component
-from algebra.circuit_algebra import *
+from qnet.circuit_components.component import Component
+from qnet.algebra.circuit_algebra import *
 from sympy.core.symbol import symbols
 
 
@@ -21,32 +21,34 @@ class Displace(Component):
     
     CDIM = 1
     
-    GENERIC_DEFAULT_VALUES = dict(
-        alpha = symbols('alpha', each_char = False) # complex valued laser amplitude
-        )
+
+    alpha = symbols('alpha') # complex valued laser amplitude
+    _parameters = ['alpha']
+
     
     PORTSIN = ["VacIn"]
     PORTSOUT = ["Out1"]
     
-    def toSLH(self):
+    def _toSLH(self):
         
-        S = OperatorMatrixInstance([[1]])
-        L = OperatorMatrixInstance([[self.alpha]])
+        S = Matrix([[1]])
+        L = Matrix([[self.alpha]])
         H = 0
         
         return SLH(S, L, H)
+
+    _space = TrivialSpace
         
-        
-    def tex(self):
+    def _tex(self):
         return r"{W(%s)}" % tex(self.alpha)
-    
-#    def mathematica(self):
-#        return "CDisplace[%s, Rule[\[Alpha],%s]]" % (self.name, mathematica(self.alpha))
+
+
+
 
 if __name__ == '__main__':
     a = Displace("W")
     print a
-    sa = a.reduce()
+    sa = a.creduce()
     print "-"*30
     print sa.__repr__()
     print "-"*30

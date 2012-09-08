@@ -7,38 +7,44 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from circuit_components.component import Component
-from algebra.circuit_algebra import OperatorMatrixInstance, exp, SLH
+from qnet.circuit_components.component import Component
+from qnet.algebra.circuit_algebra import Matrix, exp, SLH, I, TrivialSpace
 from sympy.core.symbol import symbols
-from sympy import I
-from algebra.abstract_algebra import mathematica
+
+
 
 
 
 class Phase(Component):
     CDIM = 1
-    GENERIC_DEFAULT_VALUES = dict(
-        phi = symbols('phi', each_char = False, real = True)    # Phase angle
-        )
+
+    phi = symbols('phi', real = True)    # Phase angle
+    _parameters = ['phi']
+
     PORTSIN = ["In1"]
     PORTSOUT = ["Out1"]
     
-    def toSLH(self):
+    def _toSLH(self):
         
-        S = OperatorMatrixInstance([[exp(I * self.phi)]])
-        L = OperatorMatrixInstance([[0]])
+        S = Matrix([[exp(I * self.phi)]])
+        L = Matrix([[0]])
         H = 0
-        
         return SLH(S, L, H)
+
+    def _toABCD(self, linearize):
+        return self.toSLH().toABCD(linearize)
+
+    _space = TrivialSpace
+
+    def _creduce(self):
+        return self
     
-#    def mathematica(self):
-#        return "CPhase[%s, Rule[\[Phi],%s]]" % (self.name, mathematica(self.phi))
 
 def test():
     a = Phase('P')
     print a
     print "=" * 80
-    print a.reduce()
+    print a.creduce()
     print "=" * 80
     print a.toSLH()
     

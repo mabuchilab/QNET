@@ -6,9 +6,11 @@ class BadPermutationError(ValueError):
 
 def check_permutation(permutation):
     """
-    Verify that a tuple of permutation image points (sigma(1), sigma(2), ..., sigma(n))
-    is a valid permutation, i.e. each number from 0 and n-1 occurs exactly once:
-        {sigma(1), sigma(2), ..., sigma(n)} == {0, 1, 2, ... n-1}
+    Verify that a tuple of permutation image points ``(sigma(1), sigma(2), ..., sigma(n))``
+    is a valid permutation, i.e. each number from 0 and n-1 occurs exactly once. I.e. the following **set**-equality must hold:
+
+        ``{sigma(1), sigma(2), ..., sigma(n)} == {0, 1, 2, ... n-1}``
+
     :param permutation: Tuple of permutation image points
     :type permutation: tuple
     :rtype: bool
@@ -108,14 +110,13 @@ def permutation_to_block_permutations(permutation):
     """
     If possible, decompose a permutation into a sequence of permutations
     each acting on individual ranges of the full range of indices.
-     E.g.
-     (1,2,0,3,5,4) --> (1,2,0) [+] (0,2,1)
+    E.g.
 
-    :param permutation: A valid permutation image tuple s = (s_0,...s_n) with n > 0
+        ``(1,2,0,3,5,4) --> (1,2,0) [+] (0,2,1)``
+
+    :param permutation: A valid permutation image tuple ``s = (s_0,...s_n)`` with ``n > 0``
     :type permutation: tuple
-    :return: A list of permutation tuples
-        [t = (t_0,...,t_n1), u = (u_0,...,u_n2),..., z = (z_0,...,z_nm)]
-        such that s = t [+] u [+] ... [+] z
+    :return: A list of permutation tuples ``[t = (t_0,...,t_n1), u = (u_0,...,u_n2),..., z = (z_0,...,z_nm)]`` such that ``s = t [+] u [+] ... [+] z``
     :rtype: list of tuples
     :raise: ValueError
     """
@@ -152,15 +153,16 @@ def permutation_to_block_permutations(permutation):
 
 def permutation_from_block_permutations(permutations):
     """
-    Reverse operation to :py:func:permutation_to_block_permutations:
+    Reverse operation to :py:func:`permutation_to_block_permutations`
     Compute the concatenation of permutations
-        (1,2,0) [+] (0,2,1) --> (1,2,0,3,5,4)
+
+        ``(1,2,0) [+] (0,2,1) --> (1,2,0,3,5,4)``
 
     :param permutations: A list of permutation tuples
-                                 [t = (t_0,...,t_n1), u = (u_0,...,u_n2),..., z = (z_0,...,z_nm)]
+                                 ``[t = (t_0,...,t_n1), u = (u_0,...,u_n2),..., z = (z_0,...,z_nm)]``
     :type permutations: list of tuples
     :return: permutation image tuple
-                    s = t [+] u [+] ... [+] z
+                    ``s = t [+] u [+] ... [+] z``
     :rtype: tuple
     """
     offset = 0
@@ -171,25 +173,31 @@ def permutation_from_block_permutations(permutations):
     return tuple(new_perm)
 
 
-def compose_permutations(a, b):
-    """
+def compose_permutations(alpha, beta):
+    r"""
     Find the composite permutation
-        sigma(j) = a(b(j)),
-    i.e., apply b and then a.
+
+    .. math::
+
+        \sigma := \alpha \cdot \beta \\
+        \Leftrightarrow \sigma(j) = \alpha\left(\beta(j)\right) \\
+
+
     :param a: first permutation image tuple
-    :type a: tuple
-    :param b: second permutation image tuple
-    :type b: tuple
+    :type alpha: tuple
+    :param beta: second permutation image tuple
+    :type beta: tuple
     :return: permutation image tuple of the composition.
     :rtype: tuple
     """
-    return permute(a, b)
+    return permute(alpha, beta)
 
 #TODO remove redundant function concatenate_permutations
 def concatenate_permutations(a, b):
     """
     Concatenate two permutations:
         s = a [+] b
+
     :param a: first permutation image tuple
     :type a: tuple
     :param b: second permutation image tuple
@@ -201,12 +209,12 @@ def concatenate_permutations(a, b):
 
 def permute(sequence, permutation):
     """
-    Apply a permutation sigma({j}) to an arbitrary sequence [l_1,l_2,...l_n],
-    return [l_sigma(1), l_sigma(2), ..., l_sigma(n)]
-    :param sequence: Any finite length sequence. If it is a list, tuple or str, the return type will be the same.
+    Apply a permutation sigma({j}) to an arbitrary sequence.
+
+    :param sequence: Any finite length sequence ``[l_1,l_2,...l_n]``. If it is a list, tuple or str, the return type will be the same.
     :param permutation: permutation image tuple
     :type permutation: tuple
-    :return: The permuted sequence
+    :return: The permuted sequence ``[l_sigma(1), l_sigma(2), ..., l_sigma(n)]``
     :raise: BadPermutationError or ValueError
     """
     if len(sequence) != len(permutation):
@@ -223,10 +231,11 @@ def permute(sequence, permutation):
 def full_block_perm(block_permutation, block_structure):
     """
     Extend a permutation of blocks to a permutation for the internal signals of all blocks.
-    E.g., say we have two blocks of sizes (=block structure) (2, 3),
-     then a block permutation that switches the blocks would be given by the image tuple (1,0).
-     However, to get a permutation of all 2+3 = 5 channels that realizes that block permutation we would need
-     --> (2, 3, 4, 0, 1)
+    E.g., say we have two blocks of sizes ('block structure') ``(2, 3)``,
+    then a block permutation that switches the blocks would be given by the image tuple ``(1,0)``.
+    However, to get a permutation of all 2+3 = 5 channels that realizes that block permutation we would need
+    ``(2, 3, 4, 0, 1)``
+
     :param block_permutation: permutation image tuple of block indices
     :type block_permutation: tuple
     :param block_structure: The block channel dimensions, block structure
@@ -248,13 +257,14 @@ def full_block_perm(block_permutation, block_structure):
 def block_perm_and_perms_within_blocks(permutation, block_structure):
     """
     Decompose a permutation into a block permutation and into permutations acting within each block.
+
     :param permutation: The overall permutation to be factored.
     :type permutation: tuple
     :param block_structure: The channel dimensions of the blocks
     :type block_structure: tuple
-    :return: (block_permutation, permutations_within_blocks)
-     Where block_permutations is an image tuple for a permutation of the block indices
-     and permutations_within_blocks is a list of image tuples for the permutations of the channels
+    :return: ``(block_permutation, permutations_within_blocks)``
+     Where ``block_permutations`` is an image tuple for a permutation of the block indices
+     and ``permutations_within_blocks`` is a list of image tuples for the permutations of the channels
      within each block
     :rtype: tuple
     """

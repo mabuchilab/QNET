@@ -10,9 +10,9 @@ Copyright (c) 2011 . All rights reserved.
 import sys
 import os
 import unittest
-from qhdl_parser.qparse import QHDLParser
-from qhdl_parser.qhdl import *
-from algebra.circuit_algebra import *
+from qnet.qhdl.qhdl_parser import QHDLParser
+from qnet.qhdl.qhdl import *
+from qnet.algebra.circuit_algebra import *
 
 def parse(qhdl_string):
     p = QHDLParser()
@@ -160,12 +160,12 @@ end redheffer_structure;
 class TestQHDLtoCircuit(unittest.TestCase):
     def testFeedback1(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_simplest_feedback)
-        self.assertEqual(circuit, Feedback(symbols['BS']) )
+        self.assertEqual(circuit, FB(symbols['BS']) )
     
     def testFeedback2(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_feedback_2)
         self.assertEqual(circuit, symbols['BS'].feedback(0 , 1))
-        #print circuit, symbols['BS'].feedback(0 , 1)    
+        #print circuit, all_symbols['BS'].feedback(0 , 1)
     
     def testRedheffer(self):
         

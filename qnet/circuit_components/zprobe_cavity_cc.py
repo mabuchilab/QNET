@@ -7,9 +7,9 @@ Created by Nikolas Tezak on 2011-02-14.
 Copyright (c) 2011 . All rights reserved.
 """
 
-from algebra.circuit_algebra import (HilbertSpace, SpaceExists, SLH, OperatorMatrixInstance, 
-                                    LocalProjector, Z, sqrt, IdentityMatrix, LocalSigma)
-from circuit_components.component import Component, SubComponent
+from qnet.algebra.circuit_algebra import (HilbertSpace, local_space, SLH, Matrix,
+                                    LocalProjector, Z, sqrt, identity_matrix, LocalSigma)
+from qnet.circuit_components.component import Component, SubComponent
 from sympy.core.symbol import symbols
 
 
@@ -25,55 +25,54 @@ class ZProbeCavity(Component):
     [2] http://iopscience.iop.org/1367-2630/13/5/055022
     """
     CDIM = 3
-    GENERIC_DEFAULT_VALUES = dict(
-            gamma = symbols('gamma', real = True, each_char = False), # decay rate into transverse modes
-            Delta = symbols('Delta', real = True, each_char = False), # detuning between the cavity (mode) and the atomic transition
-            )
+
+    gamma = symbols('gamma', real = True)   # decay rate into transverse modes
+    Delta = symbols('Delta', real = True)   # detuning between the cavity (mode) and the atomic transition
+    _parameters = ['gamma', 'Delta']
             
     PORTSIN = ['PIn', 'FIn1', 'FIn2']
     PORTSOUT = ['POut', 'UOut1', 'UOut2']
     
     sub_blockstructure = (1, 1, 1)
     
-    def reduce(self):
-        try:
-            self.local_space_id = HilbertSpace.register_local_space(self.name, ('r','h','g'))
-        except SpaceExists:
-            self.local_space_id = HilbertSpace.retrieve_by_descriptor(self.name)[0]
-        
+    def _creduce(self):
         return ProbePort(self) + FeedbackPort(self, 1) + FeedbackPort(self, 2)
 
-    def toSLH(self):
-        return self.reduce().toSLH()
-    
-        
+    def _toSLH(self):
+        return self.creduce().toSLH()
+
+    @property
+    def _space(self):
+        return local_space(self.name, self.namespace, basis = ('r','h','g'))
+
+
 
 class ProbePort(SubComponent):
     
     def __init__(self, cavity):
         super(ProbePort, self).__init__(cavity, 0)
     
-    def toSLH(self):
+    def _toSLH(self):
 
-        S = OperatorMatrixInstance([[Z(self.local_space_id)]])
-        L = OperatorMatrixInstance([[0]])
-        H = self.Delta * LocalProjector(self.local_space_id, 'r')
+        S = Matrix([[Z(self.space)]])
+        L = Matrix([[0]])
+        H = self.Delta * LocalProjector(self.space, 'r')
         
         return SLH(S, L, H)
 
 class FeedbackPort(SubComponent):
     
-    def toSLH(self):
+    def _toSLH(self):
         
-        S =  IdentityMatrix(1)
+        S =  identity_matrix(1)
         
         if self.sub_index == 1:
-            L = sqrt(self.gamma) * OperatorMatrixInstance([[LocalSigma(self.local_space_id, 'g', 'r')]])
+            L = sqrt(self.gamma) * Matrix([[LocalSigma(self.space, 'g', 'r')]])
         elif self.sub_index == 2:
-            L = sqrt(self.gamma) * OperatorMatrixInstance([[LocalSigma(self.local_space_id, 'h', 'r')]])
+            L = sqrt(self.gamma) * Matrix([[LocalSigma(self.space, 'h', 'r')]])
         else:
             raise Exception(str(self.sub_index))
-        
+
         return SLH(S, L, 0)
         
 
@@ -82,7 +81,7 @@ def test():
     a = ZProbeCavity('Q')
     print a
     print "=" * 80
-    print a.reduce()
+    print a.creduce()
     print "=" * 80
     print a.toSLH()
     

@@ -9,22 +9,23 @@ Copyright (c) 2011 . All rights reserved.
 
 import sys
 import getopt
-
+from qnet.qhdl.qhdl_parser import QHDLParser
+from qnet.circuit_components.library import write_component
 
 help_message = '''
-Run as {executable} -f path/to/file.qhdl [options]
-    When no additional option is specified, the program outputs a valid
-    GraphViz dot-syntax graph file with the algebraic circuit expressions
-    inserted as comments.
-    
-    The options are:
-    
-    --write-lib or -l : parse and install as new circuit library component
-    --help or -h : display this message
-    --graph-only or -g : do not attempt to parse into a circuit expression,
-                         but generate the GraphViz graph for the circuit
+Run as
 
-    
+    {executable} -f path/to/file.qhdl [options]
+
+When no additional option is specified, the program outputs a valid
+GraphViz dot-syntax graph file with the algebraic circuit expressions
+inserted as comments.
+
+The options are:
+
+    --write-lib or -L : parse and create new python circuit file in current directory
+    --write-lib or -L : parse and install as new circuit library component
+    --help or -h : display this message
 
 '''.format(executable=sys.argv[0])
 
@@ -35,8 +36,6 @@ class Usage(Exception):
     
     def __init__(self, msg):
         self.msg = msg
-
-from qhdl_parser.qparse import QHDLParser
 
 
 def set_up_parser(debug = False):
@@ -63,11 +62,6 @@ def parse_qhdl(qhdl_string):
         
         raise Usage(str(err))
 
-def graphs_generator():
-    archs = parser.architectures
-    for name, a in archs.items():
-        yield name, "DOT EXPORTER DISABLED" #a.to_dot_graph(name + "_")
-
 
 known_names = []
 
@@ -87,14 +81,14 @@ def circuit_generator():
         name, a = archs.items().pop()
         yield name, a.to_circuit()
 
-def write_modules():
-    from circuit_components.library import write_component
+def write_modules(local = False):
     entities = parser.entities.keys()
     architectures_by_entity = dict(((e,{}) for e in entities))
     for a_name, a in parser.architectures.items():
         architectures_by_entity[a.entity.identifier][a_name] = a
     for e, e_archs in architectures_by_entity.items():
-        yield write_component(parser.entities[e], e_archs)
+        yield write_component(parser.entities[e], e_archs, local = local)
+
         
 
 
@@ -104,13 +98,13 @@ def main(argv=None):
     try:
         if True:
             try:
-                opts, args = getopt.getopt(argv[1:], "hgf:dl", ["help", "graph-only", "file=", "debug", "write-lib"])
+                opts, args = getopt.getopt(argv[1:], "hf:dLl", ["help",  "file=", "debug", "write-lib", "write-local"])
             except getopt.error, msg:
                 raise Usage(msg)
             debug = False
             input_file = False
-            graph_only = False
             write_lib = False
+            write_local = False
             # option processing
             for option, value in opts:
             
@@ -123,11 +117,11 @@ def main(argv=None):
                 
                 if option in ("-f", "--file"):
                     input_file = value
-                
-                if option in ("-g", "--graph-only"):
-                    graph_only = True
-                
-                if option in ("-l", "--write-lib"):
+
+                if option in ("-l", "--write-local"):
+                    write_local = True
+
+                if option in ("-L", "--write-lib"):
                     write_lib = True
 
             
@@ -150,34 +144,31 @@ def main(argv=None):
                 print "-"*40
 
             
-            if not graph_only:
-                print "Creating algebraic Circuit expressions for all architectures..."
-                for name, (circuit, circuit_symbols, assignments) in circuit_generator():
-                    print "Circuit for entity '%s':" % name
-                    print str(circuit)
-                    print "-"*40
-                    print "Python representation:"
-                    print repr(circuit)
-                    print "-"*40
-                    print "LaTeX expression"
-                    print circuit.tex()
-                    print "-"*40
-            
+
+            print "Creating algebraic Circuit expressions for all architectures..."
+            for name, (circuit, circuit_symbols, assignments) in circuit_generator():
+                print "Circuit for entity '%s':" % name
+                print str(circuit)
+                print "-"*40
+                print "Python representation:"
+                print repr(circuit)
+                print "-"*40
+                print "LaTeX expression"
+                print circuit.tex()
+                print "-"*40
+
             if write_lib:
-                print "Writing library file for all entities..."
+                print "Writing and installing library file entity..."
                 for file_name in write_modules():
                     print "Wrote %s" % file_name
                 print "-"*40
-            print "Creating graphviz/dot expressions for all architectures"
-            print "-"*37+ "*/"
-            
-            print "// "+ "-"*37
-            for name, g in graphs_generator():
-                print "//  Graph for entity '%s':" % name
-                print "// "+ "-"*37
-                print g
-                print "// "+ "-"*37
-    
+
+            if write_local:
+                print "Creating local python module..."
+                for file_name in write_modules(local = True):
+                    print "Wrote %s" % file_name
+                print "-" * 40
+
     except Usage, err:
         print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
         return 2

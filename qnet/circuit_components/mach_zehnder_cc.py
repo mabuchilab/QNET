@@ -3,55 +3,106 @@
 """
 mach_zehnder_cc.py
 
-Created automatically
+Created automatically by $QNET/bin/parse_qhdl.py
+Get started by instantiating a circuit instance via:
+
+    >>> MachZehnder()
+
 """
-from circuit_components.library import make_namespace_string
-from algebra.circuit_algebra import cid, P_sigma, FB
+
+__all__ = ['MachZehnder']
+
+from qnet.circuit_components.library import make_namespace_string
+from qnet.circuit_components.component import Component
+from qnet.algebra.circuit_algebra import cid, P_sigma, FB, SLH
+import unittest
 from sympy import symbols
-from circuit_components.component import Component
+from qnet.circuit_components.phase_cc import Phase
+from qnet.circuit_components.beamsplitter_cc import Beamsplitter
+from qnet.circuit_components.displace_cc import Displace
+
 
 
 class MachZehnder(Component):
+    
+    # total number of field channels
     CDIM = 2
-    GENERIC_DEFAULT_VALUES = dict(
-        alpha = symbols('alpha', each_char = False),
-        phi = symbols('phi', real = True, each_char = False)
-                                )
+    
+    # parameters on which the model depends
+    alpha = symbols('alpha')
+    phi = symbols('phi', real = True)
+    _parameters = ['alpha', 'phi']
+
+    # list of input port names
     PORTSIN = ['a', 'b']
+    
+    # list of output port names
     PORTSOUT = ['c', 'd']
+
+    # sub-components
     
-    arch = "default"
+    @property
+    def B1(self):
+        return Beamsplitter(make_namespace_string(self.name, 'B1'))
+
+    @property
+    def B2(self):
+        return Beamsplitter(make_namespace_string(self.name, 'B2'))
+
+    @property
+    def P(self):
+        return Phase(make_namespace_string(self.name, 'P'), phi = self.phi)
+
+    @property
+    def W(self):
+        return Displace(make_namespace_string(self.name, 'W'), alpha = self.alpha)
+
+    _sub_components = ['B1', 'B2', 'P', 'W']
     
-    def __init__(self, name = "Q", arch = "default", **params):
-        super(MachZehnder, self).__init__(name, **params)
-        self.arch = arch
-    
-    def toSLH(self):
-        return self.reduce().toSLH()
+
+    def _toSLH(self):
+        return self.creduce().toSLH()
         
-    def reduce(self):
-        return getattr(self, "arch_" + self.arch)()
-    
-    def arch_netlist(self):
-        # import referenced components
-        from circuit_components.phase_cc import Phase
-        from circuit_components.beamsplitter_cc import Beamsplitter
-        from circuit_components.displace_cc import Displace
-        
-        # instantiate circuit components
-        P = Phase(make_namespace_string(self.name, 'P'), phi = self.phi)
-        W = Displace(make_namespace_string(self.name, 'W'), alpha = self.alpha)
-        B2 = Beamsplitter(make_namespace_string(self.name, 'B2'))
-        B1 = Beamsplitter(make_namespace_string(self.name, 'B1'))
-        
-        return (P_sigma(1, 0) << B2 << (P + cid(1)) << P_sigma(1, 0) << B1 << (W + cid(1)))
-    
-    
-    arch_default = arch_netlist
-    
-    
+    def _creduce(self):
+
+        B1, B2, P, W = self.B1, self.B2, self.P, self.W
+
+        return P_sigma(1, 0) << B2 << (P + cid(1)) << P_sigma(1, 0) << B1 << (W + cid(1))
+
+    @property
+    def _space(self):
+        return self.creduce().space
+
+
+# Test the circuit
+class TestMachZehnder(unittest.TestCase):
+    """
+    Automatically created unittest test case for MachZehnder.
+    """
+
+    def testCreation(self):
+        a = MachZehnder()
+        self.assertIsInstance(a, MachZehnder)
+
+    def testCReduce(self):
+        a = MachZehnder().creduce()
+
+    def testParameters(self):
+        if len(MachZehnder._parameters):
+            pname = MachZehnder._parameters[0]
+            obj = MachZehnder(name="TestName", namespace="TestNamespace", **{pname: 5})
+            self.assertEqual(getattr(obj, pname), 5)
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+        else:
+            obj = MachZehnder(name="TestName", namespace="TestNamespace")
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+    def testToSLH(self):
+        aslh = MachZehnder().toSLH()
+        self.assertIsInstance(aslh, SLH)
+
 if __name__ == "__main__":
-    a = MachZehnder()
-    print a
-    sa = a.toSLH()
-    print sa
+    unittest.main()

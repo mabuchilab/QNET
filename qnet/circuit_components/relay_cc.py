@@ -8,8 +8,8 @@ Copyright (c) 2011 . All rights reserved.
 """
 
 
-from circuit_components.component import Component, SubComponent
-from algebra.circuit_algebra import HilbertSpace, LocalProjector, SLH, LocalSigma, OperatorMatrixInstance, SpaceExists
+from qnet.circuit_components.component import Component, SubComponent
+from qnet.algebra.circuit_algebra import HilbertSpace, LocalProjector, SLH, LocalSigma, Matrix, local_space
 
 
 
@@ -33,17 +33,17 @@ class Relay(Component):
     PORTSOUT = ['NOUT', 'OUT', 'UOut1', 'UOut2']
     
     sub_blockstructure = (2, 2)
-    
-    def reduce(self):
-        try:
-            self.local_space_id = HilbertSpace.register_local_space(self.name, ('h','g'))
-        except SpaceExists:
-            self.local_space_id = HilbertSpace.retrieve_by_descriptor(self.name)[0]
 
+
+    @property
+    def _space(self):
+        return local_space(self.name, self.namespace, basis = ("h", "g"))
+    
+    def _creduce(self):
         return RelayOut(self) + RelayControl(self)
     
-    def toSLH(self):
-        return self.reduce().toSLH()
+    def _toSLH(self):
+        return self.creduce().toSLH()
 
 
 
@@ -52,36 +52,34 @@ class RelayOut(SubComponent):
     def __init__(self, relay):
         super(RelayOut, self).__init__(relay, 0)
         
-    def toSLH(self):
+    def _toSLH(self):
 
-        Pi_g = LocalProjector(self.local_space_id, ('g'))
-        Pi_h = LocalProjector(self.local_space_id, ('h'))
+        Pi_g = LocalProjector(self.space, 'g')
+        Pi_h = LocalProjector(self.space, 'h')
         
-        S = OperatorMatrixInstance([[Pi_g, -Pi_h ], [-Pi_h, Pi_g]])
-        return SLH(S, OperatorMatrixInstance([[0]]*2), 0)
+        S = Matrix([[Pi_g, -Pi_h ], [-Pi_h, Pi_g]])
+        return SLH(S, Matrix([[0]]*2), 0)
 
 class RelayControl(SubComponent):
     
     def __init__(self, relay):
         super(RelayControl, self).__init__(relay, 1)
         
-    def toSLH(self):
-        
-        
-        Pi_g = LocalProjector(self.local_space_id, ('g'))
-        Pi_h = LocalProjector(self.local_space_id, ('h'))
-        sigma_gh = LocalSigma(self.local_space_id, 'g', 'h')
-        sigma_hg = LocalSigma(self.local_space_id, 'h', 'g')
-        
-        
-        S = OperatorMatrixInstance([[Pi_g, - sigma_hg ], [-sigma_gh, Pi_h]])
-        return SLH(S, OperatorMatrixInstance([[0]]*2), 0)
+    def _toSLH(self):
+        Pi_g = LocalProjector(self.space, 'g')
+        Pi_h = LocalProjector(self.space, 'h')
+
+        sigma_gh = LocalSigma(self.space, 'g', 'h')
+        sigma_hg = LocalSigma(self.space, 'h', 'g')
+
+        S = Matrix([[Pi_g, - sigma_hg ], [-sigma_gh, Pi_h]])
+        return SLH(S, Matrix([[0]]*2), 0)
 
 def test():
     a = Relay('R')
     print a
     print "=" * 80
-    print a.reduce()
+    print a.creduce()
     print "=" * 80
     print a.toSLH()
     

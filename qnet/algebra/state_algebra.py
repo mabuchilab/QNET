@@ -169,6 +169,9 @@ class KetSymbol(Ket, Operation):
     def _series_expand(self, param, about, order):
         return self
 
+    def _all_symbols(self):
+        return {self}
+
 
 @singleton
 class KetZero(Ket, Expression):
@@ -204,6 +207,9 @@ class KetZero(Ket, Expression):
         return "0"
 
     _str_bra = _str_ket
+
+    def _all_symbols(self):
+        return {}
 
 @singleton
 class TrivialKet(Ket, Expression):
@@ -243,6 +249,9 @@ class TrivialKet(Ket, Expression):
     def _str_bra(self):
         return "<id|"
 
+    def _all_symbols(self):
+        return {}
+
 class LocalKet(Ket, Operation):
 
     def __init__(self, hs, *args):
@@ -262,6 +271,9 @@ class LocalKet(Ket, Operation):
 
     def _series_expand(self, param, about, order):
         return self
+
+    def _all_symbols(self):
+        return {}
 
 
 @check_signature
@@ -328,13 +340,15 @@ check_same_space = preprocess_create_with(check_same_space_mtd)
 class KetPlus(Ket, Operation):
     """
     A sum of Ket states
-        KetPlus(*summands)
+
+        ``KetPlus(*summands)``
+
     :param summands: State summands.
     :type summands: Ket
     """
     signature = Ket,
     neutral_element = KetZero
-    binary_rules = []
+    _binary_rules = []
 
 
     def order_key(self):
@@ -407,13 +421,15 @@ class OverlappingSpaces(AlgebraError):
 @check_signature_assoc
 class TensorKet(Ket, Operation):
     """
-    A product of Operators that serves both as a product within a Hilbert space as well as a tensor product.
-        OperatorTimes(*factors)
-    :param factors: Operator factors.
-    :type factors: Operator
+    A tensor product of kets each belonging to different degrees of freedom.
+
+        ``TensorKet(*factors)``
+
+    :param factors: Ket factors.
+    :type factors: Ket
     """
     signature = Ket,
-    binary_rules = []
+    _binary_rules = []
     neutral_element = TrivialKet
 
 
@@ -522,15 +538,17 @@ class TensorKet(Ket, Operation):
 @check_signature
 class ScalarTimesKet(Ket, Operation):
     """
-    Multiply an operator by a scalar coefficient.
-        ScalarTimesOperator(coefficient, term)
+    Multiply a Ket by a scalar coefficient.
+
+        ``ScalarTimesKet(coefficient, term)``
+
     :param coefficient: Scalar coefficient.
     :type coefficient: Any of Operator.scalar_types
-    :param term: The operator that is multiplied.
-    :type term: Operator
+    :param term: The ket that is multiplied.
+    :type term: Ket
     """
     signature = Ket.scalar_types, Ket
-    rules = []
+    _rules = []
 
 
     @property
@@ -625,6 +643,13 @@ class ScalarTimesKet(Ket, Operation):
             return sum((c * eto for eto in et.operands), KetZero)
         return c * et
 
+    def _series_expand(self, param, about, order):
+        ceg = sympy_series(self.coeff, x=param, x0=about, n=None)
+        ce = tuple(ceo for ceo, k in zip(ceg, range(order + 1)))
+        te = self.term.series_expand(param, about, order)
+
+        return tuple(ce[k] * te[n - k] for n in range(order + 1) for k in range(n + 1))
+
 class SpaceTooLargeError(AlgebraError):
     pass
 
@@ -634,14 +659,16 @@ class SpaceTooLargeError(AlgebraError):
 class OperatorTimesKet(Ket, Operation):
     """
     Multiply an operator by a scalar coefficient.
-        ScalarTimesOperator(coefficient, term)
-    :param coefficient: Scalar coefficient.
-    :type coefficient: Any of Operator.scalar_types
-    :param term: The operator that is multiplied.
-    :type term: Operator
+
+        ``OperatorTimesKet(coefficient, term)``
+
+    :param coefficient: Operator 'coefficient'.
+    :type coefficient: Operator
+    :param term: The ket that is multiplied.
+    :type term: Ket
     """
     signature = Operator, Ket
-    rules = []
+    _rules = []
 
     @classmethod
     def create(cls, op, ket):
@@ -753,6 +780,12 @@ class OperatorTimesKet(Ket, Operation):
             return sum((cto * et for cto in ct.operands), KetZero)
         return ct * et
 
+    def _series_expand(self, param, about, order):
+        ce = self.coeff.series_expand(param, about, order)
+        te = self.term.series_expand(param, about, order)
+
+        return tuple(ce[k] * te[n - k] for n in range(order + 1) for k in range(n + 1))
+
 @check_signature
 class Bra(Operation):
     signature = Ket,
@@ -808,7 +841,7 @@ class Bra(Operation):
 @check_signature
 class BraKet(Operator, Operation):
     signature = Ket, Ket
-    rules = []
+    _rules = []
     _space = TrivialSpace
 
     @property
@@ -847,7 +880,7 @@ class BraKet(Operator, Operation):
 @check_signature
 class KetBra(Operator, Operation):
     signature = Ket, Ket
-    rules = []
+    _rules = []
 
     @property
     def ket(self):
@@ -924,7 +957,7 @@ def tensor_decompose_kets(a, b, operation):
 
 
 
-## Expression rewriting rules
+## Expression rewriting _rules
 #u = wc("u", head=Operator.scalar_types)
 #v = wc("v", head=Operator.scalar_types)
 #
@@ -949,16 +982,16 @@ Phi_tensor = wc("Phi", head=TensorKet)
 #rc = wc("rc", head=(int, str))
 #rd = wc("rd", head=(int, str))
 
-ScalarTimesKet.rules += [
+ScalarTimesKet._rules += [
     ((1, Psi), lambda Psi: Psi),
     ((0, Psi), lambda Psi: KetZero),
     ((u, KetZero), lambda u: KetZero),
     ((u, ScalarTimesKet(v, Psi)), lambda u, v, Psi: (u * v) * Psi)
 ]
 
-OperatorTimesKet.rules += [
+OperatorTimesKet._rules += [
     ((IdentityOperator, Psi), lambda Psi: Psi),
-    ((OperatorZero, Psi), lambda Psi: KetZero),
+    ((ZeroOperator, Psi), lambda Psi: KetZero),
     ((A, KetZero), lambda u: KetZero),
     ((A, ScalarTimesKet(v, Psi)), lambda A, v, Psi:  v *(A* Psi)),
     ((LocalSigma(ls, n, m), BasisKet(ls, k)), lambda ls, n, m, k: BasisKet(ls, n) if m == k else KetZero),
@@ -975,26 +1008,26 @@ OperatorTimesKet.rules += [
     ((Phase(ls, u), CoherentStateKet(ls, v)), lambda ls, u, v: CoherentStateKet(ls, v * exp(I * u))),
 ]
 
-KetPlus.binary_rules += [
+KetPlus._binary_rules += [
     ((ScalarTimesKet(u, Psi), ScalarTimesOperator(v, Psi)), lambda u, v, Psi: (u + v) * Psi),
     ((ScalarTimesKet(u, Psi), Psi), lambda u, Psi: (u + 1) * Psi),
     ((Psi, ScalarTimesOperator(v, Psi)), lambda v, Psi: (1 + v) * Psi),
     ((Psi, Psi), lambda Psi: 2 * Psi),
 ]
 
-TensorKet.binary_rules += [
+TensorKet._binary_rules += [
     ((ScalarTimesKet(u, Psi), Phi), lambda u, Psi, Phi: u * (Psi * Phi)),
     ((Psi, ScalarTimesKet(u, Phi)), lambda Psi, u, Phi: u * (Psi * Phi)),
 ]
 
-BraKet.rules += [
-    ((BasisKet(ls, m), BasisKet(ls, n)), lambda ls, m, n: IdentityOperator if m == n else OperatorZero),
+BraKet._rules += [
+    ((BasisKet(ls, m), BasisKet(ls, n)), lambda ls, m, n: IdentityOperator if m == n else ZeroOperator),
     ((Psi_tensor, Phi_tensor), lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create)),
     ((ScalarTimesKet(u,Psi), Phi), lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi)),
     ((Psi, ScalarTimesKet(u,Phi)), lambda Psi, u, Phi: u * (Psi.adjoint() * Phi)),
 ]
 
-KetBra.rules += [
+KetBra._rules += [
     ((BasisKet(ls, m),BasisKet(ls, n)), lambda ls, m, n: LocalSigma(ls, m, n)),
     ((CoherentStateKet(ls, u),Phi), lambda ls, u, Phi: Displace(ls, u) * (BasisKet(ls, 0) *  Phi.adjoint())),
     ((Phi, CoherentStateKet(ls, u)), lambda ls, u, Phi: (Phi * BasisKet(ls, 0).adjoint()) * Displace(ls, -u)),

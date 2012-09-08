@@ -1,35 +1,39 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-component.py
+We distinguish between two independent properties of Components:
 
-Created by Nikolas Tezak on 2012-01-03.
-Copyright (c) 2012 . All rights reserved.
+1) They may be 'creducible', i.e. they can be expressed as a circuit expression
+of sub components.
 
-In the following, we distinguish between two properties of Components:
-1) They may be 'reducible', i.e. they can be expressed as a circuit expression 
-with irreducible operands.
 2) They may be 'primitive', i.e. they cannot be specified via QHDL
 
-Examples of reducible & primitive Components are:
+We write 'creducible' instead of 'reducible' in order to distinguish the meaning from the definition of Gough and James,
+who define reducible circuits as all circuits that can be decomposed into a concatenation of parts.
+Creducibility is more general than reducibility since we allow for an expansion into any sort of non-trivial algebraic expression,
+but in reverse, all reducible circuits are creducible.
+
+Examples of creducible but primitive Components are:
 KerrCavity, Relay, ...
 
-irreducible & primitive:
+non-creducible & primitive:
 Beamsplitter, Phase, Displace
 
-reducible & non-primitive:
+creducible & non-primitive:
 Any parsed QHDL circuit
 
-irreducible & non-primitive:
+non-creducible & non-primitive:
 None.
-
 
 """
 
-from algebra.circuit_algebra import Circuit, Expression, tex
+from qnet.algebra.circuit_algebra import Circuit, Expression, tex, CannotConvertToABCD, substitute
 
-from collections import  OrderedDict
-from algebra.abstract_algebra import mathematica
+
+#TODO update str insertion to str.format()
+
+
+
 
 class Component(Circuit, Expression):
     """
@@ -44,10 +48,9 @@ class Component(Circuit, Expression):
 
     # Name of the component, only necessary if it carries 
     # its own physical degrees of freedom or if it is part of a circuit
-    name = ''
+    name = 'C'
 
-    # parameters on which the model depends
-    GENERIC_DEFAULT_VALUES = OrderedDict()
+    namespace = ''
 
     # ingoing port names
     PORTSIN = []
@@ -55,66 +58,72 @@ class Component(Circuit, Expression):
     # outgoing port names
     PORTSOUT = []
 
+    _parameters = []
+    _sub_components = []
 
     @property
-    def sub_blockstructure(self):
-        """
-        If the component is reducible, this property should 
-        be overwritten to give the correct block structure. 
-        See some examples (kerr_cavity,...) for more details.
-        """
-        return self.CDIM,
-
-    @property
-    def cdim(self):
+    def _cdim(self):
         return self.CDIM
 
-    def __init__(self, name='Q', **params):
+    def _all_symbols(self):
+        return set(())
+
+    def __init__(self, name = name, namespace = namespace, **kwparams):
         self.name = name
-        gparams = dict(self.GENERIC_DEFAULT_VALUES)
-        gparams.update(params)
+        self.namespace = namespace
+        for pname, val in kwparams.items():
+            if pname in self._parameters:
+                setattr(self, pname, val)
+            else:
+                del kwparams[pname]
+                print "Unknown parameter!"
+        self._repr = "{}({!r},{!r}{})".format(self.__class__.__name__, self.name, self.namespace, "".join(", {}={!r}".format(k,v) for k,v in kwparams.items()))
+        self._hash = hash((self.__class__, name, namespace, tuple(sorted(kwparams.items()))))
 
-        for pname, val in gparams.items():
-            setattr(self, pname, val)
-
-
-    def toSLH(self):
-        raise NotImplementedError(self.__class__.__name__)
 
     def __repr__(self):
-        return "%s(%r%s)" % (self.__class__.__name__, self.name,
-                             "".join(", %s = %r" % (k, getattr(self, k)) for k in sorted(self.GENERIC_DEFAULT_VALUES)))
+        return self._repr
+
 
     def __str__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.name)
+        if self.namespace:
+            return "{}^{}".format(self.name, self.namespace)
+        return self.name
 
 
-    def tex(self):
-
+    def _tex(self):
         """
         Return a tex representation of the component, including its parameters.
         """
-        try:
-            tex_string = r"{%s}\left({%s}%s\right)" % (self.tex_name,
-                                                       tex(self.name),
-                                                       "".join(", %s" % tex(getattr(self, k))
-                                                       for k in sorted(self.GENERIC_DEFAULT_VALUES)))
-            return tex_string
-        except Exception:
-            return tex(self.name)
-        
-    def mathematica(self):
-        return  "%s[%s, %s]" % (self.__class__.__name__, mathematica(self.name), 
-                                ", ".join(["Rule[%s,%s]" % (str(gp), mathematica(getattr(self, str(gp)))) for gp in self.GENERIC_DEFAULT_VALUES]))
+        if self.namespace:
+            return "{{{}}}^{{{}}}".format(tex(self.name), tex(self.namespace))
+        return tex(self.name)
 
-        # raise NotImplementedError(self.__class__.__name__)
+    def __hash__(self):
+        return self._hash
+
+    def _creduce(self):
+        return self
+
+    def _toABCD(self, linearize):
+        return self.toSLH().toABCD(linearize)
+
+    def _substitute(self, var_map):
+        #TODO TEST
+        all_names = self._parameters + self._sub_components
+        all_namesubvals = [(n, substitute(getattr(self, n), var_map)) for n in all_names]
+        return self.__class__(**dict(all_namesubvals))
+
+
+
+
+        
 
 
 
 class SubComponent(Circuit, Expression):
     """
     Class for the subcomponents of a reducible (but primitive) Component.
-    
     """
 
     parent_component = None
@@ -144,7 +153,7 @@ class SubComponent(Circuit, Expression):
         return self.parent_component.PORTSOUT[offset: offset + self.cdim]
 
     @property
-    def cdim(self):
+    def _cdim(self):
         "Numbers of channels"
         return self.parent_component.sub_blockstructure[self.sub_index]
 
@@ -154,11 +163,27 @@ class SubComponent(Circuit, Expression):
     def __repr__(self):
         return "%s(%r, %d)" % (self.__class__.__name__, self.parent_component, self.sub_index)
 
-    def toSLH(self):
+    def _toSLH(self):
         raise NotImplementedError()
 
-    def tex(self):
+    def _tex(self):
         return "{%s}_{%d}" % (self.parent_component.tex(), self.sub_index)
 
-    def mathematica(self):
-        return "SubBlock[%s, %d]" % (mathematica(self.parent_component, self.sub_index))
+    def __hash__(self):
+        return hash((self.__class__, self.parent_component, self.sub_index))
+
+    def _toABCD(self, linearize):
+        raise CannotConvertToABCD()
+
+    def _creduce(self):
+        return self
+
+    def _all_symbols(self):
+        return self.parent_component.all_symbols()
+
+    @property
+    def _space(self):
+        return self.parent_component.space
+
+    def _substitute(self, var_map):
+        raise NotImplementedError("Carry out substitution before calling creduce() or after converting to SLH")

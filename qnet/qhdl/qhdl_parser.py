@@ -1,54 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""
+The PLY-based QHDLParser class.
+"""
 
-from ply import lex, yacc
-
-# tokens  = qlex.tokens
-# lexer = qlex.lexer
-
-import qhdl
-import os
-
-
-
-class ParsingException(SyntaxError):
-    pass
-    
-class Parser(object):
-    """
-    Base class for a lexer/parser that has the rules defined as methods
-    """
-    tokens = ()
-    precedence = ()
-
-    def __init__(self, **kw):
-        self.debug = kw.get('debug', 0)
-        self.names = { }
-        try:
-            modname = os.path.splitext(__file__)[0] + "_" + self.__class__.__name__
-        except:
-            modname = "parser"+"_"+self.__class__.__name__
-        self.debugfile = modname + ".dbg"
-        self.tabmodule = modname + "_" + "parsetab"
-        # print self.debugfile, self.tabmodule
-
-        # Build the lexer and parser
-
-        self.lexer = lex.lex(module=self, debug=self.debug)
-        self.parser = yacc.yacc(module=self,
-                  debug=self.debug,
-                  debugfile=self.debugfile,
-                  tabmodule=self.tabmodule)
-
-    def parse(self, inputstring):
-
-        return self.parser.parse(inputstring, lexer = self.lexer)
-        
-    def parse_file(self, filename):
-        with open(filename, 'r') as inputfile:
-            filetext = inputfile.read()
-        return self.parse(filetext)
-        
+from qnet.misc.parser import Parser, ParsingError
+from qnet.qhdl import qhdl
 
 
 
@@ -134,7 +91,7 @@ class QHDLParser(Parser):
 
     # Identifiers and reserved words
     def t_ID(self, t):
-        r'[A-Za-z_][\w_]*'
+        r"""[_A-Za-z][\w_]*"""
         t.type = self.reserved.get(t.value.lower(),"ID")
         return t
     # Integer literal
@@ -144,7 +101,7 @@ class QHDLParser(Parser):
 
     # Comments
     def t_comment(self, t):
-        r'--[^\n]*'
+        r"""--[^\n]*"""
 
     def t_error(self, t):
         print("Illegal character %s" % repr(t.value[0]))
@@ -164,7 +121,7 @@ class QHDLParser(Parser):
             elif isinstance(p[1], qhdl.Entity):
                 p[0] = {'entities':{p[1].identifier: p[1]}, 'architectures': {}}
             else:
-                raise ParsingException()
+                raise ParsingError()
         else:
             if isinstance(p[2], qhdl.Architecture):
                 assert p[2].identifier not in p[1]['architectures']
@@ -176,7 +133,7 @@ class QHDLParser(Parser):
                 p[1]['entities'][p[2].identifier] = p[2]
                 p[0] = p[1]
             else:
-                raise ParsingException()
+                raise ParsingError()
         
         
         
@@ -196,7 +153,7 @@ class QHDLParser(Parser):
         generics = p[4]
         ports = p[5]
         if second_identifer != None and identifier != second_identifer:
-            raise ParsingException('IDs don\'t match: %s, %s' % (identifier, second_identifer))
+            raise ParsingError('IDs don\'t match: %s, %s' % (identifier, second_identifer))
 
         p[0] = self.entities[identifier] = qhdl.Entity(identifier, generics, ports)
     
@@ -405,7 +362,7 @@ class QHDLParser(Parser):
         assignments = p[8]
         fl_assignments = p[9]
         if p[12] != None and p[12] != a_id:
-            raise ParsingException('IDs don\'t match!')
+            raise ParsingError('IDs don\'t match!')
         entity = self.entities.get(e_id, False)
         if not entity:
             raise qhdl.QHDLError('Entity %s not found.' % e_id)
@@ -442,7 +399,7 @@ class QHDLParser(Parser):
         component_declaration : COMPONENT ID generic_clause port_clause END COMPONENT opt_id SEMI
         """
         if p[7] != None and p[7] != p[2]:
-            raise ParsingException('IDs don\'t match')
+            raise ParsingError('IDs don\'t match')
         p[0] = qhdl.Component(p[2], p[3], p[4])
         
 
@@ -565,4 +522,5 @@ class QHDLParser(Parser):
 
     def p_error(self, p):
         print p, self.lexer.lineno
+        raise ParsingError()
 

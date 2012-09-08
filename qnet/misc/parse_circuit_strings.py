@@ -7,42 +7,66 @@ Created by Nikolas Tezak on 2011-05-13.
 Copyright (c) 2011 . All rights reserved.
 
 Parse strings into Circuit expressions.
-See documentation for 'parse_circuit_string()'
+See documentation for 'parse_circuit_strings()'
 """
 
+import qnet.algebra.circuit_algebra as ca
+from parser import Parser, ParsingError
 
-import algebra.circuit_algebra as ca
-
-def parse_circuit_string(circuit_string): 
+def parse_circuit_strings(circuit_string):
     """
     Parse strings for symbolic Circuit expressions into actual expression objects.
-    
+
     :param circuit_string: A string containing one or more circuit expressions in the special syntax described below.
-    :return: A list of all parsed expressions.
+    :return: A list of all parsed expressions if there are more than one, otherwise just the single result.
+    :rtype: list or ca.Circuit
 
     Examples:
+        1) A circuit symbol can be instantiated via:
 
-    >>> parse_circuit_string('a_nice_name(3)')
-        CircuitSymbol('a_nice_name', 3)
+            >>> parse_circuit_strings('a_nice_name(3)')
+                CircuitSymbol('a_nice_name', 3)
 
-    >>> parse_circuit_string('a(3) + b(5)')
-        Concatenation(CircuitSymbol('a', 3), CircuitSymbol('b', 5))
+        2) A concatenation can be instantiated by using the infix '+' operator
 
-    >>> parse_circuit_string('a(3) << b(3)')
-        SeriesProduct(CircuitSymbol('a', 3), CircuitSymbol('b', 3))
+            >>> parse_circuit_strings('a(3) + b(5)')
+                Concatenation(CircuitSymbol('a', 3), CircuitSymbol('b', 5))
 
-    >>> parse_circuit_string('(a(3) + cid(1)) << b(4)')
-        SeriesProduct(Concatenation(CircuitSymbol('a', 3), CIdentity()), CircuitSymbol('b', 3))
+        3) A series product can be instantiated by using the infix '<<' operator
 
-    >>> parse_circuit_string('[a(5)]_(1->2)')
-        Feedback(CircuitSymbol('a', 5), 1, 2)
+            >>> parse_circuit_strings('a(3) << b(3)')
+                SeriesProduct(CircuitSymbol('a', 3), CircuitSymbol('b', 3))
+
+        4) Circuit identity objects for ``n`` channels can be instantiated via ``cid(n)``:
+
+            >>> parse_circuit_strings('(a(3) + cid(1)) << b(4)')
+                SeriesProduct(Concatenation(CircuitSymbol('a', 3), CIdentity()), CircuitSymbol('b', 3))
+
+        5) Feedback operations are specified as
+
+            >>> parse_circuit_strings('[a(5)]_(1->2)')
+                Feedback(CircuitSymbol('a', 5), 1, 2)
+
+        6) Permutation objects are specified as
+
+            >>> parse_circuit_strings('P_sigma(1,2,3,0)')
+                CPermutation((1,2,3,0))
+
     """
-    p = CircuitExpressionParser()
-    return p.parse(circuit_string)
+    p = _CircuitExpressionParser()
+    ret = p.parse(circuit_string)
+    if len(ret) == 1:
+        return ret[0]
+    return ret
     
 
-from qhdl_parser.qparse import Parser
-class CircuitExpressionParser(Parser):
+
+
+class ParseCircuitStringError(ParsingError):
+    """Raised when an error is encountered while parsing a circuit expression string."""
+    pass
+
+class _CircuitExpressionParser(Parser):
     
     def parse(self, inputstring):
         self.entities = {}
@@ -239,4 +263,4 @@ class CircuitExpressionParser(Parser):
     def p_error(self, p):
         print self.lexer
         print p, self.lexer.lineno  
-        raise Exception
+        raise ParseCircuitStringError(str(self.lexer) + ", " + str(p) + ", " + str(self.lexer.lineno))

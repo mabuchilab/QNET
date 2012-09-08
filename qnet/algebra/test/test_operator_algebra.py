@@ -71,7 +71,7 @@ class TestOperatorAddition(unittest.TestCase):
         hs = local_space("hs")
         a = OperatorSymbol("a", hs)
         b = OperatorSymbol("b", hs)
-        z = OperatorZero
+        z = ZeroOperator
         self.assertEqual(a-a, z)
         self.assertEqual(a-b, OperatorPlus(a, ScalarTimesOperator(-1,b)))
 
@@ -130,7 +130,7 @@ class TestScalarTimesOperator(unittest.TestCase):
         h2 = local_space("h2")
         a = OperatorSymbol("a", h1)
         b =  OperatorSymbol("b", h2)
-        z = OperatorZero
+        z = ZeroOperator
 
         self.assertEqual(a+a,2*a)
         self.assertEqual(a*1,a)
@@ -195,7 +195,7 @@ class TestLocalOperatorRelations(unittest.TestCase):
 
     def testAnnihilation(self):
         h = local_space("h")
-        z = OperatorZero
+        z = ZeroOperator
         self.assertEqual(Destroy(h) * LocalSigma(h, 0, 1), z)
         self.assertEqual(LocalSigma(h, 1, 0) * Create(h), z)
 
@@ -237,11 +237,11 @@ class TestOperatorTrace(unittest.TestCase):
 
 
     def testLocalOps(self):
-        self.assertEqual(OperatorTrace.create(1, Create(1)), OperatorZero)
-        self.assertEqual(OperatorTrace.create(1, Destroy(1)), OperatorZero)
-        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 1,2)), OperatorZero)
+        self.assertEqual(OperatorTrace.create(1, Create(1)), ZeroOperator)
+        self.assertEqual(OperatorTrace.create(1, Destroy(1)), ZeroOperator)
+        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 1,2)), ZeroOperator)
         self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 1,1)), IdentityOperator)
-        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 'e','g')), OperatorZero)
+        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 'e','g')), ZeroOperator)
         self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 'e','e')), IdentityOperator)
 
     def testSimplificationMaxwellBloch(self):
