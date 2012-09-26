@@ -22,7 +22,7 @@ from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
 
 
 class PseudoNANDLatch(Component):
-    
+
     # total number of field channels
     CDIM = 6
     

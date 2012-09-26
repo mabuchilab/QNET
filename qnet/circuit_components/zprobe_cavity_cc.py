@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-qhdl.py
-
-Created by Nikolas Tezak on 2011-02-14.
-Copyright (c) 2011 . All rights reserved.
+Component definition file for the Z-probe cavity model of our QEC papers.
+See documentation of :py:class:`ZProbeCavity`.
 """
+import unittest
 
 from qnet.algebra.circuit_algebra import (HilbertSpace, local_space, SLH, Matrix,
                                     LocalProjector, Z, sqrt, identity_matrix, LocalSigma)
@@ -15,14 +14,17 @@ from sympy.core.symbol import symbols
 
 class ZProbeCavity(Component):
     """
-    This is the Z-probe cavity model as used in our group's QEC papers [1,2], which has three (dressed) internal
+    This is the Z-probe cavity model as used in our group's QEC papers [#qec1,#qec2]_ , which has three (dressed) internal
     states: r, g, h. The qubit is encoded in g,h, while r is used to drive transitions.
     The first channel is the probe-signal, while the second and third channels are 
-    the two independent feedback beams. 
+    the two independent feedback beams.
+
+
+    Since the scattering matrix is diagonal we provide sub component models
+    for the individual subsystems: One :py:class:`ProbePort` and two :py:class:`FeedbackPort` instances..
+
     
-    For more details see
-    [1] http://prl.aps.org/abstract/PRL/v105/i4/e040502
-    [2] http://iopscience.iop.org/1367-2630/13/5/055022
+
     """
     CDIM = 3
 
@@ -48,6 +50,9 @@ class ZProbeCavity(Component):
 
 
 class ProbePort(SubComponent):
+    """
+    Probe beam port for the Z-Probe cavity model.
+    """
     
     def __init__(self, cavity):
         super(ProbePort, self).__init__(cavity, 0)
@@ -61,6 +66,9 @@ class ProbePort(SubComponent):
         return SLH(S, L, H)
 
 class FeedbackPort(SubComponent):
+    """
+    Feedback beam port for the Z-Probe cavity model.
+    """
     
     def _toSLH(self):
         
@@ -74,16 +82,33 @@ class FeedbackPort(SubComponent):
             raise Exception(str(self.sub_index))
 
         return SLH(S, L, 0)
-        
 
 
-def test():
-    a = ZProbeCavity('Q')
-    print a
-    print "=" * 80
-    print a.creduce()
-    print "=" * 80
-    print a.toSLH()
-    
+# Test the circuit
+class _TestZProbeCavity(unittest.TestCase):
+    def testCreation(self):
+        a = ZProbeCavity()
+        self.assertIsInstance(a, ZProbeCavity)
+
+    def testCReduce(self):
+        a = ZProbeCavity().creduce()
+
+    def testParameters(self):
+        if len(ZProbeCavity._parameters):
+            pname = ZProbeCavity._parameters[0]
+            obj = ZProbeCavity(name = "TestName", namespace = "TestNamespace", **{pname: 5})
+            self.assertEqual(getattr(obj, pname), 5)
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+        else:
+            obj = ZProbeCavity(name = "TestName", namespace = "TestNamespace")
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+    def testToSLH(self):
+        aslh = ZProbeCavity().toSLH()
+        self.assertIsInstance(aslh, SLH)
+
 if __name__ == "__main__":
-    test()
+    unittest.main()

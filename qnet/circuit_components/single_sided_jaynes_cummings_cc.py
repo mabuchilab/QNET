@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-qhdl.py
+Component definition file for a CQED Jaynes-Cummings cavity model.
 
-Created by Nikolas Tezak on 2011-02-14.
-Copyright (c) 2011 . All rights reserved.
+See documentation of :py:class:`SingleSidedJaynesCummings`.
 """
+import unittest
 
 from qnet.algebra.circuit_algebra import  Destroy, Matrix, sqrt, SLH, LocalSigma, local_space, I
 from qnet.circuit_components.library import make_namespace_string
@@ -15,19 +15,30 @@ from sympy.core.symbol import symbols
 
 
 class SingleSidedJaynesCummings(Component):
-    """
-    Typical CQED Jaynes-Cummings model with a single input port with coupling coefficient kappa
-    and a single atomic excitation decay 'port' with rate gamma_0.
+    r"""
+    Typical CQED Jaynes-Cummings model with a single laser input/output channel with coupling coefficient :math:`\kappa`
+    and a single atomic decay channel with rate :math:`\gamma`.
+    The full model is given by:
+
+    .. math::
+        S & = \mathbf{1}_2 \\
+        L & = \begin{pmatrix} \sqrt{\kappa}a \\ \sqrt{\gamma} \sigma_- \end{pmatrix} \\
+        H & = \Delta_f a^\dagger a + \Delta_a \sigma_+ \sigma_- + ig\left(\sigma_+ a - \sigma_- a^\dagger \right)
+
+    As the model is reducible, sub component models for the mode and the atomic decay channel are given by
+    :py:class:`CavityPort` and :py:class:`DecayChannel`, respectively.
     """
     
     CDIM = 2
     
     kappa = symbols('kappa', real = True) # decay of cavity mode through cavity mirror
-    gamma_0 = symbols('gamma_0', real = True) # decay rate into transverse modes
-    g_c = symbols('g_c', real = True)   # coupling between cavity mode and two-level-system
-    Delta = symbols('Delta', real = True) # detuning between the cavity (mode) and the atomic transition
+    gamma = symbols('gamma', real = True) # decay rate into transverse modes
+    g = symbols('g', real = True)   # coupling between cavity mode and two-level-system
+    Delta_a = symbols('Delta_a', real = True) # detuning between the external driving field and the atomic transition
+    Delta_f = symbols('Delta_f', real = True) # detuning between the external driving field and the cavity mode
     FOCK_DIM = 20
-    _parameters = ['kappa', 'gamma_0', 'g_c', 'Delta', 'FOCK_DIM']
+    
+    _parameters = ['kappa', 'gamma', 'g', 'Delta_a', 'Delta_f', 'FOCK_DIM']
     
     
     PORTSIN = ['In1', 'VacIn']
@@ -38,10 +49,20 @@ class SingleSidedJaynesCummings(Component):
 
     @property
     def fock_space(self):
+        """
+        The cavity mode's Hilbert space.
+
+        :type: :py:class:`qnet.algebra.hilbert_space_algebra.LocalSpace`
+        """
         return local_space("f", make_namespace_string(self.namespace, self.name), dimension = self.FOCK_DIM)
 
     @property
     def tls_space(self):
+        """
+        The two-level-atom's Hilbert space.
+
+        :type: :py:class:`qnet.algebra.hilbert_space_algebra.LocalSpace`
+        """
         return local_space("a", make_namespace_string(self.namespace, self.name), basis = ('h', 'g'))
 
     @property
@@ -57,7 +78,13 @@ class SingleSidedJaynesCummings(Component):
         
 
 class CavityPort(SubComponent):
-    
+    """
+    Sub component model for port coupling the internal mode
+    of a :py:class:`SingleSidedJaynesCummings` model to the external field.
+    The Hamiltonian is included with this first port.
+    """
+
+
     def __init__(self, cavity):
         super(CavityPort, self).__init__(cavity, 0)
     
@@ -73,11 +100,17 @@ class CavityPort(SubComponent):
         #coupling to external mode
         L = sqrt(self.kappa) * a
         
-        H = self.Delta * sigma_p * sigma_m + I * self.g_c * (sigma_p * a - sigma_m * a_d)
+        H = self.Delta_f * a_d * a + self.Delta_a * sigma_p * sigma_m + I * self.g * (sigma_p * a - sigma_m * a_d)
         
         return SLH(Matrix([[1]]), Matrix([[L]]), H)
         
 class DecayChannel(SubComponent):
+
+    """
+    Sub component model for the port coupling the internal two-level atom
+    to the vacuum of the transverse free-field modes, inducing spontaneous emission/decay.
+    """
+
     
     def __init__(self, cavity):
         super(DecayChannel, self).__init__(cavity, 1)
@@ -88,20 +121,36 @@ class DecayChannel(SubComponent):
         sigma_m = sigma_p.adjoint()
         
         # vacuum coupling / spontaneous decay
-        L = sqrt(self.gamma_0) * sigma_m
+        L = sqrt(self.gamma) * sigma_m
         
         return SLH(Matrix([[1]]), Matrix([[L]]), 0)
 
 
-def test():
-    a = SingleSidedJaynesCummings()
-    print a
-    print "=" * 80
-    print a.creduce()
-    print "=" * 80
-    print a.toSLH()
-    
-if __name__ == "__main__":
-    test()
+# Test the circuit
+class _TestSingleSidedJaynesCummings(unittest.TestCase):
+    def testCreation(self):
+        a = SingleSidedJaynesCummings()
+        self.assertIsInstance(a, SingleSidedJaynesCummings)
 
-    
+    def testCReduce(self):
+        a = SingleSidedJaynesCummings().creduce()
+
+    def testParameters(self):
+        if len(SingleSidedJaynesCummings._parameters):
+            pname = SingleSidedJaynesCummings._parameters[0]
+            obj = SingleSidedJaynesCummings(name = "TestName", namespace = "TestNamespace", **{pname: 5})
+            self.assertEqual(getattr(obj, pname), 5)
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+        else:
+            obj = SingleSidedJaynesCummings(name = "TestName", namespace = "TestNamespace")
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+    def testToSLH(self):
+        aslh = SingleSidedJaynesCummings().toSLH()
+        self.assertIsInstance(aslh, SLH)
+
+if __name__ == "__main__":
+    unittest.main()

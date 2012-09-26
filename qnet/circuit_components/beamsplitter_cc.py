@@ -1,27 +1,37 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-beamsplitter_cc.py
-
-Created by Nikolas Tezak on 2011-02-14.
-Copyright (c) 2011 . All rights reserved.
+Component definition file for a infinite bandwidth beamsplitter with variable mixing angle.
+See :py:class:`Beamsplitter`
 """
 
-
+import unittest
 from qnet.algebra.circuit_algebra import SLH, Matrix, pi, sin, cos, TrivialSpace
 from qnet.circuit_components.component import Component
 
 
+
+
 class Beamsplitter(Component):
-    """
-    Beamsplitter model. 
+    r"""
+    Infinite bandwidth beamsplitter model. It is a pure scattering component,
+    i.e. it's internal dynamics are not modeled explicitly.
     The single real parameter theta is the mixing angle for the two signals.
     Note that there is an asymmetry in the effect on the two input signals due
-    to the minus sign appearing in the scattering matrix S.
-    To achieve a more general beamsplitter as in [1] combine this component with one or more
-    Phase components.
-    
-    [1] http://dx.doi.org/10.1109/TAC.2009.2031205
+    to the minus sign appearing in the scattering matrix
+
+    .. math::
+
+        S = \begin{pmatrix} \cos{\theta} & -\sin{\theta} \\ \sin{\theta} & \cos{\theta} \end{pmatrix}
+
+    To achieve a more general beamsplitter combine this component with one or more
+    :py:class:`qnet.circuit_components.Phase` components.
+
+    Instantiate as:
+
+    >>> Beamsplitter("B", theta = pi/4)
+        Beamsplitter("B", "", pi/4)
+
     """
     CDIM = 2
 
@@ -40,14 +50,33 @@ class Beamsplitter(Component):
 
     _space = TrivialSpace
 
-def test():
-    a = Beamsplitter("BS")
-    print a
-    print "=" * 80
-    print a.creduce()
-    print "=" * 80
-    print a.toSLH()
-    print a.toSLH().tex()
-    
+
+# Test the circuit
+class _TestBeamsplitter(unittest.TestCase):
+
+    def testCreation(self):
+        a = Beamsplitter()
+        self.assertIsInstance(a, Beamsplitter)
+
+    def testCReduce(self):
+        a = Beamsplitter().creduce()
+
+    def testParameters(self):
+        if len(Beamsplitter._parameters):
+            pname = Beamsplitter._parameters[0]
+            obj = Beamsplitter(name="TestName", namespace="TestNamespace", **{pname: 5})
+            self.assertEqual(getattr(obj, pname), 5)
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+        else:
+            obj = Beamsplitter(name="TestName", namespace="TestNamespace")
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+    def testToSLH(self):
+        aslh = Beamsplitter().toSLH()
+        self.assertIsInstance(aslh, SLH)
+
 if __name__ == "__main__":
-    test()
+    unittest.main()

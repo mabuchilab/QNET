@@ -1,34 +1,44 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-qhdl.py
-
-Created by Nikolas Tezak on 2011-02-14.
-Copyright (c) 2011 . All rights reserved.
+Component definition file for a degenerate OPO model with a single port for the signal beam.
+See documentation of :py:class:`SingleSidedOPO`.
 """
+import unittest
 
-from qnet.algebra.circuit_algebra import Destroy, local_space, Matrix, sqrt, SLH
-from qnet.circuit_components.component import Component
+from qnet.algebra.circuit_algebra import HilbertSpace, Destroy, Matrix, sqrt, SLH, LocalSigma, identity_matrix, local_space
+from qnet.circuit_components.component import Component, SubComponent
 
 from sympy.core.symbol import symbols
 from sympy import I
 
 class SingleSidedOPO(Component):
+    r"""
+    This model describes a degenerate OPO with a single port for the signal mode
+    in the sub-threshold regime: i.e., the pump is modeled as a classical amplitude.
+
+    The model's SLH parameters are given by
+
+    .. math::
+        S & = (1) \\
+        L & = \begin{pmatrix} \sqrt{\kappa} a  \end{pmatrix} \\
+        H &= \Delta a^\dagger a + {i\over 2} \left( \alpha {a^\dagger}^2 - \alpha^* a^2\right)
+
     """
-    comment
-    """
-    
+
     CDIM = 1
-    
+
+    name = "OPO"
+
     kappa = symbols('kappa', real = True) # decay of cavity mode through cavity mirror
-    alpha = symbols('alpha')              # coupling between cavity mode and two-level-system
+    alpha = symbols('alpha')   # coupling between cavity mode and two-level-system
     Delta = symbols('Delta', real = True) # detuning between the cavity (mode) and the atomic transition
     FOCK_DIM = 25
     _parameters = ['kappa', 'alpha', 'Delta', 'FOCK_DIM']
 
-    
-    PORTSIN = ['In1', 'In2']
-    PORTSOUT = ['Out1', 'Out2']        
+
+    PORTSIN = ['In1']
+    PORTSOUT = ['Out1']
 
 
     @property
@@ -36,25 +46,47 @@ class SingleSidedOPO(Component):
         return local_space(self.name, self.namespace, dimension = self.FOCK_DIM)
 
     def _toSLH(self):
+
         a = Destroy(self.space)
         a_d = a.adjoint()
 
-        #coupling to external mode
-        L = sqrt(self.kappa) * a
+        S = identity_matrix(1)
 
-        H = self.Delta * a_d * a + I * (self.alpha * a_d * a_d - self.alpha.conjugate() * a * a)
-        return SLH(Matrix([[1]]),Matrix([[L]]), H)
- 
 
-def test():
-    a = SingleSidedOPO()
-    print a
-    print "=" * 80
-    print a.creduce()
-    print "=" * 80
-    print a.toSLH()
-    
+        # Include the Hamiltonian only with the first port of the kerr cavity circuit object
+        H = self.Delta * a_d * a + (I / 2) * (self.alpha * a_d * a_d - self.alpha.conjugate() * a * a)
+        L = Matrix([[sqrt(self.kappa) * a]])
+
+        return SLH(S, L, H)
+
+
+
+# Test the circuit
+class _TestSingleSidedOPO(unittest.TestCase):
+
+    def testCreation(self):
+        a = SingleSidedOPO()
+        self.assertIsInstance(a, SingleSidedOPO)
+
+    def testCReduce(self):
+        a = SingleSidedOPO().creduce()
+
+    def testParameters(self):
+        if len(SingleSidedOPO._parameters):
+            pname = SingleSidedOPO._parameters[0]
+            obj = SingleSidedOPO(name="TestName", namespace="TestNamespace", **{pname: 5})
+            self.assertEqual(getattr(obj, pname), 5)
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+        else:
+            obj = SingleSidedOPO(name="TestName", namespace="TestNamespace")
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+    def testToSLH(self):
+        aslh = SingleSidedOPO().toSLH()
+        self.assertIsInstance(aslh, SLH)
+
 if __name__ == "__main__":
-    test()
-
-    
+    unittest.main()

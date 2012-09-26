@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-kerr_cavity_cc.py
-
-Created by Nikolas Tezak on 2011-02-14.
-Copyright (c) 2011 . All rights reserved.
+Component definition file for a Kerr-nonlinear cavity model with two ports.
+See documentation of :py:class:`KerrCavity`.
 """
-
+import unittest
 
 from qnet.circuit_components.component import Component, SubComponent
 from qnet.circuit_components.library import make_namespace_string
@@ -17,8 +15,18 @@ from sympy.core.symbol import symbols
 
 
 class KerrCavity(Component):
-    """
-    Two-port Kerr-nonlinear cavity model with two input and output channels.
+    r"""
+    This model describes a Kerr cavity model with two ports.
+
+    The model's SLH parameters are given by
+
+    .. math::
+        S & = \mathbf{1}_2 \\
+        L & = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \end{pmatrix} \\
+        H &= \Delta a^\dagger a + \chi {a^\dagger}^2 a^2
+
+    This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
+    I.e., it can be reduced into separate :py:class:`KerrPort` models for each port.
     """
     
     CDIM = 2
@@ -66,6 +74,10 @@ class KerrCavity(Component):
 
 
 class KerrPort(SubComponent):
+    """
+    Sub component model for the individual ports of a :py:class:`KerrCavity`.
+    The Hamiltonian is included with the first port.
+    """
     
     def _toSLH(self):
 
@@ -85,13 +97,35 @@ class KerrPort(SubComponent):
 
 
 
-if __name__ == '__main__':
-    a = KerrCavity()
-    print a
-    sa = a.creduce()
-    print "-"*30
-    print sa.__repr__()
-    print "-"*30
-    print sa.toSLH()
 
-    
+
+# Test the circuit
+class _TestKerrCavity(unittest.TestCase):
+
+
+  def testCreation(self):
+      a = KerrCavity()
+      self.assertIsInstance(a, KerrCavity)
+
+  def testCReduce(self):
+      a = KerrCavity().creduce()
+
+  def testParameters(self):
+      if len(KerrCavity._parameters):
+          pname = KerrCavity._parameters[0]
+          obj = KerrCavity(name="TestName", namespace="TestNamespace", **{pname: 5})
+          self.assertEqual(getattr(obj, pname), 5)
+          self.assertEqual(obj.name, "TestName")
+          self.assertEqual(obj.namespace, "TestNamespace")
+
+      else:
+          obj = KerrCavity(name="TestName", namespace="TestNamespace")
+          self.assertEqual(obj.name, "TestName")
+          self.assertEqual(obj.namespace, "TestNamespace")
+
+  def testToSLH(self):
+      aslh = KerrCavity().toSLH()
+      self.assertIsInstance(aslh, SLH)
+
+if __name__ == "__main__":
+  unittest.main()

@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-qhdl.py
-
-Created by Nikolas Tezak on 2011-02-14.
-Copyright (c) 2011 . All rights reserved.
+Component definition file for an all-optical Relay model.
+See documentation of :py:class:`Relay`.
 """
-
+import unittest
 
 from qnet.circuit_components.component import Component, SubComponent
 from qnet.algebra.circuit_algebra import HilbertSpace, LocalProjector, SLH, LocalSigma, Matrix, local_space
@@ -18,13 +16,15 @@ GENERIC_DEFAULT_VALUES = {}
 
 class Relay(Component):
     """
-    This is the Relay model as used in our group's QEC papers [1,2].
-    The SET and RESET inputs control whether the POW input is routed
-    through OUT or NOUT.
-    
-    For more details see
-    [1] http://pra.aps.org/abstract/PRA/v80/i4/e045802
-    [2] http://prl.aps.org/abstract/PRL/v105/i4/e040502
+    This is the Relay model as used in our group's QEC papers [#qec1]_,[#qec2]_.
+    The ``SET`` and ``RESET`` inputs control whether the ``POW`` input is routed
+    through the ``OUT`` or  the ``NOUT`` output port.
+
+    Since the scattering matrix is of block diagonal form (2x2,2x2) we provide sub component models
+    for the individual subsystems :py:class:`RelayOut` and :py:class:`RelayControl`.
+
+    .. [#qec1] http://pra.aps.org/abstract/PRA/v80/i4/e045802
+    .. [#qec2] http://prl.aps.org/abstract/PRL/v105/i4/e040502
     """
     
     CDIM = 4
@@ -48,6 +48,9 @@ class Relay(Component):
 
 
 class RelayOut(SubComponent):
+    """
+    First subcomponent of a :py:class:`Relay` model.
+    """
     
     def __init__(self, relay):
         super(RelayOut, self).__init__(relay, 0)
@@ -56,12 +59,15 @@ class RelayOut(SubComponent):
 
         Pi_g = LocalProjector(self.space, 'g')
         Pi_h = LocalProjector(self.space, 'h')
-        
+
         S = Matrix([[Pi_g, -Pi_h ], [-Pi_h, Pi_g]])
         return SLH(S, Matrix([[0]]*2), 0)
 
 class RelayControl(SubComponent):
-    
+    """
+    Second subcomponent of a :py:class:`Relay` model.
+    """
+
     def __init__(self, relay):
         super(RelayControl, self).__init__(relay, 1)
         
@@ -75,13 +81,31 @@ class RelayControl(SubComponent):
         S = Matrix([[Pi_g, - sigma_hg ], [-sigma_gh, Pi_h]])
         return SLH(S, Matrix([[0]]*2), 0)
 
-def test():
-    a = Relay('R')
-    print a
-    print "=" * 80
-    print a.creduce()
-    print "=" * 80
-    print a.toSLH()
-    
+# Test the circuit
+class _TestRelay(unittest.TestCase):
+    def testCreation(self):
+        a = Relay()
+        self.assertIsInstance(a, Relay)
+
+    def testCReduce(self):
+        a = Relay().creduce()
+
+    def testParameters(self):
+        if len(Relay._parameters):
+            pname = Relay._parameters[0]
+            obj = Relay(name = "TestName", namespace = "TestNamespace", **{pname: 5})
+            self.assertEqual(getattr(obj, pname), 5)
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+        else:
+            obj = Relay(name = "TestName", namespace = "TestNamespace")
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+    def testToSLH(self):
+        aslh = Relay().toSLH()
+        self.assertIsInstance(aslh, SLH)
+
 if __name__ == "__main__":
-    test()
+    unittest.main()

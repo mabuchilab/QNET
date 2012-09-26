@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-displace.py
-
-Created by Nikolas Tezak on 2011-02-14.
-Copyright (c) 2011 . All rights reserved.
+Component definition file for a coherent field displacement component.
+See documentation of :py:class:`Displace`.
 """
 
+
+
+import unittest
 from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import *
 from sympy.core.symbol import symbols
@@ -14,9 +15,9 @@ from sympy.core.symbol import symbols
 
 
 class Displace(Component):
-    """
-    Coherent displacement of the input field (usually vacuum).
-    This component models an ideal laser source.
+    r"""
+    Coherent displacement of the input field (usually vacuum) by a complex amplitude :math:`\alpha`.
+    This component serves as the model of an ideal laser source without internal non-classical internal dynamics.
     """
     
     CDIM = 1
@@ -45,13 +46,32 @@ class Displace(Component):
 
 
 
-if __name__ == '__main__':
-    a = Displace("W")
-    print a
-    sa = a.creduce()
-    print "-"*30
-    print sa.__repr__()
-    print "-"*30
-    print sa.toSLH()
+# Test the circuit
+class _TestDisplace(unittest.TestCase):
 
+    def testCreation(self):
+        a = Displace()
+        self.assertIsInstance(a, Displace)
 
+    def testCReduce(self):
+        a = Displace().creduce()
+
+    def testParameters(self):
+        if len(Displace._parameters):
+            pname = Displace._parameters[0]
+            obj = Displace(name="TestName", namespace="TestNamespace", **{pname: 5})
+            self.assertEqual(getattr(obj, pname), 5)
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+        else:
+            obj = Displace(name="TestName", namespace="TestNamespace")
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+    def testToSLH(self):
+        aslh = Displace().toSLH()
+        self.assertIsInstance(aslh, SLH)
+
+if __name__ == "__main__":
+    unittest.main()

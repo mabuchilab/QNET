@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-qhdl.py
-
-Created by Nikolas Tezak on 2011-02-14.
-Copyright (c) 2011 . All rights reserved.
+Component definition file for a degenerate OPO model with two signal beam ports.
+See documentation of :py:class:`DoubleSidedOPO`.
 """
+import unittest
 
 from qnet.algebra.circuit_algebra import HilbertSpace, Destroy, Matrix, sqrt, SLH, LocalSigma, identity_matrix, local_space
 from qnet.circuit_components.component import Component, SubComponent
@@ -14,8 +13,28 @@ from sympy.core.symbol import symbols
 from sympy import I
 
 class DoubleSidedOPO(Component):
-    """
-    comment
+    r"""
+    This model describes a degenerate OPO with two signal beam ports
+    in the sub-threshold regime. I.e., the pump is modeled as a classical amplitude.
+
+    The model's SLH parameters are given by
+
+    .. math::
+        S & = \mathbf{1}_2 \\
+        L & = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \end{pmatrix} \\
+        H &= \Delta a^\dagger a + {i\over 2} \left( \alpha {a^\dagger}^2 - \alpha^* a^2\right)
+
+    This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
+    I.e., it can be reduced into separate :py:class:`OPOPort` models for each port.
+
+
+    Note that this model's validity breaks down even in open-loop configuration when
+
+    .. math::
+        |\alpha| > {\kappa_1 + \kappa_2 \over 2}
+
+    which is just the threshold condition.
+    In a feedback configuration the threshold condition is generally changed.
     """
     
     CDIM = 2
@@ -47,6 +66,10 @@ class DoubleSidedOPO(Component):
         
 
 class OPOPort(SubComponent):
+    """
+    Sub component model for the individual ports of a :py:class:`DoubleSidedOPO`.
+    The Hamiltonian is included with the first port.
+    """
 
     def _toSLH(self):
 
@@ -57,7 +80,7 @@ class OPOPort(SubComponent):
 
         if self.sub_index == 0: 
             # Include the Hamiltonian only with the first port of the kerr cavity circuit object
-            H = self.Delta * a_d * a + I * (self.alpha * a_d * a_d - self.alpha.conjugate() * a * a)
+            H = self.Delta * a_d * a + (I/2) * (self.alpha * a_d * a_d - self.alpha.conjugate() * a * a)
             L = Matrix([[sqrt(self.kappa_1) * a]])
         else:
             H = 0
@@ -67,15 +90,32 @@ class OPOPort(SubComponent):
 
 
 
-def test():
-    a = DoubleSidedOPO(Delta = symbols("MyDelta", real = True))
-    print a
-    print "=" * 80
-    print a.creduce()
-    print "=" * 80
-    print a.toSLH()
-    
-if __name__ == "__main__":
-    test()
+# Test the circuit
+class _TestDoubleSidedOPO(unittest.TestCase):
 
-    
+    def testCreation(self):
+        a = DoubleSidedOPO()
+        self.assertIsInstance(a, DoubleSidedOPO)
+
+    def testCReduce(self):
+        a = DoubleSidedOPO().creduce()
+
+    def testParameters(self):
+        if len(DoubleSidedOPO._parameters):
+            pname = DoubleSidedOPO._parameters[0]
+            obj = DoubleSidedOPO(name="TestName", namespace="TestNamespace", **{pname: 5})
+            self.assertEqual(getattr(obj, pname), 5)
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+        else:
+            obj = DoubleSidedOPO(name="TestName", namespace="TestNamespace")
+            self.assertEqual(obj.name, "TestName")
+            self.assertEqual(obj.namespace, "TestNamespace")
+
+    def testToSLH(self):
+        aslh = DoubleSidedOPO().toSLH()
+        self.assertIsInstance(aslh, SLH)
+
+if __name__ == "__main__":
+    unittest.main()

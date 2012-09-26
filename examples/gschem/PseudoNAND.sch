@@ -100,9 +100,7 @@ phi=phi
 T 29095 49795 5 8 0 0 0 0 1
 device=Phase
 }
-T 22100 52300 9 10 1 0 0 0 1
-device=PseudoNAND
-T 21800 52600 9 10 1 0 0 0 1
+T 21600 52200 9 10 1 0 0 0 1
 module-name=PseudoNAND
 N 23000 50300 23800 50300 4
 C 22500 51000 1 270 0 beamsplitter-1.sym
