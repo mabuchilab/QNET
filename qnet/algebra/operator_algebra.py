@@ -1,46 +1,65 @@
 # coding=utf-8
-"""
-operator_algebra.py
+r"""
+The Quantum Operator Algebra
+============================
 
-The specification of a quantum mechanical symbolic operator algebra.
-Basic elements from which expressions can be built are operator all_symbols and locally acting operators.
-Each operator has an associated `space` property which gives the Hilbert space on which it acts non-trivially.
-In order to not have to specify all degrees of freedom in advance, an operator is assumed to act as the identity on
-all degrees of freedom that are independent of its space, as is customary in the physics literature.
+This module features classes and functions to define and manipulate symbolic Operator expressions.
+Operator expressions are constructed from sums (:py:class:`OperatorPlus`) and products (:py:class:`OperatorTimes`)
+of some basic elements, most importantly *local* operators,
+such as the annihilation (:py:class:`Destroy`) and creation (:py:class:`Create`) operators :math:`a_s, a_s^\dagger`
+of a quantum harmonic oscillator degree of freedom :math:`s`.
+Further important elementary local operators are the switching operators
+:math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (:py:class:`LocalSigma`).
+Each operator has an associated :py:attr:`Operator.space` property which gives the Hilbert space
+(cf :py:class:`qnet.algebra.hilbert_space_algebra.HilbertSpace`) on which it acts *non-trivially*.
+We don't explicitly distinguish between *tensor*-products :math:`X_s\otimes Y_r` of operators on different degrees of freedom :math:`s,r`
+(which we designate as *local* spaces) and *operator-composition*-products :math:`X_s \cdot Y_s` of operators acting on the same degree of freedom :math:`s`.
+Conceptionally, we assume that each operator is always implicitly tensored with identity operators acting on all un-specified degrees of freedom.
+This is typically done in the physics literature and only plays a role when tansforming to a numerical representation
+of the problem for the purpose of simulation, diagonalization, etc.
 
-.. highlight:: python
+All Operator classes
+----------------------
 
-Test::
+A complete list of all local operators is given below:
 
-    x = OperatorSymbol("x", "1")
-    x.space
-    LocalSpace("1","")
+    * Harmonic oscillator mode operators :math:`a_s, a_s^\dagger` (cf :py:class:`Destroy`, :py:class:`Create`)
 
-The available local operator types are
+    * :math:`\sigma`-switching operators  :math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (cf :py:class:`LocalSigma`)
 
-.. code-block:: python
+    * coherent displacement operators :math:`D_s(\alpha) := \exp{\left(\alpha a_s^\dagger - \alpha^* a_s\right)}` (cf :py:class:`Displace`)
 
-    Create(localspace)
-    Destroy(localspace)
-    LocalSigma(localspace, j, k)
+    * phase operators :math:`P_s(\phi) := \exp {\left(i\phi a_s^\dagger a_s\right)}` (cf :py:class:`Phase`)
 
-There exist some useful constants to specify neutral elements of Operator addition and multiplication:
+    * squeezing operators :math:`S_s(\eta) := \exp {\left[{1\over 2}\left({\eta {a_s^\dagger}^2 - \eta^* a_s^2}\right)\right]}` (cf :py:class:`Squeeze`)
 
-    ZeroOperator
-    OperatorIdentity
+Furthermore, there exist symbolic representations for constants and symbols:
 
-Quantum Operator objects can be added together in code via the infix '+' operator and multiplied with the infix '*' operator.
-They can also be added to or multiplied by scalar objects.
-In the first case, the scalar object is multiplied by the IdentityOperator constant.
+    * the identity operator (cf :py:class:`IdentityOperator`)
 
-Operations involving at least one quantum Operator argument are
+    * and the zero operator (cf :py:class:`ZeroOperator`)
 
-    OperatorPlus(A, B, C, ...)
-    OperatorTimes(A, B, C, ...)
-    ScalarTimesOperator(coefficient, term)
-    Adjoint(op)
-    PseudoInverse(op)
+    * an arbitrary operator symbol (cf :py:class:`OperatorSymbol`)
 
+Finally, we have the following Operator operations:
+
+    * sums of operators :math:`X_1 + X_2 + \dots + X_n` (cf :py:class:`OperatorPlus`)
+
+    * products of operators :math:`X_1  X_2  \cdots  X_n` (cf :py:class:`OperatorTimes`)
+
+    * the Hilbert space adjoint operator :math:`X^\dagger` (cf :py:class:`Adjoint`)
+
+    * scalar multiplication :math:`\lambda X` (cf :py:class:`ScalarTimesOperator`)
+
+    * pseudo-inverse of operators :math:`X^+` satisfying :math:`X X^+ X = X` and :math:`X^+ X X^+ = X^+` as well
+        as :math:`(X^+ X)^\dagger = X^+ X` and :math:`(X X^+)^\dagger = X X^+` (cf :py:class:`PseudoInverse`)
+
+    * the kernel projection operator :math:`\mathcal{P}_{{\rm Ker} X}` satisfying both :math:`X \mathcal{P}_{{\rm Ker} X} = 0`
+        and :math:`X^+ X =  1 - \mathcal{P}_{{\rm Ker} X}`  (cf :py:class:`NullSpaceProjector`)
+
+    * Partial traces over Operators :math:`{\rm Tr}_s X` (cf :py:class:`OperatorTrace`)
+
+For a list of all properties and methods of an operator object, see the documentation for the basic :py:class:`Operator` class.
 """
 from __future__ import division
 import abstract_algebra
@@ -53,7 +72,7 @@ from abstract_algebra import singleton, Operation, inf,\
 from abc import ABCMeta, abstractproperty, abstractmethod
 
 from hilbert_space_algebra import HilbertSpace, BasisRegistry, BasisNotSetError, LocalSpace, local_space, TrivialSpace, FullSpace, ProductSpace
-from permutation_algebra import check_permutation, BadPermutationError, invert_permutation, full_block_perm, block_perm_and_perms_within_blocks, permutation_to_block_permutations, concatenate_permutations, permute
+from permutations import check_permutation, BadPermutationError, invert_permutation, full_block_perm, block_perm_and_perms_within_blocks, permutation_to_block_permutations, concatenate_permutations, permute
 from itertools import product as cartesian_product, izip
 import qutip
 
@@ -107,6 +126,8 @@ class Operator(object):
     def space(self):
         """
         The Hilbert space associated with the operator on which it acts non-trivially
+
+        :type: HilbertSpace
         """
         return self._space
 
@@ -140,10 +161,11 @@ class Operator(object):
         """
         Create a numerical representation of the operator as a QuTiP object.
         Note that all symbolic scalar parameters need to be replaced by numerical values before calling this method.
+
         :param full_space: The full Hilbert space in which to represent the operator.
         :type full_space: HilbertSpace
         :return: The matrix representation of the operator.
-        :rtype: qutip.Qobj
+        :rtype: qutip.Qobj (:py:class:`qutip.Qobj`)
         """
         if full_space is None:
             return self._to_qutip(self.space)
@@ -169,6 +191,7 @@ class Operator(object):
     def series_expand(self, param, about, order):
         """
         Expand the operator expression as a truncated power series in a scalar parameter.
+
         :param param: Expansion parameter.
         :type param: sympy.core.symbol.Symbol
         :param about: Point about which to expand.
@@ -220,10 +243,19 @@ class Operator(object):
             return self * (sympyOne / other)
         return NotImplemented
 
+    __truediv__ = __div__
+
+    def __pow__(self, other):
+        if isinstance(other, int):
+            return prod((self,) * other, 1)
+        else:
+            return NotImplemented
+
 
 def space(obj):
     """
-    Gives the associated HilbertSpace with an object. Also assertCanBeDrawn for Operator.scalar_types
+    Gives the associated HilbertSpace with an object. Also works for :py:attr:`Operator.scalar_types`.
+
     :type obj: Operator or Operator.scalar_types
     :rtype: HilbertSpace
     """
@@ -239,7 +271,8 @@ def space(obj):
 class OperatorSymbol(Operator, Operation):
     """
     Operator Symbol class, parametrized by an identifier string and an associated Hilbert space.
-        OperatorSymbol(name, hs)
+
+        ``OperatorSymbol(name, hs)``
 
     :param name: Symbol identifier
     :type name: str
@@ -277,7 +310,7 @@ class OperatorSymbol(Operator, Operation):
         return self
 
     def _series_expand(self, param, about, order):
-        return (self,) + (() * order)
+        return (self,) + ((0,) * order)
 
     def _all_symbols(self):
         return {self}
@@ -286,7 +319,7 @@ class OperatorSymbol(Operator, Operation):
 @singleton
 class IdentityOperator(Operator, Expression):
     """
-    IdentityOperator constant (singleton) object. Use as IdentityOperator, *NOT* as IdentityOperator().
+    ``IdentityOperator`` constant (singleton) object.
     """
 
     @property
@@ -306,7 +339,7 @@ class IdentityOperator(Operator, Expression):
         return self
 
     def _series_expand(self, param, about, order):
-        return (self,) + (() * order)
+        return (self,) + ((0,) * order)
 
     def _pseudo_inverse(self):
         return self
@@ -329,7 +362,7 @@ from scipy.sparse import csr_matrix
 @singleton
 class ZeroOperator(Operator, Expression):
     """
-    ZeroOperator constant (singleton) object. Use as IdentityOperator, *NOT* as IdentityOperator().
+    ``ZeroOperator`` constant (singleton) object.
     """
 
     @property
@@ -347,7 +380,7 @@ class ZeroOperator(Operator, Expression):
         return self
 
     def _series_expand(self, param, about, order):
-        return (self,) + (() * order)
+        return (self,) + ((0,) * order)
 
     def _pseudo_inverse(self):
         return self
@@ -367,7 +400,7 @@ class ZeroOperator(Operator, Expression):
 
 def _implied_local_space_mtd(dcls, clsmtd, cls, space, *ops):
     """
-    For Operations whose first operand is a local space, accept int or str arguments and convert these to a LocalSpace via local_space().
+    For Operations whose first operand is a local space, accept ``int`` or ``str`` arguments and convert these to a ``LocalSpace`` via :py:func:`qnet.algebra.hilbert_space_algebra.local_space`.
     """
     if isinstance(space, (int, str)):
         return clsmtd(cls, local_space(space), *ops)
@@ -414,7 +447,7 @@ class LocalOperator(Operator, Operation):
         return self
 
     def _series_expand(self, param, about, order):
-        return (self,) + (() * order)
+        return (self,) + ((0,) * order)
 
     def _all_symbols(self):
         return {}
@@ -886,11 +919,17 @@ class OperatorTimes(OperatorOperation):
         # store tuples of summands of all expanded factors
         eopssummands = [eo.operands if isinstance(eo, OperatorPlus) else (eo,) for eo in eops]
         # iterate over a cartesian product of all factor summands, form product of each tuple and sum over result
-        return sum((OperatorTimes.create(*combo) for combo in cartesian_product(*eopssummands)), ZeroOperator)
+        ret = sum((OperatorTimes.create(*combo) for combo in cartesian_product(*eopssummands)), ZeroOperator)
+        if isinstance(ret, OperatorPlus):
+            return ret.expand()
+        return ret
 
     def _series_expand(self, param, about, order):
-    #        TODO implement OperatorTimes._series_expand()!
-        raise NotImplementedError()
+        assert len(self.operands) > 1
+        cfirst = self.operands[0].series_expand(param, about, order)
+        crest = OperatorTimes.create(*self.operands[1:]).series_expand(param, about, order)
+        return tuple(sum(cfirst[k] * crest[n - k] for k in range(n + 1)) for n in range(order + 1))
+
 
     def _tex(self):
         ret = self.operands[0].tex()
@@ -995,11 +1034,18 @@ class ScalarTimesOperator(Operator, Operation):
         return c * et
 
     def _series_expand(self, param, about, order):
-        ceg = sympy_series(self.coeff, x=param, x0=about, n=None)
-        ce = tuple(ceo for ceo, k in zip(ceg, range(order + 1)))
         te = self.term.series_expand(param, about, order)
-
-        return tuple(ce[k] * te[n - k] for n in range(order + 1) for k in range(n + 1))
+        if isinstance(self.coeff, SympyBasic):
+            if about != 0:
+                c = self.coeff.subs({param: about + param})
+            else:
+                c = self.coeff
+            ce = list(reversed(sympy_series(c, x=param, x0=0, n=order+1).as_poly(param).all_coeffs()))
+            if len(ce) < order + 1:
+                ce += [0] * (order + 1 - len(ce))
+            return tuple(sum(ce[k] * te[n - k] for k in range(n + 1)) for n in range(order + 1))
+        else:
+            return tuple(self.coeff * tek for tek in te)
 
 
     def _pseudo_inverse(self):
@@ -1021,6 +1067,16 @@ class ScalarTimesOperator(Operator, Operation):
         if self.term is IdentityOperator and isinstance(other, Operator.scalar_types):
             return self.coeff == other
         return super(ScalarTimesOperator, self).__eq__(other)
+
+
+    def _substitute(self, var_map):
+        st = self.term.substitute(var_map)
+        if isinstance(self.coeff, SympyBasic):
+            svar_map = {k:v for k,v in var_map.items() if not isinstance(k,Expression)}
+            sc = self.coeff.subs(svar_map)
+        else:
+            sc = substitute(self.coeff, var_map)
+        return sc * st
 
 
 def safe_tex(obj):
@@ -1722,8 +1778,9 @@ class Matrix(Expression):
     @property
     def space(self):
         """
-        :return: Return the combined Hilbert space of all matrix elements.
-        :rtype: HilbertSpace
+        Return the combined Hilbert space of all matrix elements.
+
+        :type: HilbertSpace
         """
         return prod((space(o) for o in self.matrix.flatten()), TrivialSpace)
 

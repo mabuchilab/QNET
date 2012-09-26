@@ -1,10 +1,61 @@
 #!/usr/bin/env python
 # encoding: utf-8
+r"""
+
+Abstract Algebra
+================
+
+The module features generic classes for encapsulating expressions and operations on expressions.
+It also includes some basic pattern matching and expression rewriting capabilities.
+
+The most important classes for implementing a custom 'algebra' are :py:class:`Expression` and :py:class:`Operation`,
+where the second is actually a subclass of the first.
+
+The ``Operation`` class should be subclassed to implement any structured expression type
+that can be specified in terms of a *head* and a (finite) sequence of *operands*::
+
+    Head(op1, op1, ..., opN)
+
+An operation is assumed to have immutable operands, i.e., if one wishes to change the operands of an ``Operation``,
+one rather creates a new Operation with modified Operands.
+
+Creating ``Operation`` objects
+------------------------------
+
+The single most important method of the ``Operation`` class is the :py:meth:`Operation.create` classmethod.
+
+
+Automatic expression rewriting by modifying/decorating the ``create()`` method
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A list of class decorators:
+
+    * :py:func:`assoc`
+
+    * :py:func:`idem`
+
+    * :py:func:`orderby`
+
+    * :py:func:`filter_neutral`
+
+    * :py:func:`check_signature`
+
+    * :py:func:`match_replace`
+
+    * :py:func:`match_replace_binary`
+
+
+Pattern matching
+----------------
+
+The :py:class:`Wildcard` class.
+
+
+The :py:func:`match` function.
+
+
+For a relatively simple example of how an algebra can be defined, see the Hilbert space algebra defined in :py:mod:`qnet.algebra.hilbert_space_algebra`.
 """
-The abstract algebra module features generic classes for encapsulating expressions and operations on expressions.
-It also includes some basic pattern matching capabilities.
-"""
-#TODO UPDATE DOCSTRING
 from __future__ import division
 from itertools import izip
 from functools import reduce
@@ -307,6 +358,7 @@ class Operation(Expression):
 
     # hash str, is generated on demand (lazily)
     __hash = None
+
 
     def __init__(self, *operands):
         """

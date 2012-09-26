@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 # encoding: utf-8
-#TODO UPDATE DOCSTRING
+"""
+This module defines some simple classes to describe simple and *composite* (i.e., multiple degree of freedom)
+Hilbert spaces of quantum systems. This covers only finite dimensional or countably infinite dimensional Hilbert spaces.
+
+The basic abstract class that features all properties of Hilbert space objects is given by: :py:class:`HilbertSpace`.
+The most important realizations of this class are:
+
+    * local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity mode) are described by a :py:class:`LocalSpace`
+
+    * composite tensor product spaces are given by instances of the :py:class:`ProductSpace` class.
+
+    * the :py:class:`TrivialSpace` represents a *trivial* [#f1]_ Hilbert space :math:`\mathcal{H}_0 \simeq \mathbb{C}`
+
+    * the :py:class:`FullSpace` represents a Hilbert space that includes all possible degrees of freedom.
+
+.. [#f1] *trivial* in the sense that :math:`\mathcal{H}_0 \simeq \mathbb{C}` effectively
+        contains only a single unique state for the purpose of assigning probabilities to observable outcomes.
+"""
 
 from abstract_algebra import singleton, Operation, inf, AlgebraError, tex, check_signature, idem, assoc, preprocess_create_with, filter_neutral, check_signature_assoc, prod
 from functools import reduce
@@ -18,6 +35,7 @@ class HilbertSpace(object):
     def tensor(self, other):
         """
         Tensor product between Hilbert spaces
+
         :param other: Other Hilbert space
         :type other: HilbertSpace
         :return: Tensor product space.
@@ -28,6 +46,7 @@ class HilbertSpace(object):
     def remove(self, other):
         """
         Remove a particular factor from a tensor product space.
+
         :param other: Space to remove
         :type other: HilbertSpace
         :return: Hilbert space for remaining degrees of freedom.
@@ -41,7 +60,8 @@ class HilbertSpace(object):
 
     def intersect(self, other):
         """
-        Find the mutual tensor *factors* of two Hilbert spaces,
+        Find the mutual tensor *factors* of two Hilbert spaces.
+
         :param other: Other Hilbert space
         :type other: HilbertSpace
         """
@@ -64,7 +84,8 @@ class HilbertSpace(object):
 
     def is_tensor_factor_of(self, other):
         """
-        Test if a space is included within a larger tensor product space. Also True if self == other.
+        Test if a space is included within a larger tensor product space. Also ``True`` if ``self == other``.
+
         :param other: Other Hilbert space
         :type other: HilbertSpace
         :rtype: bool
@@ -73,7 +94,8 @@ class HilbertSpace(object):
 
     def is_strict_tensor_factor_of(self, other):
         """
-        Test if a space is included within a larger tensor product space. Not True if self == other.
+        Test if a space is included within a larger tensor product space. Not ``True`` if ``self == other``.
+
         :param other: Other Hilbert space
         :type other: HilbertSpace
         :rtype: bool
@@ -281,13 +303,13 @@ def local_space(name, namespace = "", dimension = None, basis = None):
         ``[0, 1, 2, ..., dimension -1]``
 
     :param name: Local space identifier
-    :type name: (str, int)
+    :type name: str or int
     :param namespace: Local space namespace, see LocalSpace documentation
     :type namespace: str
     :param dimension: Dimension of local space (optional)
     :type dimension: int
     :param basis: Basis state labels for local space
-    :type basis: sequence of int or str
+    :type basis: sequence of int or sequence of str
     """
     if isinstance(name, int):
         s = LocalSpace.create(str(name), namespace)
@@ -380,6 +402,7 @@ class ProductSpace(HilbertSpace, Operation):
 class BasisNotSetError(AlgebraError):
     """
     Is raised when the basis states of a LocalSpace are requested before being defined.
+
     :param local_space:
     :type local_space:
     """
@@ -400,6 +423,7 @@ class BasisRegistry(object):
     def set_basis(self, local_space, basis):
         """
         Set the basis states of a local Hilbert space.
+
         :param local_space: Local Hilbert space object
         :type local_space: LocalSpace
         :param basis: A sequence of state labels
@@ -416,6 +440,7 @@ class BasisRegistry(object):
         """
         Retrieve the basis states of a local Hilbert space.
         If no basis states have been set, raise a BasisNotSetError exception.
+
         :param local_space: Local Hilbert space object
         :type local_space: LocalSpace
         :return: A sequence of state labels
@@ -429,6 +454,7 @@ class BasisRegistry(object):
     def dimension(self, space):
         """
         Compute the full dimension of a Hilbert space object.
+
         :param space: Hilbert space to compute dimension for
         :type space: HilbertSpace
         :return: Dimension of space
