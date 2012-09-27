@@ -748,6 +748,25 @@ class SLH(Circuit, Operation):
         """
         return SLH(self.S.expand(), self.L.expand(), self.H.expand())
 
+    def HL_to_qutip(self, full_space = None):
+        """
+        Generate and return QuTiP representation matrices for the Hamiltonian and the collapse operators.
+
+        :param full_space: The Hilbert space in which to represent the operators.
+        :type full_space: HilbertSpace or None
+        :return tuple: (H, [L1, L2, ...]) as numerical qutip.Qobj representations.
+        """
+        if full_space:
+            if not full_space >= self.space:
+                raise AlgebraError("full_space = {} needs to at least include self.space = {}".format(str(full_space), str(self.space)))
+        else:
+            full_space = self.space
+        H = self.H.to_qutip(full_space)
+        Ls = [L.to_qutip(full_space) for L in self.L.matrix.flatten() if isinstance(L, Operator)]
+
+        return H, Ls
+
+
 
 #    _block_structure_ = None
 #
