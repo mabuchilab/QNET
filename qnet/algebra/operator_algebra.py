@@ -1588,7 +1588,7 @@ class Matrix(Expression):
         else:
             self.matrix = np_array(m)
         if len(self.matrix.shape) < 2:
-            self.matrix = self.matrix.reshape((1, self.matrix.shape[0]))
+            self.matrix = self.matrix.reshape((self.matrix.shape[0], 1))
         if len(self.matrix.shape) > 2:
             raise ValueError()
 

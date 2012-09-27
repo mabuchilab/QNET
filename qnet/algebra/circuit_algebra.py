@@ -811,7 +811,8 @@ class SLH(Circuit, Operation):
         one_minus_Snn_inv = sympyOne/one_minus_Snn
 
         new_S = S[:n,:n] + S[0:n , n:] * one_minus_Snn_inv * S[n:, 0 : n]
-        new_L = L[:n] + S[0:n, n] * one_minus_Snn_inv * L[n,0]
+
+        new_L = L[:n] + S[0:n, n] * one_minus_Snn_inv * L[n]
         delta_H  = Im((L.adjoint() * S[:,n:]) * one_minus_Snn_inv * L[n,0])
 
         if isinstance(delta_H, Matrix):
@@ -1118,6 +1119,7 @@ class CIdentity(Circuit, Expression):
     def _all_symbols(self):
         return {self}
 
+    @property
     def _space(self):
         return TrivialSpace
 
@@ -1157,6 +1159,7 @@ class CircuitZero(Circuit, Expression):
     def _all_symbols(self):
         return {}
 
+    @property
     def _space(self):
         return TrivialSpace
 
@@ -1302,6 +1305,7 @@ class SeriesProduct(Circuit, Operation):
         # TODO implement SeriesProduct._toABCD()
         pass
 
+    @property
     def _space(self):
         return prod((o.space for o in self.operands), TrivialSpace)
 
@@ -1439,6 +1443,7 @@ class Concatenation(Circuit, Operation):
         # TODO implement Concatenation._toABCD()
         pass
 
+    @property
     def _space(self):
         return prod((o.space for o in self.operands), TrivialSpace)
 
@@ -1728,7 +1733,7 @@ class CPermutation(Circuit, Operation):
 
             return out_inv, circuit_identity(n-1)
 
-
+    @property
     def _space(self):
         return TrivialSpace
 
@@ -1946,6 +1951,7 @@ class Feedback(Circuit, Operation):
     def _series_inverse(self):
         return Feedback.create(self.operand.series_inverse(), *reversed(self.out_in_pair))
 
+    @property
     def _space(self):
         return self.operand.space
 
