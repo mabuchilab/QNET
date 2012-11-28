@@ -1,12 +1,27 @@
-#!/usr/bin/env python
-# encoding: utf-8
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
+
 """
-qhdl.py
+This module contains the code to convert a circuit specified in QHDL into a Gough-James circuit expression.
 
-This file contains the code to convert a circuit specified in QHDL into a Gough-James circuit expression.
-
-The other file in this module 'qhdl_parser.py' takes care of the actual parsing of the qhdl source, while this file then
-converts the netlist information into a circuit expression.
+The other module in this package :py:mod:`qhdl_parser` implements an actual parser for the qhdl source text, while this file then
+converts structured netlist information into a circuit expression.
 
 QHDL-file syntax::
 
@@ -45,17 +60,12 @@ QHDL-file syntax::
         COMPONENT_INSTANCE_ID3: my_second_component
             [generic map (...);]
             port map (...);
-
         ...
-
             ]
+
     end [architecture] [my_first_architecture];
 
-
-
     generic_type = int | real | complex
-
-
 """
 
 from collections import OrderedDict

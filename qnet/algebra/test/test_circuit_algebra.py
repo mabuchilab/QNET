@@ -1,11 +1,22 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-test_algebra.py
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
 
-Created by Nikolas Tezak on 2011-02-08.
-Copyright (c) 2011 . All rights reserved.
-"""
 
 import unittest
 from qnet.algebra.circuit_algebra import *
@@ -235,27 +246,3 @@ class TestCircuitAlgebra(unittest.TestCase):
         self.assertEquals((B << (cid(1)  + C)).feedback(0,1).substitute({B: (A1 + A2)}), A2 << C << A1)
         self.assertEquals(((cid(1)  + C)<< P_sigma(1,0) << B).feedback(1,1).substitute({B: (A1 + A2)}), A2 << C << A1)
         self.assertEquals(((cid(1)  + C)<< P_sigma(1,0) << B << (cid(1) + D)).feedback(1,1).substitute({B: (A1 + A2)}), A2 << D<< C << A1)
-        
-        
-        
-        # self.assertEquals(Feedback.apply_with_rules)
-        
-        # self.assertEquals()
-        
-    def testSpecialCases(self):
-        pass
-        # testobjs = Concatenation(CIdentity(),CPermutation((0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 2)))
-        
-        # self.assertEquals(testobjs, Concatenation.apply_with_rules(*testobjs.operands))
-        
-    # def testTripletts(self):
-        
-        
-
-def main():
-    unittest.main()
-
-if __name__ == '__main__':
-    main()
-    # suite = unittest.TestLoader().loadTestsFromTestCase()
-

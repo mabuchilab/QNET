@@ -1,13 +1,24 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-visualization.py
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
 
-Created by Nikolas Tezak on 2011-05-12.
-Copyright (c) 2011 . All rights reserved.
+#TODO add documentation
 
-Visualize Circuit objects.
-"""
 import parse_circuit_strings
 
 import qnet.algebra.circuit_algebra as ca

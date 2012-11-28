@@ -1,11 +1,31 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-This module defines some simple classes to describe simple and *composite* (i.e., multiple degree of freedom)
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
+
+r"""
+The Hilbert Space Algebra
+=========================
+
+This module defines some simple classes to describe simple and *composite/tensor* (i.e., multiple degree of freedom)
 Hilbert spaces of quantum systems. This covers only finite dimensional or countably infinite dimensional Hilbert spaces.
 
 The basic abstract class that features all properties of Hilbert space objects is given by: :py:class:`HilbertSpace`.
-The most important realizations of this class are:
+Its most important subclasses are:
 
     * local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity mode) are described by a :py:class:`LocalSpace`
 
@@ -15,11 +35,12 @@ The most important realizations of this class are:
 
     * the :py:class:`FullSpace` represents a Hilbert space that includes all possible degrees of freedom.
 
-.. [#f1] *trivial* in the sense that :math:`\mathcal{H}_0 \simeq \mathbb{C}` effectively
-        contains only a single unique state for the purpose of assigning probabilities to observable outcomes.
+.. [#f1] *trivial* in the sense that :math:`\mathcal{H}_0 \simeq \mathbb{C}`,
+         i.e., all states are multiples of each other and thus equivalent.
 """
 
-from abstract_algebra import singleton, Operation, inf, AlgebraError, tex, check_signature, idem, assoc, preprocess_create_with, filter_neutral, check_signature_assoc, prod
+
+from qnet.algebra.abstract_algebra import singleton, Operation, inf, AlgebraError, tex, check_signature, idem, assoc, preprocess_create_with, filter_neutral, check_signature_assoc, prod
 from functools import reduce
 from abc import ABCMeta, abstractproperty, abstractmethod
 

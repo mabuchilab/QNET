@@ -1,5 +1,22 @@
-#!/usr/bin/env python
-# encoding: utf-8
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
+
 r"""
 
 Abstract Algebra
@@ -127,12 +144,6 @@ class Expression(object):
         """
         return "$%s$" % self.tex()
 
-#    def free_of(self, *all_symbols):
-#        """
-#        Check if expression is independent of all passed all_symbols
-#        """
-#        return len(set(all_symbols) & self.all_symbols()) == 0
-
 
     def all_symbols(self):
         """
@@ -144,10 +155,6 @@ class Expression(object):
     @abstractmethod
     def _all_symbols(self):
         raise NotImplementedError(self.__class__.__name__)
-
-#    def mathematica(self):
-#        return self._mathematica()
-##        raise NotImplementedError(self.__class__.__name__)
 
     @abstractmethod
     def __hash__(self):
@@ -841,9 +848,10 @@ def wc(name_mode = "_", head = None, condition = None):
         * ``"A_"`` -> ``name="A", mode = Wildcard.single``
         * ``"B__"`` -> ``name="B", mode = Wildcard.one_or_more``
         * ``"B___"`` -> ``name="C", mode = Wildcard.zero_or_more``
+
     :type name_mode: str
     :param head: See Wildcard doc
-    :type head: tuple or type or None
+    :type head: tuple or ClassType or None
     :param condition:  See Wildcard doc
     :type condition: FunctionType or None
     :return: A Wildcard object

@@ -1,17 +1,26 @@
-#!/usr/bin/env python
-# encoding: utf-8
-"""
-test_algebra.py
-
-Created by Nikolas Tezak on 2011-02-08.
-Copyright (c) 2011 . All rights reserved.
-"""
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
 
 import sys
 import os
 import unittest
 from qnet.qhdl.qhdl_parser import QHDLParser
-from qnet.qhdl.qhdl import *
 from qnet.algebra.circuit_algebra import *
 
 def parse(qhdl_string):

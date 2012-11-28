@@ -17,7 +17,7 @@ pintype=out
 T 1205 945 5 8 1 1 0 6 1
 pinnumber=Out1
 T 1300 600 5 8 0 0 180 0 1
-pinseq=2
+pinseq=o1
 }
 T 695 2695 8 8 0 0 0 0 1
 device=SingleSidedJaynesCummings
@@ -66,4 +66,4 @@ T 2700 300 5 8 0 0 0 0 1
 pinseq=o2
 }
 T 600 2500 8 8 0 0 0 0 1
-params=Delta:real;g_c:real;kappa:real;gamma:real;FOCK_DIM:int:25
+params=Delta:real;g:real;kappa:real;gamma:real;FOCK_DIM:int:25

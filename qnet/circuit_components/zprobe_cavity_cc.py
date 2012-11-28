@@ -1,11 +1,28 @@
-#!/usr/bin/env python
-# encoding: utf-8
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
 """
-Component definition file for the Z-probe cavity model of our QEC papers.
+Component definition file for the Z-probe cavity model
+from the Mabuchi-Lab Coherent Feedback Quantum Error Correction papers.
+
 See documentation of :py:class:`ZProbeCavity`.
 """
 import unittest
-
 from qnet.algebra.circuit_algebra import (HilbertSpace, local_space, SLH, Matrix,
                                     LocalProjector, Z, sqrt, identity_matrix, LocalSigma)
 from qnet.circuit_components.component import Component, SubComponent
