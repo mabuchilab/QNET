@@ -1,7 +1,50 @@
-# coding=utf-8
-#TODO UPDATE DOCSTRING
-from operator_algebra import *
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
 
+r"""
+This implements a basic Hilbert space state algebra.
+We will usually represent states :math:`\psi` as 'Ket' vectors :math:`\psi \to | \psi \rangle`.
+However, any state can also be represented in its adjoint Bra form
+
+.. math::
+    \psi \leftrightarrow | \psi \rangle \leftrightarrow \langle \psi |
+
+States can be added to states of the same Hilbert space. They can be multiplied by:
+
+* scalars, to just yield a rescaled state within the original space
+
+* operators that act on some of the states degrees of freedom (but none that aren't part of the state's Hilbert space)
+
+* other states that have a Hilbert space corresponding to a disjoint set of degrees of freedom
+
+Furthermore,
+
+* a ``Ket`` object can multiply a ``Bra`` of the same space from the left to yield a ``KetBra`` type operator.
+
+And conversely,
+
+* a ``Bra`` can multiply a ``Ket`` from the left to create a (partial) inner product object ``BraKet``.
+  Currently, only full inner products are supported, i.e. the ``Ket`` and ``Bra`` operands need to have the same space.
+"""
+# TODO extend slightly, add code examples
+
+from qnet.algebra.operator_algebra import *
 
 
 class Ket(object):
@@ -14,6 +57,11 @@ class Ket(object):
 
     @property
     def space(self):
+        """
+        The associated Hilbert space.
+
+        :rtype: HilbertSpace
+        """
         return self._space
 
     @abstractproperty
@@ -21,6 +69,11 @@ class Ket(object):
         raise NotImplementedError(self.__class__.__name__)
 
     def adjoint(self):
+        """
+        The adjoint of a Ket state, i.e., the corresponding Bra.
+
+        :rtype: Bra
+        """
         return Bra(self)
 
     dag = adjoint
@@ -28,11 +81,10 @@ class Ket(object):
 
     def to_qutip(self):
         """
-        Create a numerical representation of the operator as a QuTiP object.
+        Create a numerical representation of the ket as a QuTiP object.
         Note that all symbolic scalar parameters need to be replaced by numerical values before calling this method.
-        :param full_space: The full Hilbert space in which to represent the operator.
-        :type full_space: HilbertSpace
-        :return: The matrix representation of the operator.
+
+        :return: The numerical representation of the operator.
         :rtype: qutip.Qobj
         """
         return self._to_qutip()
@@ -44,7 +96,8 @@ class Ket(object):
     def expand(self):
         """
         Expand out distributively all products of sums. Note that this does not expand out sums of scalar coefficients.
-        :return: A fully expanded sum of operators.
+
+        :return: A fully expanded sum of states.
         :rtype: Ket
         """
         return self._expand()
@@ -53,21 +106,22 @@ class Ket(object):
     def _expand(self):
         raise NotImplementedError(self.__class__.__name__)
 
-    def series_expand(self, param, about, order):
-        """
-        Expand the operator expression as a truncated power series in a scalar parameter.
-        :param param: Expansion parameter.
-        :type param: sympy.core.symbol.Symbol
-        :param about: Point about which to expand.
-        :type about:  Any one of Operator.scalar_types
-        :param order: Maximum order of expansion.
-        :type order: int >= 0
-        """
-        return self._series_expand(param, about, order)
-
-    @abstractmethod
-    def _series_expand(self, param, about, order):
-        raise NotImplementedError(self.__class__.__name__)
+#    def series_expand(self, param, about, order):
+#        """
+#        Expand the state expression as a truncated power series in a scalar parameter.
+#
+#        :param param: Expansion parameter.
+#        :type param: sympy.core.symbol.Symbol
+#        :param about: Point about which to expand.
+#        :type about:  Any one of Operator.scalar_types
+#        :param order: Maximum order of expansion.
+#        :type order: int >= 0
+#        """
+#        return self._series_expand(param, about, order)
+#
+#    @abstractmethod
+#    def _series_expand(self, param, about, order):
+#        raise NotImplementedError(self.__class__.__name__)
 
     @abstractmethod
     def _str_ket(self):
@@ -134,6 +188,19 @@ class Ket(object):
 
 @check_signature
 class KetSymbol(Ket, Operation):
+    """
+    Ket symbol class, parametrized by an identifier string and an associated Hilbert space.
+
+        ``KetSymbol(name, hs)``
+
+    :param name: Symbol identifier
+    :type name: str
+    :param hs: Associated Hilbert space.
+    :type hs: HilbertSpace
+
+    """
+
+
     signature = str, (HilbertSpace, str, int)
 
     def __init__(self, name, hs):
@@ -167,7 +234,7 @@ class KetSymbol(Ket, Operation):
         return self
 
     def _series_expand(self, param, about, order):
-        return self
+        return (self,) + (0,)*(order - 1)
 
     def _all_symbols(self):
         return {self}
@@ -176,24 +243,22 @@ class KetSymbol(Ket, Operation):
 @singleton
 class KetZero(Ket, Expression):
     """
-    KetZero constant (singleton) object.
+    KetZero constant (singleton) object for the null-state.
     """
 
     @property
     def _space(self):
         return FullSpace
 
-    def _adjoint(self):
-        return BraZero
-
     def _to_qutip(self):
-        raise AlgebraError("Cannot convert operator symbol to  numeric representation. Substitute first.")
+        raise ValueError("Can't represent the ZeroKet numerically.")
 
     def _expand(self):
         return self
 
     def _series_expand(self, param, about, order):
-        return self
+        return (self,) + (0,)*(order - 1)
+
 
     def _tex_ket(self):
         return "0"
@@ -209,12 +274,13 @@ class KetZero(Ket, Expression):
     _str_bra = _str_ket
 
     def _all_symbols(self):
-        return {}
+        return set(())
 
 @singleton
 class TrivialKet(Ket, Expression):
     """
     TrivialKet constant (singleton) object.
+    This is the neutral element under the state tensor-product.
     """
 
     @property
@@ -222,16 +288,17 @@ class TrivialKet(Ket, Expression):
         return TrivialSpace
 
     def _adjoint(self):
-        return TrivialBra
+        return Bra(TrivialKet)
 
     def _to_qutip(self):
-        raise AlgebraError("Cannot convert to numeric representation. Substitute first.")
+        raise AlgebraError("Cannot convert TrivialKet to numeric representation.")
 
     def _expand(self):
         return self
 
     def _series_expand(self, param, about, order):
-        return self
+        return (self,) + (0,)*(order - 1)
+
 
     def _tex_ket(self):
         return r"\left| {\rm id}\right \rangle"
@@ -250,9 +317,12 @@ class TrivialKet(Ket, Expression):
         return "<id|"
 
     def _all_symbols(self):
-        return {}
+        return set(())
 
 class LocalKet(Ket, Operation):
+    """
+    Base class for atomic (non-composite) ket states of single degrees of freedom.
+    """
 
     def __init__(self, hs, *args):
         if isinstance(hs, (str, int)):
@@ -270,7 +340,8 @@ class LocalKet(Ket, Operation):
         return self
 
     def _series_expand(self, param, about, order):
-        return self
+        return (self,) + (0,)*(order - 1)
+
 
     def _all_symbols(self):
         return {}
@@ -278,6 +349,16 @@ class LocalKet(Ket, Operation):
 
 @check_signature
 class BasisKet(LocalKet):
+    """
+    Local basis state, labeled by an integer or a string.
+
+    Instantiate as::
+
+        BasisKet(hs, rep)
+
+    :param LocalSpace hs: The local Hilbert space degree of freedom.
+    :param (str or int) rep: The basis state label.
+    """
     signature = (LocalSpace, str, int), (str, int)
 
     def _tex_ket(self):
@@ -299,6 +380,17 @@ class BasisKet(LocalKet):
 
 @check_signature
 class CoherentStateKet(LocalKet):
+    """
+    Local coherent state, labeled by a scalar amplitude.
+
+    Instantiate as::
+
+        CoherentStateKet(hs, amp)
+
+    :param LocalSpace hs: The local Hilbert space degree of freedom.
+    :param Ket.scalar_types amp: The coherent displacement amplitude.
+    """
+
     signature = (LocalSpace, str, int), Ket.scalar_types
 
     def _tex_ket(self):
@@ -316,10 +408,13 @@ class CoherentStateKet(LocalKet):
     def _to_qutip(self):
         return qutip.coherent(self.space.dimension, complex(self.operands[1]))
 
+    def _series_expand(self, param, about, order):
+        return (self,) + (0,) * (order - 1)
+
 class UnequalSpaces(AlgebraError):
     pass
 
-def check_same_space_mtd(dcls, clsmtd, cls, *ops):
+def _check_same_space_mtd(dcls, clsmtd, cls, *ops):
     """
     Check that all operands are from the same Hilbert space.
     """
@@ -327,21 +422,23 @@ def check_same_space_mtd(dcls, clsmtd, cls, *ops):
         raise UnequalSpaces(str(ops))
     return clsmtd(cls, *ops)
 
-check_same_space = preprocess_create_with(check_same_space_mtd)
+check_same_space = preprocess_create_with(_check_same_space_mtd)
 
 
 @assoc
-@check_same_space
 @orderby
 @filter_neutral
+@check_same_space
 @match_replace_binary
 @filter_neutral
 @check_signature_assoc
 class KetPlus(Ket, Operation):
     """
-    A sum of Ket states
+    A sum of Ket states.
 
-        ``KetPlus(*summands)``
+    Instantiate as::
+
+        KetPlus(*summands)
 
     :param summands: State summands.
     :type summands: Ket
@@ -351,10 +448,11 @@ class KetPlus(Ket, Operation):
     _binary_rules = []
 
 
-    def order_key(self):
-        if isinstance(self, (ScalarTimesKet,OperatorTimesKet)):
-            return order_key(self.term), self.coeff
-        return order_key(self), 1
+    @classmethod
+    def order_key(cls, a):
+        if isinstance(a, ScalarTimesKet):
+            return Operation.order_key(a.term), a.coeff
+        return Operation.order_key(a), 1
 
     def _to_qutip(self):
         return sum((op.to_qutip() for op in self.operands), 0)
@@ -410,6 +508,9 @@ class KetPlus(Ket, Operation):
     def _str_bra(self):
         return self._str_ketbra(bra=True)
 
+    def _space(self):
+        return self.operands[0].space
+
 class OverlappingSpaces(AlgebraError):
     pass
 
@@ -422,8 +523,9 @@ class OverlappingSpaces(AlgebraError):
 class TensorKet(Ket, Operation):
     """
     A tensor product of kets each belonging to different degrees of freedom.
+    Instantiate as::
 
-        ``TensorKet(*factors)``
+        TensorKet(*factors)
 
     :param factors: Ket factors.
     :type factors: Ket
@@ -538,12 +640,13 @@ class TensorKet(Ket, Operation):
 @check_signature
 class ScalarTimesKet(Ket, Operation):
     """
-    Multiply a Ket by a scalar coefficient.
+    Multiply a Ket by a scalar coefficient::
 
-        ``ScalarTimesKet(coefficient, term)``
+    Instantiate as::
+        ScalarTimesKet(coefficient, term)
 
     :param coefficient: Scalar coefficient.
-    :type coefficient: Any of Operator.scalar_types
+    :type coefficient: Operator.scalar_types
     :param term: The ket that is multiplied.
     :type term: Ket
     """
@@ -660,12 +763,12 @@ class OperatorTimesKet(Ket, Operation):
     """
     Multiply an operator by a scalar coefficient.
 
-        ``OperatorTimesKet(coefficient, term)``
+    Instantiate as::
 
-    :param coefficient: Operator 'coefficient'.
-    :type coefficient: Operator
-    :param term: The ket that is multiplied.
-    :type term: Ket
+        OperatorTimesKet(op, ket)
+
+    :param Operator op: The multiplying operator.
+    :param Ket ket: The ket that is multiplied.
     """
     signature = Operator, Ket
     _rules = []
@@ -788,10 +891,21 @@ class OperatorTimesKet(Ket, Operation):
 
 @check_signature
 class Bra(Operation):
+    """
+    The associated dual/adjoint state for any ``Ket`` object ``k`` is given by ``Bra(k)``.
+
+    :param Ket k: The state to represent as Bra.
+    """
+
     signature = Ket,
 
     @property
     def ket(self):
+        """
+        The state that is represented as a Bra.
+
+        :rtype: Ket
+        """
         return self.operands[0]
 
     def __str__(self):
@@ -801,6 +915,11 @@ class Bra(Operation):
         return self.ket._tex_bra()
 
     def adjoint(self):
+        """
+        The adjoint of a ``Bra`` is just the original ``Ket`` again.
+
+        :rtype: Ket
+        """
         return self.ket
     dag = adjoint
 
@@ -840,6 +959,23 @@ class Bra(Operation):
 @match_replace
 @check_signature
 class BraKet(Operator, Operation):
+    r"""
+    The symbolic inner product between two states, represented as Bra and Ket::
+
+        BraKet(b, k)
+
+    In math notation this corresponds to:
+
+    .. math::
+        \langle b | k \rangle
+
+    which we define to be linear in the state :math:`k` and anti-linear in :math:`b`.
+
+    :param Ket b: The anti-linear state argument.
+    :param Ket k: The linear state argument.
+    """
+
+
     signature = Ket, Ket
     _rules = []
     _space = TrivialSpace
@@ -879,6 +1015,15 @@ class BraKet(Operator, Operation):
 @match_replace
 @check_signature
 class KetBra(Operator, Operation):
+    """
+    A symbolic operator formed by the outer product of two states::
+
+        KetBra(k, b)
+
+    :param Ket k: The first state that defines the range of the operator.
+    :param ket b: The second state that defines the Kernel of the operator.
+    """
+
     signature = Ket, Ket
     _rules = []
 
@@ -1000,6 +1145,7 @@ OperatorTimesKet._rules += [
     ((Destroy(ls), CoherentStateKet(ls, u)), lambda ls, u: u * CoherentStateKet(ls, u)),
     ((A_local, Psi_tensor), lambda A, Psi: act_locally(A, Psi)),
     ((A_times, Psi_tensor), lambda A, Psi: act_locally_times_tensor(A, Psi)),
+    ((A, OperatorTimesKet(B, Psi)), lambda A, B, Psi: (A * B) * Psi if (B * Psi) == OperatorTimesKet(B, Psi) else A * (B * Psi)),
     ((OperatorTimes(A__, B_local), Psi_local), lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)),
     ((ScalarTimesOperator(u, A), Psi), lambda u, A, Psi: u * (A * Psi)),
     ((Displace(ls, u), BasisKet(ls, 0)), lambda ls, u: CoherentStateKet(ls, u)),
@@ -1009,7 +1155,7 @@ OperatorTimesKet._rules += [
 ]
 
 KetPlus._binary_rules += [
-    ((ScalarTimesKet(u, Psi), ScalarTimesOperator(v, Psi)), lambda u, v, Psi: (u + v) * Psi),
+    ((ScalarTimesKet(u, Psi), ScalarTimesKet(v, Psi)), lambda u, v, Psi: (u + v) * Psi),
     ((ScalarTimesKet(u, Psi), Psi), lambda u, Psi: (u + 1) * Psi),
     ((Psi, ScalarTimesOperator(v, Psi)), lambda v, Psi: (1 + v) * Psi),
     ((Psi, Psi), lambda Psi: 2 * Psi),
@@ -1023,7 +1169,7 @@ TensorKet._binary_rules += [
 BraKet._rules += [
     ((BasisKet(ls, m), BasisKet(ls, n)), lambda ls, m, n: IdentityOperator if m == n else ZeroOperator),
     ((Psi_tensor, Phi_tensor), lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create)),
-    ((ScalarTimesKet(u,Psi), Phi), lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi)),
+    ((ScalarTimesKet(u, Psi), Phi), lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi)),
     ((Psi, ScalarTimesKet(u,Phi)), lambda Psi, u, Phi: u * (Psi.adjoint() * Phi)),
 ]
 

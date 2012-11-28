@@ -1,5 +1,22 @@
-#!/usr/bin/env python
-# encoding=utf-8
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
+
 r"""
 The Gough-James Circuit Algebra
 ===============================
@@ -313,6 +330,10 @@ A series starting or ending with a permutation system or a series starting or en
 .. [3] Gough & James (2009). The Series Product and Its Application to Quantum Feedforward and Feedback Networks. IEEE Transactions on Automatic Control, 54(11), 2530-2544. doi:10.1109/TAC.2009.2031205
 
 """
+#TODO move most of this over to separate file!
+#TODO extend remainder slightly, add code examples
+
+
 from __future__ import division
 import os, time
 from operator_algebra import *
@@ -822,8 +843,12 @@ class SLH(Circuit, Operation):
         return SLH(new_S, new_L, new_H)
 
 
+    def symbolic_liouvillian(self):
+        from super_operator_algebra import liouvillian
+        return liouvillian(self.H, self.L)
+
     #noinspection PyRedeclaration
-    def symbolic_liouvillian(self, rho = None):
+    def symbolic_master_equation(self, rho = None):
         """
         Compute the symbolic Liouvillian acting on a state rho.
         If no rho is given, an OperatorSymbol is created in its place.

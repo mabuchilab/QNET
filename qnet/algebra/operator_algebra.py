@@ -1,4 +1,22 @@
-# coding=utf-8
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
+
 r"""
 The Quantum Operator Algebra
 ============================
@@ -61,9 +79,12 @@ Finally, we have the following Operator operations:
 
 For a list of all properties and methods of an operator object, see the documentation for the basic :py:class:`Operator` class.
 """
+# TODO extend slightly, add code examples
+
+
 from __future__ import division
-import abstract_algebra
-from abstract_algebra import singleton, Operation, inf,\
+import qnet.algebra.abstract_algebra
+from qnet.algebra.abstract_algebra import singleton, Operation, inf,\
     AlgebraError, tex, check_signature, idem, assoc,\
     preprocess_create_with, filter_neutral, check_signature_assoc,\
     match_replace, match_replace_binary, orderby, wc, CannotSimplify,\
@@ -71,8 +92,8 @@ from abstract_algebra import singleton, Operation, inf,\
 
 from abc import ABCMeta, abstractproperty, abstractmethod
 
-from hilbert_space_algebra import HilbertSpace, BasisRegistry, BasisNotSetError, LocalSpace, local_space, TrivialSpace, FullSpace, ProductSpace
-from permutations import check_permutation, BadPermutationError, invert_permutation, full_block_perm, block_perm_and_perms_within_blocks, permutation_to_block_permutations, concatenate_permutations, permute
+from qnet.algebra.hilbert_space_algebra import HilbertSpace, BasisRegistry, BasisNotSetError, LocalSpace, local_space, TrivialSpace, FullSpace, ProductSpace
+from qnet.algebra.permutations import check_permutation, BadPermutationError, invert_permutation, full_block_perm, block_perm_and_perms_within_blocks, permutation_to_block_permutations, concatenate_permutations, permute
 from itertools import product as cartesian_product, izip
 import qutip
 
@@ -251,6 +272,10 @@ class Operator(object):
         else:
             return NotImplemented
 
+    def simplify_scalars(self):
+        #TODO implement
+        pass
+
 
 def space(obj):
     """
@@ -354,7 +379,7 @@ class IdentityOperator(Operator, Expression):
         return self is other or other == 1
 
     def _all_symbols(self):
-        return {}
+        return set(())
 
 
 from scipy.sparse import csr_matrix
@@ -395,7 +420,7 @@ class ZeroOperator(Operator, Expression):
         return "0"
 
     def _all_symbols(self):
-        return {}
+        return (())
 
 
 def _implied_local_space_mtd(dcls, clsmtd, cls, space, *ops):
@@ -450,7 +475,7 @@ class LocalOperator(Operator, Operation):
         return (self,) + ((0,) * order)
 
     def _all_symbols(self):
-        return {}
+        return (())
 
 
 @implied_local_space
@@ -542,6 +567,8 @@ class Phase(LocalOperator):
     signature = (LocalSpace, str, int), Operator.scalar_types
     _rules = []
 
+    # TODO implement _series_expand for the phase parameter
+
     def _to_qutip_local_factor(self):
         arg = complex(self.operands[1]) * arange(self.space.dimension)
         d = np_cos(arg) + 1j * np_sin(arg)
@@ -584,6 +611,8 @@ class Displace(LocalOperator):
     signature = (LocalSpace, str, int), Operator.scalar_types
     _rules = []
 
+    # TODO implement _series_expand for the coherent displacement parameter
+
     def _to_qutip_local_factor(self):
         return qutip.displace(self.space.dimension, complex(self.operands[1]))
 
@@ -622,6 +651,8 @@ class Squeeze(LocalOperator):
     """
     signature = (LocalSpace, str, int), Operator.scalar_types
     _rules = []
+
+    # TODO implement _series_expand for the squeeze parameter
 
     def _to_qutip_local_factor(self):
         return qutip.displace(self.space.dimension, complex(self.operands[1]))
@@ -671,7 +702,7 @@ class LocalSigma(LocalOperator):
     def _tex(self):
         j, k = self.operands[1:]
         if k == j:
-            return r"{{\Pi_{}^{{{}}}}}".format(tex(k), self.space.tex())
+            return r"{{\Pi_{{{}}}^{{{}}}}}".format(tex(k), self.space.tex())
         return r"{{\sigma_{{{},{}}}^{{{}}}}}".format(tex(j), tex(k), self.space.tex())
 
     def __str__(self):
@@ -769,7 +800,7 @@ class OperatorPlus(OperatorOperation):
         return Operation.order_key(a), 1
 
     def _to_qutip(self, full_space=None):
-        if full_space == None:
+        if full_space is None:
             full_space = self.space
         assert self.space <= full_space
         return sum((op.to_qutip(full_space) for op in self.operands), 0)
@@ -829,20 +860,20 @@ class OperatorTimes(OperatorOperation):
         """
 
         def __init__(self, op):
-            space = op.space
+            s = op.space
             self.op = op
             self.full = False
             self.trivial = False
-            if isinstance(space, LocalSpace):
-                self.local_spaces = {space.operands, }
-            elif space is TrivialSpace:
+            if isinstance(s, LocalSpace):
+                self.local_spaces = {s.operands, }
+            elif s is TrivialSpace:
                 self.local_spaces = set(())
                 self.trivial = True
-            elif space is FullSpace:
+            elif s is FullSpace:
                 self.full = True
             else:
-                assert isinstance(space, ProductSpace)
-                self.local_spaces = {s.operands for s in space.operands}
+                assert isinstance(s, ProductSpace)
+                self.local_spaces = {s.operands for s in s.operands}
 
         def __lt__(self, other):
             if self.trivial and other.trivial:
@@ -1091,7 +1122,7 @@ def safe_tex(obj):
         return r"{\rm " + str(obj) + "}"
 
 
-tex = abstract_algebra.tex = safe_tex
+tex = qnet.algebra.abstract_algebra.tex = safe_tex
 
 def format_number_for_tex(num):
     if num == 0: #also True for 0., 0j
@@ -1191,12 +1222,12 @@ class Adjoint(OperatorOperation):
 
     def _series_expand(self, param, about, order):
         ope = self.operand.series_expand(param, about, order)
-        return tuple(opet.adjoint() for opet in ope)
+        return tuple(adjoint(opet) for opet in ope)
 
     def _expand(self):
         eo = self.operand.expand()
         if isinstance(eo, OperatorPlus):
-            return sum((eoo.adjoint() for eoo in eo.operands), ZeroOperator)
+            return sum((adjoint(eoo) for eoo in eo.operands), ZeroOperator)
         return eo._adjoint()
 
     def _pseudo_inverse(self):
@@ -1235,6 +1266,8 @@ class PseudoInverse(OperatorOperation):
     :type X: Operator
     """
     delegate_to_method = ScalarTimesOperator, Squeeze, Displace, ZeroOperator.__class__, IdentityOperator.__class__
+
+    # TODO implement _series_expand
 
     @classmethod
     def create(cls, op):
@@ -1301,6 +1334,8 @@ class NullSpaceProjector(OperatorOperation):
     """
 
     _rules = []
+
+    # TODO implement _series_expand
 
     @property
     def operand(self):
@@ -1461,6 +1496,7 @@ A___ = wc("A___", head=Operator)
 B = wc("B", head=Operator)
 B__ = wc("B__", head=Operator)
 B___ = wc("B___", head=Operator)
+C = wc("C", head=Operator)
 
 A_plus = wc("A", head=OperatorPlus)
 A_times = wc("A", head=OperatorTimes)

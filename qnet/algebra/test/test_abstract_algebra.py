@@ -1,16 +1,32 @@
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
+
 from qnet.algebra.abstract_algebra import *
 import unittest
 
 
-
-
-class Dummy1(Operation):
+class _Dummy1(Operation):
     pass
 
 
-class Dummy2(Operation):
+class _Dummy2(Operation):
     pass
-
 
 
 
@@ -54,25 +70,25 @@ class TestPatternMatching(unittest.TestCase):
         a = wc("a", head = int)
         b = wc("b")
 
-        self.assertEqual(match(a, Dummy1(1,3,2)), False)
-        self.assertEqual(match(b, Dummy1(1,3,2)), Match(b =  Dummy1(1,3,2)))
-        self.assertEqual(match(Dummy1(1,3,2), Dummy1(1,3,2)), Match())
+        self.assertEqual(match(a, _Dummy1(1,3,2)), False)
+        self.assertEqual(match(b, _Dummy1(1,3,2)), Match(b =  _Dummy1(1,3,2)))
+        self.assertEqual(match(_Dummy1(1,3,2), _Dummy1(1,3,2)), Match())
 
 
     def testNestedWithWildcards(self):
         a = wc("a", head = int)
         b = wc("b")
-        c = wc("c", head = Dummy2)
+        c = wc("c", head = _Dummy2)
         self.assertEqual(match(PatternTuple((b,b)), OperandsTuple((("hallo",[]), ("hallo",[])))), Match(b = ("hallo",[])))
-        self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,"hallo",2)), Match(b = "hallo"))
-        self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,3,2)), Match(a = 3))
-        self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,"hallo",2)), False)
-        self.assertEqual(match(Dummy1(1,b,b), Dummy1(1,"hallo",2)), False)
-        self.assertEqual(match(Dummy1(1,b,b), Dummy1(1,"hallo","hallo")), Match(b =  "hallo"))
-        self.assertEqual(match(Dummy1(Dummy2(a,1),b,2), Dummy1(Dummy2(1,1),3,2)), Match(a=1, b=3))
-        self.assertEqual(match(Dummy1(Dummy2(a,1),a,2), Dummy1(Dummy2(1,1),1,2)), Match(a=1))
-        self.assertEqual(match(Dummy1(Dummy2(a,1),a,2), Dummy1(Dummy2(1,1),-1,2)), False)
-        self.assertEqual(match(Dummy1(c,2), Dummy1(Dummy2(1,2,3),2)), Match(c=Dummy2(1,2,3)))
+        self.assertEqual(match(_Dummy1(1,b,2), _Dummy1(1,"hallo",2)), Match(b = "hallo"))
+        self.assertEqual(match(_Dummy1(1,a,2), _Dummy1(1,3,2)), Match(a = 3))
+        self.assertEqual(match(_Dummy1(1,a,2), _Dummy1(1,"hallo",2)), False)
+        self.assertEqual(match(_Dummy1(1,b,b), _Dummy1(1,"hallo",2)), False)
+        self.assertEqual(match(_Dummy1(1,b,b), _Dummy1(1,"hallo","hallo")), Match(b =  "hallo"))
+        self.assertEqual(match(_Dummy1(_Dummy2(a,1),b,2), _Dummy1(_Dummy2(1,1),3,2)), Match(a=1, b=3))
+        self.assertEqual(match(_Dummy1(_Dummy2(a,1),a,2), _Dummy1(_Dummy2(1,1),1,2)), Match(a=1))
+        self.assertEqual(match(_Dummy1(_Dummy2(a,1),a,2), _Dummy1(_Dummy2(1,1),-1,2)), False)
+        self.assertEqual(match(_Dummy1(c,2), _Dummy1(_Dummy2(1,2,3),2)), Match(c=_Dummy2(1,2,3)))
 
 
     def testOneOrMore(self):
@@ -80,34 +96,34 @@ class TestPatternMatching(unittest.TestCase):
         b = wc("b__")
         self.assertEqual(match(b, OperandsTuple((1,2,3))), Match(b=(1,2,3)))
         self.assertEqual(match(a, OperandsTuple((1,2,3))), Match(a=(1,2,3)))
-        self.assertEqual(match(b, Dummy1(1,3,4,2)), Match(b=(Dummy1(1,3,4,2),)))
-        self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,3,4,2)), Match(a=(3,4)))
-        self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,3,2)), Match(a= (3,)))
+        self.assertEqual(match(b, _Dummy1(1,3,4,2)), Match(b=(_Dummy1(1,3,4,2),)))
+        self.assertEqual(match(_Dummy1(1,a,2), _Dummy1(1,3,4,2)), Match(a=(3,4)))
+        self.assertEqual(match(_Dummy1(1,a,2), _Dummy1(1,3,2)), Match(a= (3,)))
 
-        self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,"hallo",2)), Match(b=("hallo",)))
-        self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,"hallo",1,2)), Match(b= ("hallo",1)))
-        self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,"hallo","du",2)), Match(b=("hallo","du")))
+        self.assertEqual(match(_Dummy1(1,b,2), _Dummy1(1,"hallo",2)), Match(b=("hallo",)))
+        self.assertEqual(match(_Dummy1(1,b,2), _Dummy1(1,"hallo",1,2)), Match(b= ("hallo",1)))
+        self.assertEqual(match(_Dummy1(1,b,2), _Dummy1(1,"hallo","du",2)), Match(b=("hallo","du")))
 
-        self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,"hallo","du",2)), False)
-        self.assertEqual(match(Dummy1(1,b,b), Dummy1(1,"hallo",2)), False)
-        self.assertEqual(match(Dummy1(1,b,b), Dummy1(1,"hallo","hallo")), Match(b= ("hallo",)))
+        self.assertEqual(match(_Dummy1(1,a,2), _Dummy1(1,"hallo","du",2)), False)
+        self.assertEqual(match(_Dummy1(1,b,b), _Dummy1(1,"hallo",2)), False)
+        self.assertEqual(match(_Dummy1(1,b,b), _Dummy1(1,"hallo","hallo")), Match(b= ("hallo",)))
 
     def testZeroOrMore(self):
         a = wc("a___", head = int)
         b = wc("b___")
 
-        self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,2)), Match(a=()))
-        self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,3,2)), Match(a=(3,)))
+        self.assertEqual(match(_Dummy1(1,a,2), _Dummy1(1,2)), Match(a=()))
+        self.assertEqual(match(_Dummy1(1,a,2), _Dummy1(1,3,2)), Match(a=(3,)))
 
-        self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,2)), Match(b=()))
-        self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,"hallo",2)), Match(b=("hallo",)))
-        self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,"hallo",1,2)), Match(b=("hallo",1)))
-        self.assertEqual(match(Dummy1(1,b,2), Dummy1(1,"hallo","du",2)), Match(b=("hallo","du")))
+        self.assertEqual(match(_Dummy1(1,b,2), _Dummy1(1,2)), Match(b=()))
+        self.assertEqual(match(_Dummy1(1,b,2), _Dummy1(1,"hallo",2)), Match(b=("hallo",)))
+        self.assertEqual(match(_Dummy1(1,b,2), _Dummy1(1,"hallo",1,2)), Match(b=("hallo",1)))
+        self.assertEqual(match(_Dummy1(1,b,2), _Dummy1(1,"hallo","du",2)), Match(b=("hallo","du")))
 
-        self.assertEqual(match(Dummy1(1,a,2), Dummy1(1,"hallo","du",2)), False)
-        self.assertEqual(match(Dummy1(1,b,b), Dummy1(1,"hallo",2)), False)
-        self.assertEqual(match(Dummy1(1,b,b), Dummy1(1)), Match(b=()))
-        self.assertEqual(match(Dummy1(1,b,b), Dummy1(1,"hallo","hallo")), Match(b= ("hallo",)))
+        self.assertEqual(match(_Dummy1(1,a,2), _Dummy1(1,"hallo","du",2)), False)
+        self.assertEqual(match(_Dummy1(1,b,b), _Dummy1(1,"hallo",2)), False)
+        self.assertEqual(match(_Dummy1(1,b,b), _Dummy1(1)), Match(b=()))
+        self.assertEqual(match(_Dummy1(1,b,b), _Dummy1(1,"hallo","hallo")), Match(b= ("hallo",)))
 
 
 class TestPatternSubstitution(unittest.TestCase):
