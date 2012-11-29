@@ -33,10 +33,10 @@ algebra Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`permutation_algebra` Module
+:mod:`permutations` Module
 ---------------------------------
 
-.. automodule:: qnet.algebra.permutation_algebra
+.. automodule:: qnet.algebra.permutations
     :members:
     :undoc-members:
     :show-inheritance:
@@ -59,10 +59,10 @@ algebra Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`superoperator_algebra` Module
------------------------------------
+:mod:`super_operator_algebra` Module
+------------------------------------
 
-.. automodule:: qnet.algebra.superoperator_algebra
+.. automodule:: qnet.algebra.super_operator_algebra
     :members:
     :undoc-members:
     :show-inheritance:

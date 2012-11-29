@@ -44,10 +44,10 @@ class Beamsplitter(Component):
     To achieve a more general beamsplitter combine this component with one or more
     :py:class:`qnet.circuit_components.Phase` components.
 
-    Instantiate as:
+    Instantiate as::
 
-    >>> Beamsplitter("B", theta = pi/4)
-        Beamsplitter("B", "", pi/4)
+        Beamsplitter("B", theta = pi/4)
+
 
     """
     CDIM = 2

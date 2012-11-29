@@ -1,33 +1,41 @@
-#!/usr/bin/env python
-# encoding: utf-8
+#This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012, Nikolas Tezak
+#
+###########################################################################
 """
-parse_qhdl.py
+Run as
 
-Created by Nikolas Tezak on 2011-03-11.
-Copyright (c) 2011 . All rights reserved.
-"""
+    {executable} -f path/to/file.qhdl [options]
+
+Passing no options will simply check whether the file can be parsed at all.
+The options are:
+
+    --write-local or -l : parse and create new python circuit file in current directory
+    --write-lib or -L : parse and install as new circuit library component within the module :py:mod:`qnet.circuit_components`
+    --help or -h : display this message
+
+""".format(executable = sys.argv[0])
 
 import sys
 import getopt
 from qnet.qhdl.qhdl_parser import QHDLParser
 from qnet.circuit_components.library import write_component
 
-help_message = '''
-Run as
-
-    {executable} -f path/to/file.qhdl [options]
-
-When no additional option is specified, the program outputs a valid
-GraphViz dot-syntax graph file with the algebraic circuit expressions
-inserted as comments.
-
-The options are:
-
-    --write-lib or -L : parse and create new python circuit file in current directory
-    --write-lib or -L : parse and install as new circuit library component
-    --help or -h : display this message
-
-'''.format(executable=sys.argv[0])
+help_message = __doc__
 
 parser = None
 
