@@ -1,7 +1,8 @@
 #!/usr/bin/env python
+# encoding=utf-8
 
-from circuit_components.single_sided_jaynes_cummings_cc import SingleSidedJaynesCummings as CavityModel
-from algebra import circuit_algebra as ca
+from qnet.circuit_components.single_sided_jaynes_cummings_cc import SingleSidedJaynesCummings as CavityModel
+from qnet.algebra import circuit_algebra as ca
 from sympy import symbols
 import qutip
 import numpy as np
