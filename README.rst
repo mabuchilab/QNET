@@ -71,16 +71,16 @@ Then install the QHDL netlister plugin within gEDA by creating a symbolic link
     ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
 
 
-in my case that path is given by `/opt/local/share/gEDA`, but in general simply look for the gEDA-directory that contains the file named `system-gafrc`.
+in my case that path is given by ``/opt/local/share/gEDA``, but in general simply look for the gEDA-directory that contains the file named ``system-gafrc``.
 
 Using QNET in practice
 ----------------------
 
 A possible full workflow using QNET is thus:
 
-I. Use `gschem` (of gEDA) to graphically design a circuit model.
-II. Export the schematic to QHDL using `gnetlist` (also part of gEDA)
-III. Parse the QHDL-circuit definition file into a Python circuit library component using the parser front-end `bin/parse_qhdl.py`.
+I. Use ``gschem`` (of gEDA) to graphically design a circuit model.
+II. Export the schematic to QHDL using ``gnetlist`` (also part of gEDA)
+III. Parse the QHDL-circuit definition file into a Python circuit library component using the parser front-end ``bin/parse_qhdl.py``.
 IV. Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP.
 
 This package is still work in progress and as it is developed by a single developer, documentation and comprehensive testing code is still somewhat lacking.
@@ -93,7 +93,7 @@ Also, if you want to implement and add your own primitive device models, please 
 Acknowledgements
 ----------------
 
-All QNET code was written by Nikolas Tezak, but at the request of Hideo Mabuchi who had the original idea for this package.
+All QNET code was written by `Nikolas Tezak <mailto:ntezak@stanford.edu>`_, but at the request of Hideo Mabuchi who had the original idea for this package.
 In addition to the authors of the above-mentioned software packages that QNET relies on, N. Tezak would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.
 
 - Hideo Mabuchi
