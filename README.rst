@@ -108,4 +108,20 @@ In addition to the authors of the above-mentioned software packages that QNET re
 Work on QNET was directly supported by DARPA-MTO under Award No. N66001-11-1-4106, by the National Science Foundation under Grant No. PHY-1005386.
 Nikolas Tezak is also supported by a Simons Foundation Math+X fellowship as well as a Stanford Graduate Fellowship.
 
+License
+-------
 
+QNET is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+QNET is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with QNET.  If not, see `this page <http://www.gnu.org/licenses/>`_.
+
+Copyright (C) 2012, Nikolas Tezak
