@@ -89,15 +89,15 @@ Work on QNET was directly supported by DARPA-MTO under Award No. N66001-11-1-410
 Nikolas Tezak is also supported by a Simons Foundation Math+X fellowship as well as a Stanford Graduate Fellowship.
 
 
-    [Python] http://www.python.org
-    [gEDA] http://www.gpleda.org
-    [QHDL] http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
-    [QNET] http://mabuchilab.github.com/QNET/
-    [SymPy] http://SymPy.org/
-    [QuTiP] https://code.google.com/p/qutip/
-    [PyX] http://pyx.sourceforge.net/
-    [SciPy] http://www.scipy.org/
-    [NumPy] http://numpy.scipy.org/
-    [PLY] http://www.dabeaz.com/ply/
-    [Enthought] http://www.enthought.com/
-    [IPython] http://ipython.org/
+    [Python]: http://www.python.org
+    [gEDA]: http://www.gpleda.org
+    [QHDL]: http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
+    [QNET]: http://mabuchilab.github.com/QNET/
+    [SymPy]: http://SymPy.org/
+    [QuTiP]: https://code.google.com/p/qutip/
+    [PyX]: http://pyx.sourceforge.net/
+    [SciPy]: http://www.scipy.org/
+    [NumPy]: http://numpy.scipy.org/
+    [PLY]: http://www.dabeaz.com/ply/
+    [Enthought]: http://www.enthought.com/
+    [IPython]: http://ipython.org/
