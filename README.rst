@@ -30,18 +30,18 @@ In addition to these core components, the software uses the following existing s
 A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the Enthought_ Python Distribution (EPD) which is free for academic use.
 A highly recommended way of working with QNET and QuTiP and just scientific python codes in action is to use the excellent IPython_ shell which comes both with a command-line interface as well as a very polished browser-based notebook interface.
 
-.. _Python http://www.python.org
-.. _gEDA http://www.gpleda.org
-.. _QHDL http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
-.. _QNET http://mabuchilab.github.com/QNET/
-.. _SymPy http://SymPy.org/
-.. _QuTiP https://code.google.com/p/qutip/
-.. _PyX http://pyx.sourceforge.net/
-.. _SciPy http://www.scipy.org/
-.. _NumPy http://numpy.scipy.org/
-.. _PLY http://www.dabeaz.com/ply/
-.. _Enthought http://www.enthought.com/
-.. _IPython http://ipython.org/
+.. _Python: http://www.python.org
+.. _gEDA: http://www.gpleda.org
+.. _QHDL: http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
+.. _QNET: http://mabuchilab.github.com/QNET/
+.. _SymPy: http://SymPy.org/
+.. _QuTiP: https://code.google.com/p/qutip/
+.. _PyX: http://pyx.sourceforge.net/
+.. _SciPy: http://www.scipy.org/
+.. _NumPy: http://numpy.scipy.org/
+.. _PLY: http://www.dabeaz.com/ply/
+.. _Enthought: http://www.enthought.com/
+.. _IPython: http://ipython.org/
 
 Installation/Configuration
 --------------------------
