@@ -49,10 +49,11 @@ Installation/Configuration
 Copy the QNET folder to any location you'd like. We will tell python how to find it by setting the ``$PYTHONPATH`` environment variable to include the QNET directory's path.
 Append the following to your local bash configuration ``$HOME/.bashrc`` or something equivalent:
 
-    ``
+::
+
     export QNET=/path/to/cloned/repository
     export PYTHONPATH=$QNET:$PYTHONPATH
-    ``
+
 
 On Windows a similar procedure should exist. Environment variable can generally be set via the windows control panels.
 It should be sufficient to set just the `PYTHONPATH` environment variable.
@@ -65,9 +66,10 @@ To configure gEDA to include our special quantum circuit component symbols you w
 
 Then install the QHDL netlister plugin within gEDA by creating a symbolic link
 
-    ``
+::
+
     ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
-    ``
+
 
 in my case that path is given by `/opt/local/share/gEDA`, but in general simply look for the gEDA-directory that contains the file named `system-gafrc`.
 
