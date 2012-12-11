@@ -30,6 +30,20 @@ In addition to these core components, the software uses the following existing s
 A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the [Enthought][] Python Distribution (EPD) which is free for academic use.
 A highly recommended way of working with QNET and QuTiP and just scientific python codes in action is to use the excellent [IPython][] shell which comes both with a command-line interface as well as a very polished browser-based notebook interface.
 
+
+[Python]: http://www.python.org
+[gEDA]: http://www.gpleda.org
+[QHDL]: http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
+[QNET]: http://mabuchilab.github.com/QNET/
+[SymPy]: http://SymPy.org/
+[QuTiP]: https://code.google.com/p/qutip/
+[PyX]: http://pyx.sourceforge.net/
+[SciPy]: http://www.scipy.org/
+[NumPy]: http://numpy.scipy.org/
+[PLY]: http://www.dabeaz.com/ply/
+[Enthought]: http://www.enthought.com/
+[IPython]: http://ipython.org/
+
 Installation/Configuration
 --------------------------
 
@@ -89,15 +103,3 @@ Work on QNET was directly supported by DARPA-MTO under Award No. N66001-11-1-410
 Nikolas Tezak is also supported by a Simons Foundation Math+X fellowship as well as a Stanford Graduate Fellowship.
 
 
-    [Python]: http://www.python.org
-    [gEDA]: http://www.gpleda.org
-    [QHDL]: http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
-    [QNET]: http://mabuchilab.github.com/QNET/
-    [SymPy]: http://SymPy.org/
-    [QuTiP]: https://code.google.com/p/qutip/
-    [PyX]: http://pyx.sourceforge.net/
-    [SciPy]: http://www.scipy.org/
-    [NumPy]: http://numpy.scipy.org/
-    [PLY]: http://www.dabeaz.com/ply/
-    [Enthought]: http://www.enthought.com/
-    [IPython]: http://ipython.org/
