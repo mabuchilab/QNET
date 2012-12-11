@@ -21,13 +21,13 @@ In addition to these core components, the software uses the following existing s
 
 0. [Python][] version 2.6 or higher. QNET is still officially a Python 2 package, but migration to Python 3 should not be too hard to achieve.
 1. The [gEDA][] toolsuite for its visual tool `gschem` for the creation of circuits end exporting these to QHDL `gnetlist`. We have created device symbols for our primitive circuit components to be used with `gschem` and we have included our own `gnetlist` plugin for exporting to QHDL.
-2. The [sympy][] symbolic algebra Python package to implement symbolic 'scalar' algebra, i.e. the coefficients of state, operator or super-operator expressions can be symbolic sympy expressions as well as pure python numbers.
+2. The [SymPy][] symbolic algebra Python package to implement symbolic 'scalar' algebra, i.e. the coefficients of state, operator or super-operator expressions can be symbolic SymPy expressions as well as pure python numbers.
 3. The [QuTiP][] python package as an extremely useful, efficient and full featured numerical backend. Operator expressions where all symbolic scalar parameters have been replaced by numeric ones, can be converted to (sparse) numeric matrix representations, which are then used to solve for the system dynamics using the tools provided by QuTiP.
 4. The [PyX][] python package for visualizing circuit expressions as box/flow diagrams.
 5. The [SciPy][] and [NumPy][] packages (needed for QuTiP but also by the `qnet.algebra` package)
 6. The [PLY][] python package as a dependency of our Python Lex/Yacc based QHDL parser.
 
-A convenient way of obtaining Python as well as some of the packages listed here (sympy, SciPy, NumPy, PLY) is to download the [Enthought][] Python Distribution (EPD) which is free for academic use.
+A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the [Enthought][] Python Distribution (EPD) which is free for academic use.
 A highly recommended way of working with QNET and QuTiP and just scientific python codes in action is to use the excellent [IPython][] shell which comes both with a command-line interface as well as a very polished browser-based notebook interface.
 
 Installation/Configuration
@@ -87,3 +87,17 @@ N. Tezak would like to acknowledge the following people's support which included
 
 Work on QNET was directly supported by DARPA-MTO under Award No. N66001-11-1-4106, by the National Science Foundation under Grant No. PHY-1005386.
 Nikolas Tezak is also supported by a Simons Foundation Math+X fellowship as well as a Stanford Graduate Fellowship.
+
+
+[Python] http://www.python.org
+[gEDA] http://www.gpleda.org
+[QHDL] http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
+[QNET] http://mabuchilab.github.com/QNET/
+[SymPy] http://SymPy.org/
+[QuTiP] https://code.google.com/p/qutip/
+[PyX] http://pyx.sourceforge.net/
+[SciPy] http://www.scipy.org/
+[NumPy] http://numpy.scipy.org/
+[PLY] http://www.dabeaz.com/ply/
+[Enthought] http://www.enthought.com/
+[IPython] http://ipython.org/
