@@ -35,7 +35,7 @@ A highly recommended way of working with QNET and QuTiP and just scientific pyth
 .. _QHDL: http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
 .. _QNET: http://mabuchilab.github.com/QNET/
 .. _SymPy: http://SymPy.org/
-.. _QuTiP: https://code.google.com/p/qutip/
+.. _QuTiP: http://code.google.com/p/qutip/
 .. _PyX: http://pyx.sourceforge.net/
 .. _SciPy: http://www.scipy.org/
 .. _NumPy: http://numpy.scipy.org/
@@ -54,6 +54,8 @@ Append the following to your local bash configuration ``$HOME/.bashrc`` or somet
     export QNET=/path/to/cloned/repository
     export PYTHONPATH=$QNET:$PYTHONPATH
 
+**Note that you should replace "/path/to/cloned/repository" with the full path to the cloned QNET directory!**
+On my personal laptop that path is given by ``/Users/nikolas/Projects/QNET``, but you can place QNET anywhere you'd like.
 
 On Windows a similar procedure should exist. Environment variable can generally be set via the windows control panels.
 It should be sufficient to set just the `PYTHONPATH` environment variable.
@@ -70,6 +72,7 @@ Then install the QHDL netlister plugin within gEDA by creating a symbolic link
 
     ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
 
+**Note that you should replace "/path/to/gEDA_resources_folder" with the full path to the gEDA resources directory!**
 
 in my case that path is given by ``/opt/local/share/gEDA``, but in general simply look for the gEDA-directory that contains the file named ``system-gafrc``.
 
@@ -93,10 +96,9 @@ Also, if you want to implement and add your own primitive device models, please 
 Acknowledgements
 ----------------
 
-All QNET code was written by `Nikolas Tezak <mailto:ntezak@stanford.edu>`_, but at the request of Hideo Mabuchi who had the original idea for this package.
-In addition to the authors of the above-mentioned software packages that QNET relies on, N. Tezak would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.
+All QNET code was written by `Nikolas Tezak <mailto:ntezak@stanford.edu>`_ at the request of `Hideo Mabuchi <mailto:hmabuchi@stanford.edu>`_ who first had the idea for such a package.
+In addition to H. Mabuchi and the authors of the above-mentioned software packages that QNET relies on, N. Tezak would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.
 
-- Hideo Mabuchi
 - Michael Armen
 - Armand Niederberger
 - Joe Kerckhoff
@@ -105,8 +107,8 @@ In addition to the authors of the above-mentioned software packages that QNET re
 - Ryan Hamerly
 - Michael Hush
 
-Work on QNET was directly supported by DARPA-MTO under Award No. N66001-11-1-4106, by the National Science Foundation under Grant No. PHY-1005386.
-Nikolas Tezak is also supported by a Simons Foundation Math+X fellowship as well as a Stanford Graduate Fellowship.
+Work on QNET was directly supported by DARPA-MTO under Award No. N66001-11-1-4106. Nikolas Tezak is also supported by a Simons Foundation Math+X fellowship as well as a Stanford Graduate Fellowship.
+
 
 License
 -------
