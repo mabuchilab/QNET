@@ -14,6 +14,9 @@ The package consists of the following components:
 2. The QHDL_ language definition and parser ``qnet.qhdl`` including a front-end located at ``bin/parse_qhdl.py`` that can convert a QHDL-file into a circuit component library file.
 3. A library of existing primitive or composite circuit components ``qnet.circuit_components`` that can be embedded into a new circuit definition.
 
+.. include::
+    docsrc/install
+
 Dependencies
 ------------
 
