@@ -1,63 +1,65 @@
-Install
-=======
+==================
+Installation/Setup
+==================
 
-In addition to the core python packages, the QNET pacakge draws on and extends the following existing packages:
+Dependencies
+------------
 
-1) ``gEDA`` for graphic creation of circuits end exporting these to QHDL (using our own plugin)
-2) ``SymPy`` for the symbolic 'scalar' algebra, i.e. the number coefficients of operator expressions can be symbolic as well
-3) ``QuTiP`` as the numerical backend, operator expressions where all scalar parameters have been replaced by numeric ones,
-   can be converted to (sparse) numeric matrix representations, which are then used to solve for the system dynamics using the tools provided by QuTiP
+In addition to these core components, the software uses the following existing software packages:
 
+0. Python_ version 2.6 or higher. QNET is still officially a Python 2 package, but migration to Python 3 should not be too hard to achieve.
+1. The gEDA_ toolsuite for its visual tool ``gschem`` for the creation of circuits end exporting these to QHDL ``gnetlist``. We have created device symbols for our primitive circuit components to be used with ``gschem`` and we have included our own ``gnetlist`` plugin for exporting to QHDL.
+2. The SymPy_ symbolic algebra Python package to implement symbolic 'scalar' algebra, i.e. the coefficients of state, operator or super-operator expressions can be symbolic SymPy expressions as well as pure python numbers.
+3. The QuTiP_ python package as an extremely useful, efficient and full featured numerical backend. Operator expressions where all symbolic scalar parameters have been replaced by numeric ones, can be converted to (sparse) numeric matrix representations, which are then used to solve for the system dynamics using the tools provided by QuTiP.
+4. The PyX_ python package for visualizing circuit expressions as box/flow diagrams.
+5. The SciPy_ and NumPy_ packages (needed for QuTiP but also by the ``qnet.algebra`` package)
+6. The PLY_ python package as a dependency of our Python Lex/Yacc based QHDL parser.
 
-Howto set up QNET
------------------
+A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the Enthought_ Python Distribution (EPD) which is free for academic use.
+A highly recommended way of working with QNET and QuTiP and just scientific python codes in action is to use the excellent IPython_ shell which comes both with a command-line interface as well as a very polished browser-based notebook interface.
 
-What you'll need:
+.. _Python: http://www.python.org
+.. _gEDA: http://www.gpleda.org
+.. _QHDL: http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract
+.. _QNET: http://mabuchilab.github.com/QNET/
+.. _SymPy: http://SymPy.org/
+.. _QuTiP: http://code.google.com/p/qutip/
+.. _PyX: http://pyx.sourceforge.net/
+.. _SciPy: http://www.scipy.org/
+.. _NumPy: http://numpy.scipy.org/
+.. _PLY: http://www.dabeaz.com/ply/
+.. _Enthought: http://www.enthought.com/
+.. _IPython: http://ipython.org/
 
-1) A Python installation with the following additional packages installed:
+Installation/Configuration
+--------------------------
 
-    - scipy, numpy, matplotlib, ply, sympy
-    - PyX       http://pyx.sourceforge.net/
-    - QuTiP     http://code.google.com/p/qutip/
+Copy the QNET folder to any location you'd like. We will tell python how to find it by setting the ``$PYTHONPATH`` environment variable to include the QNET directory's path.
+Append the following to your local bash configuration ``$HOME/.bashrc`` or something equivalent:
 
-   The easiest way to achieve this is to download the (optimized) Enthought python distribution (EPD)
-   which is free for academic use:
-   http://www.enthought.com/products/epd.php
-
-   But you will still need to install PyX and QuTiP manually.
-
-2) GIT and a user account on GitHub https://github.com
-   I will then give you access to our repository
-
-3) The open source ``gEDA`` toolsuite which allows for schematic capture of photonic circuits
-
-   http://www.gpleda.org/
-
-   On many linux distributions there should exists packages, on OSX I recommend using the package managers
-   MacPorts, Fink or Brew
-
-
-4) Once, you have cloned the GIT repository into a local directory, you should set up some environment variables for your shell::
+::
 
     export QNET=/path/to/cloned/repository
-    export PYTHONPATH=$QNET
+    export PYTHONPATH=$QNET:$PYTHONPATH
 
-5) Configure ``gEDA`` to include our special quantum circuit component symbols. To do this you will need to copy the configuration files from the ``$QNET/gEDA_support/config`` directory to ``$HOME/.gEDA``::
+**Note that you should replace "/path/to/cloned/repository" with the full path to the cloned QNET directory!**
+On my personal laptop that path is given by ``/Users/nikolas/Projects/QNET``, but you can place QNET anywhere you'd like.
 
-    ~/.gEDA/gafrc
-    ~/.gEDA/gschemrc
+On Windows a similar procedure should exist. Environment variable can generally be set via the windows control panels.
+It should be sufficient to set just the `PYTHONPATH` environment variable.
 
 
-6) Install the QHDL netlister plugin within ``gEDA`` by creating a symbolic link::
+To configure gEDA to include our special quantum circuit component symbols you will need to copy the following configuration files from the ``$QNET/gEDA_support/config`` directory to the ``$HOME/.gEDA`` directory:
 
-        ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
+- ``~/.gEDA/gafrc``
+- ``~/.gEDA/gschemrc``
 
-   in my case ``/path/to/gEDA_resources_folder == /opt/local/share/gEDA``, simply look for the folder that contains the file named ``system-gafrc``.
+Then install the QHDL netlister plugin within gEDA by creating a symbolic link
 
-7) At this point you have set up everything you need to create circuits with ``gschem`` and export them to our QHDL-format using gnetlist. To get started with this, just read the attached tutorial I wrote for our group's internal blog.
+::
 
-8) Test that everything is installed and working, e.g. run the enhanced python shell 'ipython' and do::
+    ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
 
-       import qnet.algebra.circuit_algebra as ca
+**Note that you should replace "/path/to/gEDA_resources_folder" with the full path to the gEDA resources directory!**
 
-   if this does not fail, it should work.
+in my case that path is given by ``/opt/local/share/gEDA``, but in general simply look for the gEDA-directory that contains the file named ``system-gafrc``.

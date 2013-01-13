@@ -18,43 +18,13 @@
 ###########################################################################
 
 """
+Super-Operator Algebra
+======================
+
 The specification of a quantum mechanics symbolic super-operator algebra.
-Each super-operator has an associated `space` property which gives the Hilbert space on which it acts non-trivially.
-
-The most basic way to construct super-operators is by lifting 'normal' operators to linear pre- and post-multiplication super-operators:
-
-    >>> A, B, C = OperatorSymbol("A", FullSpace), OperatorSymbol("B", FullSpace), OperatorSymbol("C", FullSpace)
-    >>> SPre(A) * B
-        A * B
-    >>> SPost(C) * B
-        B * C
-    >>> (SPre(A) * SPost(C)) * B
-        A * B * C
-    >>> (SPre(A) - SPost(A)) * B        # Linear super-operator associated with A that maps B --> [A,B]
-        A * B - B * A
-
-
-There exist some useful constants to specify neutral elements of super-operator addition and multiplication::
-
-    ZeroSuperOperator
-    IdentitySuperOperator
-
-Super operator objects can be added together in code via the infix '+' operator and multiplied with the infix '*' operator.
-They can also be added to or multiplied by scalar objects.
-In the first case, the scalar object is multiplied by the IdentitySuperOperator constant.
-
-Super operators are applied to operators by multiplying an operator with superoperator from the left:
-
-    >>> S = SuperOperatorSymbol("S", FullSpace)
-    >>> A = OperatorSymbol("A", FullSpace)
-    >>> S * A
-        SuperOperatorTimesOperator(S, A)
-    >>> isinstance(S*A, Operator)
-        True
-
-The result is an operator.
+See :ref:`super_operator_algebra` for more details.
 """
-# TODO extend slightly, add code examples
+
 
 from collections import defaultdict
 
@@ -336,7 +306,9 @@ class SuperOperatorOperation(SuperOperator, Operation):
 @check_signature_assoc
 class SuperOperatorPlus(SuperOperatorOperation):
     """
-    A sum of super-operators
+    A sum of super-operators.
+
+    Instantiate as::
 
         OperatorPlus(*summands)
 

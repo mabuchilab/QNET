@@ -23,49 +23,7 @@ This module contains the code to convert a circuit specified in QHDL into a Goug
 The other module in this package :py:mod:`qhdl_parser` implements an actual parser for the qhdl source text, while this file then
 converts structured netlist information into a circuit expression.
 
-QHDL-file syntax::
-
-    entity my_first_entity is
-        [generic ( var1: generic_type [:= default_var1]] [; var2: generic_type [...] ...]);]
-        port (i_1,i_2,...i_n:in fieldmode; o_1,o_2,...o_n:out fieldmode);
-    end [entity] [my_first_entity];
-
-    architecture my_first_architecture of my_first_entity is
-        component my_component
-            [generic ( var3: generic_type [:= default_var3]] [; var4: generic_type [...] ...]);]
-            port (p1,p2,...pm:in fieldmode; q1,q2,...qm:out fieldmode);
-        end component [my_component];
-
-        [component my_second_component
-            [generic ( var5: generic_type [:= default_var5]] [; var6: generic_type [...] ...]);]
-            port (p1,p2,...pr:in fieldmode; q1,q2,...qr:out fieldmode);
-
-        end component [my_second_component];
-
-        ...
-
-        ]
-
-        [signal s_1,s_2,s_3,...s_m fieldmode;]
-
-    begin
-        COMPONENT_INSTANCE_ID1: my_component
-            [generic map(var1 => var3, var1 => var4);]
-            port map (i_1, i_2, ... i_m, s_1, s_2, ...s_m);
-
-        [COMPONENT_INSTANCE_ID2: my_component
-            [generic map(var1 => var3, var1 => var4);]
-            port map (s_1, s_2, ... s_m, o_1, o_2, ...o_m);
-
-        COMPONENT_INSTANCE_ID3: my_second_component
-            [generic map (...);]
-            port map (...);
-        ...
-            ]
-
-    end [architecture] [my_first_architecture];
-
-    generic_type = int | real | complex
+For more details on the QHDL syntax, see :ref:`qhdl_syntax`.
 """
 
 from collections import OrderedDict

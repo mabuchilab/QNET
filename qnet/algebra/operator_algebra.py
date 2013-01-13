@@ -18,64 +18,11 @@
 ###########################################################################
 
 r"""
-The Quantum Operator Algebra
-============================
+Operator Algebra
+================
 
 This module features classes and functions to define and manipulate symbolic Operator expressions.
-Operator expressions are constructed from sums (:py:class:`OperatorPlus`) and products (:py:class:`OperatorTimes`)
-of some basic elements, most importantly *local* operators,
-such as the annihilation (:py:class:`Destroy`) and creation (:py:class:`Create`) operators :math:`a_s, a_s^\dagger`
-of a quantum harmonic oscillator degree of freedom :math:`s`.
-Further important elementary local operators are the switching operators
-:math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (:py:class:`LocalSigma`).
-Each operator has an associated :py:attr:`Operator.space` property which gives the Hilbert space
-(cf :py:class:`qnet.algebra.hilbert_space_algebra.HilbertSpace`) on which it acts *non-trivially*.
-We don't explicitly distinguish between *tensor*-products :math:`X_s\otimes Y_r` of operators on different degrees of freedom :math:`s,r`
-(which we designate as *local* spaces) and *operator-composition*-products :math:`X_s \cdot Y_s` of operators acting on the same degree of freedom :math:`s`.
-Conceptionally, we assume that each operator is always implicitly tensored with identity operators acting on all un-specified degrees of freedom.
-This is typically done in the physics literature and only plays a role when tansforming to a numerical representation
-of the problem for the purpose of simulation, diagonalization, etc.
-
-All Operator classes
-----------------------
-
-A complete list of all local operators is given below:
-
-    * Harmonic oscillator mode operators :math:`a_s, a_s^\dagger` (cf :py:class:`Destroy`, :py:class:`Create`)
-
-    * :math:`\sigma`-switching operators  :math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (cf :py:class:`LocalSigma`)
-
-    * coherent displacement operators :math:`D_s(\alpha) := \exp{\left(\alpha a_s^\dagger - \alpha^* a_s\right)}` (cf :py:class:`Displace`)
-
-    * phase operators :math:`P_s(\phi) := \exp {\left(i\phi a_s^\dagger a_s\right)}` (cf :py:class:`Phase`)
-
-    * squeezing operators :math:`S_s(\eta) := \exp {\left[{1\over 2}\left({\eta {a_s^\dagger}^2 - \eta^* a_s^2}\right)\right]}` (cf :py:class:`Squeeze`)
-
-Furthermore, there exist symbolic representations for constants and symbols:
-
-    * the identity operator (cf :py:class:`IdentityOperator`)
-
-    * and the zero operator (cf :py:class:`ZeroOperator`)
-
-    * an arbitrary operator symbol (cf :py:class:`OperatorSymbol`)
-
-Finally, we have the following Operator operations:
-
-    * sums of operators :math:`X_1 + X_2 + \dots + X_n` (cf :py:class:`OperatorPlus`)
-
-    * products of operators :math:`X_1  X_2  \cdots  X_n` (cf :py:class:`OperatorTimes`)
-
-    * the Hilbert space adjoint operator :math:`X^\dagger` (cf :py:class:`Adjoint`)
-
-    * scalar multiplication :math:`\lambda X` (cf :py:class:`ScalarTimesOperator`)
-
-    * pseudo-inverse of operators :math:`X^+` satisfying :math:`X X^+ X = X` and :math:`X^+ X X^+ = X^+` as well
-        as :math:`(X^+ X)^\dagger = X^+ X` and :math:`(X X^+)^\dagger = X X^+` (cf :py:class:`PseudoInverse`)
-
-    * the kernel projection operator :math:`\mathcal{P}_{{\rm Ker} X}` satisfying both :math:`X \mathcal{P}_{{\rm Ker} X} = 0`
-        and :math:`X^+ X =  1 - \mathcal{P}_{{\rm Ker} X}`  (cf :py:class:`NullSpaceProjector`)
-
-    * Partial traces over Operators :math:`{\rm Tr}_s X` (cf :py:class:`OperatorTrace`)
+For more details see :ref:`operator_algebra`.
 
 For a list of all properties and methods of an operator object, see the documentation for the basic :py:class:`Operator` class.
 """

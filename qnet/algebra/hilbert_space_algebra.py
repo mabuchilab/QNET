@@ -22,21 +22,9 @@ The Hilbert Space Algebra
 =========================
 
 This module defines some simple classes to describe simple and *composite/tensor* (i.e., multiple degree of freedom)
-Hilbert spaces of quantum systems. This covers only finite dimensional or countably infinite dimensional Hilbert spaces.
+Hilbert spaces of quantum systems.
 
-The basic abstract class that features all properties of Hilbert space objects is given by: :py:class:`HilbertSpace`.
-Its most important subclasses are:
-
-    * local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity mode) are described by a :py:class:`LocalSpace`
-
-    * composite tensor product spaces are given by instances of the :py:class:`ProductSpace` class.
-
-    * the :py:class:`TrivialSpace` represents a *trivial* [#f1]_ Hilbert space :math:`\mathcal{H}_0 \simeq \mathbb{C}`
-
-    * the :py:class:`FullSpace` represents a Hilbert space that includes all possible degrees of freedom.
-
-.. [#f1] *trivial* in the sense that :math:`\mathcal{H}_0 \simeq \mathbb{C}`,
-         i.e., all states are multiples of each other and thus equivalent.
+For more details see :ref:`hilbert_space_algebra`.
 """
 
 

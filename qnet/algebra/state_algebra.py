@@ -18,31 +18,15 @@
 ###########################################################################
 
 r"""
-This implements a basic Hilbert space state algebra.
-We will usually represent states :math:`\psi` as 'Ket' vectors :math:`\psi \to | \psi \rangle`.
-However, any state can also be represented in its adjoint Bra form
+State Algebra
+=============
 
-.. math::
-    \psi \leftrightarrow | \psi \rangle \leftrightarrow \langle \psi |
+This module implements a basic Hilbert space state algebra.
 
-States can be added to states of the same Hilbert space. They can be multiplied by:
+For more details see :ref:`state_algebra`.
 
-* scalars, to just yield a rescaled state within the original space
-
-* operators that act on some of the states degrees of freedom (but none that aren't part of the state's Hilbert space)
-
-* other states that have a Hilbert space corresponding to a disjoint set of degrees of freedom
-
-Furthermore,
-
-* a ``Ket`` object can multiply a ``Bra`` of the same space from the left to yield a ``KetBra`` type operator.
-
-And conversely,
-
-* a ``Bra`` can multiply a ``Ket`` from the left to create a (partial) inner product object ``BraKet``.
-  Currently, only full inner products are supported, i.e. the ``Ket`` and ``Bra`` operands need to have the same space.
 """
-# TODO extend slightly, add code examples
+
 
 from qnet.algebra.operator_algebra import *
 
@@ -640,7 +624,7 @@ class TensorKet(Ket, Operation):
 @check_signature
 class ScalarTimesKet(Ket, Operation):
     """
-    Multiply a Ket by a scalar coefficient::
+    Multiply a Ket by a scalar coefficient.
 
     Instantiate as::
         ScalarTimesKet(coefficient, term)

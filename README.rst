@@ -2,6 +2,8 @@ QNET
 ====
 
 The QNET package is a set of tools created and compiled to aid in the design and analysis of photonic circuit models.
+Our proposed Quantum Hardware Description Language ([QHDL]_) serves to describe a circuit topology and specification of a larger entity in terms of parametrizable subcomponents.
+This is strongly analogous to the specification of electric circuitry using the structural description elements of VHDL or Verilog.
 The physical systems that can be modeled within the framework include quantum optical experiments that can be described as nodes with internal degrees of freedom such as interacting quantum harmonic oscillators and/or N-level quantum systems that,
 in turn are coupled to a finite number of external bosonic quantum fields.
 
@@ -13,9 +15,6 @@ The package consists of the following components:
 1. A symbolic computer algebra package ``qnet.algebra`` for Hilbert Space quantum mechanical operators, the Gough-James circuit algebra and also an algebra for Hilbert space states and Super-operators.
 2. The QHDL_ language definition and parser ``qnet.qhdl`` including a front-end located at ``bin/parse_qhdl.py`` that can convert a QHDL-file into a circuit component library file.
 3. A library of existing primitive or composite circuit components ``qnet.circuit_components`` that can be embedded into a new circuit definition.
-
-.. include::
-    docsrc/install
 
 Dependencies
 ------------
