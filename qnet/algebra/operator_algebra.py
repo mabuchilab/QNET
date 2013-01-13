@@ -1555,6 +1555,7 @@ class NonSquareMatrix(Exception):
     pass
 
 
+
 class Matrix(Expression):
     """
     Matrix with Operator (or scalar-) valued elements.
@@ -1580,12 +1581,19 @@ class Matrix(Expression):
     def shape(self):
         """
         The shape of the matrix ``(nrows, ncols)``
+
         :type: tuple
         """
         return self.matrix.shape
 
     @property
     def block_structure(self):
+        """
+        For square matrices this gives the block (-diagonal) structure of the matrix as a
+        tuple of integers that sum up to the full dimension.
+
+        :type: tuple
+        """
         n, m = self.shape
         if n != m:
             raise AttributeError("block_structure only defined for square matrices")
@@ -1742,8 +1750,17 @@ class Matrix(Expression):
         return self.element_wise(m)
 
     def _substitute(self, var_map):
-        m = lambda o: substitute(o, var_map) if isinstance(o, Operation) else o
-        return self.element_wise(m)
+
+        def _substitute(o, var_map):
+            sympy_var_map = {k:v for (k, v) in var_map.items() if isinstance(k, SympyBasic)}
+            if isinstance(o, Operation):
+                return substitute(o, var_map)
+            elif isinstance(o, SympyBasic):
+                return o.subs(sympy_var_map)
+            else:
+                return o
+        return self.element_wise(_substitute)
+
 
     def _all_symbols(self):
         return set_union()
