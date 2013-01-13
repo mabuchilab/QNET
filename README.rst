@@ -101,7 +101,7 @@ Acknowledgements
 
 `Hideo Mabuchi <mailto:hmabuchi@stanford.edu>`_ had the initial idea for a software package that could exploit the Gough-James SLH formalism generate an overall open quantum system model for a quantum feedback network based solely on its topology and the component models.
 The actual QNET package was then planned and implemented by `Nikolas Tezak <mailto:ntezak@stanford.edu>`_. In its current form, QNET comprises
-functionality [#additionalFunctionality]_ that goes well beyond what would be necessary to achieve the original goal, but which has proven to be immensely useful.
+functionality  that goes well beyond what would be necessary to achieve the original goal, but which has proven to be immensely useful.
 In addition to the authors of the software packages listed under Dependencies that QNET relies on, we would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.
 
 - Michael Armen
@@ -114,7 +114,7 @@ In addition to the authors of the software packages listed under Dependencies th
 
 Work on QNET was directly supported by DARPA-MTO under Award No. N66001-11-1-4106. Nikolas Tezak is also supported by a Simons Foundation Math+X fellowship as well as a Stanford Graduate Fellowship.
 
-.. [#additionalFunctionality] E.g., all algebras except the operator algebra are not strictly necessary to achieve just the original objective.
+E.g., all algebras except the operator algebra are not strictly necessary to achieve just the original objective.
 
 License
 -------
