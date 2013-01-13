@@ -55,8 +55,10 @@ class Delay(Component):
     
     def _toSLH(self):
 
+        # These numerically optimal solutions were obtained as outlined in
+        # my blog post on the Mabuchi-Lab internal blog
+        # email me (ntezak@stanford.edu)for details.
         if self.N == 1:
-
             kappa0 = 9.28874141848 / self.tau
             kappas = np_array([7.35562929]) / self.tau
             Deltas = np_array([3.50876192]) / self.tau
@@ -69,7 +71,7 @@ class Delay(Component):
             kappas = np_array([19.03316217, 10.74270752, 16.28055664]) / self.tau
             Deltas = np_array([3.47857213, 10.84138821, 7.03434809]) / self.tau
         else:
-            raise NotImplementedError("The number of cavities to realize the delay must be one of [1,3,5].")
+            raise NotImplementedError("The number of cavities to realize the delay must be one of 1,3 or 5.")
 
         h0 = make_namespace_string(self.name, 'C0')
         hp =  [make_namespace_string(self.name, "C{:d}p".format(n+1)) for n in range((self.N-1)/2)]
