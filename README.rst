@@ -2,7 +2,7 @@ QNET
 ====
 
 The QNET package is a set of tools created and compiled to aid in the design and analysis of photonic circuit models.
-Our proposed Quantum Hardware Description Language ([QHDL]_) serves to describe a circuit topology and specification of a larger entity in terms of parametrizable subcomponents.
+Our proposed Quantum Hardware Description Language (QHDL_) serves to describe a circuit topology and specification of a larger entity in terms of parametrizable subcomponents.
 This is strongly analogous to the specification of electric circuitry using the structural description elements of VHDL or Verilog.
 The physical systems that can be modeled within the framework include quantum optical experiments that can be described as nodes with internal degrees of freedom such as interacting quantum harmonic oscillators and/or N-level quantum systems that,
 in turn are coupled to a finite number of external bosonic quantum fields.
@@ -62,7 +62,7 @@ Append the following to your local bash configuration ``$HOME/.bashrc`` or somet
 On my personal laptop that path is given by ``/Users/nikolas/Projects/QNET``, but you can place QNET anywhere you'd like.
 
 On Windows a similar procedure should exist. Environment variable can generally be set via the windows control panels.
-It should be sufficient to set just the `PYTHONPATH` environment variable.
+It should be sufficient to set just the ``$PYTHONPATH`` environment variable.
 
 
 To configure gEDA to include our special quantum circuit component symbols you will need to copy the following configuration files from the ``$QNET/gEDA_support/config`` directory to the ``$HOME/.gEDA`` directory:
