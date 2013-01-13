@@ -16,7 +16,6 @@ The package consists of the following components:
 2. The QHDL_ language definition and parser ``qnet.qhdl`` including a front-end located at ``bin/parse_qhdl.py`` that can convert a QHDL-file into a circuit component library file.
 3. A library of existing primitive or composite circuit components ``qnet.circuit_components`` that can be embedded into a new circuit definition.
 
-.. _Dependencies:
 
 Dependencies
 ------------
@@ -103,7 +102,7 @@ Acknowledgements
 `Hideo Mabuchi <mailto:hmabuchi@stanford.edu>`_ had the initial idea for a software package that could exploit the Gough-James SLH formalism generate an overall open quantum system model for a quantum feedback network based solely on its topology and the component models.
 The actual QNET package was then planned and implemented by `Nikolas Tezak <mailto:ntezak@stanford.edu>`_. In its current form, QNET comprises
 functionality [#additionalFunctionality]_ that goes well beyond what would be necessary to achieve the original goal, but which has proven to be immensely useful.
-In addition to the authors of the software packages listed under Dependencies_ that QNET relies on, we would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.
+In addition to the authors of the software packages listed under Dependencies that QNET relies on, we would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.
 
 - Michael Armen
 - Armand Niederberger
