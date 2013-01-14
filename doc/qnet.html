@@ -1,0 +1,190 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>The qnet API &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="index.html" />
+    <link rel="next" title="algebra Package" href="qnet.algebra.html" />
+    <link rel="prev" title="References" href="references.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="qnet.algebra.html" title="algebra Package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="references.html" title="References"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="references.html"
+                        title="previous chapter">References</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qnet.algebra.html"
+                        title="next chapter">algebra Package</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/qnet.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="the-qnet-api">
+<h1>The <tt class="docutils literal"><span class="pre">qnet</span></tt> API<a class="headerlink" href="#the-qnet-api" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="qnet.algebra.html">algebra Package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="qnet.algebra.html#id1"><tt class="docutils literal"><span class="pre">algebra</span></tt> Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.algebra.html#module-qnet.algebra.abstract_algebra"><tt class="docutils literal"><span class="pre">abstract_algebra</span></tt> Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qnet.algebra.html#abstract-algebra">Abstract Algebra</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.algebra.html#module-qnet.algebra.hilbert_space_algebra"><tt class="docutils literal"><span class="pre">hilbert_space_algebra</span></tt> Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qnet.algebra.html#the-hilbert-space-algebra">The Hilbert Space Algebra</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.algebra.html#module-qnet.algebra.operator_algebra"><tt class="docutils literal"><span class="pre">operator_algebra</span></tt> Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qnet.algebra.html#operator-algebra">Operator Algebra</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.algebra.html#module-qnet.algebra.permutations"><tt class="docutils literal"><span class="pre">permutations</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.algebra.html#module-qnet.algebra.circuit_algebra"><tt class="docutils literal"><span class="pre">circuit_algebra</span></tt> Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qnet.algebra.html#circuit-algebra">Circuit Algebra</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.algebra.html#module-qnet.algebra.state_algebra"><tt class="docutils literal"><span class="pre">state_algebra</span></tt> Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qnet.algebra.html#state-algebra">State Algebra</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.algebra.html#module-qnet.algebra.super_operator_algebra"><tt class="docutils literal"><span class="pre">super_operator_algebra</span></tt> Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="qnet.algebra.html#super-operator-algebra">Super-Operator Algebra</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="qnet.circuit_components.html">circuit_components Package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#id1"><tt class="docutils literal"><span class="pre">circuit_components</span></tt> Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.beamsplitter_cc"><tt class="docutils literal"><span class="pre">beamsplitter_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.component"><tt class="docutils literal"><span class="pre">component</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.displace_cc"><tt class="docutils literal"><span class="pre">displace_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.double_sided_opo_cc"><tt class="docutils literal"><span class="pre">double_sided_opo_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.kerr_cavity_cc"><tt class="docutils literal"><span class="pre">kerr_cavity_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.library"><tt class="docutils literal"><span class="pre">library</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.linear_cavity_cc"><tt class="docutils literal"><span class="pre">linear_cavity_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.mach_zehnder_cc"><tt class="docutils literal"><span class="pre">mach_zehnder_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.open_lossy_cc"><tt class="docutils literal"><span class="pre">open_lossy_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.phase_cc"><tt class="docutils literal"><span class="pre">phase_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.pseudo_nand_cc"><tt class="docutils literal"><span class="pre">pseudo_nand_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.pseudo_nand_latch_cc"><tt class="docutils literal"><span class="pre">pseudo_nand_latch_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.relay_cc"><tt class="docutils literal"><span class="pre">relay_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.single_sided_jaynes_cummings_cc"><tt class="docutils literal"><span class="pre">single_sided_jaynes_cummings_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.single_sided_opo_cc"><tt class="docutils literal"><span class="pre">single_sided_opo_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.three_port_opo_cc"><tt class="docutils literal"><span class="pre">three_port_opo_cc</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.circuit_components.html#module-qnet.circuit_components.zprobe_cavity_cc"><tt class="docutils literal"><span class="pre">zprobe_cavity_cc</span></tt> Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="qnet.misc.html">misc Package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="qnet.misc.html#id1"><tt class="docutils literal"><span class="pre">misc</span></tt> Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.misc.html#module-qnet.misc.circuit_visualization"><tt class="docutils literal"><span class="pre">circuit_visualization</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.misc.html#module-qnet.misc.parse_circuit_strings"><tt class="docutils literal"><span class="pre">parse_circuit_strings</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.misc.html#module-qnet.misc.parser"><tt class="docutils literal"><span class="pre">parser</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.misc.html#module-qnet.misc.parser_QHDLParser_parsetab"><tt class="docutils literal"><span class="pre">parser_QHDLParser_parsetab</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.misc.html#module-qnet.misc.parser__CircuitExpressionParser_parsetab"><tt class="docutils literal"><span class="pre">parser__CircuitExpressionParser_parsetab</span></tt> Module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="qnet.qhdl.html">qhdl Package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="qnet.qhdl.html#id1"><tt class="docutils literal"><span class="pre">qhdl</span></tt> Package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.qhdl.html#module-qnet.qhdl.qhdl"><tt class="docutils literal"><span class="pre">qhdl</span></tt> Module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="qnet.qhdl.html#module-qnet.qhdl.qhdl_parser"><tt class="docutils literal"><span class="pre">qhdl_parser</span></tt> Module</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="qnet.algebra.html" title="algebra Package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="references.html" title="References"
+             >previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

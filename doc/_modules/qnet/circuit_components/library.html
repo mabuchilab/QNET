@@ -1,0 +1,252 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>qnet.circuit_components.library &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for qnet.circuit_components.library</h1><div class="highlight"><pre>
+<span class="c">#This file is part of QNET.</span>
+<span class="c">#</span>
+<span class="c">#    QNET is free software: you can redistribute it and/or modify</span>
+<span class="c">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c">#    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#   (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c">#    QNET is distributed in the hope that it will be useful,</span>
+<span class="c">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#    GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c">#    You should have received a copy of the GNU General Public License</span>
+<span class="c">#    along with QNET.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (C) 2012-2013, Nikolas Tezak</span>
+<span class="c">#</span>
+<span class="c">###########################################################################</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module features some helper functions for automatically creating and managing a library of circuit component definition files.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="n">MODULE_DIR</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="make_namespace_string"><a class="viewcode-back" href="../../../qnet.circuit_components.html#qnet.circuit_components.library.make_namespace_string">[docs]</a><span class="k">def</span> <span class="nf">make_namespace_string</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">sub_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make a namespace string by combining a namespace string with a new name.</span>
+
+<span class="sd">    :param namespace: The namespace so far</span>
+<span class="sd">    :type namespace: str</span>
+<span class="sd">    :param sub_name: The additional name to add/</span>
+<span class="sd">    :type sub_name: str</span>
+<span class="sd">    :return: The combined namespace</span>
+<span class="sd">    :rtype: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">namespace</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sub_name</span>
+    <span class="k">return</span> <span class="n">namespace</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">sub_name</span>
+
+</div>
+<span class="n">camelcase_to_underscore</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">st</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&#39;(((?&lt;=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))&#39;</span><span class="p">,</span> <span class="s">&#39;_</span><span class="se">\\</span><span class="s">1&#39;</span><span class="p">,</span> <span class="n">st</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;Convert a camelcase entity name into an appropriate underscore name to import its corresponding module&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="getCDIM"><a class="viewcode-back" href="../../../qnet.circuit_components.html#qnet.circuit_components.library.getCDIM">[docs]</a><span class="k">def</span> <span class="nf">getCDIM</span><span class="p">(</span><span class="n">component_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the channel dimension of a referenced subcomponent</span>
+
+<span class="sd">    :param component_name: The entity name of the component</span>
+<span class="sd">    :type component_name: str</span>
+<span class="sd">    :return: The channel dimension of the component.</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">component_module</span> <span class="o">=</span> <span class="nb">__import__</span><span class="p">(</span><span class="s">&quot;qnet.circuit_components.</span><span class="si">%s</span><span class="s">_cc&quot;</span> <span class="o">%</span> <span class="n">camelcase_to_underscore</span><span class="p">(</span><span class="n">component_name</span><span class="p">),</span>
+            <span class="n">fromlist</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;qnet.circuit_components&#39;</span><span class="p">])</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span><span class="s">&quot;Could not retrieve Circuit file: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">component_module</span><span class="p">,</span> <span class="n">component_name</span><span class="p">)</span><span class="o">.</span><span class="n">CDIM</span>
+</div>
+<span class="k">def</span> <span class="nf">_make_default_value_string</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">tp</span><span class="p">,</span> <span class="n">default</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">default</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tp</span> <span class="o">==</span> <span class="s">&#39;real&#39;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&#39;symbols(</span><span class="si">%r</span><span class="s">, real = True)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,)</span>
+    <span class="k">return</span> <span class="s">&#39;symbols(</span><span class="si">%r</span><span class="s">)&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,)</span>
+
+<div class="viewcode-block" id="write_component"><a class="viewcode-back" href="../../../qnet.circuit_components.html#qnet.circuit_components.library.write_component">[docs]</a><span class="k">def</span> <span class="nf">write_component</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">architectures</span><span class="p">,</span> <span class="n">local</span> <span class="o">=</span> <span class="bp">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write a new entity definition to a python module file.</span>
+
+<span class="sd">    :param entity: The entity object</span>
+<span class="sd">    :type entity: :py:class:`qnet.qhdl.qhdl.Entity`</span>
+<span class="sd">    :param architectures: A dictionary of architectures ``dict(name = architecture)`` associated with the entity.</span>
+<span class="sd">    :type architectures: dict</span>
+<span class="sd">    :param local: Whether or not to store the created module in the current/local directory or install it in :py:module:``qnet.circuit_components``, default = ``False``</span>
+<span class="sd">    :type local: bool</span>
+<span class="sd">    :return: The filename of the new module.</span>
+<span class="sd">    :rtype: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">architectures</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">&quot;Warning: using only first architecture&quot;</span>
+    <span class="n">arch</span> <span class="o">=</span> <span class="n">architectures</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">arch_circuit</span><span class="p">,</span> <span class="n">circuit_symbols</span><span class="p">,</span> <span class="n">instance_assignments</span> <span class="o">=</span> <span class="n">arch</span><span class="o">.</span><span class="n">to_circuit</span><span class="p">()</span>
+
+    <span class="n">import_component_strings</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">component_name</span> <span class="ow">in</span> <span class="n">arch</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+        <span class="n">import_component_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;from qnet.circuit_components.</span><span class="si">%s</span><span class="s">_cc import </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">camelcase_to_underscore</span><span class="p">(</span><span class="n">component_name</span><span class="p">),</span> <span class="n">component_name</span><span class="p">))</span>
+    <span class="n">import_components</span> <span class="o">=</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">import_component_strings</span><span class="p">)</span>
+
+    <span class="n">symbol_assignment_strings</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">instance_name</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">circuit_symbols</span><span class="p">):</span>
+        <span class="n">component</span><span class="p">,</span> <span class="n">generic_map</span> <span class="o">=</span> <span class="n">instance_assignments</span><span class="p">[</span><span class="n">instance_name</span><span class="p">][</span><span class="mi">0</span> <span class="p">:</span> <span class="mi">2</span><span class="p">]</span>
+
+        <span class="n">generic_assignments</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s">&quot;, {comp_generic} = self.{entity_generic}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">comp_generic</span> <span class="o">=</span> <span class="n">cg</span><span class="p">,</span> <span class="n">entity_generic</span> <span class="o">=</span> <span class="n">eg</span><span class="p">)</span>
+                                                                        <span class="k">for</span> <span class="n">cg</span><span class="p">,</span> <span class="n">eg</span> <span class="ow">in</span> <span class="n">generic_map</span><span class="o">.</span><span class="n">items</span><span class="p">()])</span>
+
+        <span class="n">symbol_assignment_strings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">    @property</span>
+<span class="s">    def {sname}(self):</span>
+<span class="s">        return {cname}(make_namespace_string(self.name, &#39;{sname}&#39;){generic_assignments})</span>
+<span class="s">&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">sname</span> <span class="o">=</span> <span class="n">instance_name</span><span class="p">,</span>
+            <span class="n">cname</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">identifier</span><span class="p">,</span>
+            <span class="n">generic_assignments</span> <span class="o">=</span> <span class="n">generic_assignments</span><span class="p">))</span>
+
+    <span class="n">symbol_assignments</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">symbol_assignment_strings</span><span class="p">)</span>
+    <span class="n">symbol_instantiation</span> <span class="o">=</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">circuit_symbols</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span> <span class="o">+</span> <span class="s">&quot; = &quot;</span> <span class="o">+</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;self.&quot;</span><span class="o">+</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">circuit_symbols</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+    <span class="n">symbolic_expression</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">arch_circuit</span><span class="p">)</span>
+    
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">MODULE_DIR</span> <span class="o">+</span> <span class="s">&#39;/template_cc.py.txt&#39;</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">template</span><span class="p">:</span>
+        <span class="n">file_template</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+
+    <span class="k">if</span> <span class="n">local</span><span class="p">:</span>
+
+        <span class="n">cc_file_path</span> <span class="o">=</span> <span class="n">camelcase_to_underscore</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">identifier</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;_cc.py&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+
+        <span class="n">cc_file_path</span> <span class="o">=</span> <span class="n">MODULE_DIR</span> <span class="o">+</span> <span class="s">&quot;/&quot;</span> <span class="o">+</span> <span class="n">camelcase_to_underscore</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">identifier</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;_cc.py&quot;</span>
+    
+    <span class="c"># backup existing files</span>
+    <span class="c"># TODO add code to rescue doc-strings</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cc_file_path</span><span class="p">):</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">cc_file_path</span> <span class="o">+</span> <span class="s">&quot;.backup_</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">j</span><span class="p">)):</span>
+            <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">cc_file_path</span><span class="p">,</span> <span class="n">cc_file_path</span> <span class="o">+</span> <span class="s">&quot;.backup_</span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">j</span><span class="p">)</span>
+    
+    
+    <span class="n">template_params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s">&quot;filename&quot;</span> <span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">cc_file_path</span><span class="p">),</span>
+        <span class="s">&quot;entity_name&quot;</span><span class="p">:</span> <span class="n">entity</span><span class="o">.</span><span class="n">identifier</span><span class="p">,</span>
+        <span class="s">&quot;CDIM&quot;</span> <span class="p">:</span> <span class="n">entity</span><span class="o">.</span><span class="n">cdim</span><span class="p">,</span>
+        <span class="s">&quot;param_attributes&quot;</span><span class="p">:</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">    &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">((</span><span class="s">&quot;</span><span class="si">%s</span><span class="s"> = </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">generic_name</span><span class="p">,</span> <span class="n">_make_default_value_string</span><span class="p">(</span><span class="n">generic_name</span><span class="p">,</span> <span class="n">gtype</span><span class="p">,</span> <span class="n">default_value</span><span class="p">))</span> <span class="k">for</span> <span class="p">(</span><span class="n">generic_name</span><span class="p">,</span> <span class="p">(</span><span class="n">gtype</span><span class="p">,</span> <span class="n">default_value</span><span class="p">))</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">generics</span><span class="o">.</span><span class="n">items</span><span class="p">())),</span>
+        <span class="s">&quot;param_names&quot;</span><span class="p">:</span> <span class="nb">repr</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">generics</span><span class="o">.</span><span class="n">keys</span><span class="p">())),</span>
+        <span class="s">&quot;PORTSIN&quot;</span> <span class="p">:</span> <span class="n">entity</span><span class="o">.</span><span class="n">in_port_identifiers</span><span class="p">,</span>
+        <span class="s">&quot;PORTSOUT&quot;</span> <span class="p">:</span> <span class="n">entity</span><span class="o">.</span><span class="n">out_port_identifiers</span><span class="p">,</span>
+        <span class="s">&quot;sub_component_attributes&quot;</span> <span class="p">:</span> <span class="n">symbol_assignments</span><span class="p">,</span>
+        <span class="s">&quot;sub_component_names&quot;</span> <span class="p">:</span> <span class="nb">repr</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">circuit_symbols</span><span class="o">.</span><span class="n">keys</span><span class="p">())),</span>
+        <span class="s">&quot;symbol_instantiation&quot;</span><span class="p">:</span> <span class="n">symbol_instantiation</span><span class="p">,</span>
+        <span class="s">&quot;symbolic_expression&quot;</span><span class="p">:</span> <span class="n">symbolic_expression</span><span class="p">,</span>
+        <span class="s">&quot;import_components&quot;</span><span class="p">:</span><span class="n">import_components</span><span class="p">,</span>
+    <span class="p">}</span>
+    
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">cc_file_path</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src_file</span><span class="p">:</span>
+        <span class="n">src_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">template_params</span><span class="p">))</span>
+        
+    <span class="k">return</span> <span class="n">cc_file_path</span>
+    </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -4,10 +4,14 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <title>The QNET Package</title>
-
     <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/styles_rst2html.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <style type="text/css">
+
+
+</style>
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -15,22 +19,127 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1>QNET</h1>
-        <p>Symbolic Quantum Feedback Network Modeling and Analysis</p>
-
-        <p class="view"><a href="https://github.com/mabuchilab/QNET">View the Project on GitHub <small>mabuchilab/QNET</small></a></p>
-
-
+        <img src="logo.png"/>
+               
         <ul>
           <li><a href="https://github.com/mabuchilab/QNET/zipball/master">Download <strong>ZIP File</strong></a></li>
           <li><a href="https://github.com/mabuchilab/QNET/tarball/master">Download <strong>TAR Ball</strong></a></li>
+<!--         </ul>
+        <ul> -->
+          <li><a href="doc/index.html">View <strong>Documentation</strong></a></li>
           <li><a href="https://github.com/mabuchilab/QNET">View On <strong>GitHub</strong></a></li>
         </ul>
       </header>
       <section>
-        <p>
-          Welcome to QNET.
-        </p>
+          <div class="document" id="qnet">
+        
+<p>The QNET package is a set of tools created and compiled to aid in the design and analysis of photonic circuit models.
+Our proposed Quantum Hardware Description Language (cf. <a class="reference external" href="http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract">QHDL</a>) serves to describe a circuit topology and specification of a larger entity in terms of parametrizable subcomponents.
+This is strongly analogous to the specification of electric circuitry using the structural description elements of VHDL or Verilog.
+The physical systems that can be modeled within the framework include quantum optical experiments that can be described as nodes with internal degrees of freedom such as interacting quantum harmonic oscillators and/or N-level quantum systems that,
+in turn are coupled to a finite number of external bosonic quantum fields.</p>
+<div class="section" id="contents">
+<h1>Contents</h1>
+<p>The package consists of the following components:</p>
+<ol class="arabic simple">
+<li>A symbolic computer algebra package <tt class="docutils literal">qnet.algebra</tt> for Hilbert Space quantum mechanical operators, the Gough-James circuit algebra and also an algebra for Hilbert space <em>Ket</em>-states and <em>Super-operators</em> which themselves act on operators.</li>
+<li>The <a class="reference external" href="http://rsta.royalsocietypublishing.org/content/370/1979/5270.abstract">QHDL</a> language definition and parser <tt class="docutils literal">qnet.qhdl</tt> including a front-end located at <tt class="docutils literal">bin/parse_qhdl.py</tt> that can convert a QHDL-file into a circuit component library file.</li>
+<li>A library of existing primitive or composite circuit components <tt class="docutils literal">qnet.circuit_components</tt> that can be embedded into a new circuit definition.</li>
+</ol>
+</div>
+<div class="section" id="id1">
+<span id="dependencies"></span><h1>Dependencies</h1>
+<p>In addition to these core components, the software uses the following existing software packages:</p>
+<ol class="arabic simple" start="0">
+<li><a class="reference external" href="http://www.python.org">Python</a> version 2.6 or higher. QNET is still officially a Python 2 package, but migration to Python 3 should not be too hard to achieve.</li>
+<li>The <a class="reference external" href="http://www.gpleda.org">gEDA</a> toolsuite for its visual tool <tt class="docutils literal">gschem</tt> for the creation of circuits end exporting these to QHDL <tt class="docutils literal">gnetlist</tt>. We have created device symbols for our primitive circuit components to be used with <tt class="docutils literal">gschem</tt> and we have included our own <tt class="docutils literal">gnetlist</tt> plugin for exporting to QHDL.</li>
+<li>The <a class="reference external" href="http://SymPy.org/">SymPy</a> symbolic algebra Python package to implement symbolic 'scalar' algebra, i.e. the coefficients of state, operator or super-operator expressions can be symbolic SymPy expressions as well as pure python numbers.</li>
+<li>The <a class="reference external" href="http://code.google.com/p/qutip/">QuTiP</a> python package as an extremely useful, efficient and full featured numerical backend. Operator expressions where all symbolic scalar parameters have been replaced by numeric ones, can be converted to (sparse) numeric matrix representations, which are then used to solve for the system dynamics using the tools provided by QuTiP.</li>
+<li>The <a class="reference external" href="http://pyx.sourceforge.net/">PyX</a> python package for visualizing circuit expressions as box/flow diagrams.</li>
+<li>The <a class="reference external" href="http://www.scipy.org/">SciPy</a> and <a class="reference external" href="http://numpy.scipy.org/">NumPy</a> packages (needed for QuTiP but also by the <tt class="docutils literal">qnet.algebra</tt> package)</li>
+<li>The <a class="reference external" href="http://www.dabeaz.com/ply/">PLY</a> python package as a dependency of our Python Lex/Yacc based QHDL parser.</li>
+</ol>
+<p>A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the <a class="reference external" href="http://www.enthought.com/">Enthought</a> Python Distribution (EPD) which is free for academic use.
+A highly recommended way of working with QNET and QuTiP and just scientific python codes in action is to use the excellent <a class="reference external" href="http://ipython.org/">IPython</a> shell which comes both with a command-line interface as well as a very polished browser-based notebook interface.</p>
+</div>
+<div class="section" id="installation-configuration">
+<h1>Installation/Configuration</h1>
+<p>Copy the QNET folder to any location you'd like. We will tell python how to find it by setting the <tt class="docutils literal">$PYTHONPATH</tt> environment variable to include the QNET directory's path.
+Append the following to your local bash configuration <tt class="docutils literal"><span class="pre">$HOME/.bashrc</span></tt> or something equivalent:</p>
+<pre class="literal-block">
+export QNET=/path/to/cloned/repository
+export PYTHONPATH=$QNET:$PYTHONPATH
+</pre>
+<p><strong>Note that you should replace &quot;/path/to/cloned/repository&quot; with the full path to the cloned QNET directory!</strong>
+On my personal laptop that path is given by <tt class="docutils literal">/Users/nikolas/Projects/QNET</tt>, but you can place QNET anywhere you'd like.</p>
+<p>On Windows a similar procedure should exist. Environment variable can generally be set via the windows control panels.
+It should be sufficient to set just the <tt class="docutils literal">$PYTHONPATH</tt> environment variable.</p>
+<p>To configure gEDA to include our special quantum circuit component symbols you will need to copy the following configuration files from the <tt class="docutils literal">$QNET/gEDA_support/config</tt> directory to the <tt class="docutils literal"><span class="pre">$HOME/.gEDA</span></tt> directory:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">~/.gEDA/gafrc</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">~/.gEDA/gschemrc</span></tt></li>
+</ul>
+<p>Then install the QHDL netlister plugin within gEDA by creating a symbolic link</p>
+<pre class="literal-block">
+ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
+</pre>
+<p><strong>Note that you should replace &quot;/path/to/gEDA_resources_folder&quot; with the full path to the gEDA resources directory!</strong></p>
+<p>in my case that path is given by <tt class="docutils literal">/opt/local/share/gEDA</tt>, but in general simply look for the gEDA-directory that contains the file named <tt class="docutils literal"><span class="pre">system-gafrc</span></tt>.</p>
+</div>
+<div class="section" id="using-qnet-in-practice">
+<h1>Using QNET in practice</h1>
+<p>A possible full workflow using QNET is thus:</p>
+<ol class="upperroman simple">
+<li>Use <tt class="docutils literal">gschem</tt> (of gEDA) to graphically design a circuit model.</li>
+<li>Export the schematic to QHDL using <tt class="docutils literal">gnetlist</tt> (also part of gEDA)</li>
+<li>Parse the QHDL-circuit definition file into a Python circuit library component using the parser front-end <tt class="docutils literal">bin/parse_qhdl.py</tt>.</li>
+<li>Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP.</li>
+</ol>
+<p>This package is still work in progress and as it is developed by a single developer, documentation and comprehensive testing code is still somewhat lacking.
+Any contributions, bug reports and general feedback from end-users would be highly appreciated. If you have found a bug, it would be extremely helpful if you could try to write a minimal code example that reproduces the bug.
+Feature requests will definitely be considered. Higher priority will be given to things that many people ask for and that can be implemented efficiently.</p>
+<p>To learn of how to carry out each of these steps, we recommend looking at the provided examples and reading the relevant sections in the QNET manual.
+Also, if you want to implement and add your own primitive device models, please consult the QNET manual.</p>
+</div>
+<div class="section" id="acknowledgements">
+<h1>Acknowledgements</h1>
+<p><a class="reference external" href="mailto:hmabuchi&#64;stanford.edu">Hideo Mabuchi</a> had the initial idea for a software package that could exploit the Gough-James SLH formalism to generate an overall open quantum system model for a quantum feedback network based solely on its topology and the component models in analytic form.
+The actual QNET package was then planned and implemented by <a class="reference external" href="mailto:ntezak&#64;stanford.edu">Nikolas Tezak</a>. In its current form, QNET comprises
+functionality <a class="footnote-reference" href="#additionalfeatures" id="id3">[1]</a> that goes well beyond what would be necessary to achieve the original goal, but which has proven to be immensely useful.
+In addition to the authors of the software packages listed under <a class="reference internal" href="#dependencies">Dependencies</a> that QNET relies on, we would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.</p>
+<ul class="simple">
+<li>Michael Armen</li>
+<li>Armand Niederberger</li>
+<li>Joe Kerckhoff</li>
+<li>Dmitri Pavlichin</li>
+<li>Gopal Sarma</li>
+<li>Ryan Hamerly</li>
+<li>Michael Hush</li>
+</ul>
+<p>Work on QNET was directly supported by DARPA-MTO under Award No. N66001-11-1-4106. Nikolas Tezak is also supported by a Simons Foundation Math+X fellowship as well as a Stanford Graduate Fellowship.</p>
+<table class="docutils footnote" frame="void" id="additionalfeatures" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[1]</a></td><td>E.g., all algebras except the operator algebra are not strictly necessary to achieve just the original objective.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="license">
+<h1>License</h1>
+<p>QNET is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>QNET is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with QNET.  If not, see <a class="reference external" href="http://www.gnu.org/licenses/">this page</a>.</p>
+<p>Copyright (C) 2012, Nikolas Tezak</p>
+</div>
+</div>
+
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/mabuchilab">mabuchilab</a></p>

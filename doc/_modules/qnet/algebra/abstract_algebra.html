@@ -1,0 +1,1323 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>qnet.algebra.abstract_algebra &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for qnet.algebra.abstract_algebra</h1><div class="highlight"><pre>
+<span class="c">#This file is part of QNET.</span>
+<span class="c">#</span>
+<span class="c">#    QNET is free software: you can redistribute it and/or modify</span>
+<span class="c">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c">#    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#   (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c">#    QNET is distributed in the hope that it will be useful,</span>
+<span class="c">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#    GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c">#    You should have received a copy of the GNU General Public License</span>
+<span class="c">#    along with QNET.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (C) 2012-2013, Nikolas Tezak</span>
+<span class="c">#</span>
+<span class="c">###########################################################################</span>
+
+<span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">Abstract Algebra</span>
+<span class="sd">================</span>
+
+<span class="sd">The abstract algebra package provides a basic interface for defining custom Algebras.</span>
+
+<span class="sd">See :ref:`abstract_algebra` for more details.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">division</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">izip</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="nb">reduce</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="c">#define our own exceptions/errors</span>
+
+<div class="viewcode-block" id="AlgebraException"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.AlgebraException">[docs]</a><span class="k">class</span> <span class="nc">AlgebraException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for all errors concerning the mathematical definitions and rules of an algebra.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="AlgebraError"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.AlgebraError">[docs]</a><span class="k">class</span> <span class="nc">AlgebraError</span><span class="p">(</span><span class="n">AlgebraException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Base class for all errors concerning the mathematical definitions and rules of an algebra.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+    </div>
+<div class="viewcode-block" id="CannotSimplify"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.CannotSimplify">[docs]</a><span class="k">class</span> <span class="nc">CannotSimplify</span><span class="p">(</span><span class="n">AlgebraException</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raised when an expression cannot be further simplified</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</div>
+<div class="viewcode-block" id="WrongSignatureError"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.WrongSignatureError">[docs]</a><span class="k">class</span> <span class="nc">WrongSignatureError</span><span class="p">(</span><span class="n">AlgebraError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Raise when an operation is instantiated with operands of the wrong signature.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+
+</div>
+<div class="viewcode-block" id="Expression"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Expression">[docs]</a><span class="k">class</span> <span class="nc">Expression</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic class defining the basic methods any Expression object should implement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">ABCMeta</span>
+
+<div class="viewcode-block" id="Expression.substitute"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Expression.substitute">[docs]</a>    <span class="k">def</span> <span class="nf">substitute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_map</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Substitute all_symbols for other expressions.</span>
+
+<span class="sd">        :param var_map: Dictionary with entries of the form ``{symbol: substitution}``</span>
+<span class="sd">        :type var_map: dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_substitute</span><span class="p">(</span><span class="n">var_map</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_substitute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_map</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">in</span> <span class="n">var_map</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">var_map</span><span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+<div class="viewcode-block" id="Expression.tex"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Expression.tex">[docs]</a>    <span class="k">def</span> <span class="nf">tex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a string containing a TeX-representation of self.</span>
+<span class="sd">        Note that this needs to be wrapped by &#39;$&#39; characters for &#39;inline&#39; LaTeX use.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tex</span><span class="p">()</span>
+</div>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_tex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_repr_latex_</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        For compatibility with the IPython notebook, generate TeX expression and surround it with $&#39;s.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&quot;$</span><span class="si">%s</span><span class="s">$&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">tex</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Expression.all_symbols"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Expression.all_symbols">[docs]</a>    <span class="k">def</span> <span class="nf">all_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :return: The set of all_symbols contained within the expression.</span>
+<span class="sd">        :rtype: set</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_symbols</span><span class="p">()</span>
+</div>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_all_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Provide a hashing mechanism for self.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Implements a very strict definition of ``self == other``.</span>
+<span class="sd">        This should be overloaded where appropriate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">other</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        If it is well-defined (i.e. boolean), simply return</span>
+<span class="sd">        the negation of ``self.__eq__(other)``</span>
+<span class="sd">        Otherwise return NotImplemented.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">eq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">:</span>
+            <span class="k">return</span> <span class="ow">not</span> <span class="n">eq</span>
+        <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+</div>
+<div class="viewcode-block" id="substitute"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.substitute">[docs]</a><span class="k">def</span> <span class="nf">substitute</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">var_map</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    (Safe) substitute, substitute objects for all symbols.</span>
+
+<span class="sd">    :param expr: The expression in which to perform the substitution</span>
+<span class="sd">    :param var_map: The substitution dictionary. See :py:meth:`qnet.algebra.abstract_algebra.substitute` documentation</span>
+<span class="sd">    :type var_map: dict</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">expr</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">var_map</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">expr</span> <span class="ow">in</span> <span class="n">var_map</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">var_map</span><span class="p">[</span><span class="n">expr</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">expr</span>
+</div>
+<div class="viewcode-block" id="tex"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.tex">[docs]</a><span class="k">def</span> <span class="nf">tex</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :param obj: Object to represent in LaTeX.</span>
+<span class="sd">    :return: Return a LaTeX string-representation of obj.</span>
+<span class="sd">    :rtype: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">tex</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">r&quot;{{\rm {!s}}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+<span class="c">#</span>
+<span class="c">#def mathematica(obj):</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    Return a Mathematica string-representation of obj</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    if isinstance(obj, str):</span>
+<span class="c">#        return identifier_to_mathematica(obj)</span>
+<span class="c">#    if is_number(obj):</span>
+<span class="c">#        return format_number_for_mathematica(obj)</span>
+<span class="c">#    if isinstance(obj, SympyBasic):</span>
+<span class="c">#        return capitalize_sympy_functions_for_mathematica(</span>
+<span class="c">#                        re.compile(r&#39;([A-Za-z0-9]+)\(([^\)]+)\)&#39;).sub(</span>
+<span class="c">#                                        r&quot;\1[\2]&quot;, identifier_to_mathematica(str(obj)).replace(&quot;**&quot;,&quot;^&quot;)))</span>
+<span class="c">#    try:</span>
+<span class="c">#        return obj.mathematica()</span>
+<span class="c">#    except AttributeError:</span>
+<span class="c">#        return str(obj)</span>
+<span class="c">#</span>
+<span class="c">#def capitalize_sympy_functions_for_mathematica(string):</span>
+<span class="c">#    words = (&quot;cos&quot;, &quot;sin&quot;, &quot;exp&quot;, &quot;sqrt&quot;, &quot;conjugate&quot;, &quot;cosh&quot;, &quot;sinh&quot;)</span>
+<span class="c">#    return creduce(lambda a, b: a.replace(b, b[0].upper() + b[1:]), words, string)</span>
+<span class="c">#</span>
+<span class="c">#</span>
+
+<span class="c">#def free_of(expr, *all_symbols):</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    Safe free_of</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    try:</span>
+<span class="c">#        return expr.free_of(*all_symbols)</span>
+<span class="c">#    except AttributeError:</span>
+<span class="c">#        return True</span>
+<span class="c">#</span>
+<span class="c">#def all_symbols(expr):</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    Safe all_symbols</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    try:</span>
+<span class="c">#        return expr.all_symbols()</span>
+<span class="c">#    except AttributeError:</span>
+<span class="c">#        try:</span>
+<span class="c">#            return expr.atoms()</span>
+<span class="c">#        except AttributeError:</span>
+<span class="c">#            return set(())</span>
+
+
+<span class="c">#def format_number_for_tex(num):</span>
+<span class="c">#    if num == 0: #also True for 0., 0j</span>
+<span class="c">#        return &quot;0&quot;</span>
+<span class="c">#    if isinstance(num, complex):</span>
+<span class="c">#        if num.real == 0:</span>
+<span class="c">#            if num.imag == 1:</span>
+<span class="c">#                return &quot;i&quot;</span>
+<span class="c">#            if num.imag == -1:</span>
+<span class="c">#                return &quot;(-i)&quot;</span>
+<span class="c">#            if num.imag &lt; 0:</span>
+<span class="c">#                return &quot;(-%si)&quot; % format_number_for_tex(-num.imag)</span>
+<span class="c">#            return &quot;%si&quot; % format_number_for_tex(num.imag)</span>
+<span class="c">#        if num.imag == 0:</span>
+<span class="c">#            return format_number_for_tex(num.real)</span>
+<span class="c">#        return &quot;(%s + %si)&quot; % (format_number_for_tex(num.real), format_number_for_tex(num.imag))</span>
+<span class="c">#    if num &lt; 0:</span>
+<span class="c">#        return &quot;(%g)&quot; % num</span>
+<span class="c">#    return &quot;%g&quot; % num</span>
+<span class="c">#</span>
+<span class="c">#def format_number_for_mathematica(num):</span>
+<span class="c">#    if num == 0: #also True for 0., 0j</span>
+<span class="c">#        return &quot;0&quot;</span>
+<span class="c">#    if isinstance(num, complex):</span>
+<span class="c">#        if num.imag == 0:</span>
+<span class="c">#            return format_number_for_tex(num.real)</span>
+<span class="c">#        return &quot;Complex[%g,%g]&quot; % (num.real, num.imag)</span>
+<span class="c">#</span>
+<span class="c">#    return &quot;%g&quot; % num</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c">#greek_letter_strings = [&quot;alpha&quot;, &quot;beta&quot;, &quot;gamma&quot;, &quot;delta&quot;, &quot;epsilon&quot;, &quot;varepsilon&quot;, \</span>
+<span class="c">#                        &quot;zeta&quot;, &quot;eta&quot;, &quot;theta&quot;, &quot;vartheta&quot;, &quot;iota&quot;, &quot;kappa&quot;, \</span>
+<span class="c">#                        &quot;lambda&quot;, &quot;mu&quot;, &quot;nu&quot;, &quot;xi&quot;, &quot;pi&quot;, &quot;varpi&quot;, &quot;rho&quot;, \</span>
+<span class="c">#                        &quot;varrho&quot;, &quot;sigma&quot;, &quot;varsigma&quot;, &quot;tau&quot;, &quot;upsilon&quot;, &quot;phi&quot;, \</span>
+<span class="c">#                        &quot;varphi&quot;, &quot;chi&quot;, &quot;psi&quot;, &quot;omega&quot;, \</span>
+<span class="c">#                        &quot;Gamma&quot;, &quot;Delta&quot;, &quot;Theta&quot;, &quot;Lambda&quot;, &quot;Xi&quot;, \</span>
+<span class="c">#                        &quot;Pi&quot;, &quot;Sigma&quot;, &quot;Upsilon&quot;, &quot;Phi&quot;, &quot;Psi&quot;, &quot;Omega&quot;]</span>
+<span class="c">#greekToLatex = {&quot;alpha&quot;:&quot;Alpha&quot;, &quot;beta&quot;:&quot;Beta&quot;, &quot;gamma&quot;:&quot;Gamma&quot;, &quot;delta&quot;:&quot;Delta&quot;, &quot;epsilon&quot;:&quot;Epsilon&quot;, &quot;varepsilon&quot;:&quot;Epsilon&quot;, \</span>
+<span class="c">#                        &quot;zeta&quot;:&quot;Zeta&quot;, &quot;eta&quot;:&quot;Eta&quot;, &quot;theta&quot;:&quot;Theta&quot;, &quot;vartheta&quot;:&quot;Theta&quot;, &quot;iota&quot;:&quot;Iota&quot;, &quot;kappa&quot;:&quot;Kappa&quot;, \</span>
+<span class="c">#                        &quot;lambda&quot;:&quot;Lambda&quot;, &quot;mu&quot;:&quot;Mu&quot;, &quot;nu&quot;:&quot;Nu&quot;, &quot;xi&quot;:&quot;Xi&quot;, &quot;pi&quot;:&quot;Pi&quot;, &quot;varpi&quot;:&quot;Pi&quot;, &quot;rho&quot;:&quot;Rho&quot;, \</span>
+<span class="c">#                        &quot;varrho&quot;:&quot;Rho&quot;, &quot;sigma&quot;:&quot;Sigma&quot;, &quot;varsigma&quot;:&quot;Sigma&quot;, &quot;tau&quot;:&quot;Tau&quot;, &quot;upsilon&quot;:&quot;Upsilon&quot;, &quot;phi&quot;: &quot;Phi&quot;, \</span>
+<span class="c">#                        &quot;varphi&quot;:&quot;Phi&quot;, &quot;chi&quot;:&quot;Chi&quot;, &quot;psi&quot;:&quot;Psi&quot;, &quot;omega&quot;:&quot;Omega&quot;, \</span>
+<span class="c">#                        &quot;Gamma&quot;:&quot;CapitalGamma&quot;, &quot;Delta&quot;:&quot;CapitalDelta&quot;, &quot;Theta&quot;:&quot;CapitalTheta&quot;, &quot;Lambda&quot;:&quot;CapitalLambda&quot;, &quot;Xi&quot;:&quot;CapitalXi&quot;, \</span>
+<span class="c">#                        &quot;Pi&quot;:&quot;CapitalPi&quot;, &quot;Sigma&quot;:&quot;CapitalSigma&quot;, &quot;Upsilon&quot;:&quot;CapitalUpsilon&quot;, &quot;Phi&quot;:&quot;CapitalPhi&quot;, &quot;Psi&quot;:&quot;CapitalPsi&quot;, &quot;Omega&quot;:&quot;CapitalOmega&quot;</span>
+<span class="c">#                }</span>
+<span class="c">#</span>
+<span class="c">#import re</span>
+<span class="c">#def identifier_to_tex(identifier):</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    If an identifier contains a greek symbol name as a separate word,</span>
+<span class="c">#    (e.g. &#39;my_alpha_1&#39; contains &#39;alpha&#39; as a separate word, but &#39;alphaman&#39; doesn&#39;t)</span>
+<span class="c">#    add a backslash in front.</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    identifier = creduce(lambda a,b: &quot;{%s_%s}&quot; % (b, a), [&quot;{%s}&quot; % part for part in reversed(identifier.split(&quot;__&quot;))])</span>
+<span class="c">#    p = re.compile(r&#39;([^\\A-Za-z]?)(%s)\b&#39; % &quot;|&quot;.join(greek_letter_strings))</span>
+<span class="c">#    return p.sub(r&#39;\1{\\\2}&#39;, identifier)</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c">#def identifier_to_mathematica(identifier):</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    If an identifier contains a greek symbol name as a separate word,</span>
+<span class="c">#    (e.g. &#39;my_alpha_1&#39; contains &#39;alpha&#39; as a separate word, but &#39;alphaman&#39; doesn&#39;t)</span>
+<span class="c">#    add a backslash in front.</span>
+<span class="c">#    &quot;&quot;&quot;</span>
+<span class="c">#    identifier = creduce(lambda a,b: &quot;Subscript[%s,%s]&quot; % (b, a), reversed(identifier.split(&quot;__&quot;)))</span>
+<span class="c">#    p = re.compile(r&#39;\b(%s)\b&#39; % &quot;|&quot;.join(greek_letter_strings))</span>
+<span class="c">#    repl = lambda m:  r&quot;\[&quot; + greekToLatex[m.group(1)] + &quot;]&quot;</span>
+<span class="c">#    return p.sub(repl, identifier)</span>
+
+</div>
+<div class="viewcode-block" id="set_union"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.set_union">[docs]</a><span class="k">def</span> <span class="nf">set_union</span><span class="p">(</span><span class="o">*</span><span class="n">sets</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Similar to ``sum()``, but for sets. Generate the union of an arbitrary number of set arguments.</span>
+
+<span class="sd">    :param sets: Sets to for the union of.</span>
+<span class="sd">    :type sets: set</span>
+<span class="sd">    :return: Union set.</span>
+<span class="sd">    :rtype: set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">b</span><span class="p">),</span> <span class="n">sets</span><span class="p">,</span> <span class="nb">set</span><span class="p">(()))</span>
+
+</div>
+<div class="viewcode-block" id="all_symbols"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.all_symbols">[docs]</a><span class="k">def</span> <span class="nf">all_symbols</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return all all_symbols featured within an expression.</span>
+
+<span class="sd">    :param expr: The expression to find all_symbols in.</span>
+<span class="sd">    :return: A set of all_symbols within expr.</span>
+<span class="sd">    :rtype: set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">expr</span><span class="o">.</span><span class="n">all_symbols</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(())</span>
+</div>
+<div class="viewcode-block" id="Operation"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Operation">[docs]</a><span class="k">class</span> <span class="nc">Operation</span><span class="p">(</span><span class="n">Expression</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract base class for all operations,</span>
+<span class="sd">    where the operands themselves are also expressions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c"># hash str, is generated on demand (lazily)</span>
+    <span class="n">__hash</span> <span class="o">=</span> <span class="bp">None</span>
+
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">operands</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a symbolic operation with the given operands.::</span>
+
+<span class="sd">            Operation(*operands)</span>
+
+<span class="sd">        :param operands: The operands of the expression.</span>
+<span class="sd">        :type operands: object or as defined in the Operation&#39;s signature</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_operands</span> <span class="o">=</span> <span class="n">operands</span>
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="Operation.operands"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Operation.operands">[docs]</a>    <span class="k">def</span> <span class="nf">operands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :return: The operands of the operation.</span>
+<span class="sd">        :rtype: tuple</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_operands</span>
+</div>
+    <span class="k">def</span> <span class="nf">_all_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">set_union</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">all_symbols</span><span class="p">(</span><span class="n">op</span><span class="p">)</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">])</span>
+
+
+    <span class="k">def</span> <span class="nf">_substitute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var_map</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">in</span> <span class="n">var_map</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">var_map</span><span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">o</span><span class="p">:</span> <span class="n">substitute</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">var_map</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_tex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">r&quot;{{\rm {}}}\left({{}}\right)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tex</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot;{}({})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">)))</span>
+    
+    <span class="c"># def mathematica(self):</span>
+    <span class="c">#     return &quot;%s[%s]&quot; % (self.__class__.__name__, &quot;, &quot;.join(map(mathematica, self.operands)))</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">operands</span>
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__hash</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__hash</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Operation.create"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Operation.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">operands</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Instead of directly instantiating an instance of any subclass of Operation,</span>
+<span class="sd">        it is advised to call the ``create()`` classmethod instead.</span>
+<span class="sd">        This method takes the same arguments as the constructor, but can preprocess them and even return an object</span>
+<span class="sd">        of a different type based on the operands.</span>
+
+<span class="sd">        :param operands: The operands for the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
+</div>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Operation.order_key"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Operation.order_key">[docs]</a>    <span class="k">def</span> <span class="nf">order_key</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Provide a default ordering mechanism for achieving canonical ordering of expressions sequences.</span>
+
+<span class="sd">        :param obj: The object to create a key for.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="n">_order_key</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+</div>
+    <span class="k">def</span> <span class="nf">_order_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,)</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">Operation</span><span class="o">.</span><span class="n">order_key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">))</span>
+
+</div>
+<span class="n">mathematica</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">s</span> <span class="p">:</span> <span class="n">s</span>
+
+
+
+<span class="c">########################################################################################################################</span>
+<span class="c">########################### WILDCARDS AND PATTERN MATCHING FUNCTIONS ###################################################</span>
+<span class="c">########################################################################################################################</span>
+
+
+
+<span class="n">inf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s">&#39;inf&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="match_range"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.match_range">[docs]</a><span class="k">def</span> <span class="nf">match_range</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute how many objects/operands a given pattern can minimally and maximally match.</span>
+
+<span class="sd">    :param pattern: The pattern object</span>
+<span class="sd">    :return: min_number, max_number</span>
+<span class="sd">    :rtype: tuple</span>
+<span class="sd">    :raise: ValueError, if unknown pattern mode for Wildcard object</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">Wildcard</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="n">Wildcard</span><span class="o">.</span><span class="n">single</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span><span class="p">,</span><span class="mi">1</span>
+        <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="n">Wildcard</span><span class="o">.</span><span class="n">one_or_more</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span><span class="p">,</span> <span class="n">inf</span>
+        <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="n">Wildcard</span><span class="o">.</span><span class="n">zero_or_more</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="n">inf</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">PatternTuple</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+            <span class="n">a0</span><span class="p">,</span> <span class="n">b0</span> <span class="o">=</span> <span class="n">match_range</span><span class="p">(</span><span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">a1</span><span class="p">,</span> <span class="n">b1</span> <span class="o">=</span> <span class="n">match_range</span><span class="p">(</span><span class="n">pattern</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+<span class="c">#            a1, b1 = match_range(PatternTuple(pattern[1:]))</span>
+            <span class="k">return</span> <span class="n">a0</span> <span class="o">+</span> <span class="n">a1</span><span class="p">,</span> <span class="n">b0</span> <span class="o">+</span> <span class="n">b1</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+
+</div>
+<div class="viewcode-block" id="OperandsTuple"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.OperandsTuple">[docs]</a><span class="k">class</span> <span class="nc">OperandsTuple</span><span class="p">(</span><span class="nb">tuple</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Specialized tuple to store expression operands for the purpose of matching them to patterns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="c">#noinspection PyTypeChecker</span>
+            <span class="k">return</span> <span class="n">OperandsTuple</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">OperandsTuple</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">OperandsTuple</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getslice__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">OperandsTuple</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">OperandsTuple</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getslice__</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="PatternTuple"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.PatternTuple">[docs]</a><span class="k">class</span> <span class="nc">PatternTuple</span><span class="p">(</span><span class="nb">tuple</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Specialized tuple to store expression pattern operands.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="c">#noinspection PyTypeChecker</span>
+            <span class="k">return</span> <span class="n">OperandsTuple</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">PatternTuple</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">PatternTuple</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getitem__</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getslice__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">PatternTuple</span><span class="p">(</span><span class="nb">super</span><span class="p">(</span><span class="n">PatternTuple</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__getslice__</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">))</span>
+
+</div>
+<div class="viewcode-block" id="NamedPattern"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.NamedPattern">[docs]</a><span class="k">class</span> <span class="nc">NamedPattern</span><span class="p">(</span><span class="n">Operation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a named (sub-)pattern for later use in processing elements of a matched expression.::</span>
+
+<span class="sd">        NamedPattern(name, pattern)</span>
+
+<span class="sd">    :param name: Pattern identifier</span>
+<span class="sd">    :type name: str</span>
+<span class="sd">    :param pattern: Pattern expression</span>
+<span class="sd">    :type pattern:  Expression, PatternTuple</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">pattern</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NamedPattern</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">pattern</span><span class="p">)</span>
+</div>
+<span class="k">def</span> <span class="nf">_trace</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function decorator to receive debugging information about function calls and return values.</span>
+
+<span class="sd">    :param fn: Function whose calls to _trace</span>
+<span class="sd">    :type fn: FunctionType</span>
+<span class="sd">    :return: Decorated function</span>
+<span class="sd">    :rtype: FunctionType</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_tfn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">print</span> <span class="s">&quot;[&quot;</span><span class="p">,</span> <span class="s">&quot;-&quot;</span><span class="o">*</span> <span class="mi">40</span>
+        <span class="n">ret</span> <span class="o">=</span>  <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;{}({},{}) called&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">args</span><span class="p">),</span>
+                                        <span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">+</span><span class="s">&quot;=&quot;</span><span class="o">+</span><span class="nb">repr</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+        <span class="k">print</span> <span class="s">&quot;--&gt;&quot;</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&quot;-&quot;</span><span class="o">*</span> <span class="mi">40</span><span class="p">,</span><span class="s">&quot;]&quot;</span>
+        <span class="k">return</span> <span class="n">ret</span>
+    <span class="k">return</span> <span class="n">_tfn</span>
+
+
+<span class="k">def</span> <span class="nf">_flatten</span><span class="p">(</span><span class="n">seq</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper method to _flatten out PatternTuple and OperandTuple elements within a sequence.</span>
+
+<span class="sd">    :param seq: Sequence of objects, some of which may be PatternTuple or OperandTuple objects.</span>
+<span class="sd">    :type seq: sequence</span>
+<span class="sd">    :return: A flattened list.</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sres</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="p">(</span><span class="n">PatternTuple</span><span class="p">,</span> <span class="n">OperandsTuple</span><span class="p">)):</span>
+            <span class="n">sres</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">sres</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sres</span>
+
+<span class="c">#@_trace</span>
+<div class="viewcode-block" id="update_pattern"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.update_pattern">[docs]</a><span class="k">def</span> <span class="nf">update_pattern</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">match_obj</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Replace all wildcards in the pattern expression with their matched values as specified in a Match object.</span>
+
+<span class="sd">    :param expr: Pattern expression</span>
+<span class="sd">    :type expr: Expression or PatternTuple</span>
+<span class="sd">    :param match_obj: Match object</span>
+<span class="sd">    :type match_obj: Match</span>
+<span class="sd">    :return: Expression with replaced wildcards</span>
+<span class="sd">    :rtype: Expression or PatternTuple</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Wildcard</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">expr</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">match_obj</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">match_obj</span><span class="p">[</span><span class="n">expr</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="p">(</span><span class="n">PatternTuple</span><span class="p">,</span> <span class="n">OperandsTuple</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">expr</span><span class="o">.</span><span class="n">__class__</span><span class="p">(</span><span class="n">_flatten</span><span class="p">([</span><span class="n">update_pattern</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">match_obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">expr</span><span class="p">]))</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">Operation</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">expr</span><span class="o">.</span><span class="n">__class__</span><span class="p">(</span><span class="o">*</span><span class="n">_flatten</span><span class="p">([</span><span class="n">update_pattern</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">match_obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">expr</span><span class="o">.</span><span class="n">operands</span><span class="p">]))</span>
+
+    <span class="k">return</span> <span class="n">expr</span>
+
+
+
+<span class="c">#@_trace</span></div>
+<div class="viewcode-block" id="match"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.match">[docs]</a><span class="k">def</span> <span class="nf">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">expr</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Match a pattern against an expression and return a Match object if successful or False, if not.</span>
+<span class="sd">    Works recursively.</span>
+
+<span class="sd">    :param pattern: Pattern expression</span>
+<span class="sd">    :type pattern: Expression or PatternTuple</span>
+<span class="sd">    :param expr: Expression to match against the pattern.</span>
+<span class="sd">    :type expr: Expression or OperandsTuple</span>
+<span class="sd">    :return: Match object or False</span>
+<span class="sd">    :rtype: Match or False</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pattern</span> <span class="ow">is</span> <span class="n">expr</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Match</span><span class="p">()</span>
+
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">match_range</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">OperandsTuple</span><span class="p">):</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">l</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span> <span class="o">&lt;=</span> <span class="n">l</span> <span class="o">&lt;=</span> <span class="n">b</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">PatternTuple</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">pattern</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">l</span> <span class="o">==</span> <span class="mi">0</span>
+            <span class="k">return</span> <span class="n">Match</span><span class="p">()</span>
+
+        <span class="n">p0</span> <span class="o">=</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">prest</span> <span class="o">=</span> <span class="n">pattern</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">OperandsTuple</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span> <span class="n">Wildcard</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">p0</span><span class="o">.</span><span class="n">mode</span> <span class="o">!=</span> <span class="n">Wildcard</span><span class="o">.</span><span class="n">single</span><span class="p">:</span>
+                    <span class="n">a0</span><span class="p">,</span> <span class="n">b0</span> <span class="o">=</span> <span class="n">match_range</span><span class="p">(</span><span class="n">p0</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">a0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">l</span><span class="p">,</span><span class="n">b0</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+                        <span class="n">o0</span> <span class="o">=</span> <span class="n">expr</span><span class="p">[:</span><span class="n">k</span><span class="p">]</span>
+                        <span class="n">orest</span> <span class="o">=</span> <span class="n">expr</span><span class="p">[</span><span class="n">k</span><span class="p">:]</span>
+                        <span class="n">m0</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span> <span class="n">o0</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">m0</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">m0</span><span class="p">):</span>
+                                <span class="n">mrest</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">update_pattern</span><span class="p">(</span><span class="n">prest</span><span class="p">,</span> <span class="n">m0</span><span class="p">),</span> <span class="n">orest</span><span class="p">)</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">mrest</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">prest</span><span class="p">,</span> <span class="n">orest</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">mrest</span><span class="p">:</span>
+                                <span class="k">return</span> <span class="n">m0</span> <span class="o">+</span> <span class="n">mrest</span>
+
+                    <span class="k">return</span> <span class="bp">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">m0</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span> <span class="n">expr</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">m0</span><span class="p">:</span>
+                        <span class="n">orest</span> <span class="o">=</span> <span class="n">expr</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">m0</span><span class="p">):</span>
+                            <span class="n">mrest</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">update_pattern</span><span class="p">(</span><span class="n">prest</span><span class="p">,</span> <span class="n">m0</span><span class="p">),</span> <span class="n">orest</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">mrest</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">prest</span><span class="p">,</span> <span class="n">orest</span><span class="p">)</span>
+    <span class="c">#                    print m0, update_pattern(prest, m0), mrest</span>
+                        <span class="k">if</span> <span class="n">mrest</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="n">m0</span> <span class="o">+</span> <span class="n">mrest</span>
+                    <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">m0</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">p0</span><span class="p">,</span> <span class="n">expr</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">m0</span><span class="p">:</span>
+                    <span class="n">orest</span> <span class="o">=</span> <span class="n">expr</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">m0</span><span class="p">):</span>
+                        <span class="n">mrest</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">update_pattern</span><span class="p">(</span><span class="n">prest</span><span class="p">,</span> <span class="n">m0</span><span class="p">),</span> <span class="n">orest</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">mrest</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">prest</span><span class="p">,</span> <span class="n">orest</span><span class="p">)</span>
+<span class="c">#                    print m0, update_pattern(prest, m0), mrest</span>
+                    <span class="k">if</span> <span class="n">mrest</span><span class="p">:</span>
+                        <span class="k">return</span> <span class="n">m0</span> <span class="o">+</span> <span class="n">mrest</span>
+                <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">Wildcard</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="n">Wildcard</span><span class="o">.</span><span class="n">single</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">OperandsTuple</span><span class="p">):</span>
+                <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">expr</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+                <span class="c">#noinspection PyRedeclaration</span>
+                <span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">head</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">pattern</span><span class="o">.</span><span class="n">head</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">condition</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">pattern</span><span class="o">.</span><span class="n">condition</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Match</span><span class="p">({</span><span class="n">pattern</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">expr</span><span class="p">})</span>
+            <span class="k">return</span> <span class="n">Match</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="n">OperandsTuple</span><span class="p">):</span>
+                <span class="n">expr</span> <span class="o">=</span> <span class="n">OperandsTuple</span><span class="p">((</span><span class="n">expr</span><span class="p">,))</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">head</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">pattern</span><span class="o">.</span><span class="n">head</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">expr</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">condition</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">pattern</span><span class="o">.</span><span class="n">condition</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">expr</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">False</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Match</span><span class="p">({</span><span class="n">pattern</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">expr</span><span class="p">})</span>
+            <span class="k">return</span> <span class="n">Match</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">NamedPattern</span><span class="p">):</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span>  <span class="n">pattern</span><span class="o">.</span><span class="n">operands</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">m</span> <span class="o">+</span> <span class="n">Match</span><span class="p">({</span><span class="n">name</span><span class="p">:</span> <span class="n">expr</span> <span class="p">})</span>
+        <span class="k">return</span> <span class="bp">False</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">Operation</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span><span class="n">Operation</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="n">expr</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">match</span><span class="p">(</span><span class="n">PatternTuple</span><span class="p">(</span><span class="n">pattern</span><span class="o">.</span><span class="n">operands</span><span class="p">),</span> <span class="n">OperandsTuple</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">operands</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Match</span><span class="p">()</span> <span class="k">if</span> <span class="n">pattern</span> <span class="o">==</span> <span class="n">expr</span> <span class="k">else</span> <span class="bp">False</span>
+
+
+
+
+
+
+
+
+
+</div>
+<div class="viewcode-block" id="Wildcard"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Wildcard">[docs]</a><span class="k">class</span> <span class="nc">Wildcard</span><span class="p">(</span><span class="n">Expression</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic wildcard expression that can match a single expression or in the context of</span>
+<span class="sd">    matching the operands of an Operation object one may match one_or_more or zero_or_more operands</span>
+<span class="sd">    with the same wildcards. If the wildcard has a name, a successful match leads to a Match object in which the</span>
+<span class="sd">    object that matched the wildcard is stored under that name. One can also restrict the type of the matched Expression</span>
+<span class="sd">    by providing a head argument and the condition argument allows for passing a function that performs additional tests</span>
+<span class="sd">    on a potential match.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">single</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="sd">&quot;&quot;&quot;Value of :py:attr:`Wildcard.mode` for matching single operands/objects&quot;&quot;&quot;</span>
+
+
+    <span class="n">one_or_more</span><span class="o">=</span> <span class="mi">2</span>
+    <span class="sd">&quot;&quot;&quot;Value of :py:attr:`Wildcard.mode` for matching one or more operands/objects&quot;&quot;&quot;</span>
+
+    <span class="n">zero_or_more</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="sd">&quot;&quot;&quot;Value of :py:attr:`Wildcard.mode` for matching zero or more operands/objects&quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;name/identifier of the wildcard (default = &quot;&quot;).&quot;&quot;&quot;</span>
+
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">single</span>
+    <span class="sd">&quot;&quot;&quot;mode of the wildcard, i.e. how many operands it can match (default = ``single``).&quot;&quot;&quot;</span>
+
+    <span class="n">head</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="sd">&quot;&quot;&quot;head/type of the object that is matched (default = ``None``, corresponding to no restriction).&quot;&quot;&quot;</span>
+
+    <span class="n">condition</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="sd">&quot;&quot;&quot;extra condition that has to be satisfied for a successful match (default = ``None``, corresponding to no restriction).&quot;&quot;&quot;</span>
+
+    <span class="n">_hash</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="c">#noinspection PyRedeclaration</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">mode</span> <span class="o">=</span> <span class="n">single</span><span class="p">,</span> <span class="n">head</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">condition</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param name: Wildcard name, (default = &quot;&quot;)</span>
+<span class="sd">        :type name: str</span>
+<span class="sd">        :param mode: The matching mode, i.e. how many objects/operands can the wildcard match.</span>
+<span class="sd">        :type mode: One of :py:attr:`Wildcard.single`, :py:attr:`Wildcard.one_or_more`, :py:attr:`Wildcard.zero_or_more`</span>
+<span class="sd">        :param head: Restriction of the type of the matched expression</span>
+<span class="sd">        :type head: tuple or type or None</span>
+<span class="sd">        :param condition: An additional function that returns True if match should be accepted.</span>
+<span class="sd">        :type condition: FunctionType or None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">head</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="o">=</span> <span class="n">condition</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">head_string</span> <span class="o">=</span> <span class="s">&quot;({})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">__name__</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">head_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">head_string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+        <span class="k">return</span> <span class="s">&quot;{}{}{}{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                                 <span class="s">&quot;_&quot;</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+                                 <span class="n">head_string</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="o">.</span><span class="n">__name__</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="k">else</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="n">head_string</span> <span class="o">=</span> <span class="s">&quot;({})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">__name__</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">head_string</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">head_string</span> <span class="o">=</span> <span class="s">&quot;None&quot;</span>
+
+        <span class="k">return</span> <span class="s">&quot;Wildcard({}, {}, {}, {})&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">),</span>
+                                                 <span class="s">&quot;_&quot;</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span>
+                                                 <span class="n">head_string</span><span class="p">,</span>
+                                                 <span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="o">.</span><span class="n">__name__</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="k">else</span> <span class="s">&quot;None&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">__class__</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">name</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">head</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">mode</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">condition</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hash</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hash</span>
+
+    <span class="k">def</span> <span class="nf">_tex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">r&quot;{\rm &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="p">(</span><span class="s">&quot;\_&quot;</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mode</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">__name__</span> <span class="o">+</span> <span class="p">(</span><span class="s">&quot;?{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">condition</span><span class="p">,</span> <span class="s">&quot;__name__&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;}&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_all_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">set</span><span class="p">(())</span>
+
+</div>
+<div class="viewcode-block" id="Match"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.Match">[docs]</a><span class="k">class</span> <span class="nc">Match</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Subclass of dict that overloads the + operator</span>
+<span class="sd">    to create a new dictionary combining the entries.</span>
+<span class="sd">    It fails when there are duplicate keys.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">other</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span>
+            <span class="c"># make sure the sets of keys are disjoint</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">overlap</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">()</span>
+
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">Match</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ret</span>
+
+<span class="c">#    def __repr__(self):</span>
+<span class="c">#        return &quot;Match({})&quot;.format(dict.__repr__(self))</span>
+<span class="c">#</span>
+<span class="c">#    def __str__(self):</span>
+<span class="c">#        return &quot;Match({})&quot;.format(dict.__str__(self))</span>
+
+    <span class="k">def</span> <span class="nf">__bool__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="n">__nonzero__</span> <span class="o">=</span> <span class="n">__bool__</span>
+
+
+</div>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="n">name_mode_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s">r&quot;^([A-Za-z]?[A-Za-z0-9]*)(_{0,3})$&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="wc"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.wc">[docs]</a><span class="k">def</span> <span class="nf">wc</span><span class="p">(</span><span class="n">name_mode</span> <span class="o">=</span> <span class="s">&quot;_&quot;</span><span class="p">,</span> <span class="n">head</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">condition</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function to create a Wildcard object.</span>
+
+<span class="sd">    :param name_mode: Combined name and mode (cf :py:class:`Wildcard`) argument.</span>
+
+<span class="sd">        * ``&quot;A&quot;`` -&gt; ``name=&quot;A&quot;, mode = Wildcard.single``</span>
+<span class="sd">        * ``&quot;A_&quot;`` -&gt; ``name=&quot;A&quot;, mode = Wildcard.single``</span>
+<span class="sd">        * ``&quot;B__&quot;`` -&gt; ``name=&quot;B&quot;, mode = Wildcard.one_or_more``</span>
+<span class="sd">        * ``&quot;B___&quot;`` -&gt; ``name=&quot;C&quot;, mode = Wildcard.zero_or_more``</span>
+
+<span class="sd">    :type name_mode: str</span>
+<span class="sd">    :param head: See Wildcard doc</span>
+<span class="sd">    :type head: tuple or ClassType or None</span>
+<span class="sd">    :param condition:  See Wildcard doc</span>
+<span class="sd">    :type condition: FunctionType or None</span>
+<span class="sd">    :return: A Wildcard object</span>
+<span class="sd">    :rtype: Wildcard</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">name_mode_pattern</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">name_mode</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">m</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">()</span>
+    <span class="n">name</span><span class="p">,</span> <span class="n">modelength</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">groups</span><span class="p">()</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">modelength</span><span class="p">)</span> <span class="ow">or</span> <span class="n">Wildcard</span><span class="o">.</span><span class="n">single</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">mode</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Wildcard</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span> <span class="p">,</span> <span class="n">head</span><span class="o">=</span><span class="n">head</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="n">condition</span><span class="p">)</span>
+
+
+<span class="c">########################################################################################################################</span>
+<span class="c">########################### CLASS DECORATORS TO ACHIEVE OPERAND PREPROCESSING ##########################################</span>
+<span class="c">########################################################################################################################</span>
+
+<span class="c">#noinspection PyUnresolvedReferences</span></div>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">izip</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span>  <span class="n">MethodType</span>
+
+<div class="viewcode-block" id="make_classmethod"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.make_classmethod">[docs]</a><span class="k">def</span> <span class="nf">make_classmethod</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">cls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Make a bound classmethod from an unbound method taking an additional first argument ``cls``</span>
+
+<span class="sd">    :param method: The unbound method</span>
+<span class="sd">    :type method: FunctionType</span>
+<span class="sd">    :param cls: The class to bind it to</span>
+<span class="sd">    :type cls: type</span>
+<span class="sd">    :return: Bound class method</span>
+<span class="sd">    :rtype: MethodType</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">MethodType</span><span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">cls</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="preprocess_create_with"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.preprocess_create_with">[docs]</a><span class="k">def</span> <span class="nf">preprocess_create_with</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This is a factory method that allows for adding argument pre-processing decorators the a class&#39;s ``create`` classmethod.</span>
+
+<span class="sd">    :param method: A decorating create classmethod ``f()`` with signature:</span>
+<span class="sd">            ``f(decorated_class, decorated_method, cls, *args)``</span>
+<span class="sd">    :type method: FunctionType</span>
+<span class="sd">    :return: A class decorator function that decorates the &#39;create&#39; classmethod of the decorated class.</span>
+<span class="sd">    :rtype: FunctionType</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">dcls</span><span class="p">):</span>
+        <span class="n">clsmtd</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="s">&quot;create&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">im_func</span>
+        <span class="k">def</span> <span class="nf">dclsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="n">dclsmtd</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+        <span class="n">dclsmtd</span><span class="o">.</span><span class="n">decorated</span> <span class="o">=</span> <span class="n">clsmtd</span>
+        <span class="n">dclsmtd</span><span class="o">.</span><span class="n">dcls</span> <span class="o">=</span> <span class="n">dcls</span>
+        <span class="n">dclsmtd</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">=</span> <span class="n">clsmtd</span><span class="o">.</span><span class="n">__doc__</span>
+
+        <span class="c"># store a list of all applied decorators as an attribute of the new create method&#39;s im_func.</span>
+        <span class="n">dclsmtd</span><span class="o">.</span><span class="n">decorators</span> <span class="o">=</span> <span class="p">(</span><span class="n">method</span><span class="p">,)</span> <span class="o">+</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">clsmtd</span><span class="p">,</span> <span class="s">&quot;decorators&quot;</span><span class="p">,</span> <span class="p">())</span>
+        <span class="n">dclsmtd</span><span class="o">.</span><span class="n">__name__</span> <span class="o">=</span> <span class="s">&quot;create&quot;</span>
+
+        <span class="n">nmtd</span> <span class="o">=</span> <span class="n">make_classmethod</span><span class="p">(</span><span class="n">dclsmtd</span><span class="p">,</span> <span class="n">dcls</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="s">&quot;create&quot;</span><span class="p">,</span> <span class="n">nmtd</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dcls</span>
+
+    <span class="c"># Copy docstring from method to class decorator</span>
+    <span class="n">decorator</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;</span>
+<span class="s">    {}</span>
+
+<span class="s">    Automatically generated class decorator based on the method ``qnet.algebra.abstract_algebra.{}()`` using</span>
+<span class="s">    :py:func:`preprocess_create_with`.</span>
+<span class="s">&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">__doc__</span><span class="p">,</span><span class="n">method</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">decorator</span>
+
+
+<span class="c">#noinspection PyUnusedLocal,PyDocstring</span></div>
+<span class="k">def</span> <span class="nf">_assoc_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Associatively expand out nested arguments of the flat class.</span>
+
+<span class="sd">        &gt;&gt;&gt; @flat</span>
+<span class="sd">        &gt;&gt;&gt; class Plus(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     pass</span>
+<span class="sd">        &gt;&gt;&gt; Plus.create(1,Plus(2,3))</span>
+<span class="sd">            Plus(1,2,3)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">nops</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(((</span><span class="n">o</span><span class="p">,)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span><span class="n">cls</span><span class="p">)</span> <span class="k">else</span> <span class="n">o</span><span class="o">.</span><span class="n">operands</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">),())</span>
+    <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">nops</span><span class="p">)</span>
+
+<span class="n">assoc</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">_assoc_mtd</span><span class="p">)</span>
+
+<span class="c">#noinspection PyUnusedLocal,PyDocstring</span>
+<span class="k">def</span> <span class="nf">_idem_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Remove duplicate arguments and order them via the cls&#39;s order_key key object/function.</span>
+<span class="sd">    E.g.</span>
+
+<span class="sd">        &gt;&gt;&gt; @idem</span>
+<span class="sd">        &gt;&gt;&gt; class Set(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     pass</span>
+<span class="sd">        &gt;&gt;&gt; Set.create(1,2,3,1,3)</span>
+<span class="sd">            Set(1,2,3)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">ops</span><span class="p">),</span> <span class="n">key</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">order_key</span><span class="p">))</span>
+
+<span class="n">idem</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">_idem_mtd</span><span class="p">)</span>
+
+<span class="c">#noinspection PyUnusedLocal,PyDocstring</span>
+<span class="k">def</span> <span class="nf">_orderless_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Re-order arguments via the class&#39;s ``order_key`` key object/function.</span>
+<span class="sd">    Use this for commutative operations:</span>
+<span class="sd">    E.g.</span>
+
+<span class="sd">        &gt;&gt;&gt; @orderless</span>
+<span class="sd">        &gt;&gt;&gt; class Times(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     pass</span>
+<span class="sd">        &gt;&gt;&gt; Times.create(2,1)</span>
+<span class="sd">            Times(1,2)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">key</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">order_key</span><span class="p">))</span>
+
+<span class="n">orderby</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">_orderless_mtd</span><span class="p">)</span>
+
+
+<span class="n">unequals</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">!=</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="c">#noinspection PyUnusedLocal,PyDocstring</span>
+<span class="k">def</span> <span class="nf">_filter_neutral_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Remove occurrences of a neutral element from the argument/operand list, if that list has at least two elements.</span>
+<span class="sd">    To use this, one must also specify a neutral element, which can be anything that allows for an equality check with each argument.</span>
+<span class="sd">    E.g.</span>
+
+<span class="sd">        &gt;&gt;&gt; @filter_neutral</span>
+<span class="sd">        &gt;&gt;&gt; class X(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     neutral_element = 1</span>
+<span class="sd">        &gt;&gt;&gt; X.create(2,1,3,1)</span>
+<span class="sd">            X(2,3)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">c_n</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">neutral_element</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">ops</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">c_n</span>
+    <span class="n">fops</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">unequals</span><span class="p">(</span><span class="n">c_n</span><span class="p">),</span> <span class="n">ops</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fops</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">fops</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">fops</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c"># the remaining operand is the single non-trivial one</span>
+        <span class="k">return</span> <span class="n">fops</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c"># the original list of operands consists only of neutral elements</span>
+        <span class="k">return</span> <span class="n">ops</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="n">filter_neutral</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">_filter_neutral_mtd</span><span class="p">)</span>
+
+
+<span class="n">CLS</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+<span class="n">DCLS</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="extended_isinstance"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.extended_isinstance">[docs]</a><span class="k">def</span> <span class="nf">extended_isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">class_info</span><span class="p">,</span> <span class="n">dcls</span><span class="p">,</span> <span class="n">cls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Like isinstance but with two extra arguments to allow for placeholder objects ``(DCLS, CLS)``</span>
+<span class="sd">    to stand for the class objects passed as extra arguments ``dcls``, ``cls``. This allows one to specify a self-referential</span>
+<span class="sd">    `signature` class attribute to allow for recursive Operation signatures.</span>
+<span class="sd">    E.g.</span>
+
+<span class="sd">        &gt;&gt;&gt; @check_signature</span>
+<span class="sd">        &gt;&gt;&gt; class X(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     signature = str, X</span>
+
+<span class="sd">    will yield an exception, because X within the class body refers to a class object that has not been defined yet.</span>
+<span class="sd">    Instead, one can do</span>
+
+<span class="sd">        &gt;&gt;&gt; @check_signature</span>
+<span class="sd">        &gt;&gt;&gt; class X(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     signature = str, CLS</span>
+
+<span class="sd">    to refer to the class of the object being instantiated (could be a subclass of ``X``), or</span>
+
+<span class="sd">        &gt;&gt;&gt; @check_signature</span>
+<span class="sd">        &gt;&gt;&gt; class X(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     signature = str, DCLS</span>
+
+<span class="sd">    to always refer to ``X`` itself and not a subclass.</span>
+
+<span class="sd">    :param obj: The instance</span>
+<span class="sd">    :type obj: object</span>
+<span class="sd">    :param class_info: A type, ``DCLS``, ``CLS``, or a tuple of these</span>
+<span class="sd">    :type class_info: type or tuple of type-objects</span>
+<span class="sd">    :param dcls: The (super-)class that the signature is defined for.</span>
+<span class="sd">    :type dcls: type</span>
+<span class="sd">    :param cls: The concrete (sub-)class whose instance is being initialized.</span>
+<span class="sd">    :type cls: type</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">class_info</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">extended_isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">cli</span><span class="p">,</span> <span class="n">dcls</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span> <span class="k">for</span> <span class="n">cli</span> <span class="ow">in</span> <span class="n">class_info</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">class_info</span> <span class="ow">is</span> <span class="n">CLS</span><span class="p">:</span>
+        <span class="c">#noinspection PyRedeclaration</span>
+        <span class="n">class_info</span> <span class="o">=</span> <span class="n">cls</span>
+    <span class="k">elif</span> <span class="n">class_info</span> <span class="ow">is</span> <span class="n">DCLS</span><span class="p">:</span>
+        <span class="c">#noinspection PyUnusedLocal</span>
+        <span class="n">class_info</span> <span class="o">=</span> <span class="n">dcls</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">class_info</span><span class="p">)</span>
+
+<span class="c">#noinspection PyDocstring</span></div>
+<span class="k">def</span> <span class="nf">_check_signature_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that the operands passed to the create classmethod of an Operation type conform to certain types.</span>
+<span class="sd">    For each allowed argument/operand, provide a tuple of types (or one of ``CLS, DCLS``, see extended_isinstance docs).</span>
+<span class="sd">    E.g.</span>
+
+<span class="sd">        &gt;&gt;&gt; @check_signature</span>
+<span class="sd">        &gt;&gt;&gt; class X(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     signature = str, (int, str)</span>
+<span class="sd">        &gt;&gt;&gt;</span>
+<span class="sd">        &gt;&gt;&gt; X.create(&quot;1&quot;, 2)</span>
+<span class="sd">            X(&quot;1&quot;, 2)</span>
+<span class="sd">        &gt;&gt;&gt; X.create(&quot;1&quot;, &quot;2&quot;)</span>
+<span class="sd">            X(&quot;1&quot;, &quot;2&quot;)</span>
+
+<span class="sd">    The following all raise :py:class:`WrongSignatureError` exception.</span>
+
+<span class="sd">        &gt;&gt;&gt; X.create(&quot;1&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; X.create(1, &quot;1&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; X.create(&quot;1&quot;, 2, 3)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sgn</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">signature</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">ops</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">sgn</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">WrongSignatureError</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">extended_isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">dcls</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">izip</span><span class="p">(</span><span class="n">ops</span><span class="p">,</span> <span class="n">sgn</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="n">WrongSignatureError</span><span class="p">(</span><span class="s">&quot;class: {}, operands: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cls</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">ops</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">)</span>
+
+<span class="n">check_signature</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">_check_signature_mtd</span><span class="p">)</span>
+
+
+<span class="c">#noinspection PyDocstring</span>
+<span class="k">def</span> <span class="nf">_check_signature_assoc_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Like :py:func:`check_signature` but for :py:func:`assoc`-decorated Operations. In this case the signature need only contain a single entry.</span>
+
+<span class="sd">        &gt;&gt;&gt; @assoc</span>
+<span class="sd">        &gt;&gt;&gt; @check_signature</span>
+<span class="sd">        &gt;&gt;&gt; class X(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     signature = str</span>
+<span class="sd">        &gt;&gt;&gt; X.create(&quot;hello&quot;, &quot;you&quot;)</span>
+<span class="sd">            X(&quot;hello&quot;, &quot;you&quot;)</span>
+
+<span class="sd">    The following then raises a :class:`WrongSignatureError` because the third argument is no string</span>
+
+<span class="sd">        &gt;&gt;&gt; X.create(&quot;hello&quot;, &quot;you&quot;, 2)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sgn</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">signature</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">extended_isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">sgn</span><span class="p">,</span> <span class="n">dcls</span><span class="p">,</span> <span class="n">cls</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">WrongSignatureError</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">)</span>
+<span class="n">check_signature_assoc</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">_check_signature_assoc_mtd</span><span class="p">)</span>
+
+<span class="c">#noinspection PyDocstring</span>
+<span class="k">def</span> <span class="nf">_match_replace_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Match and replace a full operand specification to a function that provides a replacement for the whole expression</span>
+<span class="sd">    or raises a :py:class:`CannotSimplify` exception.</span>
+<span class="sd">    E.g.</span>
+
+<span class="sd">    First define wildcards:</span>
+
+<span class="sd">        &gt;&gt;&gt; A = wc(&quot;A&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; A_float = wc(&quot;A&quot;, head = float)</span>
+
+
+<span class="sd">    Then an operation:</span>
+
+<span class="sd">        &gt;&gt;&gt; @match_replace</span>
+<span class="sd">        &gt;&gt;&gt; class Invert(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     _rules = []</span>
+
+<span class="sd">    Then some _rules:</span>
+
+<span class="sd">        &gt;&gt;&gt; Invert._rules += [</span>
+<span class="sd">        &gt;&gt;&gt;     ((Invert(A),), lambda A: A),</span>
+<span class="sd">        &gt;&gt;&gt;     ((A_float,), lambda A: 1./A),</span>
+<span class="sd">        &gt;&gt;&gt; ]</span>
+
+<span class="sd">    Check rule application:</span>
+
+<span class="sd">        &gt;&gt;&gt; Invert.create(&quot;hallo&quot;)              # matches no rule</span>
+<span class="sd">            Invert(&quot;hallo&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; Invert.create(Invert(&quot;hallo&quot;))      # matches first rule</span>
+<span class="sd">            &quot;hallo&quot;</span>
+<span class="sd">        &gt;&gt;&gt; Invert.create(.2)                   # matches second rule</span>
+<span class="sd">            5.</span>
+
+<span class="sd">    A pattern can also have the same wildcard appear twice:</span>
+
+<span class="sd">        &gt;&gt;&gt; @match_replace</span>
+<span class="sd">        &gt;&gt;&gt; class X(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     _rules = [</span>
+<span class="sd">        &gt;&gt;&gt;         ((A, A), lambda A: A),</span>
+<span class="sd">        &gt;&gt;&gt;     ]</span>
+
+<span class="sd">        &gt;&gt;&gt; X.create(1,2)</span>
+<span class="sd">            X(1,2)</span>
+
+<span class="sd">        &gt;&gt;&gt; X.create(1,1)</span>
+<span class="sd">            1</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">cls</span><span class="o">.</span><span class="n">_rules</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">PatternTuple</span><span class="p">(</span><span class="n">patterns</span><span class="p">),</span> <span class="n">OperandsTuple</span><span class="p">(</span><span class="n">ops</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">replacement</span><span class="p">(</span><span class="o">**</span><span class="n">m</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">CannotSimplify</span><span class="p">:</span>
+                <span class="k">continue</span>
+    <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">)</span>
+
+<span class="n">match_replace</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">_match_replace_mtd</span><span class="p">)</span>
+
+
+<span class="c">#noinspection PyDocstring</span>
+<span class="k">def</span> <span class="nf">_match_replace_binary_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Similar to :py:func:`match_replace`, but for arbitrary length operations, such that each two pairs of subsequent operands are matched pairwise.</span>
+
+<span class="sd">        &gt;&gt;&gt; A = wc(&quot;A&quot;)</span>
+
+<span class="sd">        &gt;&gt;&gt; @match_replace_binary</span>
+<span class="sd">        &gt;&gt;&gt; class FilterDupes(Operation):</span>
+<span class="sd">        &gt;&gt;&gt;     _rules = [</span>
+<span class="sd">        &gt;&gt;&gt;         ((A,A), lambda A: A),</span>
+<span class="sd">        &gt;&gt;&gt;     ]</span>
+
+<span class="sd">        &gt;&gt;&gt; FilterDupes.create(1,2,3,4)         # No subsequent duplicates present</span>
+<span class="sd">            FilterDupes(1,2,3,4)</span>
+
+<span class="sd">        &gt;&gt;&gt; FilterDupes.create(1,2,2,3,4)       # Some duplicates</span>
+<span class="sd">            FilterDupes(1,2,3,4)</span>
+
+<span class="sd">    Note that this only works for *subsequent* duplicate entries:</span>
+
+<span class="sd">        &gt;&gt;&gt; FilterDupes.create(1,2,3,2,4)       # Some duplicates, but not subsequent</span>
+<span class="sd">            FilterDupes(1,2,3,2,4)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_rules</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">_binary_rules</span>
+    <span class="n">j</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">ops</span><span class="p">):</span>
+        <span class="n">first</span><span class="p">,</span> <span class="n">second</span> <span class="o">=</span> <span class="n">ops</span><span class="p">[</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">ops</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">for</span> <span class="n">patterns</span><span class="p">,</span> <span class="n">replacement</span> <span class="ow">in</span> <span class="n">_rules</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">match</span><span class="p">(</span><span class="n">PatternTuple</span><span class="p">(</span><span class="n">patterns</span><span class="p">),</span> <span class="n">OperandsTuple</span><span class="p">((</span><span class="n">first</span><span class="p">,</span> <span class="n">second</span><span class="p">)))</span>
+            <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">r</span> <span class="o">=</span> <span class="n">replacement</span><span class="p">(</span><span class="o">**</span><span class="n">m</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">except</span> <span class="n">CannotSimplify</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+        <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="c"># if Operation is also &quot;assoc&quot;, then expand out the operands of a binary-simplified result</span>
+            <span class="k">if</span> <span class="n">_assoc_mtd</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">create</span><span class="o">.</span><span class="n">im_func</span><span class="p">,</span> <span class="s">&quot;decorators&quot;</span><span class="p">,())</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">cls</span><span class="p">):</span>
+                <span class="n">ops</span> <span class="o">=</span> <span class="n">ops</span><span class="p">[:</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">r</span><span class="o">.</span><span class="n">operands</span> <span class="o">+</span> <span class="n">ops</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ops</span> <span class="o">=</span> <span class="n">ops</span><span class="p">[:</span><span class="n">j</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">r</span><span class="p">,)</span> <span class="o">+</span> <span class="n">ops</span><span class="p">[</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">j</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">)</span>
+
+<span class="n">match_replace_binary</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">_match_replace_binary_mtd</span><span class="p">)</span>
+
+
+
+<div class="viewcode-block" id="singleton"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.singleton">[docs]</a><span class="k">def</span> <span class="nf">singleton</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Singleton class decorator. Turns a class object into a unique instance.</span>
+
+<span class="sd">    :param cls: Class to decorate</span>
+<span class="sd">    :type cls: type</span>
+<span class="sd">    :return: The singleton instance of that class</span>
+<span class="sd">    :rtype: cls</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">class</span> <span class="nc">S</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="n">__instance</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">(())</span>
+        <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__instance</span>
+
+    <span class="n">S</span><span class="o">.</span><span class="n">__name__</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span>
+    <span class="n">S</span><span class="o">.</span><span class="n">__instance</span> <span class="o">=</span> <span class="n">s</span> <span class="o">=</span> <span class="n">S</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">s</span>
+
+</div>
+<div class="viewcode-block" id="prod"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.abstract_algebra.prod">[docs]</a><span class="k">def</span> <span class="nf">prod</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Analog of the builtin `sum()` method.</span>
+<span class="sd">    :param sequence: Sequence of objects that support being multiplied to each other.</span>
+<span class="sd">    :type sequence: Any object that implements __mul__()</span>
+<span class="sd">    :param neutral: The initial return value, which is also returned for zero-length sequence arguments.</span>
+<span class="sd">    :type neutral: Any object that implements __mul__()</span>
+<span class="sd">    :return: The product of the elements of `sequence`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">reduce</span><span class="p">(</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">a</span> <span class="o">*</span> <span class="n">b</span><span class="p">,</span> <span class="n">sequence</span><span class="p">,</span> <span class="n">neutral</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

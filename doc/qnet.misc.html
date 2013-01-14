@@ -1,0 +1,320 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>misc Package &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="index.html" />
+    <link rel="up" title="The qnet API" href="qnet.html" />
+    <link rel="next" title="qhdl Package" href="qnet.qhdl.html" />
+    <link rel="prev" title="circuit_components Package" href="qnet.circuit_components.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="qnet.qhdl.html" title="qhdl Package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="qnet.circuit_components.html" title="circuit_components Package"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="qnet.html" accesskey="U">The <tt class="docutils literal docutils literal docutils literal docutils literal docutils literal"><span class="pre">qnet</span></tt> API</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">misc Package</a><ul>
+<li><a class="reference internal" href="#id1"><tt class="docutils literal"><span class="pre">misc</span></tt> Package</a></li>
+<li><a class="reference internal" href="#module-qnet.misc.circuit_visualization"><tt class="docutils literal"><span class="pre">circuit_visualization</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.misc.parse_circuit_strings"><tt class="docutils literal"><span class="pre">parse_circuit_strings</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.misc.parser"><tt class="docutils literal"><span class="pre">parser</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.misc.parser_QHDLParser_parsetab"><tt class="docutils literal"><span class="pre">parser_QHDLParser_parsetab</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.misc.parser__CircuitExpressionParser_parsetab"><tt class="docutils literal"><span class="pre">parser__CircuitExpressionParser_parsetab</span></tt> Module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="qnet.circuit_components.html"
+                        title="previous chapter">circuit_components Package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qnet.qhdl.html"
+                        title="next chapter">qhdl Package</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/qnet.misc.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="misc-package">
+<h1>misc Package<a class="headerlink" href="#misc-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2><tt class="xref py py-mod docutils literal"><span class="pre">misc</span></tt> Package<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-qnet.misc"></span></div>
+<div class="section" id="module-qnet.misc.circuit_visualization">
+<span id="circuit-visualization-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">circuit_visualization</span></tt> Module<a class="headerlink" href="#module-qnet.misc.circuit_visualization" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="qnet.misc.circuit_visualization.draw_circuit">
+<tt class="descclassname">qnet.misc.circuit_visualization.</tt><tt class="descname">draw_circuit</tt><big>(</big><em>circuit</em>, <em>filename</em>, <em>direction='lr'</em>, <em>hunit=4</em>, <em>vunit=-1.0</em>, <em>rhmargin=0.1</em>, <em>rvmargin=0.2</em>, <em>rpermutation_length=0.4</em>, <em>draw_boxes=True</em>, <em>permutation_arrows=False</em><big>)</big><a class="reference internal" href="_modules/qnet/misc/circuit_visualization.html#draw_circuit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.misc.circuit_visualization.draw_circuit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a graphic representation of circuit and store them in a file.
+The graphics format is determined from the file extension.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>circuit</strong> (<em>ca.Circuit</em>) &#8211; The circuit expression</li>
+<li><strong>filename</strong> (<em>str</em>) &#8211; A filepath to store the output image under. The file name suffix determines the output graphics format</li>
+<li><strong>direction</strong> &#8211; The horizontal direction of laying out series products. One of <tt class="docutils literal"><span class="pre">'lr'</span></tt> and <tt class="docutils literal"><span class="pre">'rl'</span></tt>. This option overrides a negative value for <tt class="docutils literal"><span class="pre">hunit</span></tt>,
+default = <tt class="docutils literal"><span class="pre">'lr'</span></tt></li>
+<li><strong>hunit</strong> (<em>float</em>) &#8211; The horizontal length unit, default = <tt class="docutils literal"><span class="pre">HUNIT</span></tt></li>
+<li><strong>vunit</strong> (<em>float</em>) &#8211; The vertical length unit, default = <tt class="docutils literal"><span class="pre">VUNIT</span></tt></li>
+<li><strong>rhmargin</strong> (<em>float</em>) &#8211; relative horizontal margin, default = <tt class="docutils literal"><span class="pre">RHMARGIN</span></tt></li>
+<li><strong>rvmargin</strong> (<em>float</em>) &#8211; relative vertical margin, default = <tt class="docutils literal"><span class="pre">RVMARGIN</span></tt></li>
+<li><strong>rpermutation_length</strong> (<em>float</em>) &#8211; the relative length of a permutation circuit, default = <tt class="docutils literal"><span class="pre">RPLENGTH</span></tt></li>
+<li><strong>draw_boxes</strong> (<em>bool</em>) &#8211; Whether to draw indicator boxes to denote subexpressions (Concatenation, SeriesProduct, etc.), default = <tt class="docutils literal"><span class="pre">True</span></tt></li>
+<li><strong>permutation_arrows</strong> (<em>bool</em>) &#8211; Whether to draw arrows within the permutation visualization, default = <tt class="docutils literal"><span class="pre">False</span></tt></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><tt class="docutils literal"><span class="pre">True</span></tt> if printing was successful, <tt class="docutils literal"><span class="pre">False</span></tt> if not.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">bool</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qnet.misc.circuit_visualization.draw_circuit_canvas">
+<tt class="descclassname">qnet.misc.circuit_visualization.</tt><tt class="descname">draw_circuit_canvas</tt><big>(</big><em>circuit</em>, <em>hunit=4</em>, <em>vunit=-1.0</em>, <em>rhmargin=0.1</em>, <em>rvmargin=0.2</em>, <em>rpermutation_length=0.4</em>, <em>draw_boxes=True</em>, <em>permutation_arrows=False</em><big>)</big><a class="reference internal" href="_modules/qnet/misc/circuit_visualization.html#draw_circuit_canvas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.misc.circuit_visualization.draw_circuit_canvas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a PyX graphical representation of a circuit expression object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>circuit</strong> (<em>ca.Circuit</em>) &#8211; The circuit expression</li>
+<li><strong>hunit</strong> (<em>float</em>) &#8211; The horizontal length unit, default = <tt class="docutils literal"><span class="pre">HUNIT</span></tt></li>
+<li><strong>vunit</strong> (<em>float</em>) &#8211; The vertical length unit, default = <tt class="docutils literal"><span class="pre">VUNIT</span></tt></li>
+<li><strong>rhmargin</strong> (<em>float</em>) &#8211; relative horizontal margin, default = <tt class="docutils literal"><span class="pre">RHMARGIN</span></tt></li>
+<li><strong>rvmargin</strong> (<em>float</em>) &#8211; relative vertical margin, default = <tt class="docutils literal"><span class="pre">RVMARGIN</span></tt></li>
+<li><strong>rpermutation_length</strong> (<em>float</em>) &#8211; the relative length of a permutation circuit, default = <tt class="docutils literal"><span class="pre">RPLENGTH</span></tt></li>
+<li><strong>draw_boxes</strong> (<em>bool</em>) &#8211; Whether to draw indicator boxes to denote subexpressions (Concatenation, SeriesProduct, etc.), default = <tt class="docutils literal"><span class="pre">True</span></tt></li>
+<li><strong>permutation_arrows</strong> (<em>bool</em>) &#8211; Whether to draw arrows within the permutation visualization, default = <tt class="docutils literal"><span class="pre">False</span></tt></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A PyX canvas object that can be further manipulated or printed to an output image.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">pyx.canvas.canvas</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.misc.parse_circuit_strings">
+<span id="parse-circuit-strings-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">parse_circuit_strings</span></tt> Module<a class="headerlink" href="#module-qnet.misc.parse_circuit_strings" title="Permalink to this headline">¶</a></h2>
+<p>Parse strings into Circuit expressions. See documentation for <a class="reference internal" href="#qnet.misc.parse_circuit_strings.parse_circuit_strings" title="qnet.misc.parse_circuit_strings.parse_circuit_strings"><tt class="xref py py-func docutils literal"><span class="pre">parse_circuit_strings()</span></tt></a></p>
+<dl class="exception">
+<dt id="qnet.misc.parse_circuit_strings.ParseCircuitStringError">
+<em class="property">exception </em><tt class="descclassname">qnet.misc.parse_circuit_strings.</tt><tt class="descname">ParseCircuitStringError</tt><a class="reference internal" href="_modules/qnet/misc/parse_circuit_strings.html#ParseCircuitStringError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.misc.parse_circuit_strings.ParseCircuitStringError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.misc.parser.ParsingError" title="qnet.misc.parser.ParsingError"><tt class="xref py py-class docutils literal"><span class="pre">qnet.misc.parser.ParsingError</span></tt></a></p>
+<p>Raised when an error is encountered while parsing a circuit expression string.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="qnet.misc.parse_circuit_strings.parse_circuit_strings">
+<tt class="descclassname">qnet.misc.parse_circuit_strings.</tt><tt class="descname">parse_circuit_strings</tt><big>(</big><em>circuit_string</em><big>)</big><a class="reference internal" href="_modules/qnet/misc/parse_circuit_strings.html#parse_circuit_strings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.misc.parse_circuit_strings.parse_circuit_strings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse strings for symbolic Circuit expressions into actual expression objects.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>circuit_string</strong> &#8211; A string containing one or more circuit expressions in the special syntax described below.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A list of all parsed expressions if there are more than one, otherwise just the single result.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list or ca.Circuit</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Examples:</dt>
+<dd><ol class="first last arabic">
+<li><p class="first">A circuit symbol can be instantiated via:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_circuit_strings</span><span class="p">(</span><span class="s">&#39;a_nice_name(3)&#39;</span><span class="p">)</span>
+<span class="go">    CircuitSymbol(&#39;a_nice_name&#39;, 3)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">A concatenation can be instantiated by using the infix &#8216;+&#8217; operator</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_circuit_strings</span><span class="p">(</span><span class="s">&#39;a(3) + b(5)&#39;</span><span class="p">)</span>
+<span class="go">    Concatenation(CircuitSymbol(&#39;a&#39;, 3), CircuitSymbol(&#39;b&#39;, 5))</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">A series product can be instantiated by using the infix &#8216;&lt;&lt;&#8217; operator</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_circuit_strings</span><span class="p">(</span><span class="s">&#39;a(3) &lt;&lt; b(3)&#39;</span><span class="p">)</span>
+<span class="go">    SeriesProduct(CircuitSymbol(&#39;a&#39;, 3), CircuitSymbol(&#39;b&#39;, 3))</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Circuit identity objects for <tt class="docutils literal"><span class="pre">n</span></tt> channels can be instantiated via <tt class="docutils literal"><span class="pre">cid(n)</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_circuit_strings</span><span class="p">(</span><span class="s">&#39;(a(3) + cid(1)) &lt;&lt; b(4)&#39;</span><span class="p">)</span>
+<span class="go">    SeriesProduct(Concatenation(CircuitSymbol(&#39;a&#39;, 3), CIdentity()), CircuitSymbol(&#39;b&#39;, 3))</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Feedback operations are specified as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_circuit_strings</span><span class="p">(</span><span class="s">&#39;[a(5)]_(1-&gt;2)&#39;</span><span class="p">)</span>
+<span class="go">    Feedback(CircuitSymbol(&#39;a&#39;, 5), 1, 2)</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Permutation objects are specified as</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_circuit_strings</span><span class="p">(</span><span class="s">&#39;P_sigma(1,2,3,0)&#39;</span><span class="p">)</span>
+<span class="go">    CPermutation((1,2,3,0))</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.misc.parser">
+<span id="parser-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">parser</span></tt> Module<a class="headerlink" href="#module-qnet.misc.parser" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="qnet.misc.parser.Parser">
+<em class="property">class </em><tt class="descclassname">qnet.misc.parser.</tt><tt class="descname">Parser</tt><big>(</big><em>**kw</em><big>)</big><a class="reference internal" href="_modules/qnet/misc/parser.html#Parser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.misc.parser.Parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">object</span></tt></p>
+<p>Base class for a lexer/parser that has the _rules defined as methods</p>
+<dl class="method">
+<dt id="qnet.misc.parser.Parser.parse">
+<tt class="descname">parse</tt><big>(</big><em>inputstring</em><big>)</big><a class="reference internal" href="_modules/qnet/misc/parser.html#Parser.parse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.misc.parser.Parser.parse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="qnet.misc.parser.Parser.parse_file">
+<tt class="descname">parse_file</tt><big>(</big><em>filename</em><big>)</big><a class="reference internal" href="_modules/qnet/misc/parser.html#Parser.parse_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.misc.parser.Parser.parse_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.misc.parser.Parser.precedence">
+<tt class="descname">precedence</tt><em class="property"> = ()</em><a class="headerlink" href="#qnet.misc.parser.Parser.precedence" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.misc.parser.Parser.tokens">
+<tt class="descname">tokens</tt><em class="property"> = ()</em><a class="headerlink" href="#qnet.misc.parser.Parser.tokens" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="qnet.misc.parser.ParsingError">
+<em class="property">exception </em><tt class="descclassname">qnet.misc.parser.</tt><tt class="descname">ParsingError</tt><a class="reference internal" href="_modules/qnet/misc/parser.html#ParsingError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.misc.parser.ParsingError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">exceptions.SyntaxError</span></tt></p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.misc.parser_QHDLParser_parsetab">
+<span id="parser-qhdlparser-parsetab-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">parser_QHDLParser_parsetab</span></tt> Module<a class="headerlink" href="#module-qnet.misc.parser_QHDLParser_parsetab" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-qnet.misc.parser__CircuitExpressionParser_parsetab">
+<span id="parser-circuitexpressionparser-parsetab-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">parser__CircuitExpressionParser_parsetab</span></tt> Module<a class="headerlink" href="#module-qnet.misc.parser__CircuitExpressionParser_parsetab" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="qnet.qhdl.html" title="qhdl Package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="qnet.circuit_components.html" title="circuit_components Package"
+             >previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="qnet.html" >The <tt class="docutils literal docutils literal docutils literal docutils literal docutils literal"><span class="pre">qnet</span></tt> API</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

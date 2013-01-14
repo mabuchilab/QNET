@@ -1,0 +1,516 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Netlisting &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="index.html" />
+    <link rel="next" title="Parsing QHDL" href="parsing_qhdl.html" />
+    <link rel="prev" title="Schematic Capture" href="schematic_capture.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="parsing_qhdl.html" title="Parsing QHDL"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="schematic_capture.html" title="Schematic Capture"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Netlisting</a><ul>
+<li><a class="reference internal" href="#using-gnetlist">Using <tt class="docutils literal"><span class="pre">gnetlist</span></tt></a></li>
+<li><a class="reference internal" href="#the-qhdl-syntax">The QHDL Syntax</a><ul>
+<li><a class="reference internal" href="#qhdl-example-files">QHDL-Example files:</a><ul>
+<li><a class="reference internal" href="#a-mach-zehnder-circuit">A Mach-Zehnder-circuit</a></li>
+<li><a class="reference internal" href="#a-pseudo-nand-gate">A Pseudo-NAND-gate</a></li>
+<li><a class="reference internal" href="#a-pseudo-nand-latch">A Pseudo-NAND-Latch</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="schematic_capture.html"
+                        title="previous chapter">Schematic Capture</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="parsing_qhdl.html"
+                        title="next chapter">Parsing QHDL</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/netlisting.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="netlisting">
+<span id="id1"></span><h1>Netlisting<a class="headerlink" href="#netlisting" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="using-gnetlist">
+<h2>Using <tt class="docutils literal"><span class="pre">gnetlist</span></tt><a class="headerlink" href="#using-gnetlist" title="Permalink to this headline">¶</a></h2>
+<p>Given a well-formed <tt class="docutils literal"><span class="pre">gschem</span></tt> circuit specification file we can use the <tt class="docutils literal"><span class="pre">gnetlist</span></tt> tool
+that comes with the <tt class="docutils literal"><span class="pre">gEDA</span></tt> suite to export it to a QHDL-file.</p>
+<p>Using the command-line, if the <tt class="docutils literal"><span class="pre">.sch</span></tt> schematic file is located at the path <tt class="docutils literal"><span class="pre">my_dir/my_schematic.sch</span></tt>,
+and you wish to produce a QHDL file at the location <tt class="docutils literal"><span class="pre">my_other_dir/my_netlist.qhdl</span></tt>, run the following command:</p>
+<div class="highlight-python"><pre>gnetlist -g qhdl my_dir/my_schematic.sch -o my_other_dir/my_netlist.qhdl</pre>
+</div>
+<p>It is generally a very good idea to inspect the produced QHDL file code and verify that it looks like it
+should before trying to compile it into a python <tt class="docutils literal"><span class="pre">circuit_component</span></tt> library file.</p>
+</div>
+<div class="section" id="the-qhdl-syntax">
+<span id="qhdl-syntax"></span><h2>The QHDL Syntax<a class="headerlink" href="#the-qhdl-syntax" title="Permalink to this headline">¶</a></h2>
+<p>A QHDL file consists of two basic parts:</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first">An <tt class="docutils literal"><span class="pre">entity</span></tt> declaration, which should be thought of as defining the external interface of the specified circuit.
+I.e., it defines global input and output ports as well as parameters for the overall model.</p>
+</li>
+<li><p class="first">A corresponding <tt class="docutils literal"><span class="pre">architecture</span></tt> declaration, that, in turn consists of two parts:</p>
+<blockquote>
+<div><ol class="upperalpha">
+<li><p class="first">The architecture head defines what <em>types</em> of components can appear in the circuit. I.e., for each <tt class="docutils literal"><span class="pre">component</span></tt>
+declaration in the architecture head, there can exist multiple <em>instances</em> of that component type in the circuit.
+The head also defines the internal <tt class="docutils literal"><span class="pre">signal</span></tt> lines of the circuit.</p>
+</li>
+<li><p class="first">The architecture body declares what instances of which component type exists in the circuit, how its ports
+are mapped to the internal signals or entity ports, and how its internal parameters relate to the entity parameters.
+In QHDL, each signal may only connect exactly two ports, where one of three cases is true:</p>
+<blockquote>
+<div><ol class="upperroman simple">
+<li>It connects an entity input with a component instance input</li>
+<li>It connects an entity output with a component instance output</li>
+<li>It connects a component output with a component input</li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+</li>
+</ol>
+</div></blockquote>
+<p>Before showing some examples of QHDL files, we present the general QHDL syntax in somewhat abstract form.
+Here, square brackets <tt class="docutils literal"><span class="pre">[optional]</span></tt> denote optional keywords/syntax and the ellipses <tt class="docutils literal"><span class="pre">...</span></tt> denote repetition:</p>
+<div class="highlight-qhdl"><div class="highlight"><pre><span class="c1">-- this is a comment</span>
+
+<span class="c1">-- entity definition</span>
+<span class="c1">-- this serves as the external interface to the circuit, specifying inputs and outputs</span>
+<span class="c1">-- as well as parameters of the model</span>
+<span class="k">entity</span> <span class="nc">my_entity</span> <span class="k">is</span>
+    <span class="p">[</span><span class="k">generic</span> <span class="p">(</span> <span class="n">var1</span><span class="o">:</span> <span class="n">generic_type</span> <span class="p">[</span><span class="o">:=</span> <span class="n">default_var1</span><span class="p">]]</span> <span class="p">[;</span> <span class="n">var2</span><span class="o">:</span> <span class="n">generic_type</span> <span class="p">[...]</span> <span class="p">...]);]</span>
+    <span class="k">port</span> <span class="p">(</span><span class="n">i_1</span><span class="p">,</span><span class="n">i_2</span><span class="p">,...</span><span class="n">i_n</span><span class="o">:</span><span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span> <span class="n">o_1</span><span class="p">,</span><span class="n">o_2</span><span class="p">,...</span><span class="n">o_n</span><span class="o">:</span><span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+<span class="k">end</span> <span class="k">entity</span> <span class="nc">my_entity</span><span class="p">;</span>
+
+<span class="c1">-- architecture definition</span>
+<span class="c1">-- this is the actual implementation of the entity in terms of subcomponents</span>
+<span class="k">architecture</span> <span class="nc">my_architecture</span> <span class="k">of</span> <span class="nc">my_entity</span> <span class="k">is</span>
+    <span class="c1">-- architecture head</span>
+    <span class="c1">-- each type of subcomponent, i.e. its ports and its parameters are defined here similarly</span>
+    <span class="c1">-- to the entity definition above</span>
+    <span class="k">component</span> <span class="nc">my_component</span>
+        <span class="p">[</span><span class="k">generic</span> <span class="p">(</span> <span class="n">var3</span><span class="o">:</span> <span class="n">generic_type</span> <span class="p">[</span><span class="o">:=</span> <span class="n">default_var3</span><span class="p">]]</span> <span class="p">[;</span> <span class="n">var4</span><span class="o">:</span> <span class="n">generic_type</span> <span class="p">[...]</span> <span class="p">...]);]</span>
+        <span class="k">port</span> <span class="p">(</span><span class="n">p1</span><span class="p">,</span><span class="n">p2</span><span class="p">,...</span><span class="n">pm</span><span class="o">:</span><span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span> <span class="n">q1</span><span class="p">,</span><span class="n">q2</span><span class="p">,...</span><span class="n">qm</span><span class="o">:</span><span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">end</span> <span class="k">component</span> <span class="nc">my_component</span><span class="p">;</span>
+
+    <span class="p">[</span><span class="k">component</span> <span class="nc">my_second_component</span>
+        <span class="p">[</span><span class="k">generic</span> <span class="p">(</span> <span class="n">var5</span><span class="o">:</span> <span class="n">generic_type</span> <span class="p">[</span><span class="o">:=</span> <span class="n">default_var5</span><span class="p">]]</span> <span class="p">[;</span> <span class="n">var6</span><span class="o">:</span> <span class="n">generic_type</span> <span class="p">[...]</span> <span class="p">...]);]</span>
+        <span class="k">port</span> <span class="p">(</span><span class="n">p1</span><span class="p">,</span><span class="n">p2</span><span class="p">,...</span><span class="n">pr</span><span class="o">:</span><span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span> <span class="n">q1</span><span class="p">,</span><span class="n">q2</span><span class="p">,...</span><span class="n">qr</span><span class="o">:</span><span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+
+    <span class="k">end</span> <span class="k">component</span> <span class="nc">my_second_component</span><span class="p">;</span>
+
+    <span class="p">...</span>
+
+    <span class="p">]</span>
+
+    <span class="c1">-- internal signals to connect component instances</span>
+    <span class="p">[</span><span class="k">signal</span> <span class="n">s_1</span><span class="p">,</span><span class="n">s_2</span><span class="p">,</span><span class="n">s_3</span><span class="p">,...</span><span class="n">s_m</span> <span class="n">fieldmode</span><span class="p">;]</span>
+
+
+
+<span class="k">begin</span>
+    <span class="c1">-- architecture body</span>
+    <span class="c1">-- here the actual component instances are defined and their ports are mapped to signals</span>
+    <span class="c1">-- or to global (i.e. entity-) ports</span>
+    <span class="c1">-- furthermore, global (entity-) parameters are mapped to component instance parameters.</span>
+
+    <span class="n">COMPONENT_INSTANCE_ID1</span><span class="o">:</span> <span class="n">my_component</span>
+        <span class="p">[</span><span class="k">generic</span> <span class="k">map</span><span class="p">(</span><span class="n">var1</span> <span class="o">=&gt;</span> <span class="n">var3</span><span class="p">,</span> <span class="n">var1</span> <span class="o">=&gt;</span> <span class="n">var4</span><span class="p">);]</span>
+        <span class="k">port</span> <span class="k">map</span> <span class="p">(</span><span class="n">i_1</span><span class="p">,</span> <span class="n">i_2</span><span class="p">,</span> <span class="p">...</span> <span class="n">i_m</span><span class="p">,</span> <span class="n">s_1</span><span class="p">,</span> <span class="n">s_2</span><span class="p">,</span> <span class="p">...</span><span class="n">s_m</span><span class="p">);</span>
+
+    <span class="p">[</span><span class="n">COMPONENT_INSTANCE_ID2</span><span class="o">:</span> <span class="n">my_component</span>
+        <span class="p">[</span><span class="k">generic</span> <span class="k">map</span><span class="p">(</span><span class="n">var1</span> <span class="o">=&gt;</span> <span class="n">var3</span><span class="p">,</span> <span class="n">var1</span> <span class="o">=&gt;</span> <span class="n">var4</span><span class="p">);]</span>
+        <span class="k">port</span> <span class="k">map</span> <span class="p">(</span><span class="n">s_1</span><span class="p">,</span> <span class="n">s_2</span><span class="p">,</span> <span class="p">...</span> <span class="n">s_m</span><span class="p">,</span> <span class="n">o_1</span><span class="p">,</span> <span class="n">o_2</span><span class="p">,</span> <span class="p">...</span><span class="n">o_m</span><span class="p">);</span>
+
+    <span class="n">COMPONENT_INSTANCE_ID3</span><span class="o">:</span> <span class="n">my_second_component</span>
+        <span class="p">[</span><span class="k">generic</span> <span class="k">map</span> <span class="p">(...);]</span>
+        <span class="k">port</span> <span class="k">map</span> <span class="p">(...);</span>
+    <span class="p">...</span>
+        <span class="p">]</span>
+
+ <span class="k">end</span> <span class="k">architecture</span> <span class="nc">my_architecture</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>where <tt class="docutils literal"><span class="pre">generic_type</span></tt> is one of <tt class="docutils literal"><span class="pre">int</span></tt>, <tt class="docutils literal"><span class="pre">real</span></tt>, or <tt class="docutils literal"><span class="pre">complex</span></tt>.</p>
+<div class="section" id="qhdl-example-files">
+<h3>QHDL-Example files:<a class="headerlink" href="#qhdl-example-files" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="a-mach-zehnder-circuit">
+<h4>A Mach-Zehnder-circuit<a class="headerlink" href="#a-mach-zehnder-circuit" title="Permalink to this headline">¶</a></h4>
+<p>This toy-circuit realizes a Mach-Zehnder interferometer.</p>
+<div class="figure">
+<img alt="_images/MachZehnder.png" src="_images/MachZehnder.png" style="width: 800px;" />
+</div>
+<div class="highlight-qhdl"><div class="highlight"><pre><span class="c1">-- Structural QHDL generated by gnetlist</span>
+<span class="c1">-- Entity declaration</span>
+
+<span class="k">ENTITY</span> <span class="nc">MachZehnder</span> <span class="k">IS</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">alpha</span> <span class="o">:</span> <span class="n">complex</span><span class="p">;</span>
+        <span class="n">phi</span> <span class="o">:</span> <span class="n">real</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">a</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">b</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">c</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">d</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+<span class="k">END</span> <span class="nc">MachZehnder</span><span class="p">;</span>
+
+
+<span class="c1">-- Secondary unit</span>
+<span class="k">ARCHITECTURE</span> <span class="nc">netlist</span> <span class="k">OF</span> <span class="nc">MachZehnder</span> <span class="k">IS</span>
+    <span class="k">COMPONENT</span> <span class="nc">Phase</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">phi</span> <span class="o">:</span> <span class="n">real</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">COMPONENT</span> <span class="p">;</span>
+
+    <span class="k">COMPONENT</span> <span class="nc">Beamsplitter</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">theta</span> <span class="o">:</span> <span class="n">real</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">7853981633974483</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">In2</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out2</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">COMPONENT</span> <span class="p">;</span>
+
+    <span class="k">COMPONENT</span> <span class="nc">Displace</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">alpha</span> <span class="o">:</span> <span class="n">complex</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">VIn</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">COMPONENT</span> <span class="p">;</span>
+
+    <span class="k">SIGNAL</span> <span class="n">B12B2</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">W2B1</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">P2B2</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">B12P</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net4</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net3</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net2</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net1</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="c1">-- Architecture statement part</span>
+    <span class="n">W</span> <span class="o">:</span> <span class="n">Displace</span>
+    <span class="k">GENERIC</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">alpha</span> <span class="o">=&gt;</span> <span class="n">alpha</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">VIn</span> <span class="o">=&gt;</span> <span class="n">unnamed_net1</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">W2B1</span><span class="p">);</span>
+
+    <span class="n">B2</span> <span class="o">:</span> <span class="n">Beamsplitter</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">=&gt;</span> <span class="n">P2B2</span><span class="p">,</span>
+        <span class="n">In2</span> <span class="o">=&gt;</span> <span class="n">B12B2</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net4</span><span class="p">,</span>
+        <span class="n">Out2</span> <span class="o">=&gt;</span> <span class="n">unnamed_net3</span><span class="p">);</span>
+
+    <span class="n">B1</span> <span class="o">:</span> <span class="n">Beamsplitter</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">=&gt;</span> <span class="n">W2B1</span><span class="p">,</span>
+        <span class="n">In2</span> <span class="o">=&gt;</span> <span class="n">unnamed_net2</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">B12B2</span><span class="p">,</span>
+        <span class="n">Out2</span> <span class="o">=&gt;</span> <span class="n">B12P</span><span class="p">);</span>
+
+    <span class="n">P</span> <span class="o">:</span> <span class="n">Phase</span>
+    <span class="k">GENERIC</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">phi</span> <span class="o">=&gt;</span> <span class="n">phi</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">=&gt;</span> <span class="n">B12P</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">P2B2</span><span class="p">);</span>
+
+<span class="c1">-- Signal assignment part</span>
+<span class="n">unnamed_net2</span> <span class="o">&lt;=</span> <span class="n">b</span><span class="p">;</span>
+<span class="n">unnamed_net1</span> <span class="o">&lt;=</span> <span class="n">a</span><span class="p">;</span>
+<span class="n">d</span> <span class="o">&lt;=</span> <span class="n">unnamed_net4</span><span class="p">;</span>
+<span class="n">c</span> <span class="o">&lt;=</span> <span class="n">unnamed_net3</span><span class="p">;</span>
+<span class="k">END</span> <span class="nc">netlist</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="a-pseudo-nand-gate">
+<h4>A Pseudo-NAND-gate<a class="headerlink" href="#a-pseudo-nand-gate" title="Permalink to this headline">¶</a></h4>
+<p>This circuit consists of a Kerr-nonlinear cavity, a few beamsplitters and a bias input amplitude to realize a NAND-gate for the inputs A and B.
+For details see <a class="reference internal" href="references.html#mabuchi11">[Mabuchi11]</a>.</p>
+<div class="figure">
+<img alt="_images/PseudoNAND.png" src="_images/PseudoNAND.png" style="width: 800px;" />
+<p class="caption">The <tt class="docutils literal"><span class="pre">gschem</span></tt> schematic from which the QHDL file below was automatically created.</p>
+</div>
+<div class="highlight-qhdl"><div class="highlight"><pre><span class="c1">-- Structural QHDL generated by gnetlist</span>
+<span class="c1">-- Entity declaration</span>
+
+<span class="k">ENTITY</span> <span class="nc">PseudoNAND</span> <span class="k">IS</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">Delta</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+        <span class="n">chi</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+        <span class="n">kappa</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+        <span class="n">phi</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+        <span class="n">theta</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+        <span class="n">beta</span> <span class="o">:</span> <span class="n">complex</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">A</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">B</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">VIn1</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">VIn2</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">UOut1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">UOut2</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">NAND_AB</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">OUT2</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+<span class="k">END</span> <span class="nc">PseudoNAND</span><span class="p">;</span>
+
+
+<span class="c1">-- Secondary unit</span>
+<span class="k">ARCHITECTURE</span> <span class="nc">netlist</span> <span class="k">OF</span> <span class="nc">PseudoNAND</span> <span class="k">IS</span>
+    <span class="k">COMPONENT</span> <span class="nc">KerrCavity</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">Delta</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+        <span class="n">chi</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+        <span class="n">kappa_1</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+        <span class="n">kappa_2</span> <span class="o">:</span> <span class="n">real</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">In2</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out2</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">COMPONENT</span> <span class="p">;</span>
+
+    <span class="k">COMPONENT</span> <span class="nc">Phase</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">phi</span> <span class="o">:</span> <span class="n">real</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">COMPONENT</span> <span class="p">;</span>
+
+    <span class="k">COMPONENT</span> <span class="nc">Beamsplitter</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">theta</span> <span class="o">:</span> <span class="n">real</span> <span class="o">:=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">7853981633974483</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">In2</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out2</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">COMPONENT</span> <span class="p">;</span>
+
+    <span class="k">COMPONENT</span> <span class="nc">Displace</span>
+    <span class="k">GENERIC</span> <span class="p">(</span>
+        <span class="n">alpha</span> <span class="o">:</span> <span class="n">complex</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="p">(</span>
+        <span class="n">VacIn</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+        <span class="n">Out1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">END</span> <span class="k">COMPONENT</span> <span class="p">;</span>
+
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net11</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net10</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net9</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net8</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net7</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net6</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net5</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net4</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net3</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net2</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">unnamed_net1</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+    <span class="k">SIGNAL</span> <span class="n">w</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="c1">-- Architecture statement part</span>
+    <span class="n">W_beta</span> <span class="o">:</span> <span class="n">Displace</span>
+    <span class="k">GENERIC</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">alpha</span> <span class="o">=&gt;</span> <span class="n">beta</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">VacIn</span> <span class="o">=&gt;</span> <span class="n">unnamed_net6</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net11</span><span class="p">);</span>
+
+    <span class="n">BS2</span> <span class="o">:</span> <span class="n">Beamsplitter</span>
+    <span class="k">GENERIC</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">theta</span> <span class="o">=&gt;</span> <span class="n">theta</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net11</span><span class="p">,</span>
+        <span class="n">In2</span> <span class="o">=&gt;</span> <span class="n">unnamed_net3</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net10</span><span class="p">,</span>
+        <span class="n">Out2</span> <span class="o">=&gt;</span> <span class="n">unnamed_net8</span><span class="p">);</span>
+
+    <span class="n">BS1</span> <span class="o">:</span> <span class="n">Beamsplitter</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net4</span><span class="p">,</span>
+        <span class="n">In2</span> <span class="o">=&gt;</span> <span class="n">unnamed_net5</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net7</span><span class="p">,</span>
+        <span class="n">Out2</span> <span class="o">=&gt;</span> <span class="n">w</span><span class="p">);</span>
+
+    <span class="n">P</span> <span class="o">:</span> <span class="n">Phase</span>
+    <span class="k">GENERIC</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">phi</span> <span class="o">=&gt;</span> <span class="n">phi</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net10</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net9</span><span class="p">);</span>
+
+    <span class="n">K</span> <span class="o">:</span> <span class="n">KerrCavity</span>
+    <span class="k">GENERIC</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">Delta</span> <span class="o">=&gt;</span> <span class="n">Delta</span><span class="p">,</span>
+        <span class="n">chi</span> <span class="o">=&gt;</span> <span class="n">chi</span><span class="p">,</span>
+        <span class="n">kappa_1</span> <span class="o">=&gt;</span> <span class="n">kappa</span><span class="p">,</span>
+        <span class="n">kappa_2</span> <span class="o">=&gt;</span> <span class="n">kappa</span><span class="p">);</span>
+    <span class="k">PORT</span> <span class="k">MAP</span> <span class="p">(</span>
+        <span class="n">In1</span> <span class="o">=&gt;</span> <span class="n">w</span><span class="p">,</span>
+        <span class="n">Out1</span> <span class="o">=&gt;</span> <span class="n">unnamed_net1</span><span class="p">,</span>
+        <span class="n">In2</span> <span class="o">=&gt;</span> <span class="n">unnamed_net2</span><span class="p">,</span>
+        <span class="n">Out2</span> <span class="o">=&gt;</span> <span class="n">unnamed_net3</span><span class="p">);</span>
+
+<span class="c1">-- Signal assignment part</span>
+<span class="n">unnamed_net6</span> <span class="o">&lt;=</span> <span class="n">VIn1</span><span class="p">;</span>
+<span class="n">unnamed_net2</span> <span class="o">&lt;=</span> <span class="n">VIn2</span><span class="p">;</span>
+<span class="n">unnamed_net5</span> <span class="o">&lt;=</span> <span class="n">B</span><span class="p">;</span>
+<span class="n">unnamed_net4</span> <span class="o">&lt;=</span> <span class="n">A</span><span class="p">;</span>
+<span class="n">NAND_AB</span> <span class="o">&lt;=</span> <span class="n">unnamed_net9</span><span class="p">;</span>
+<span class="n">OUT2</span> <span class="o">&lt;=</span> <span class="n">unnamed_net8</span><span class="p">;</span>
+<span class="n">UOut2</span> <span class="o">&lt;=</span> <span class="n">unnamed_net1</span><span class="p">;</span>
+<span class="n">UOut1</span> <span class="o">&lt;=</span> <span class="n">unnamed_net7</span><span class="p">;</span>
+<span class="k">END</span> <span class="nc">netlist</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="a-pseudo-nand-latch">
+<h4>A Pseudo-NAND-Latch<a class="headerlink" href="#a-pseudo-nand-latch" title="Permalink to this headline">¶</a></h4>
+<p>This circuit consists of two subcomponents that each act almost (i.e., for all relevant input conditions) like a NAND logic gate
+in a symmetric feedback conditions. As is known from electrical circuits this arrangement allows the fabrication of a bi-stable
+system with memory or state from two systems that have a one-to-one input output behavior. See also <a class="reference internal" href="references.html#mabuchi11">[Mabuchi11]</a></p>
+<div class="highlight-qhdl"><div class="highlight"><pre><span class="c1">--pseudo-NAND latch without explicit parameter dependence</span>
+<span class="k">entity</span> <span class="nc">PseudoNANDLatch</span> <span class="k">is</span>
+    <span class="k">port</span> <span class="p">(</span><span class="n">NS</span><span class="p">,</span> <span class="n">W1</span><span class="p">,</span> <span class="n">kerr2_extra</span><span class="p">,</span> <span class="n">NR</span><span class="p">,</span> <span class="n">W2</span><span class="p">,</span> <span class="n">kerr1_extra</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
+          <span class="n">BS1_1_out</span><span class="p">,</span> <span class="n">kerr1_out2</span><span class="p">,</span> <span class="n">OUT2_2</span><span class="p">,</span> <span class="n">BS1_2_out</span><span class="p">,</span> <span class="n">kerr2_out2</span><span class="p">,</span> <span class="n">OUT2_1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+<span class="k">end</span> <span class="nc">PseudoNANDLatch</span><span class="p">;</span>
+
+<span class="k">architecture</span> <span class="nc">latch_netlist</span> <span class="k">of</span> <span class="nc">PseudoNANDLatch</span> <span class="k">is</span>
+    <span class="k">component</span> <span class="nc">PseudoNAND</span>
+        <span class="k">port</span> <span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">W_in</span><span class="p">,</span> <span class="n">kerr_in2</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span> 
+              <span class="n">uo1</span><span class="p">,</span> <span class="n">kerr_out1</span><span class="p">,</span> <span class="n">NAND_AB</span><span class="p">,</span> <span class="n">OUT2</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
+    <span class="k">end</span> <span class="k">component</span><span class="p">;</span>    
+
+    <span class="k">signal</span> <span class="n">FB12</span><span class="p">,</span> <span class="n">FB21</span> <span class="o">:</span> <span class="n">fieldmode</span><span class="p">;</span>      <span class="c1">-- feedback signals</span>
+
+<span class="k">begin</span>
+    <span class="n">NAND2</span> <span class="o">:</span> <span class="n">PseudoNAND</span>
+    <span class="k">port</span> <span class="k">map</span> <span class="p">(</span>
+        <span class="n">A</span> <span class="o">=&gt;</span> <span class="n">NR</span><span class="p">,</span> <span class="n">B</span> <span class="o">=&gt;</span> <span class="n">FB12</span><span class="p">,</span> <span class="n">W_in</span> <span class="o">=&gt;</span> <span class="n">W2</span><span class="p">,</span> <span class="n">kerr_in2</span> <span class="o">=&gt;</span> <span class="n">kerr2_extra</span><span class="p">,</span>
+        <span class="n">uo1</span> <span class="o">=&gt;</span> <span class="n">BS1_2_out</span><span class="p">,</span> <span class="n">kerr_out1</span> <span class="o">=&gt;</span> <span class="n">kerr2_out2</span><span class="p">,</span> <span class="n">NAND_AB</span> <span class="o">=&gt;</span> <span class="n">FB21</span><span class="p">,</span> <span class="n">OUT2</span> <span class="o">=&gt;</span> <span class="n">OUT2_2</span><span class="p">);</span>
+
+    <span class="n">NAND1</span> <span class="o">:</span> <span class="n">PseudoNAND</span>
+    <span class="k">port</span> <span class="k">map</span> <span class="p">(</span>
+        <span class="n">A</span> <span class="o">=&gt;</span> <span class="n">NS</span><span class="p">,</span> <span class="n">B</span> <span class="o">=&gt;</span> <span class="n">FB21</span><span class="p">,</span> <span class="n">W_in</span> <span class="o">=&gt;</span> <span class="n">W1</span><span class="p">,</span> <span class="n">kerr_in2</span> <span class="o">=&gt;</span> <span class="n">kerr1_extra</span><span class="p">,</span>
+        <span class="n">uo1</span> <span class="o">=&gt;</span> <span class="n">BS1_1_out</span><span class="p">,</span> <span class="n">kerr_out1</span> <span class="o">=&gt;</span> <span class="n">kerr1_out2</span><span class="p">,</span> <span class="n">NAND_AB</span> <span class="o">=&gt;</span> <span class="n">FB12</span><span class="p">,</span> <span class="n">OUT2</span> <span class="o">=&gt;</span> <span class="n">OUT2_1</span><span class="p">);</span>
+<span class="k">end</span> <span class="nc">latch_netlist</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="parsing_qhdl.html" title="Parsing QHDL"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="schematic_capture.html" title="Schematic Capture"
+             >previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

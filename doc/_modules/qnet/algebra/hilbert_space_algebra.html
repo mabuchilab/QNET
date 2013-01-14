@@ -1,0 +1,574 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>qnet.algebra.hilbert_space_algebra &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for qnet.algebra.hilbert_space_algebra</h1><div class="highlight"><pre>
+<span class="c">#This file is part of QNET.</span>
+<span class="c">#</span>
+<span class="c">#    QNET is free software: you can redistribute it and/or modify</span>
+<span class="c">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c">#    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#   (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c">#    QNET is distributed in the hope that it will be useful,</span>
+<span class="c">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#    GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c">#    You should have received a copy of the GNU General Public License</span>
+<span class="c">#    along with QNET.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (C) 2012-2013, Nikolas Tezak</span>
+<span class="c">#</span>
+<span class="c">###########################################################################</span>
+
+<span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">The Hilbert Space Algebra</span>
+<span class="sd">=========================</span>
+
+<span class="sd">This module defines some simple classes to describe simple and *composite/tensor* (i.e., multiple degree of freedom)</span>
+<span class="sd">Hilbert spaces of quantum systems.</span>
+
+<span class="sd">For more details see :ref:`hilbert_space_algebra`.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">qnet.algebra.abstract_algebra</span> <span class="kn">import</span> <span class="n">singleton</span><span class="p">,</span> <span class="n">Operation</span><span class="p">,</span> <span class="n">inf</span><span class="p">,</span> <span class="n">AlgebraError</span><span class="p">,</span> <span class="n">tex</span><span class="p">,</span> <span class="n">check_signature</span><span class="p">,</span> <span class="n">idem</span><span class="p">,</span> <span class="n">assoc</span><span class="p">,</span> <span class="n">preprocess_create_with</span><span class="p">,</span> <span class="n">filter_neutral</span><span class="p">,</span> <span class="n">check_signature_assoc</span><span class="p">,</span> <span class="n">prod</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="nb">reduce</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractproperty</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+
+
+<div class="viewcode-block" id="HilbertSpace"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace">[docs]</a><span class="k">class</span> <span class="nc">HilbertSpace</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic Hilbert space class from which concrete classes are derived.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__metaclass__</span> <span class="o">=</span> <span class="n">ABCMeta</span>
+
+<div class="viewcode-block" id="HilbertSpace.tensor"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace.tensor">[docs]</a>    <span class="k">def</span> <span class="nf">tensor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Tensor product between Hilbert spaces</span>
+
+<span class="sd">        :param other: Other Hilbert space</span>
+<span class="sd">        :type other: HilbertSpace</span>
+<span class="sd">        :return: Tensor product space.</span>
+<span class="sd">        :rtype: HilbertSpace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ProductSpace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="HilbertSpace.remove"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove a particular factor from a tensor product space.</span>
+
+<span class="sd">        :param other: Space to remove</span>
+<span class="sd">        :type other: HilbertSpace</span>
+<span class="sd">        :return: Hilbert space for remaining degrees of freedom.</span>
+<span class="sd">        :rtype: HilbertSpace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remove</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+</div>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="HilbertSpace.intersect"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace.intersect">[docs]</a>    <span class="k">def</span> <span class="nf">intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the mutual tensor *factors* of two Hilbert spaces.</span>
+
+<span class="sd">        :param other: Other Hilbert space</span>
+<span class="sd">        :type other: HilbertSpace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_intersect</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+</div>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="HilbertSpace.local_factors"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace.local_factors">[docs]</a>    <span class="k">def</span> <span class="nf">local_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :return: A sequence of LocalSpace objects that tensored together yield this Hilbert space.</span>
+<span class="sd">        :rtype: tuple of LocalSpace objects</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_local_factors</span><span class="p">()</span>
+</div>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_local_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+<div class="viewcode-block" id="HilbertSpace.is_tensor_factor_of"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace.is_tensor_factor_of">[docs]</a>    <span class="k">def</span> <span class="nf">is_tensor_factor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test if a space is included within a larger tensor product space. Also ``True`` if ``self == other``.</span>
+
+<span class="sd">        :param other: Other Hilbert space</span>
+<span class="sd">        :type other: HilbertSpace</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">&lt;=</span> <span class="n">other</span>
+</div>
+<div class="viewcode-block" id="HilbertSpace.is_strict_tensor_factor_of"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace.is_strict_tensor_factor_of">[docs]</a>    <span class="k">def</span> <span class="nf">is_strict_tensor_factor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test if a space is included within a larger tensor product space. Not ``True`` if ``self == other``.</span>
+
+<span class="sd">        :param other: Other Hilbert space</span>
+<span class="sd">        :type other: HilbertSpace</span>
+<span class="sd">        :rtype: bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">&lt;</span> <span class="n">other</span>
+</div>
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="HilbertSpace.dimension"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace.dimension">[docs]</a>    <span class="k">def</span> <span class="nf">dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :return: The full dimension of the Hilbert space</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#noinspection PyTypeChecker,PyCallByClass,PyArgumentList</span>
+        <span class="k">return</span> <span class="n">BasisRegistry</span><span class="o">.</span><span class="n">dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="HilbertSpace.is_strict_subfactor_of"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.HilbertSpace.is_strict_subfactor_of">[docs]</a>    <span class="k">def</span> <span class="nf">is_strict_subfactor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Test whether a Hilbert space occures as a strict sub-factor in (larger) Hilbert space</span>
+<span class="sd">        :type other: HilbertSpace</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_strict_subfactor_of</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+</div>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_is_strict_subfactor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :return: The number of LocalSpace factors / degrees of freedom.</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">local_factors</span><span class="p">())</span>
+
+
+    <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__div__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="n">__truediv__</span> <span class="o">=</span> <span class="n">__div__</span>
+
+    <span class="k">def</span> <span class="nf">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">intersect</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_strict_subfactor_of</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">other</span><span class="o">.</span><span class="n">is_strict_subfactor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span> <span class="ow">or</span> <span class="bp">self</span> <span class="o">&lt;</span> <span class="n">other</span>
+
+    <span class="k">def</span> <span class="nf">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">==</span> <span class="n">other</span> <span class="ow">or</span> <span class="bp">self</span> <span class="o">&gt;</span> <span class="n">other</span>
+
+
+
+
+
+
+</div>
+<span class="nd">@singleton</span>
+<span class="k">class</span> <span class="nc">TrivialSpace</span><span class="p">(</span><span class="n">HilbertSpace</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The &#39;nullspace&#39;, i.e. a one dimensional Hilbert space, which is a factor space of every other Hilbert space.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_order_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+
+<span class="c">#    def tensor(self, other):</span>
+<span class="c">#        return other</span>
+
+    <span class="k">def</span> <span class="nf">_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">_intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">_local_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_is_strict_subfactor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="n">TrivialSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+        <span class="k">return</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">other</span>
+
+    <span class="k">def</span> <span class="nf">_tex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">r&quot;\mathcal{H}_{\rm null}&quot;</span>
+
+
+
+
+
+<span class="nd">@singleton</span>
+<span class="k">class</span> <span class="nc">FullSpace</span><span class="p">(</span><span class="n">HilbertSpace</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The &#39;full space&#39;, i.e. a Hilbert space, includes any other Hilbert space as a tensor factor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_order_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">inf</span><span class="p">,</span>
+
+<span class="c">#    def tensor(self, other):</span>
+<span class="c">#        return self</span>
+
+    <span class="k">def</span> <span class="nf">_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">AlgebraError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_local_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">AlgebraError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">other</span>
+
+    <span class="k">def</span> <span class="nf">_is_strict_subfactor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="ow">is</span> <span class="n">other</span>
+
+    <span class="k">def</span> <span class="nf">_tex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">r&quot;\mathcal{H}_{\rm total}&quot;</span>
+
+
+
+
+<span class="nd">@check_signature</span>
+<div class="viewcode-block" id="LocalSpace"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.LocalSpace">[docs]</a><span class="k">class</span> <span class="nc">LocalSpace</span><span class="p">(</span><span class="n">HilbertSpace</span><span class="p">,</span> <span class="n">Operation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic class to instantiate a local Hilbert space, i.e., for a single degree of freedom.</span>
+
+<span class="sd">        ``LocalSpace(name, namespace)``</span>
+
+<span class="sd">    :param name: The identifier of the local space / degree of freedom</span>
+<span class="sd">    :type name: str</span>
+<span class="sd">    :param namespace: The namespace for the degree of freedom, useful in hierarchical system models.</span>
+<span class="sd">    :type namespace: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">signature</span> <span class="o">=</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="nf">_order_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span>
+
+    <span class="k">def</span> <span class="nf">_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="o">==</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">TrivialSpace</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="nf">_intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">local_factors</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="n">TrivialSpace</span>
+
+    <span class="k">def</span> <span class="nf">_local_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">,</span>
+
+    <span class="k">def</span> <span class="nf">_is_strict_subfactor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ProductSpace</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="n">operands</span><span class="p">:</span>
+            <span class="c">#noinspection PyTypeChecker</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">operands</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="n">FullSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+
+    <span class="nd">@property</span>
+<div class="viewcode-block" id="LocalSpace.basis"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.LocalSpace.basis">[docs]</a>    <span class="k">def</span> <span class="nf">basis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :return: The set of basis states of the local Hilbert space</span>
+<span class="sd">        :rtype: sequence of int or str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#noinspection PyCallByClass,PyArgumentList,PyTypeChecker</span>
+        <span class="k">return</span> <span class="n">BasisRegistry</span><span class="o">.</span><span class="n">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_tex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span>
+        <span class="k">if</span> <span class="n">namespace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&quot;{{{}}}_{{{}}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tex</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">tex</span><span class="p">(</span><span class="n">namespace</span><span class="p">))</span>
+        <span class="k">return</span> <span class="s">&quot;{{{}}}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tex</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span>
+        <span class="k">if</span> <span class="n">namespace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s">&quot;{}_{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">name</span>
+
+
+<span class="c">#</span>
+<span class="c">#noinspection PyRedeclaration</span></div>
+<div class="viewcode-block" id="local_space"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.local_space">[docs]</a><span class="k">def</span> <span class="nf">local_space</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">,</span> <span class="n">dimension</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">basis</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a LocalSpace with by default empty namespace string.</span>
+<span class="sd">    If one also provides a set of basis states, these get stored via the BasisRegistry object.</span>
+<span class="sd">    ALternatively, one may provide a dimension such that the states are simply labeled by a range of integers:</span>
+
+<span class="sd">        ``[0, 1, 2, ..., dimension -1]``</span>
+
+<span class="sd">    :param name: Local space identifier</span>
+<span class="sd">    :type name: str or int</span>
+<span class="sd">    :param namespace: Local space namespace, see LocalSpace documentation</span>
+<span class="sd">    :type namespace: str</span>
+<span class="sd">    :param dimension: Dimension of local space (optional)</span>
+<span class="sd">    :type dimension: int</span>
+<span class="sd">    :param basis: Basis state labels for local space</span>
+<span class="sd">    :type basis: sequence of int or sequence of str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">LocalSpace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">namespace</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">LocalSpace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dimension</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">basis</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">basis</span><span class="p">)</span> <span class="o">==</span> <span class="n">dimension</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">basis</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">dimension</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">basis</span><span class="p">:</span>
+        <span class="c">#noinspection PyArgumentList,PyTypeChecker</span>
+        <span class="n">BasisRegistry</span><span class="o">.</span><span class="n">set_basis</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">basis</span><span class="p">)</span>
+    <span class="k">return</span>  <span class="n">s</span>
+
+
+
+
+
+</div>
+<div class="viewcode-block" id="convert_to_spaces_mtd"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.convert_to_spaces_mtd">[docs]</a><span class="k">def</span> <span class="nf">convert_to_spaces_mtd</span><span class="p">(</span><span class="n">dcls</span><span class="p">,</span> <span class="n">clsmtd</span><span class="p">,</span> <span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">ops</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    For all operands that are merely of type str or int, substitute LocalSpace objects with corresponding labels:</span>
+<span class="sd">    For a string, just itself, for an int, a string version of that int.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cops</span> <span class="o">=</span> <span class="p">[</span><span class="n">o</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">HilbertSpace</span><span class="p">)</span> <span class="k">else</span> <span class="n">local_space</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">ops</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">clsmtd</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">cops</span><span class="p">)</span></div>
+<span class="n">convert_to_spaces</span> <span class="o">=</span> <span class="n">preprocess_create_with</span><span class="p">(</span><span class="n">convert_to_spaces_mtd</span><span class="p">)</span>
+
+<span class="nd">@assoc</span>
+<span class="nd">@convert_to_spaces</span>
+<span class="nd">@idem</span>
+<span class="nd">@check_signature_assoc</span>
+<span class="nd">@filter_neutral</span>
+<div class="viewcode-block" id="ProductSpace"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.ProductSpace">[docs]</a><span class="k">class</span> <span class="nc">ProductSpace</span><span class="p">(</span><span class="n">HilbertSpace</span><span class="p">,</span> <span class="n">Operation</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Tensor product space class for an arbitrary number of local space factors.</span>
+
+<span class="sd">        ``ProductSpace(*factor_spaces)``</span>
+
+<span class="sd">    :param factor_spaces: The Hilbert spaces to be tensored together.</span>
+<span class="sd">    :type factor_spaces: HilbertSpace</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">signature</span> <span class="o">=</span> <span class="n">HilbertSpace</span><span class="p">,</span>
+    <span class="n">neutral_element</span> <span class="o">=</span> <span class="n">TrivialSpace</span>
+
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ProductSpace.create"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.ProductSpace.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">operands</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">o</span> <span class="ow">is</span> <span class="n">FullSpace</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">operands</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">FullSpace</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">_remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="n">FullSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">TrivialSpace</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="n">TrivialSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ProductSpace</span><span class="p">):</span>
+            <span class="n">oops</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">operands</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">oops</span> <span class="o">=</span> <span class="p">{</span><span class="n">other</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">ProductSpace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="n">oops</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">_local_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span>
+
+    <span class="k">def</span> <span class="nf">_intersect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="n">FullSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="n">TrivialSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">TrivialSpace</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ProductSpace</span><span class="p">):</span>
+            <span class="n">other_ops</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">operands</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">other_ops</span> <span class="o">=</span> <span class="p">{</span><span class="n">other</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">ProductSpace</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">other_ops</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">_is_strict_subfactor_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">ProductSpace</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">operands</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="n">FullSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="bp">False</span>
+
+
+    <span class="k">def</span> <span class="nf">_tex</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s">&quot; \otimes &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">tex</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">operands</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="BasisNotSetError"><a class="viewcode-back" href="../../../qnet.algebra.html#qnet.algebra.hilbert_space_algebra.BasisNotSetError">[docs]</a><span class="k">class</span> <span class="nc">BasisNotSetError</span><span class="p">(</span><span class="n">AlgebraError</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Is raised when the basis states of a LocalSpace are requested before being defined.</span>
+
+<span class="sd">    :param local_space:</span>
+<span class="sd">    :type local_space:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_space</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;&quot;&quot;The basis for the local space {0!s} has not been set yet.</span>
+<span class="s">Please set the basis states via the command:</span>
+<span class="s">    qnet.algebra.HilbertSpaceAlgebra.BasisRegistry.set_basis({0!r}, basis)&quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">local_space</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BasisNotSetError</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</div>
+<span class="nd">@singleton</span>
+<span class="k">class</span> <span class="nc">BasisRegistry</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Singleton class to store information about the basis states of all</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">set_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_space</span><span class="p">,</span> <span class="n">basis</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the basis states of a local Hilbert space.</span>
+
+<span class="sd">        :param local_space: Local Hilbert space object</span>
+<span class="sd">        :type local_space: LocalSpace</span>
+<span class="sd">        :param basis: A sequence of state labels</span>
+<span class="sd">        :type basis: sequence of int or sequence of str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">previous</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">local_space</span><span class="p">,</span> <span class="n">basis</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">basis</span> <span class="o">!=</span> <span class="n">previous</span><span class="p">:</span>
+            <span class="k">print</span><span class="p">(</span>
+            <span class="s">&quot;Warning: changing basis specification for registered LocalSpace {!s} from {!r} to {!r}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">local_space</span><span class="p">,</span>
+                <span class="n">previous</span><span class="p">,</span> <span class="n">basis</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="n">local_space</span><span class="p">]</span> <span class="o">=</span> <span class="n">basis</span>
+
+    <span class="k">def</span> <span class="nf">get_basis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_space</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the basis states of a local Hilbert space.</span>
+<span class="sd">        If no basis states have been set, raise a BasisNotSetError exception.</span>
+
+<span class="sd">        :param local_space: Local Hilbert space object</span>
+<span class="sd">        :type local_space: LocalSpace</span>
+<span class="sd">        :return: A sequence of state labels</span>
+<span class="sd">        :rtype: sequence of int or str</span>
+<span class="sd">        :raise: BasisNotSetError</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">local_space</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="p">[</span><span class="n">local_space</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="n">BasisNotSetError</span><span class="p">(</span><span class="n">local_space</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">dimension</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">space</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the full dimension of a Hilbert space object.</span>
+
+<span class="sd">        :param space: Hilbert space to compute dimension for</span>
+<span class="sd">        :type space: HilbertSpace</span>
+<span class="sd">        :return: Dimension of space</span>
+<span class="sd">        :rtype: int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">space</span> <span class="ow">is</span> <span class="n">TrivialSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">space</span> <span class="ow">is</span> <span class="n">FullSpace</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inf</span>
+        <span class="n">dims</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_basis</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">space</span><span class="o">.</span><span class="n">local_factors</span><span class="p">()]</span>
+        <span class="k">return</span> <span class="n">prod</span><span class="p">(</span><span class="n">dims</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

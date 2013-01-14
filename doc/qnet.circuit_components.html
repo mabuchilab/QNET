@@ -1,0 +1,1337 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>circuit_components Package &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="index.html" />
+    <link rel="up" title="The qnet API" href="qnet.html" />
+    <link rel="next" title="misc Package" href="qnet.misc.html" />
+    <link rel="prev" title="algebra Package" href="qnet.algebra.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="qnet.misc.html" title="misc Package"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="qnet.algebra.html" title="algebra Package"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="qnet.html" accesskey="U">The <tt class="docutils literal docutils literal docutils literal docutils literal"><span class="pre">qnet</span></tt> API</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">circuit_components Package</a><ul>
+<li><a class="reference internal" href="#id1"><tt class="docutils literal"><span class="pre">circuit_components</span></tt> Package</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.beamsplitter_cc"><tt class="docutils literal"><span class="pre">beamsplitter_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.component"><tt class="docutils literal"><span class="pre">component</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.displace_cc"><tt class="docutils literal"><span class="pre">displace_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.double_sided_opo_cc"><tt class="docutils literal"><span class="pre">double_sided_opo_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.kerr_cavity_cc"><tt class="docutils literal"><span class="pre">kerr_cavity_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.library"><tt class="docutils literal"><span class="pre">library</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.linear_cavity_cc"><tt class="docutils literal"><span class="pre">linear_cavity_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.mach_zehnder_cc"><tt class="docutils literal"><span class="pre">mach_zehnder_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.open_lossy_cc"><tt class="docutils literal"><span class="pre">open_lossy_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.phase_cc"><tt class="docutils literal"><span class="pre">phase_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.pseudo_nand_cc"><tt class="docutils literal"><span class="pre">pseudo_nand_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.pseudo_nand_latch_cc"><tt class="docutils literal"><span class="pre">pseudo_nand_latch_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.relay_cc"><tt class="docutils literal"><span class="pre">relay_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.single_sided_jaynes_cummings_cc"><tt class="docutils literal"><span class="pre">single_sided_jaynes_cummings_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.single_sided_opo_cc"><tt class="docutils literal"><span class="pre">single_sided_opo_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.three_port_opo_cc"><tt class="docutils literal"><span class="pre">three_port_opo_cc</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.zprobe_cavity_cc"><tt class="docutils literal"><span class="pre">zprobe_cavity_cc</span></tt> Module</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="qnet.algebra.html"
+                        title="previous chapter">algebra Package</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="qnet.misc.html"
+                        title="next chapter">misc Package</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/qnet.circuit_components.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="circuit-components-package">
+<h1>circuit_components Package<a class="headerlink" href="#circuit-components-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2><tt class="xref py py-mod docutils literal"><span class="pre">circuit_components</span></tt> Package<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<span class="target" id="module-qnet.circuit_components"></span><p>This module contains all defined <em>primitive</em> circuit component definitions as well as the compiled circuit definitions
+that are automatically created via the <tt class="docutils literal"><span class="pre">$QNET/bin/parse_qhdl.py</span></tt> script.
+For some examples on how to create your own circuit definition file, check out the source code to</p>
+<blockquote>
+<div><ul class="simple">
+<li><a class="reference internal" href="#module-qnet.circuit_components.single_sided_jaynes_cummings_cc" title="qnet.circuit_components.single_sided_jaynes_cummings_cc"><tt class="xref py py-mod docutils literal"><span class="pre">qnet.circuit_components.single_sided_jaynes_cummings_cc</span></tt></a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.three_port_opo_cc" title="qnet.circuit_components.three_port_opo_cc"><tt class="xref py py-mod docutils literal"><span class="pre">qnet.circuit_components.three_port_opo_cc</span></tt></a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.kerr_cavity_cc" title="qnet.circuit_components.kerr_cavity_cc"><tt class="xref py py-mod docutils literal"><span class="pre">qnet.circuit_components.kerr_cavity_cc</span></tt></a></li>
+</ul>
+</div></blockquote>
+<p>The module <a class="reference internal" href="#module-qnet.circuit_components.component" title="qnet.circuit_components.component"><tt class="xref py py-mod docutils literal"><span class="pre">qnet.circuit_components.component</span></tt></a> features some base classes for component definitions and the module <a class="reference internal" href="#module-qnet.circuit_components.library" title="qnet.circuit_components.library"><tt class="xref py py-mod docutils literal"><span class="pre">qnet.circuit_components.library</span></tt></a>
+features some utility functions to help manage the circuit component definitions.</p>
+</div>
+<div class="section" id="module-qnet.circuit_components.beamsplitter_cc">
+<span id="beamsplitter-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">beamsplitter_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.beamsplitter_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a infinite bandwidth beamsplitter with variable mixing angle.
+See <a class="reference internal" href="#qnet.circuit_components.beamsplitter_cc.Beamsplitter" title="qnet.circuit_components.beamsplitter_cc.Beamsplitter"><tt class="xref py py-class docutils literal"><span class="pre">Beamsplitter</span></tt></a></p>
+<dl class="class">
+<dt id="qnet.circuit_components.beamsplitter_cc.Beamsplitter">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.beamsplitter_cc.</tt><tt class="descname">Beamsplitter</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/beamsplitter_cc.html#Beamsplitter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.beamsplitter_cc.Beamsplitter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>Infinite bandwidth beamsplitter model. It is a pure scattering component,
+i.e. it&#8217;s internal dynamics are not modeled explicitly.
+The single real parameter theta is the mixing angle for the two signals.
+Note that there is an asymmetry in the effect on the two input signals due
+to the minus sign appearing in the scattering matrix</p>
+<div class="math">
+\[\begin{split}S = \begin{pmatrix} \cos{\theta} &amp; -\sin{\theta} \\ \sin{\theta} &amp; \cos{\theta} \end{pmatrix}\end{split}\]</div>
+<p>To achieve a more general beamsplitter combine this component with one or more
+<tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.Phase</span></tt> components.</p>
+<p>Instantiate as:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">Beamsplitter</span><span class="p">(</span><span class="s">&quot;B&quot;</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">pi</span><span class="o">/</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="qnet.circuit_components.beamsplitter_cc.Beamsplitter.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 2</em><a class="headerlink" href="#qnet.circuit_components.beamsplitter_cc.Beamsplitter.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.beamsplitter_cc.Beamsplitter.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1', 'In2']</em><a class="headerlink" href="#qnet.circuit_components.beamsplitter_cc.Beamsplitter.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.beamsplitter_cc.Beamsplitter.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1', 'Out2']</em><a class="headerlink" href="#qnet.circuit_components.beamsplitter_cc.Beamsplitter.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.beamsplitter_cc.Beamsplitter.theta">
+<tt class="descname">theta</tt><em class="property"> = pi/4</em><a class="headerlink" href="#qnet.circuit_components.beamsplitter_cc.Beamsplitter.theta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.component">
+<span id="component-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">component</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.component" title="Permalink to this headline">¶</a></h2>
+<p>We distinguish between two independent properties of Components:</p>
+<p>1) They may be &#8216;creducible&#8217;, i.e. they can be expressed as a circuit expression
+of sub components.</p>
+<ol class="arabic simple" start="2">
+<li>They may be &#8216;primitive&#8217;, i.e. they cannot be specified via QHDL</li>
+</ol>
+<p>We write &#8216;creducible&#8217; instead of &#8216;reducible&#8217; in order to distinguish the meaning from the definition of Gough and James,
+who define reducible circuits as all circuits that can be decomposed into a concatenation of parts.
+Creducibility is more general than reducibility since we allow for an expansion into any sort of non-trivial algebraic expression,
+but in reverse, all reducible circuits are creducible.</p>
+<p>Examples of creducible but primitive Components are:
+KerrCavity, Relay, ...</p>
+<p>non-creducible &amp; primitive:
+Beamsplitter, Phase, Displace</p>
+<p>creducible &amp; non-primitive:
+Any parsed QHDL circuit</p>
+<p>non-creducible &amp; non-primitive:
+None.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.component.Component">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.component.</tt><tt class="descname">Component</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/component.html#Component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.component.Component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="qnet.algebra.html#qnet.algebra.circuit_algebra.Circuit" title="qnet.algebra.circuit_algebra.Circuit"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.circuit_algebra.Circuit</span></tt></a>, <a class="reference internal" href="qnet.algebra.html#qnet.algebra.abstract_algebra.Expression" title="qnet.algebra.abstract_algebra.Expression"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.abstract_algebra.Expression</span></tt></a></p>
+<p>Base class for all circuit components, 
+both primitive components such as beamsplitters 
+and cavity models and also composite circuit models 
+that are built up from these.
+Via the creduce() method, an object can be decomposed into its parts.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.Component.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 0</em><a class="headerlink" href="#qnet.circuit_components.component.Component.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.Component.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = []</em><a class="headerlink" href="#qnet.circuit_components.component.Component.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.Component.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = []</em><a class="headerlink" href="#qnet.circuit_components.component.Component.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.Component.name">
+<tt class="descname">name</tt><em class="property"> = 'C'</em><a class="headerlink" href="#qnet.circuit_components.component.Component.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.Component.namespace">
+<tt class="descname">namespace</tt><em class="property"> = ''</em><a class="headerlink" href="#qnet.circuit_components.component.Component.namespace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.component.SubComponent">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.component.</tt><tt class="descname">SubComponent</tt><big>(</big><em>parent_component</em>, <em>sub_index</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/component.html#SubComponent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.component.SubComponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="qnet.algebra.html#qnet.algebra.circuit_algebra.Circuit" title="qnet.algebra.circuit_algebra.Circuit"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.circuit_algebra.Circuit</span></tt></a>, <a class="reference internal" href="qnet.algebra.html#qnet.algebra.abstract_algebra.Expression" title="qnet.algebra.abstract_algebra.Expression"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.abstract_algebra.Expression</span></tt></a></p>
+<p>Class for the subcomponents of a reducible (but primitive) Component.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.SubComponent.PORTSIN">
+<tt class="descname">PORTSIN</tt><a class="reference internal" href="_modules/qnet/circuit_components/component.html#SubComponent.PORTSIN"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.component.SubComponent.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd><p>Names of ingoing ports.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.SubComponent.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><a class="reference internal" href="_modules/qnet/circuit_components/component.html#SubComponent.PORTSOUT"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.component.SubComponent.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Names of outgoing ports.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.SubComponent.parent_component">
+<tt class="descname">parent_component</tt><em class="property"> = None</em><a class="headerlink" href="#qnet.circuit_components.component.SubComponent.parent_component" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.component.SubComponent.sub_index">
+<tt class="descname">sub_index</tt><em class="property"> = 0</em><a class="headerlink" href="#qnet.circuit_components.component.SubComponent.sub_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.displace_cc">
+<span id="displace-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">displace_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.displace_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a coherent field displacement component.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.displace_cc.Displace" title="qnet.circuit_components.displace_cc.Displace"><tt class="xref py py-class docutils literal"><span class="pre">Displace</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.displace_cc.Displace">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.displace_cc.</tt><tt class="descname">Displace</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/displace_cc.html#Displace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.displace_cc.Displace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>Coherent displacement of the input field (usually vacuum) by a complex amplitude <span class="math">\(\alpha\)</span>.
+This component serves as the model of an ideal laser source without internal non-classical internal dynamics.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.displace_cc.Displace.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 1</em><a class="headerlink" href="#qnet.circuit_components.displace_cc.Displace.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.displace_cc.Displace.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['VacIn']</em><a class="headerlink" href="#qnet.circuit_components.displace_cc.Displace.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.displace_cc.Displace.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1']</em><a class="headerlink" href="#qnet.circuit_components.displace_cc.Displace.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.displace_cc.Displace.alpha">
+<tt class="descname">alpha</tt><em class="property"> = alpha</em><a class="headerlink" href="#qnet.circuit_components.displace_cc.Displace.alpha" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.double_sided_opo_cc">
+<span id="double-sided-opo-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">double_sided_opo_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.double_sided_opo_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a degenerate OPO model with two signal beam ports.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO" title="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO"><tt class="xref py py-class docutils literal"><span class="pre">DoubleSidedOPO</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.double_sided_opo_cc.</tt><tt class="descname">DoubleSidedOPO</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/double_sided_opo_cc.html#DoubleSidedOPO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>This model describes a degenerate OPO with two signal beam ports
+in the sub-threshold regime. I.e., the pump is modeled as a classical amplitude.</p>
+<p>The model&#8217;s SLH parameters are given by</p>
+<div class="math">
+\[\begin{split}S &amp; = \mathbf{1}_2 \\
+L &amp; = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \end{pmatrix} \\
+H &amp;= \Delta a^\dagger a + {i\over 2} \left( \alpha {a^\dagger}^2 - \alpha^* a^2\right)\end{split}\]</div>
+<p>This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
+I.e., it can be reduced into separate <a class="reference internal" href="#qnet.circuit_components.double_sided_opo_cc.OPOPort" title="qnet.circuit_components.double_sided_opo_cc.OPOPort"><tt class="xref py py-class docutils literal"><span class="pre">OPOPort</span></tt></a> models for each port.</p>
+<p>Note that this model&#8217;s validity breaks down even in open-loop configuration when</p>
+<div class="math">
+\[\begin{split}|\alpha| &gt; {\kappa_1 + \kappa_2 \over 2}\end{split}\]</div>
+<p>which is just the threshold condition.
+In a feedback configuration the threshold condition is generally changed.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 2</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.Delta">
+<tt class="descname">Delta</tt><em class="property"> = Delta</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.Delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.FOCK_DIM">
+<tt class="descname">FOCK_DIM</tt><em class="property"> = 25</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.FOCK_DIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1', 'In2']</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1', 'Out2']</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.alpha">
+<tt class="descname">alpha</tt><em class="property"> = alpha</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.alpha" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.kappa_1">
+<tt class="descname">kappa_1</tt><em class="property"> = kappa_1</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.kappa_1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.kappa_2">
+<tt class="descname">kappa_2</tt><em class="property"> = kappa_2</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.kappa_2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.name">
+<tt class="descname">name</tt><em class="property"> = 'OPO'</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.sub_blockstructure">
+<tt class="descname">sub_blockstructure</tt><em class="property"> = (1, 1)</em><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO.sub_blockstructure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.double_sided_opo_cc.OPOPort">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.double_sided_opo_cc.</tt><tt class="descname">OPOPort</tt><big>(</big><em>parent_component</em>, <em>sub_index</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/double_sided_opo_cc.html#OPOPort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.double_sided_opo_cc.OPOPort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Sub component model for the individual ports of a <a class="reference internal" href="#qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO" title="qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO"><tt class="xref py py-class docutils literal"><span class="pre">DoubleSidedOPO</span></tt></a>.
+The Hamiltonian is included with the first port.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.kerr_cavity_cc">
+<span id="kerr-cavity-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">kerr_cavity_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.kerr_cavity_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a Kerr-nonlinear cavity model with two ports.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity" title="qnet.circuit_components.kerr_cavity_cc.KerrCavity"><tt class="xref py py-class docutils literal"><span class="pre">KerrCavity</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.kerr_cavity_cc.</tt><tt class="descname">KerrCavity</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/kerr_cavity_cc.html#KerrCavity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>This model describes a Kerr cavity model with two ports.</p>
+<p>The model&#8217;s SLH parameters are given by</p>
+<div class="math">
+\[\begin{split}S &amp; = \mathbf{1}_2 \\
+L &amp; = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \end{pmatrix} \\
+H &amp;= \Delta a^\dagger a + \chi {a^\dagger}^2 a^2\end{split}\]</div>
+<p>This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
+I.e., it can be reduced into separate <a class="reference internal" href="#qnet.circuit_components.kerr_cavity_cc.KerrPort" title="qnet.circuit_components.kerr_cavity_cc.KerrPort"><tt class="xref py py-class docutils literal"><span class="pre">KerrPort</span></tt></a> models for each port.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 2</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.Delta">
+<tt class="descname">Delta</tt><em class="property"> = Delta</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.Delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.FOCK_DIM">
+<tt class="descname">FOCK_DIM</tt><em class="property"> = 75</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.FOCK_DIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1', 'In2']</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1', 'Out2']</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.chi">
+<tt class="descname">chi</tt><em class="property"> = chi</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.chi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.kappa_1">
+<tt class="descname">kappa_1</tt><em class="property"> = kappa_1</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.kappa_1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.kappa_2">
+<tt class="descname">kappa_2</tt><em class="property"> = kappa_2</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.kappa_2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.name">
+<tt class="descname">name</tt><em class="property"> = 'K'</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.namespace">
+<tt class="descname">namespace</tt><em class="property"> = ''</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.namespace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.port1">
+<tt class="descname">port1</tt><a class="reference internal" href="_modules/qnet/circuit_components/kerr_cavity_cc.html#KerrCavity.port1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.port1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.port2">
+<tt class="descname">port2</tt><a class="reference internal" href="_modules/qnet/circuit_components/kerr_cavity_cc.html#KerrCavity.port2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.port2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrCavity.sub_blockstructure">
+<tt class="descname">sub_blockstructure</tt><em class="property"> = (1, 1)</em><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity.sub_blockstructure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.kerr_cavity_cc.KerrPort">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.kerr_cavity_cc.</tt><tt class="descname">KerrPort</tt><big>(</big><em>parent_component</em>, <em>sub_index</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/kerr_cavity_cc.html#KerrPort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.kerr_cavity_cc.KerrPort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Sub component model for the individual ports of a <a class="reference internal" href="#qnet.circuit_components.kerr_cavity_cc.KerrCavity" title="qnet.circuit_components.kerr_cavity_cc.KerrCavity"><tt class="xref py py-class docutils literal"><span class="pre">KerrCavity</span></tt></a>.
+The Hamiltonian is included with the first port.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.library">
+<span id="library-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">library</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.library" title="Permalink to this headline">¶</a></h2>
+<p>This module features some helper functions for automatically creating and managing a library of circuit component definition files.</p>
+<dl class="function">
+<dt id="qnet.circuit_components.library.camelcase_to_underscore">
+<tt class="descclassname">qnet.circuit_components.library.</tt><tt class="descname">camelcase_to_underscore</tt><big>(</big><em>st</em><big>)</big><a class="headerlink" href="#qnet.circuit_components.library.camelcase_to_underscore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a camelcase entity name into an appropriate underscore name to import its corresponding module</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="qnet.circuit_components.library.getCDIM">
+<tt class="descclassname">qnet.circuit_components.library.</tt><tt class="descname">getCDIM</tt><big>(</big><em>component_name</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/library.html#getCDIM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.library.getCDIM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the channel dimension of a referenced subcomponent</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>component_name</strong> (<em>str</em>) &#8211; The entity name of the component</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The channel dimension of the component.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qnet.circuit_components.library.make_namespace_string">
+<tt class="descclassname">qnet.circuit_components.library.</tt><tt class="descname">make_namespace_string</tt><big>(</big><em>namespace</em>, <em>sub_name</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/library.html#make_namespace_string"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.library.make_namespace_string" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a namespace string by combining a namespace string with a new name.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>namespace</strong> (<em>str</em>) &#8211; The namespace so far</li>
+<li><strong>sub_name</strong> (<em>str</em>) &#8211; The additional name to add/</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The combined namespace</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="qnet.circuit_components.library.write_component">
+<tt class="descclassname">qnet.circuit_components.library.</tt><tt class="descname">write_component</tt><big>(</big><em>entity</em>, <em>architectures</em>, <em>local=False</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/library.html#write_component"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.library.write_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a new entity definition to a python module file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>entity</strong> (<a class="reference internal" href="qnet.qhdl.html#qnet.qhdl.qhdl.Entity" title="qnet.qhdl.qhdl.Entity"><tt class="xref py py-class docutils literal"><span class="pre">qnet.qhdl.qhdl.Entity</span></tt></a>) &#8211; The entity object</li>
+<li><strong>architectures</strong> (<em>dict</em>) &#8211; A dictionary of architectures <tt class="docutils literal"><span class="pre">dict(name</span> <span class="pre">=</span> <span class="pre">architecture)</span></tt> associated with the entity.</li>
+<li><strong>local</strong> (<em>bool</em>) &#8211; Whether or not to store the created module in the current/local directory or install it in :py:module:<tt class="docutils literal"><span class="pre">qnet.circuit_components</span></tt>, default = <tt class="docutils literal"><span class="pre">False</span></tt></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The filename of the new module.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">str</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.linear_cavity_cc">
+<span id="linear-cavity-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">linear_cavity_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.linear_cavity_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a simple linear cavity model with two ports.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity" title="qnet.circuit_components.linear_cavity_cc.LinearCavity"><tt class="xref py py-class docutils literal"><span class="pre">LinearCavity</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.linear_cavity_cc.CavityPort">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.linear_cavity_cc.</tt><tt class="descname">CavityPort</tt><big>(</big><em>parent_component</em>, <em>sub_index</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/linear_cavity_cc.html#CavityPort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.CavityPort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Sub component model for the individual ports of a <a class="reference internal" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity" title="qnet.circuit_components.linear_cavity_cc.LinearCavity"><tt class="xref py py-class docutils literal"><span class="pre">LinearCavity</span></tt></a>.
+The Hamiltonian is included with the first port.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.linear_cavity_cc.</tt><tt class="descname">LinearCavity</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/linear_cavity_cc.html#LinearCavity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>This model describes a cavity model with two ports.</p>
+<p>The model&#8217;s SLH parameters are given by</p>
+<div class="math">
+\[\begin{split}S &amp; = \mathbf{1}_2 \\
+L &amp; = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \end{pmatrix} \\
+H &amp;= \Delta a^\dagger a\end{split}\]</div>
+<p>This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
+I.e., it can be reduced into separate <a class="reference internal" href="#qnet.circuit_components.linear_cavity_cc.CavityPort" title="qnet.circuit_components.linear_cavity_cc.CavityPort"><tt class="xref py py-class docutils literal"><span class="pre">CavityPort</span></tt></a> models for each port.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 2</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.Delta">
+<tt class="descname">Delta</tt><em class="property"> = Delta</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.Delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.FOCK_DIM">
+<tt class="descname">FOCK_DIM</tt><em class="property"> = 75</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.FOCK_DIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1', 'In2']</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1', 'Out2']</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.kappa_1">
+<tt class="descname">kappa_1</tt><em class="property"> = kappa_1</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.kappa_1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.kappa_2">
+<tt class="descname">kappa_2</tt><em class="property"> = kappa_2</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.kappa_2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.name">
+<tt class="descname">name</tt><em class="property"> = 'C'</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.namespace">
+<tt class="descname">namespace</tt><em class="property"> = ''</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.namespace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.port1">
+<tt class="descname">port1</tt><a class="reference internal" href="_modules/qnet/circuit_components/linear_cavity_cc.html#LinearCavity.port1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.port1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.port2">
+<tt class="descname">port2</tt><a class="reference internal" href="_modules/qnet/circuit_components/linear_cavity_cc.html#LinearCavity.port2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.port2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.linear_cavity_cc.LinearCavity.sub_blockstructure">
+<tt class="descname">sub_blockstructure</tt><em class="property"> = (1, 1)</em><a class="headerlink" href="#qnet.circuit_components.linear_cavity_cc.LinearCavity.sub_blockstructure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.mach_zehnder_cc">
+<span id="mach-zehnder-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">mach_zehnder_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.mach_zehnder_cc" title="Permalink to this headline">¶</a></h2>
+<p>mach_zehnder_cc.py</p>
+<p>Created automatically by $QNET/bin/parse_qhdl.py
+Get started by instantiating a circuit instance via:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">MachZehnder</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="class">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.mach_zehnder_cc.</tt><tt class="descname">MachZehnder</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/mach_zehnder_cc.html#MachZehnder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.B1">
+<tt class="descname">B1</tt><a class="reference internal" href="_modules/qnet/circuit_components/mach_zehnder_cc.html#MachZehnder.B1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.B1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.B2">
+<tt class="descname">B2</tt><a class="reference internal" href="_modules/qnet/circuit_components/mach_zehnder_cc.html#MachZehnder.B2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.B2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 2</em><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.P">
+<tt class="descname">P</tt><a class="reference internal" href="_modules/qnet/circuit_components/mach_zehnder_cc.html#MachZehnder.P"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.P" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['a', 'b']</em><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['c', 'd']</em><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.W">
+<tt class="descname">W</tt><a class="reference internal" href="_modules/qnet/circuit_components/mach_zehnder_cc.html#MachZehnder.W"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.W" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.alpha">
+<tt class="descname">alpha</tt><em class="property"> = alpha</em><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.alpha" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.mach_zehnder_cc.MachZehnder.phi">
+<tt class="descname">phi</tt><em class="property"> = phi</em><a class="headerlink" href="#qnet.circuit_components.mach_zehnder_cc.MachZehnder.phi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.open_lossy_cc">
+<span id="open-lossy-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">open_lossy_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.open_lossy_cc" title="Permalink to this headline">¶</a></h2>
+<p>open_lossy_cc.py</p>
+<p>Created automatically by $QNET/bin/parse_qhdl.py
+Get started by instantiating a circuit instance via:</p>
+<blockquote>
+<div><tt class="docutils literal"><span class="pre">OpenLossy()</span></tt></div></blockquote>
+<dl class="class">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.open_lossy_cc.</tt><tt class="descname">OpenLossy</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/open_lossy_cc.html#OpenLossy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.BS">
+<tt class="descname">BS</tt><a class="reference internal" href="_modules/qnet/circuit_components/open_lossy_cc.html#OpenLossy.BS"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.BS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 3</em><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.Delta">
+<tt class="descname">Delta</tt><em class="property"> = Delta</em><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.Delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.KC">
+<tt class="descname">KC</tt><a class="reference internal" href="_modules/qnet/circuit_components/open_lossy_cc.html#OpenLossy.KC"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.KC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.LSS_ci_ls">
+<tt class="descname">LSS_ci_ls</tt><a class="reference internal" href="_modules/qnet/circuit_components/open_lossy_cc.html#OpenLossy.LSS_ci_ls"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.LSS_ci_ls" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1']</em><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1', 'Out2']</em><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.chi">
+<tt class="descname">chi</tt><em class="property"> = chi</em><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.chi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.kappa">
+<tt class="descname">kappa</tt><em class="property"> = kappa</em><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.kappa" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.theta">
+<tt class="descname">theta</tt><em class="property"> = theta</em><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.theta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.open_lossy_cc.OpenLossy.theta_LS0">
+<tt class="descname">theta_LS0</tt><em class="property"> = theta_LS0</em><a class="headerlink" href="#qnet.circuit_components.open_lossy_cc.OpenLossy.theta_LS0" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.phase_cc">
+<span id="phase-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">phase_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.phase_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a coherent field Phasement component.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.phase_cc.Phase" title="qnet.circuit_components.phase_cc.Phase"><tt class="xref py py-class docutils literal"><span class="pre">Phase</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.phase_cc.Phase">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.phase_cc.</tt><tt class="descname">Phase</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/phase_cc.html#Phase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.phase_cc.Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>Coherent phase shift of the field passing through by real angle <span class="math">\(\phi\)</span>.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.phase_cc.Phase.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 1</em><a class="headerlink" href="#qnet.circuit_components.phase_cc.Phase.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.phase_cc.Phase.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1']</em><a class="headerlink" href="#qnet.circuit_components.phase_cc.Phase.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.phase_cc.Phase.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1']</em><a class="headerlink" href="#qnet.circuit_components.phase_cc.Phase.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.phase_cc.Phase.phi">
+<tt class="descname">phi</tt><em class="property"> = phi</em><a class="headerlink" href="#qnet.circuit_components.phase_cc.Phase.phi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.pseudo_nand_cc">
+<span id="pseudo-nand-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">pseudo_nand_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.pseudo_nand_cc" title="Permalink to this headline">¶</a></h2>
+<p>pseudo_nand_cc.py</p>
+<p>Created automatically by $QNET/bin/parse_qhdl.py
+Get started by instantiating a circuit instance via:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">PseudoNAND</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="class">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.pseudo_nand_cc.</tt><tt class="descname">PseudoNAND</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_cc.html#PseudoNAND"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.BS1">
+<tt class="descname">BS1</tt><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_cc.html#PseudoNAND.BS1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.BS1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.BS2">
+<tt class="descname">BS2</tt><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_cc.html#PseudoNAND.BS2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.BS2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 4</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.Delta">
+<tt class="descname">Delta</tt><em class="property"> = Delta</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.Delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.K">
+<tt class="descname">K</tt><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_cc.html#PseudoNAND.K"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.K" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.P">
+<tt class="descname">P</tt><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_cc.html#PseudoNAND.P"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.P" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['A', 'B', 'VIn1', 'VIn2']</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['UOut1', 'UOut2', 'NAND_AB', 'OUT2']</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.W_beta">
+<tt class="descname">W_beta</tt><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_cc.html#PseudoNAND.W_beta"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.W_beta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.beta">
+<tt class="descname">beta</tt><em class="property"> = beta</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.beta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.chi">
+<tt class="descname">chi</tt><em class="property"> = chi</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.chi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.kappa">
+<tt class="descname">kappa</tt><em class="property"> = kappa</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.kappa" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.phi">
+<tt class="descname">phi</tt><em class="property"> = phi</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.phi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_cc.PseudoNAND.theta">
+<tt class="descname">theta</tt><em class="property"> = theta</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_cc.PseudoNAND.theta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.pseudo_nand_latch_cc">
+<span id="pseudo-nand-latch-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">pseudo_nand_latch_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.pseudo_nand_latch_cc" title="Permalink to this headline">¶</a></h2>
+<p>pseudo_nand_latch_cc.py</p>
+<p>Created automatically by $QNET/bin/parse_qhdl.py
+Get started by instantiating a circuit instance via:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="n">PseudoNANDLatch</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="class">
+<dt id="qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.pseudo_nand_latch_cc.</tt><tt class="descname">PseudoNANDLatch</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_latch_cc.html#PseudoNANDLatch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 6</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.NAND1">
+<tt class="descname">NAND1</tt><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_latch_cc.html#PseudoNANDLatch.NAND1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.NAND1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.NAND2">
+<tt class="descname">NAND2</tt><a class="reference internal" href="_modules/qnet/circuit_components/pseudo_nand_latch_cc.html#PseudoNANDLatch.NAND2"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.NAND2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['NS', 'W1', 'kerr2_extra', 'NR', 'W2', 'kerr1_extra']</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['BS1_1_out', 'kerr1_out2', 'OUT2_2', 'BS1_2_out', 'kerr2_out2', 'OUT2_1']</em><a class="headerlink" href="#qnet.circuit_components.pseudo_nand_latch_cc.PseudoNANDLatch.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.relay_cc">
+<span id="relay-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">relay_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.relay_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for an all-optical Relay model.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.relay_cc.Relay" title="qnet.circuit_components.relay_cc.Relay"><tt class="xref py py-class docutils literal"><span class="pre">Relay</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.relay_cc.Relay">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.relay_cc.</tt><tt class="descname">Relay</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/relay_cc.html#Relay"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.relay_cc.Relay" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>This is the Relay model as used in our group&#8217;s QEC papers <a class="footnote-reference" href="#qec1" id="id2">[1]</a>,[#qec2]_.
+The <tt class="docutils literal"><span class="pre">SET</span></tt> and <tt class="docutils literal"><span class="pre">RESET</span></tt> inputs control whether the <tt class="docutils literal"><span class="pre">POW</span></tt> input is routed
+through the <tt class="docutils literal"><span class="pre">OUT</span></tt> or  the <tt class="docutils literal"><span class="pre">NOUT</span></tt> output port.</p>
+<p>Since the scattering matrix is of block diagonal form (2x2,2x2) we provide sub component models
+for the individual subsystems <a class="reference internal" href="#qnet.circuit_components.relay_cc.RelayOut" title="qnet.circuit_components.relay_cc.RelayOut"><tt class="xref py py-class docutils literal"><span class="pre">RelayOut</span></tt></a> and <a class="reference internal" href="#qnet.circuit_components.relay_cc.RelayControl" title="qnet.circuit_components.relay_cc.RelayControl"><tt class="xref py py-class docutils literal"><span class="pre">RelayControl</span></tt></a>.</p>
+<table class="docutils footnote" frame="void" id="qec1" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[1]</a></td><td><a class="reference external" href="http://pra.aps.org/abstract/PRA/v80/i4/e045802">http://pra.aps.org/abstract/PRA/v80/i4/e045802</a></td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="qec2" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[2]</td><td><a class="reference external" href="http://prl.aps.org/abstract/PRL/v105/i4/e040502">http://prl.aps.org/abstract/PRL/v105/i4/e040502</a></td></tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="qnet.circuit_components.relay_cc.Relay.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 4</em><a class="headerlink" href="#qnet.circuit_components.relay_cc.Relay.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.relay_cc.Relay.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['POW', 'VIn', 'SET', 'RESET']</em><a class="headerlink" href="#qnet.circuit_components.relay_cc.Relay.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.relay_cc.Relay.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['NOUT', 'OUT', 'UOut1', 'UOut2']</em><a class="headerlink" href="#qnet.circuit_components.relay_cc.Relay.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.relay_cc.Relay.sub_blockstructure">
+<tt class="descname">sub_blockstructure</tt><em class="property"> = (2, 2)</em><a class="headerlink" href="#qnet.circuit_components.relay_cc.Relay.sub_blockstructure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.relay_cc.RelayControl">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.relay_cc.</tt><tt class="descname">RelayControl</tt><big>(</big><em>relay</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/relay_cc.html#RelayControl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.relay_cc.RelayControl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Second subcomponent of a <a class="reference internal" href="#qnet.circuit_components.relay_cc.Relay" title="qnet.circuit_components.relay_cc.Relay"><tt class="xref py py-class docutils literal"><span class="pre">Relay</span></tt></a> model.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.relay_cc.RelayOut">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.relay_cc.</tt><tt class="descname">RelayOut</tt><big>(</big><em>relay</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/relay_cc.html#RelayOut"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.relay_cc.RelayOut" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>First subcomponent of a <a class="reference internal" href="#qnet.circuit_components.relay_cc.Relay" title="qnet.circuit_components.relay_cc.Relay"><tt class="xref py py-class docutils literal"><span class="pre">Relay</span></tt></a> model.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.single_sided_jaynes_cummings_cc">
+<span id="single-sided-jaynes-cummings-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">single_sided_jaynes_cummings_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.single_sided_jaynes_cummings_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a single mirror CQED Jaynes-Cummings cavity model.</p>
+<p>See documentation of <a class="reference internal" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings" title="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings"><tt class="xref py py-class docutils literal"><span class="pre">SingleSidedJaynesCummings</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.CavityPort">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.single_sided_jaynes_cummings_cc.</tt><tt class="descname">CavityPort</tt><big>(</big><em>cavity</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/single_sided_jaynes_cummings_cc.html#CavityPort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.CavityPort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Sub component model for port coupling the internal mode
+of a <a class="reference internal" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings" title="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings"><tt class="xref py py-class docutils literal"><span class="pre">SingleSidedJaynesCummings</span></tt></a> model to the external field.
+The Hamiltonian is included with this first port.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.DecayChannel">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.single_sided_jaynes_cummings_cc.</tt><tt class="descname">DecayChannel</tt><big>(</big><em>cavity</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/single_sided_jaynes_cummings_cc.html#DecayChannel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.DecayChannel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Sub component model for the port coupling the internal two-level atom
+to the vacuum of the transverse free-field modes, inducing spontaneous emission/decay.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.single_sided_jaynes_cummings_cc.</tt><tt class="descname">SingleSidedJaynesCummings</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/single_sided_jaynes_cummings_cc.html#SingleSidedJaynesCummings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>Typical CQED Jaynes-Cummings model with a single laser input/output channel with coupling coefficient <span class="math">\(\kappa\)</span>
+and a single atomic decay channel with rate <span class="math">\(\gamma\)</span>.
+The full model is given by:</p>
+<div class="math">
+\[\begin{split}S &amp; = \mathbf{1}_2 \\
+L &amp; = \begin{pmatrix} \sqrt{\kappa}a \\ \sqrt{\gamma} \sigma_- \end{pmatrix} \\
+H &amp; = \Delta_f a^\dagger a + \Delta_a \sigma_+ \sigma_- + ig\left(\sigma_+ a - \sigma_- a^\dagger \right)\end{split}\]</div>
+<p>As the model is reducible, sub component models for the mode and the atomic decay channel are given by
+<a class="reference internal" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.CavityPort" title="qnet.circuit_components.single_sided_jaynes_cummings_cc.CavityPort"><tt class="xref py py-class docutils literal"><span class="pre">CavityPort</span></tt></a> and <a class="reference internal" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.DecayChannel" title="qnet.circuit_components.single_sided_jaynes_cummings_cc.DecayChannel"><tt class="xref py py-class docutils literal"><span class="pre">DecayChannel</span></tt></a>, respectively.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 2</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.Delta_a">
+<tt class="descname">Delta_a</tt><em class="property"> = Delta_a</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.Delta_a" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.Delta_f">
+<tt class="descname">Delta_f</tt><em class="property"> = Delta_f</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.Delta_f" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.FOCK_DIM">
+<tt class="descname">FOCK_DIM</tt><em class="property"> = 20</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.FOCK_DIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1', 'VacIn']</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1', 'UOut']</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.fock_space">
+<tt class="descname">fock_space</tt><a class="reference internal" href="_modules/qnet/circuit_components/single_sided_jaynes_cummings_cc.html#SingleSidedJaynesCummings.fock_space"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.fock_space" title="Permalink to this definition">¶</a></dt>
+<dd><p>The cavity mode&#8217;s Hilbert space.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type :</th><td class="field-body"><a class="reference internal" href="qnet.algebra.html#qnet.algebra.hilbert_space_algebra.LocalSpace" title="qnet.algebra.hilbert_space_algebra.LocalSpace"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.hilbert_space_algebra.LocalSpace</span></tt></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.g">
+<tt class="descname">g</tt><em class="property"> = g</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.g" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.gamma">
+<tt class="descname">gamma</tt><em class="property"> = gamma</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.gamma" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.kappa">
+<tt class="descname">kappa</tt><em class="property"> = kappa</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.kappa" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.sub_blockstructure">
+<tt class="descname">sub_blockstructure</tt><em class="property"> = (1, 1)</em><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.sub_blockstructure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.tls_space">
+<tt class="descname">tls_space</tt><a class="reference internal" href="_modules/qnet/circuit_components/single_sided_jaynes_cummings_cc.html#SingleSidedJaynesCummings.tls_space"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings.tls_space" title="Permalink to this definition">¶</a></dt>
+<dd><p>The two-level-atom&#8217;s Hilbert space.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type :</th><td class="field-body"><a class="reference internal" href="qnet.algebra.html#qnet.algebra.hilbert_space_algebra.LocalSpace" title="qnet.algebra.hilbert_space_algebra.LocalSpace"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.hilbert_space_algebra.LocalSpace</span></tt></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.single_sided_opo_cc">
+<span id="single-sided-opo-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">single_sided_opo_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.single_sided_opo_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a degenerate OPO model with a single port for the signal beam.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO" title="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO"><tt class="xref py py-class docutils literal"><span class="pre">SingleSidedOPO</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.single_sided_opo_cc.</tt><tt class="descname">SingleSidedOPO</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/single_sided_opo_cc.html#SingleSidedOPO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>This model describes a degenerate OPO with a single port for the signal mode
+in the sub-threshold regime: i.e., the pump is modeled as a classical amplitude.</p>
+<p>The model&#8217;s SLH parameters are given by</p>
+<div class="math">
+\[\begin{split}S &amp; = (1) \\
+L &amp; = \begin{pmatrix} \sqrt{\kappa} a  \end{pmatrix} \\
+H &amp;= \Delta a^\dagger a + {i\over 2} \left( \alpha {a^\dagger}^2 - \alpha^* a^2\right)\end{split}\]</div>
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 1</em><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.Delta">
+<tt class="descname">Delta</tt><em class="property"> = Delta</em><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.Delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.FOCK_DIM">
+<tt class="descname">FOCK_DIM</tt><em class="property"> = 25</em><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.FOCK_DIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1']</em><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1']</em><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.alpha">
+<tt class="descname">alpha</tt><em class="property"> = alpha</em><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.alpha" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.kappa">
+<tt class="descname">kappa</tt><em class="property"> = kappa</em><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.kappa" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.name">
+<tt class="descname">name</tt><em class="property"> = 'OPO'</em><a class="headerlink" href="#qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.three_port_opo_cc">
+<span id="three-port-opo-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">three_port_opo_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.three_port_opo_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a degenerate OPO model with three signal beam ports.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO" title="qnet.circuit_components.three_port_opo_cc.ThreePortOPO"><tt class="xref py py-class docutils literal"><span class="pre">ThreePortOPO</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.three_port_opo_cc.OPOPort">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.three_port_opo_cc.</tt><tt class="descname">OPOPort</tt><big>(</big><em>parent_component</em>, <em>sub_index</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/three_port_opo_cc.html#OPOPort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.OPOPort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Sub component model for the individual ports of a <a class="reference internal" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO" title="qnet.circuit_components.three_port_opo_cc.ThreePortOPO"><tt class="xref py py-class docutils literal"><span class="pre">ThreePortOPO</span></tt></a>.
+The Hamiltonian is included with the first port.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.three_port_opo_cc.</tt><tt class="descname">ThreePortOPO</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/three_port_opo_cc.html#ThreePortOPO"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>This model describes a degenerate OPO with three signal beam ports
+in the sub-threshold regime. I.e., the pump is modeled as a classical amplitude.</p>
+<p>The model&#8217;s SLH parameters are given by</p>
+<div class="math">
+\[\begin{split}S &amp; = \mathbf{1}_3 \\
+L &amp; = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \\ \sqrt{\kappa_3} a \end{pmatrix} \\
+H &amp;= \Delta a^\dagger a + {i\over 2} \left( \alpha {a^\dagger}^2 - \alpha^* a^2\right)\end{split}\]</div>
+<p>This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
+I.e., it can be reduced into separate <a class="reference internal" href="#qnet.circuit_components.three_port_opo_cc.OPOPort" title="qnet.circuit_components.three_port_opo_cc.OPOPort"><tt class="xref py py-class docutils literal"><span class="pre">OPOPort</span></tt></a> models for each port.</p>
+<p>Note that this model&#8217;s validity breaks down even in open-loop configuration when</p>
+<div class="math">
+\[\begin{split}|\alpha| &gt; {\kappa_1 + \kappa_2 + \kappa_3\over 2}\end{split}\]</div>
+<p>which is just the threshold condition.
+In a feedback configuration the threshold condition is generally changed.</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 3</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.Delta">
+<tt class="descname">Delta</tt><em class="property"> = Delta</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.Delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.FOCK_DIM">
+<tt class="descname">FOCK_DIM</tt><em class="property"> = 25</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.FOCK_DIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1', 'In2', 'In3']</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1', 'Out2', 'In3']</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.alpha">
+<tt class="descname">alpha</tt><em class="property"> = alpha</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.alpha" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.kappa_1">
+<tt class="descname">kappa_1</tt><em class="property"> = kappa_1</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.kappa_1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.kappa_2">
+<tt class="descname">kappa_2</tt><em class="property"> = kappa_2</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.kappa_2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.kappa_3">
+<tt class="descname">kappa_3</tt><em class="property"> = kappa_2</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.kappa_3" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.name">
+<tt class="descname">name</tt><em class="property"> = 'OPO'</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.three_port_opo_cc.ThreePortOPO.sub_blockstructure">
+<tt class="descname">sub_blockstructure</tt><em class="property"> = (1, 1, 1)</em><a class="headerlink" href="#qnet.circuit_components.three_port_opo_cc.ThreePortOPO.sub_blockstructure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.zprobe_cavity_cc">
+<span id="zprobe-cavity-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">zprobe_cavity_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.zprobe_cavity_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for the Z-probe cavity model
+from the Mabuchi-Lab Coherent Feedback Quantum Error Correction papers.</p>
+<p>See documentation of <a class="reference internal" href="#qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity" title="qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity"><tt class="xref py py-class docutils literal"><span class="pre">ZProbeCavity</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.FeedbackPort">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.zprobe_cavity_cc.</tt><tt class="descname">FeedbackPort</tt><big>(</big><em>parent_component</em>, <em>sub_index</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/zprobe_cavity_cc.html#FeedbackPort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.FeedbackPort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Feedback beam port for the Z-Probe cavity model.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.ProbePort">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.zprobe_cavity_cc.</tt><tt class="descname">ProbePort</tt><big>(</big><em>cavity</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/zprobe_cavity_cc.html#ProbePort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.ProbePort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.SubComponent" title="qnet.circuit_components.component.SubComponent"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.SubComponent</span></tt></a></p>
+<p>Probe beam port for the Z-Probe cavity model.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.zprobe_cavity_cc.</tt><tt class="descname">ZProbeCavity</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/zprobe_cavity_cc.html#ZProbeCavity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>This is the Z-probe cavity model as used in our group&#8217;s QEC papers [#qec1,#qec2]_ , which has three (dressed) internal
+states: r, g, h. The qubit is encoded in g,h, while r is used to drive transitions.
+The first channel is the probe-signal, while the second and third channels are 
+the two independent feedback beams.</p>
+<p>Since the scattering matrix is diagonal we provide sub component models
+for the individual subsystems: One <a class="reference internal" href="#qnet.circuit_components.zprobe_cavity_cc.ProbePort" title="qnet.circuit_components.zprobe_cavity_cc.ProbePort"><tt class="xref py py-class docutils literal"><span class="pre">ProbePort</span></tt></a> and two <a class="reference internal" href="#qnet.circuit_components.zprobe_cavity_cc.FeedbackPort" title="qnet.circuit_components.zprobe_cavity_cc.FeedbackPort"><tt class="xref py py-class docutils literal"><span class="pre">FeedbackPort</span></tt></a> instances..</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 3</em><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.Delta">
+<tt class="descname">Delta</tt><em class="property"> = Delta</em><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.Delta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['PIn', 'FIn1', 'FIn2']</em><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['POut', 'UOut1', 'UOut2']</em><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.gamma">
+<tt class="descname">gamma</tt><em class="property"> = gamma</em><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.gamma" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.sub_blockstructure">
+<tt class="descname">sub_blockstructure</tt><em class="property"> = (1, 1, 1)</em><a class="headerlink" href="#qnet.circuit_components.zprobe_cavity_cc.ZProbeCavity.sub_blockstructure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="qnet.misc.html" title="misc Package"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="qnet.algebra.html" title="algebra Package"
+             >previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="qnet.html" >The <tt class="docutils literal docutils literal docutils literal docutils literal"><span class="pre">qnet</span></tt> API</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

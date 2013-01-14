@@ -1,0 +1,239 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>qnet.circuit_components.three_port_opo_cc &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../../_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for qnet.circuit_components.three_port_opo_cc</h1><div class="highlight"><pre>
+<span class="c">#This file is part of QNET.</span>
+<span class="c">#</span>
+<span class="c">#    QNET is free software: you can redistribute it and/or modify</span>
+<span class="c">#    it under the terms of the GNU General Public License as published by</span>
+<span class="c">#    the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c">#   (at your option) any later version.</span>
+<span class="c">#</span>
+<span class="c">#    QNET is distributed in the hope that it will be useful,</span>
+<span class="c">#    but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c">#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c">#    GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c">#    You should have received a copy of the GNU General Public License</span>
+<span class="c">#    along with QNET.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+<span class="c">#</span>
+<span class="c"># Copyright (C) 2012-2013, Nikolas Tezak</span>
+<span class="c">#</span>
+<span class="c">###########################################################################</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Component definition file for a degenerate OPO model with three signal beam ports.</span>
+<span class="sd">See documentation of :py:class:`ThreePortOPO`.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">unittest</span>
+
+<span class="kn">from</span> <span class="nn">qnet.algebra.circuit_algebra</span> <span class="kn">import</span> <span class="n">HilbertSpace</span><span class="p">,</span> <span class="n">Destroy</span><span class="p">,</span> <span class="n">Matrix</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">SLH</span><span class="p">,</span> <span class="n">LocalSigma</span><span class="p">,</span> <span class="n">identity_matrix</span><span class="p">,</span> <span class="n">local_space</span>
+<span class="kn">from</span> <span class="nn">qnet.circuit_components.component</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">SubComponent</span>
+
+<span class="kn">from</span> <span class="nn">sympy.core.symbol</span> <span class="kn">import</span> <span class="n">symbols</span>
+<span class="kn">from</span> <span class="nn">sympy</span> <span class="kn">import</span> <span class="n">I</span>
+
+<div class="viewcode-block" id="ThreePortOPO"><a class="viewcode-back" href="../../../qnet.circuit_components.html#qnet.circuit_components.three_port_opo_cc.ThreePortOPO">[docs]</a><span class="k">class</span> <span class="nc">ThreePortOPO</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">r&quot;&quot;&quot;</span>
+<span class="sd">    This model describes a degenerate OPO with three signal beam ports</span>
+<span class="sd">    in the sub-threshold regime. I.e., the pump is modeled as a classical amplitude.</span>
+
+<span class="sd">    The model&#39;s SLH parameters are given by</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        S &amp; = \mathbf{1}_3 \\</span>
+<span class="sd">        L &amp; = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \\ \sqrt{\kappa_3} a \end{pmatrix} \\</span>
+<span class="sd">        H &amp;= \Delta a^\dagger a + {i\over 2} \left( \alpha {a^\dagger}^2 - \alpha^* a^2\right)</span>
+
+<span class="sd">    This particular component definition explicitly captures the reducibility of a trivial scattering matrix.</span>
+<span class="sd">    I.e., it can be reduced into separate :py:class:`OPOPort` models for each port.</span>
+
+
+<span class="sd">    Note that this model&#39;s validity breaks down even in open-loop configuration when</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        |\alpha| &gt; {\kappa_1 + \kappa_2 + \kappa_3\over 2}</span>
+
+<span class="sd">    which is just the threshold condition.</span>
+<span class="sd">    In a feedback configuration the threshold condition is generally changed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">CDIM</span> <span class="o">=</span> <span class="mi">3</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s">&quot;OPO&quot;</span>
+
+    <span class="n">kappa_1</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;kappa_1&#39;</span><span class="p">,</span> <span class="n">real</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span> <span class="c"># coupling through first port</span>
+    <span class="n">kappa_2</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;kappa_2&#39;</span><span class="p">,</span> <span class="n">real</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span> <span class="c"># coupling through second port</span>
+    <span class="n">kappa_3</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;kappa_2&#39;</span><span class="p">,</span> <span class="n">real</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span> <span class="c"># coupling throug third port</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;alpha&#39;</span><span class="p">)</span>   <span class="c"># pump amplitude</span>
+    <span class="n">Delta</span> <span class="o">=</span> <span class="n">symbols</span><span class="p">(</span><span class="s">&#39;Delta&#39;</span><span class="p">,</span> <span class="n">real</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span> <span class="c"># detuning between the cavity (mode) and external driving field</span>
+    <span class="n">FOCK_DIM</span> <span class="o">=</span> <span class="mi">25</span>
+    <span class="n">_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;kappa_1&#39;</span><span class="p">,</span> <span class="s">&#39;kappa_2&#39;</span><span class="p">,</span><span class="s">&#39;kappa_3&#39;</span><span class="p">,</span> <span class="s">&#39;alpha&#39;</span><span class="p">,</span> <span class="s">&#39;Delta&#39;</span><span class="p">,</span> <span class="s">&#39;FOCK_DIM&#39;</span><span class="p">]</span>
+
+    
+    <span class="n">PORTSIN</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;In1&#39;</span><span class="p">,</span> <span class="s">&#39;In2&#39;</span><span class="p">,</span> <span class="s">&#39;In3&#39;</span><span class="p">]</span>
+    <span class="n">PORTSOUT</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;Out1&#39;</span><span class="p">,</span> <span class="s">&#39;Out2&#39;</span><span class="p">,</span> <span class="s">&#39;In3&#39;</span><span class="p">]</span>
+    
+    <span class="n">sub_blockstructure</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_space</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">local_space</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span> <span class="n">dimension</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FOCK_DIM</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_creduce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">OPOPort</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">OPOPort</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">OPOPort</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_toSLH</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">creduce</span><span class="p">()</span><span class="o">.</span><span class="n">toSLH</span><span class="p">()</span>
+        
+</div>
+<div class="viewcode-block" id="OPOPort"><a class="viewcode-back" href="../../../qnet.circuit_components.html#qnet.circuit_components.three_port_opo_cc.OPOPort">[docs]</a><span class="k">class</span> <span class="nc">OPOPort</span><span class="p">(</span><span class="n">SubComponent</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sub component model for the individual ports of a :py:class:`ThreePortOPO`.</span>
+<span class="sd">    The Hamiltonian is included with the first port.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_toSLH</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">a</span> <span class="o">=</span> <span class="n">Destroy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">space</span><span class="p">)</span>
+        <span class="n">a_d</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">adjoint</span><span class="p">()</span>
+
+        <span class="n">S</span> <span class="o">=</span> <span class="n">identity_matrix</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_index</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+            <span class="c"># Include the Hamiltonian only with the first port of the kerr cavity circuit object</span>
+            <span class="n">H</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Delta</span> <span class="o">*</span> <span class="n">a_d</span> <span class="o">*</span> <span class="n">a</span> <span class="o">+</span> <span class="p">(</span><span class="n">I</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">a_d</span> <span class="o">*</span> <span class="n">a_d</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">conjugate</span><span class="p">()</span> <span class="o">*</span> <span class="n">a</span> <span class="o">*</span> <span class="n">a</span><span class="p">)</span>
+            <span class="n">L</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">([[</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa_1</span><span class="p">)</span> <span class="o">*</span> <span class="n">a</span><span class="p">]])</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">sub_index</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">H</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">L</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">([[</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa_2</span><span class="p">)</span> <span class="o">*</span> <span class="n">a</span><span class="p">]])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">H</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">L</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">([[</span><span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kappa_3</span><span class="p">)</span> <span class="o">*</span> <span class="n">a</span><span class="p">]])</span>
+
+        <span class="k">return</span> <span class="n">SLH</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">H</span><span class="p">)</span>
+
+
+
+<span class="c"># Test the circuit</span></div>
+<span class="k">class</span> <span class="nc">_TestThreePortOPO</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">testCreation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">ThreePortOPO</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">ThreePortOPO</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">testCReduce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">ThreePortOPO</span><span class="p">()</span><span class="o">.</span><span class="n">creduce</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">testParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ThreePortOPO</span><span class="o">.</span><span class="n">_parameters</span><span class="p">):</span>
+            <span class="n">pname</span> <span class="o">=</span> <span class="n">ThreePortOPO</span><span class="o">.</span><span class="n">_parameters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">ThreePortOPO</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;TestName&quot;</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s">&quot;TestNamespace&quot;</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">pname</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">pname</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&quot;TestName&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span> <span class="s">&quot;TestNamespace&quot;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">ThreePortOPO</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;TestName&quot;</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s">&quot;TestNamespace&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s">&quot;TestName&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">namespace</span><span class="p">,</span> <span class="s">&quot;TestNamespace&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">testToSLH</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">aslh</span> <span class="o">=</span> <span class="n">ThreePortOPO</span><span class="p">()</span><span class="o">.</span><span class="n">toSLH</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertIsInstance</span><span class="p">(</span><span class="n">aslh</span><span class="p">,</span> <span class="n">SLH</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">QNET 0.9 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,376 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Properties and Simplification of Circuit Algebraic Expressions &mdash; QNET 0.9 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/mycss.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
+    <link rel="top" title="QNET 0.9 documentation" href="index.html" />
+    <link rel="next" title="Circuit Component Definition" href="circuit_component.html" />
+    <link rel="prev" title="Symbolic Algebra" href="symbolic_algebra.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="circuit_component.html" title="Circuit Component Definition"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="symbolic_algebra.html" title="Symbolic Algebra"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Properties and Simplification of Circuit Algebraic Expressions</a><ul>
+<li><a class="reference internal" href="#permutation-objects">Permutation objects</a></li>
+<li><a class="reference internal" href="#permutations-and-concatenations">Permutations and Concatenations</a></li>
+<li><a class="reference internal" href="#feedback-of-a-concatenation">Feedback of a concatenation</a></li>
+<li><a class="reference internal" href="#feedback-of-a-series">Feedback of a series</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="symbolic_algebra.html"
+                        title="previous chapter">Symbolic Algebra</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="circuit_component.html"
+                        title="next chapter">Circuit Component Definition</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/circuit_rules.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="properties-and-simplification-of-circuit-algebraic-expressions">
+<span id="circuit-rules"></span><h1>Properties and Simplification of Circuit Algebraic Expressions<a class="headerlink" href="#properties-and-simplification-of-circuit-algebraic-expressions" title="Permalink to this headline">¶</a></h1>
+<p>By observing that we can define for a general system <span class="math">\(Q = (\mathbf{S}, \mathbf{L}, H)\)</span> its <em>series inverse</em> system <span class="math">\(Q^{\lhd -1} := (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H)\)</span></p>
+<div class="math">
+\[(\mathbf{S}, \mathbf{L}, H) \lhd (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H) =   (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H) \lhd (\mathbf{S}, \mathbf{L}, H) = (\mathbb{I}_n, 0, 0) =: {\rm id}_{n},\]</div>
+<p>we see that the series product induces a group structure on the set of <span class="math">\(n\)</span>-channel circuit components for any <span class="math">\(n \ge 1\)</span>.
+It can easily be verified that the series inverse of the basic operations is calculated as follows</p>
+<div class="math">
+\[\begin{split}\left(Q_1 \lhd Q_2\right)^{\lhd -1} &amp; = Q_2^{\lhd -1} \lhd Q_1^{\lhd -1} \\
+\left(Q_1 \boxplus Q_2\right)^{\lhd -1} &amp; = Q_1^{\lhd -1} \boxplus Q_2^{\lhd -1} \\
+\left([Q]_{k\to l}\right)^{\lhd -1} &amp; = \left[Q^{\lhd -1}\right]_{l\to k}.\end{split}\]</div>
+<p>In the following, we denote the number of channels of any given system <span class="math">\(Q = (\mathbf{S}, \mathbf{L}, H)\)</span> by <span class="math">\({\rm cdim}\;{Q} := n\)</span>.
+The most obvious expression simplification is the associative expansion of concatenations and series:</p>
+<div class="math">
+\[\begin{split}(A_1 \lhd A_2) \lhd (B_1 \lhd B_2) &amp; = A_1 \lhd A_2 \lhd B_1 \lhd B_2 \\
+(C_1 \boxplus C_2) \boxplus (D_1 \boxplus D_2) &amp; = C_1 \boxplus C_2 \boxplus D_1 \boxplus D_2\end{split}\]</div>
+<p>A further interesting property that follows intuitively from the graphical representation (cf.~Fig.~ref{fig:decomposition_law}) is the following tensor decomposition law</p>
+<div class="math">
+\[(A \boxplus B) \lhd (C \boxplus D) = (A \lhd C) \boxplus (B \lhd D),\]</div>
+<p>which is valid for <span class="math">\({\rm cdim}\;{A} = {\rm cdim}\;{C}\)</span> and <span class="math">\({\rm cdim}\;{B} = {\rm cdim}\;{D}\)</span>.</p>
+<p>The following figures demonstrate the ambiguity of the circuit algebra:</p>
+<div class="figure">
+<img alt="_images/dist1.png" src="_images/dist1.png" style="width: 6cm;" />
+<p class="caption"><span class="math">\((A \boxplus B) \lhd (C \boxplus D)\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/dist2.png" src="_images/dist2.png" style="width: 6cm;" />
+<p class="caption"><span class="math">\((A \lhd C) \boxplus (B \lhd D)\)</span></p>
+</div>
+<p>Here, a red box marks a series product and a blue box marks a concatenation. The second version expression has the advantage of making more explicit that the overall circuit consists of two channels without direct optical scattering.</p>
+<p>It will most often be preferable to use the RHS expression of the tensor decomposition law above as this enables us to understand the flow of optical signals more easily from the algebraic expression.
+In <a class="reference internal" href="references.html#goughjames09">[GoughJames09]</a> Gough and James denote a system that can be expressed as a concatenation as <em>reducible</em>. A system that cannot be further decomposed into concatenated subsystems is accordingly called <em>irreducible</em>.
+As follows intuitively from a graphical representation any given complex system <span class="math">\(Q = (\mathbf{S}, \mathbf{L}, H)\)</span> admits a decomposition into <span class="math">\(1 \le N \le {\rm cdim}\;{Q}\)</span> irreducible subsystems <span class="math">\(Q = Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N\)</span>, where their channel dimensions satisfy <span class="math">\({\rm cdim}\;{Q_j}\ge 1, \, j=1,2, \dots N\)</span> and <span class="math">\(\sum_{j=1}^N {\rm cdim}\;{Q_j} = {\rm cdim}\;{Q}\)</span>. While their individual parameter triplets themselves are not uniquely determinedfootnote{Actually the scattering matrices <span class="math">\(\{\mathbf{S}_j\}\)</span> and the coupling vectors <span class="math">\(\{\mathbf{L}_j\}\)</span> <em>are</em> uniquely determined, but the Hamiltonian parameters <span class="math">\(\{H_j\}\)</span> must only obey the constraint <span class="math">\(\sum_{j=1}^N H_j = H\)</span>.}, the sequence of their channel dimensions <span class="math">\(({\rm cdim}\;{Q_1}, {\rm cdim}\;{Q_2},\dots {\rm cdim}\;{Q_N}) =: {\rm bls}\;{Q}\)</span> clearly is. We denote this tuple as the block structure of <span class="math">\(Q\)</span>.
+We are now able to generalize the decomposition law in the following way:
+Given two systems of <span class="math">\(n\)</span> channels with the same block structure <span class="math">\({\rm bls}\;{A} = {\rm bls}\;{B} = (n_1, ... n_N)\)</span>, there exist decompositions of <span class="math">\(A\)</span> and <span class="math">\(B\)</span> such that</p>
+<div class="math">
+\[A \lhd B = (A_1 \lhd B_1) \boxplus \dots \boxplus (A_N \lhd B_N)\]</div>
+<p>with <span class="math">\({\rm cdim}\;{A_j} = {\rm cdim}\;{B_j} = n_j,\, j = 1, \dots N\)</span>.
+However, even in the case that the two block structures are not equal, there may still exist non-trivial compatible block decompositions that at least allow a partial application of the decomposition law.
+Consider the example presented in Figure (block_structures).</p>
+<div class="figure">
+<img alt="_images/blocks1.png" src="_images/blocks1.png" style="width: 6cm;" />
+<p class="caption">Series <span class="math">\(&quot;(1,2,1) \lhd (2,1,1)&quot;\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/blocks2.png" src="_images/blocks2.png" style="width: 6cm;" />
+<p class="caption">Optimal decomposition into <span class="math">\((3,1)\)</span></p>
+</div>
+<p>Even in the case of a series between systems with unequal block structures, there often exists a non-trivial common block decomposition that simplifies the overall expression.</p>
+<div class="section" id="permutation-objects">
+<h2>Permutation objects<a class="headerlink" href="#permutation-objects" title="Permalink to this headline">¶</a></h2>
+<p>The algebraic representation of complex circuits often requires systems that only permute channels without actual scattering. The group of permutation matrices is simply a subgroup of the unitary (operator) matrices. For any permutation matrix <span class="math">\(\mathbf{P}\)</span>, the system described by <span class="math">\((\mathbf{P},\mathbf{0},0)\)</span> represents a pure permutation of the optical fields (ref fig permutation).</p>
+<div class="figure">
+<img alt="_images/permutation.png" src="_images/permutation.png" />
+<p class="caption">A graphical representation of <span class="math">\(\mathbf{P}_\sigma\)</span> where <span class="math">\(\sigma \equiv (4,1,5,2,3)\)</span> in image tuple notation.</p>
+</div>
+<p>A permutation <span class="math">\(\sigma\)</span> of <span class="math">\(n\)</span> elements (<span class="math">\(\sigma \in \Sigma_n\)</span>) is often represented in the following form <span class="math">\(\begin{pmatrix} 1 &amp; 2 &amp; \dots &amp; n \\ \sigma(1) &amp; \sigma(2) &amp; \dots &amp; \sigma(n)\end{pmatrix}\)</span>, but obviously it is also sufficient to specify the tuple of images <span class="math">\((\sigma(1), \sigma(2), \dots, \sigma(n))\)</span>.
+We now define the permutation matrix via its matrix elements</p>
+<div class="math">
+\[(\mathbf{P}_\sigma)_{kl} = \delta_{k \sigma(l)} = \delta_{\sigma^{-1}(k) l}.\]</div>
+<p>Such a matrix then maps the <span class="math">\(j\)</span>-th unit vector onto the <span class="math">\(\sigma(j)\)</span>-th unit vector or equivalently the <span class="math">\(j\)</span>-th incoming optical channel is mapped to the <span class="math">\(\sigma(j)\)</span>-th outgoing channel.
+In contrast to a definition often found in mathematical literature this definition ensures that the representation matrix for a composition of permutations <span class="math">\(\sigma_2 \circ \sigma_1\)</span> results from a product of the individual representation matrices in the same order <span class="math">\(\mathbf{P}_{\sigma_2 \circ \sigma_1} = \mathbf{P}_{\sigma_2} \mathbf{P}_{ \sigma_1}\)</span>. This can be shown directly on the order of the matrix elements</p>
+<div class="math">
+\[\begin{split}(\mathbf{P}_{\sigma_2 \circ \sigma_1})_{kl} = \delta_{k (\sigma_2 \circ \sigma_1)(l)} = \sum_j \delta_{k j} \delta_{ j (\sigma_2 \circ \sigma_1)(l)} = \sum_j \delta_{k \sigma_2(j)} \delta_{ \sigma_2(j) (\sigma_2 \circ \sigma_1)(l)} \\
+= \sum_j \delta_{k \sigma_2(j)} \delta_{ \sigma_2(j) \sigma_2(\sigma_1(l))} = \sum_j \delta_{k \sigma_2(j)} \delta_{j  \sigma_1(l)} = \sum_j (\mathbf{P}_{\sigma_2})_{kj} (\mathbf{P}_{\sigma_1})_{jl},\end{split}\]</div>
+<p>where the third equality corresponds simply to a reordering of the summands and the fifth equality follows from the bijectivity of <span class="math">\(\sigma_2\)</span>.
+In the following we will often write <span class="math">\(P_{\sigma}\)</span> as a shorthand for <span class="math">\((\mathbf{P}_{\sigma}, \mathbf{0},0)\)</span>. Thus, our definition ensures that we may simplify any series of permutation systems in the most intuitive way: <span class="math">\(P_{\sigma_2} \lhd P_{\sigma_1} = P_{\sigma_2 \circ \sigma_1}\)</span>. Obviously the set of permutation systems of <span class="math">\(n\)</span> channels and the series product are a subgroup of the full system series group of <span class="math">\(n\)</span> channels. Specifically, it includes the identity <span class="math">\({\rm id}{n} = P_{\sigma_{{\rm id}_n}}\)</span>.</p>
+<p>From the orthogonality of the representation matrices it directly follows that <span class="math">\(\mathbf{P}_{\sigma}^T = \mathbf{P}_{\sigma^{-1}}\)</span>
+For future use we also define a concatenation between permutations</p>
+<div class="math">
+\[\begin{split}\sigma_1 \boxplus \sigma_2 := \begin{pmatrix} 1 &amp; 2 &amp; \dots &amp; n &amp; n + 1 &amp; n+2 &amp; \dots &amp;n + m \\ \sigma_1(1) &amp; \sigma_1(2) &amp; \dots &amp; \sigma_1(n) &amp; n + \sigma_2(1) &amp; n + \sigma_2(2) &amp; \dots &amp; n + \sigma_2(m) \end{pmatrix},\end{split}\]</div>
+<p>which satisfies <span class="math">\(P_{\sigma_1} \boxplus P_{\sigma_2} = P_{\sigma_1 \boxplus \sigma_2}\)</span> by definition.
+Another helpful definition is to introduce a special set of permutations that map specific ports into each other but leave the relative order of all other ports intact:</p>
+<div class="math">
+\[\begin{split}\omega_{l \gets k}^{(n)} := \begin{cases}
+                    % \sigma_{{\rm id}_n}  &amp; \mbox{ for } k = l \\
+                    \left( \begin{array}{ccccccccccc}
+                                    1 &amp; \dots &amp; k-1 &amp; k &amp; k+1 &amp; \dots &amp; l-1 &amp; l   &amp; l+1 &amp; \dots &amp; n \\
+                                    1 &amp; \dots &amp; k-1 &amp; l &amp; k   &amp; \dots &amp; l-2 &amp; l-1 &amp; l+1 &amp; \dots &amp; n
+                            \end{array}\right) &amp; \mbox{ for } k &lt; l \\
+                    \left(\begin{array}{ccccccccccc}
+                                    1 &amp; \dots &amp;  l-1 &amp; l   &amp; l+1 &amp; \dots &amp; k-1 &amp; k &amp; k+1 &amp; \dots &amp; n \\
+                                    1 &amp; \dots &amp;  l-1 &amp; l+1 &amp; l+2 &amp; \dots &amp; k   &amp; l &amp; k+1 &amp; \dots &amp; n
+                           \end{array}\right) &amp; \mbox{ for } k &gt; l
+                \end{cases}\end{split}\]</div>
+<p>We define the corresponding system objects as <span class="math">\(W_{l \gets k}^{(n)} := P_{\omega_{l \gets k}^{(n)}}\)</span>.</p>
+</div>
+<div class="section" id="permutations-and-concatenations">
+<h2>Permutations and Concatenations<a class="headerlink" href="#permutations-and-concatenations" title="Permalink to this headline">¶</a></h2>
+<p>Given a series <span class="math">\(P_{\sigma} \lhd (Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N)\)</span> where the <span class="math">\(Q_j\)</span> are irreducible systems, we analyze in which cases it is possible to (partially) &#8220;move the permutation through&#8221; the concatenated expression. Obviously we could just as well investigate the opposite scenario <span class="math">\((Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N) \lhd P_{\sigma}\)</span>, but this second scenario is closely relatedfootnote{Series-Inverting a series product expression also results in an inverted order of the operand inverses <span class="math">\((Q_1 \lhd Q_2)^{\lhd -1} = Q_2^{\lhd-1} \lhd Q_1^{\lhd-1}\)</span>. Since the inverse of a permutation (concatenation) is again a permutation (concatenation), the cases are in a way &#8220;dual&#8221; to each other.}.</p>
+<p><strong>Block-permuting permutations</strong></p>
+<p>The simples case is realized when the permutation simply permutes whole blocks intactly</p>
+<div class="figure">
+<img alt="_images/block_permutation1.png" src="_images/block_permutation1.png" style="width: 6cm;" />
+<p class="caption"><span class="math">\(P_\sigma \lhd (A_1 \boxplus A_2)\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/block_permutation2.png" src="_images/block_permutation2.png" style="width: 6cm;" />
+<p class="caption"><span class="math">\((A_2 \boxplus A_1) \lhd P_\sigma\)</span></p>
+</div>
+<p>A block permuting series.</p>
+<p>Given a block structure <span class="math">\(\mathbf{n} := (n_1, n_2, \dots n_N)\)</span> a permutation <span class="math">\(\sigma \in \Sigma_n\)</span> is said to <em>block permute</em> <span class="math">\(\mathbf{n}\)</span> iff there exists a permutation <span class="math">\(\tilde{\sigma} \in \Sigma_N\)</span> such that</p>
+<div class="math">
+\[\begin{split}P_{\sigma} \lhd (Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N) &amp; = \left(P_{\sigma} \lhd (Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N) \lhd P_{\sigma^{-1}}\right) \lhd P_{\sigma} \\
+&amp; = (Q_{\tilde{\sigma}(1)} \boxplus Q_{\tilde{\sigma}(2)} \boxplus \dots \boxplus Q_{\tilde{\sigma}(N)}) \lhd P_{\sigma}\end{split}\]</div>
+<p>Hence, the permutation <span class="math">\(\sigma\)</span>, given in image tuple notation, block permutes <span class="math">\(\mathbf{n}\)</span> iff for all <span class="math">\(1 \le j \le N\)</span>  and for all <span class="math">\(0 \le k &lt; n_j\)</span> we have <span class="math">\(\sigma(o_j + k) = \sigma(o_j) + k\)</span>, where we have introduced the block offsets <span class="math">\(o_j := 1 + \sum_{j' &lt; j} n_j\)</span>.
+When these conditions are satisfied, <span class="math">\(\tilde{\sigma}\)</span> may be obtained by demanding that <span class="math">\(\tilde{\sigma}(a) &gt; \tilde{\sigma}(b) \Leftrightarrow \sigma(o_a) &gt; \sigma(o_b)\)</span>. This equivalence reduces the computation of <span class="math">\(\tilde{\sigma}\)</span> to sorting a list in a specific way.</p>
+<p><strong>Block-factorizing permutations</strong></p>
+<p>The next-to-simplest case is realized when a permutation <span class="math">\(\sigma\)</span> can be decomposed <span class="math">\(\sigma = \sigma_{\rm b} \circ \sigma_{\rm i}\)</span> into a permutation <span class="math">\(\sigma_{\rm b}\)</span> that block permutes the block structure <span class="math">\(\mathbf{n}\)</span> and an internal permutation <span class="math">\(\sigma_{\rm i}\)</span> that only permutes within each block, i.e.~:math:<cite>sigma_{rm i} = sigma_1 boxplus sigma_2 boxplus dots boxplus sigma_N</cite>. In this case we can perform the following simplifications</p>
+<div class="math">
+\[P_{\sigma} \lhd (Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N) = P_{\sigma_b} \lhd \left[ (P_{\sigma_1} \lhd Q_1) \boxplus (P_{\sigma_2} \lhd Q_2) \boxplus \dots \boxplus (P_{\sigma_N} \lhd Q_N)\right].\]</div>
+<p>We see that we have reduced the problem to the above discussed case. The result is now</p>
+<div class="math">
+\[P_{\sigma} \lhd (Q_1 \boxplus \dots \boxplus Q_N) = \left[ (P_{\sigma_{\tilde{\sigma_{\rm b}}(1)}} \lhd Q_{\tilde{\sigma_{\rm b}}(1)}) \boxplus \dots \boxplus (P_{\sigma_{\tilde{\sigma_{\rm b}}(N)}} \lhd Q_{\tilde{\sigma_{\rm b}}(N)})\right] \lhd P_{\sigma_{\rm b}}.\]</div>
+<p>In this case we say that <span class="math">\(\sigma\)</span> <em>block factorizes</em> according to the block structure <span class="math">\(\mathbf{n}\)</span>.
+The following figure illustrates an example of this case.</p>
+<div class="figure">
+<img alt="_images/block_factorization1.png" src="_images/block_factorization1.png" style="height: 2cm;" />
+<p class="caption"><span class="math">\(P_\sigma \lhd (A_1 \boxplus A_2)\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/block_factorization1a.png" src="_images/block_factorization1a.png" style="height: 2cm;" />
+<p class="caption"><span class="math">\(P_{\sigma_b} \lhd P_{\sigma_i} \lhd (A_1 \boxplus A_2)\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/block_factorization2.png" src="_images/block_factorization2.png" style="height: 2cm;" />
+<p class="caption"><span class="math">\(((P_{\sigma_2} \lhd A_2) \boxplus A_1) \lhd P_{\sigma_{\rm b}}\)</span></p>
+</div>
+<p>A block factorizable series.</p>
+<p>A permutation <span class="math">\(\sigma\)</span> block factorizes according to the block structure <span class="math">\(\mathbf{n}\)</span> iff for all <span class="math">\(1 \le j \le N\)</span> we have <span class="math">\(\max_{0 \le k &lt; n_j}\sigma(o_j + k)  - \min_{0 \le k' &lt; n_j}\sigma(o_j + k') = n_j - 1\)</span>, with the block offsets defined as above. In other words, the image of a single block is coherent in the sense that no other numbers from outside the block are mapped into the integer range spanned by the minimal and maximal points in the block&#8217;s image. The equivalence follows from our previous result and the bijectivity of <span class="math">\(\sigma\)</span>.</p>
+<p><strong>The general case</strong></p>
+<p>In general there exists no unique way how to split apart the action of a permutation on a block structure. However, it is possible to define a some rules that allow us to &#8220;move as much of the permutation&#8221; as possible to the RHS of the series. This involves the factorization <span class="math">\(\sigma = \sigma_{\rm x} \circ \sigma_{\rm b} \circ \sigma_{\rm i}\)</span> defining a specific way of constructing both <span class="math">\(\sigma_{\rm b}\)</span> and <span class="math">\(\sigma_{\rm i}\)</span> from <span class="math">\(\sigma\)</span>. The remainder <span class="math">\(\sigma_{\rm x}\)</span> can then be calculated through</p>
+<div class="math">
+\[\sigma_{\rm x} := \sigma \circ \sigma_{\rm i}^{-1} \circ \sigma_{\rm b}^{-1}.\]</div>
+<p>Hence, by construction, <span class="math">\(\sigma_{\rm b} \circ \sigma_{\rm i}\)</span> factorizes according to <span class="math">\(\mathbf{n}\)</span> so only <span class="math">\(\sigma_{\rm x}\)</span> remains on the exterior LHS of the expression.</p>
+<p>So what then are the rules according to which we construct the block permuting <span class="math">\(\sigma_{\rm b}\)</span> and the decomposable <span class="math">\(\sigma_{\rm i}\)</span>?
+We wish to define <span class="math">\(\sigma_{\rm i}\)</span> such that the remainder <span class="math">\(\sigma \circ \sigma_{\rm i}^{-1} = \sigma_{\rm x} \circ \sigma_{\rm b}\)</span> does not cross any two signals that are emitted from the same block. Since by construction <span class="math">\(\sigma_{\rm b}\)</span> only permutes full blocks anyway this means that <span class="math">\(\sigma_{\rm x}\)</span> also does not cross any two signals emitted from the same block.
+This completely determines <span class="math">\(\sigma_{\rm i}\)</span> and we can therefore calculate <span class="math">\(\sigma \circ \sigma_{\rm i}^{-1} = \sigma_{\rm x} \circ \sigma_{\rm b}\)</span> as well. To construct <span class="math">\(\sigma_{\rm b}\)</span> it is sufficient to define an total order relation on the blocks that only depends on the block structure <span class="math">\(\mathbf{n}\)</span> and on <span class="math">\(\sigma \circ \sigma_{\rm i}^{-1}\)</span>. We define the order on the blocks such that they are ordered according to their minimal image point under <span class="math">\(\sigma\)</span>. Since <span class="math">\(\sigma \circ \sigma_{\rm i}^{-1}\)</span> does not let any block-internal lines cross, we can thus order the blocks according to the order of the images of the first signal <span class="math">\(\sigma \circ \sigma_{\rm i}^{-1}(o_j)\)</span>. In (ref fig general_factorization) we have illustrated this with an example.</p>
+<div class="figure">
+<img alt="_images/block_factorization_g1.png" src="_images/block_factorization_g1.png" style="height: 1.6cm;" />
+<p class="caption"><span class="math">\(P_\sigma \lhd (A_1 \boxplus A_2)\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/block_factorization_g1a.png" src="_images/block_factorization_g1a.png" style="height: 1.6cm;" />
+<p class="caption"><span class="math">\(P_{\sigma_{\rm x}} \lhd P_{\sigma_{\rm b}} \lhd P_{\sigma_{\rm i}} \lhd (A_1 \boxplus A_2)\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/block_factorization_g2.png" src="_images/block_factorization_g2.png" style="height: 1.6cm;" />
+<p class="caption"><span class="math">\((P_{\sigma_{\rm x}} \lhd (P_{\sigma_2} \lhd A_2) \boxplus A_1) \lhd P_{\sigma_{\rm b}}\)</span></p>
+</div>
+<p>A general series with a non-factorizable permutation. In the intermediate step we have explicitly separated <span class="math">\(\sigma = \sigma_{\rm x} \circ \sigma_{\rm b} \circ \sigma_{\rm i}\)</span>.</p>
+<p>Finally, it is a whole different question, why we would want move part of a permutation through the concatenated expression in this first place as the expressions usually appear to become more complicated rather than simpler. This is, because we are currently focussing only on single series products between two systems. In a realistic case we have many systems in series and among these there might be quite a few permutations. Here, it would seem advantageous to reduce the total number of permutations within the series by consolidating them where possible: <span class="math">\(P_{\sigma_2} \lhd P_{\sigma_1} = P_{\sigma_2 \circ \sigma_1}\)</span>. To do this, however, we need to try to move the permutations through the full series and collect them on one side (in our case the RHS) where they can be combined to a single permutation.
+Since it is not always possible to move a permutation through a concatenation (as we have seen above), it makes sense to at some point in the simplification process reverse the direction in which we move the permutations and instead collect them on the LHS. Together these two strategies achieve a near perfect permutation simplification.</p>
+</div>
+<div class="section" id="feedback-of-a-concatenation">
+<h2>Feedback of a concatenation<a class="headerlink" href="#feedback-of-a-concatenation" title="Permalink to this headline">¶</a></h2>
+<p>A feedback operation on a concatenation can always be simplified in one of two ways: If the outgoing and incoming feedback ports belong to the same irreducible subblock of the concatenation, then the feedback can be directly applied only to that single block. For an illustrative example see the figures below:</p>
+<div class="figure">
+<img alt="_images/feedback_concatenation_irre_a.png" src="_images/feedback_concatenation_irre_a.png" style="height: 2cm;" />
+<p class="caption"><span class="math">\([A_1 \boxplus A_2]_{2 \to 3}\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/feedback_concatenation_irre_b.png" src="_images/feedback_concatenation_irre_b.png" style="height: 2cm;" />
+<p class="caption"><span class="math">\(A_1 \boxplus [A_2]_{1 \to 2}\)</span></p>
+</div>
+<p>Reduction to feedback of subblock.</p>
+<p>If, on the other, the outgoing feedback port is on a different subblock than the incoming, the resulting circuit actually does not contain any real feedback and we can find a way to reexpress it algebraically by means of a series product.</p>
+<div class="figure">
+<img alt="_images/feedback_concatenation_re1_a.png" src="_images/feedback_concatenation_re1_a.png" style="width: 4cm;" />
+<p class="caption"><span class="math">\([A_1 \boxplus A_2]_{1 \to 3}\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/feedback_concatenation_re1_b.png" src="_images/feedback_concatenation_re1_b.png" style="width: 10cm;" />
+<p class="caption"><span class="math">\(A_2 \lhd W_{2 \gets 1}^{(2)} \lhd (A_2 \boxplus {\rm id}_{1})\)</span></p>
+</div>
+<p>Reduction of feedback to series, first example</p>
+<div class="figure">
+<img alt="_images/feedback_concatenation_re2_a.png" src="_images/feedback_concatenation_re2_a.png" style="width: 4cm;" />
+<p class="caption"><span class="math">\([A_1 \boxplus A_2]_{2 \to 1}\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/feedback_concatenation_re2_b.png" src="_images/feedback_concatenation_re2_b.png" style="width: 8cm;" />
+<p class="caption"><span class="math">\((A_1 \boxplus {\rm id}_{1}) \lhd A_2\)</span></p>
+</div>
+<p>Reduction of feedback to series, second example</p>
+<p>To discuss the case in full generality consider the feedback expression <span class="math">\([A \boxplus B]_{k \to l}\)</span> with <span class="math">\({\rm cdim}\;{A} = n_A\)</span> and  <span class="math">\({\rm cdim}\;{B} = n_B\)</span> and where <span class="math">\(A\)</span> and <span class="math">\(B\)</span> are not necessarily irreducible.
+There are four different cases to consider.</p>
+<blockquote>
+<div><ul class="simple">
+<li><span class="math">\(k,l \le n_A\)</span>: In this case the simplified expression should be <span class="math">\([A]_{k \to l} \boxplus B\)</span></li>
+<li><span class="math">\(k,l &gt; n_A\)</span>: Similarly as before but now the feedback is restricted to the second operand <span class="math">\(A \boxplus [B]_{(k-n_A) \to (l-n_A)}\)</span>, cf. Fig. (ref fig fc_irr).</li>
+<li><span class="math">\(k \le n_A &lt; l\)</span>: This corresponds to a situation that is actually a series and can be re-expressed as <span class="math">\(({\rm id}{n_A - 1} \boxplus B) \lhd W_{(l-1) \gets k}^{(n)} \lhd (A + {\rm id}{n_B - 1})\)</span>, cf. Fig. (ref fig fc_re1).</li>
+<li><span class="math">\(l \le n_A &lt; k\)</span>: Again, this corresponds a series but with a reversed order compared to above <span class="math">\((A + {\rm id}{n_B - 1}) \lhd W_{l \gets (k-1)}^{(n)} \lhd ({\rm id}{n_A - 1} \boxplus B)\)</span>, cf. Fig. (ref fig fc_re2).</li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="feedback-of-a-series">
+<h2>Feedback of a series<a class="headerlink" href="#feedback-of-a-series" title="Permalink to this headline">¶</a></h2>
+<p>There are two important cases to consider for the kind of expression at either end of the series:
+A series starting or ending with a permutation system or a series starting or ending with a concatenation.</p>
+<div class="figure">
+<img alt="_images/feedback_series_ca.png" src="_images/feedback_series_ca.png" style="height: 1.8cm;" />
+<p class="caption"><span class="math">\([A_3 \lhd (A_1 \boxplus A_2)]_{2 \to 1}\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/feedback_series_cb.png" src="_images/feedback_series_cb.png" style="height: 1.8cm;" />
+<p class="caption"><span class="math">\((A_3 \lhd (A_1 \boxplus {\rm id}_{2})) \lhd A_2\)</span></p>
+</div>
+<p>Reduction of series feedback with a concatenation at the RHS</p>
+<div class="figure">
+<img alt="_images/feedback_series_pa.png" src="_images/feedback_series_pa.png" />
+<p class="caption"><span class="math">\([A_3 \lhd P_\sigma]_{2 \to 1}\)</span></p>
+</div>
+<div class="figure">
+<img alt="_images/feedback_series_pb.png" src="_images/feedback_series_pb.png" />
+<p class="caption"><span class="math">\([A_3]_{2 \to 3} \lhd P_{\tilde{\sigma}}\)</span></p>
+</div>
+<p>Reduction of series feedback with a permutation at the RHS</p>
+<blockquote>
+<div><p>1) <span class="math">\([A \lhd (C \boxplus D)]_{k \to l}\)</span>: We define <span class="math">\(n_C = {\rm cdim}\;{C}\)</span> and <span class="math">\(n_A = {\rm cdim}\;{A}\)</span>. Without too much loss of generality, let&#8217;s assume that <span class="math">\(l \le n_C\)</span> (the other case is quite similar). We can then pull <span class="math">\(D\)</span> out of the feedback loop:
+<span class="math">\([A \lhd (C \boxplus D)]_{k \to l} \longrightarrow [A \lhd (C \boxplus {\rm id}{n_D})]_{k \to l} \lhd ({\rm id}{n_C - 1} \boxplus D)\)</span>.
+Obviously, this operation only makes sense if <span class="math">\(D \neq {\rm id}{n_D}\)</span>. The case <span class="math">\(l&gt;n_C\)</span> is quite similar, except that we pull <span class="math">\(C\)</span> out of the feedback. See Figure (ref fig fs_c) for an example.</p>
+<ol class="arabic simple" start="2">
+<li>We now consider <span class="math">\([(C \boxplus D) \lhd E]_{k \to l}\)</span> and we assume <span class="math">\(k \le n_C\)</span> analogous to above. Provided that <span class="math">\(D \neq {\rm id}{n_D}\)</span>, we can pull it out of the feedback and get <span class="math">\(({\rm id}{n_C -1} \boxplus D) \lhd [(C \boxplus {\rm id}{n_D}) \lhd E]_{k \to l}\)</span>.</li>
+</ol>
+<p>3) <span class="math">\([A \lhd P_\sigma]_{k \to l}\)</span>: The case of a permutation within a feedback loop is a lot more intuitive to understand graphically (e.g., cf. Figure ref fig fs_p). Here, however we give a thorough derivation of how a permutation can be reduced to one involving one less channel and moved outside of the feedback.
+First, consider the equality <span class="math">\([A \lhd W_{j \gets l}^{(n)}]_{k \to l} = [A]_{k \to j}\)</span> which follows from the fact that <span class="math">\(W_{j \gets l}^{(n)}\)</span> preserves the order of all incoming signals except the <span class="math">\(l\)</span>-th.
+Now, rewrite</p>
+<div class="math">
+\[\begin{split}[A \lhd P_\sigma]_{k \to l} &amp; = [A \lhd P_\sigma \lhd W_{l \gets n}^{(n)} \lhd W_{n \gets l}^{(n)}]_{k \to l} \\
+                            &amp; = [A \lhd P_\sigma \lhd W_{l \gets n}^{(n)} ]_{k \to n} \\
+                            &amp; = [A \lhd W_{\sigma(l) \gets n}^{(n)} \lhd (W_{n \gets \sigma(l)}^{(n)} \lhd P_\sigma \lhd W_{l \gets n}) ]_{k \to n}\end{split}\]</div>
+<p>Turning our attention to the bracketed expression within the feedback, we clearly see that it must be a permutation system <span class="math">\(P_{\sigma'} = W_{n \gets \sigma(l)}^{(n)} \lhd P_\sigma \lhd W_{l \gets n}^{(n)}\)</span> that maps <span class="math">\(n \to l \to \sigma(l) \to n\)</span>. We can therefore write <span class="math">\(\sigma' = \tilde{\sigma} \boxplus \sigma_{{\rm id}_1}\)</span> or equivalently <span class="math">\(P_{\sigma'} = P_{\tilde{\sigma}} \boxplus {\rm id}{1}\)</span> But this means, that the series within the feedback ends with a concatenation and from our above rules we know how to handle this:</p>
+<div class="math">
+\[\begin{split}[A \lhd P_\sigma]_{k \to l} &amp; = [A \lhd W_{\sigma(l) \gets n}^{(n)} \lhd (P_{\tilde{\sigma}} \boxplus {\rm id}{1})]_{k \to n} \\
+                            &amp; = [A \lhd W_{\sigma(l) \gets n}^{(n)}]_{k \to n} \lhd P_{\tilde{\sigma}} \\
+                            &amp; = [A]_{k \to \sigma(l)} \lhd P_{\tilde{\sigma}},\end{split}\]</div>
+<p>where we know that the reduced permutation is the well-defined restriction to <span class="math">\(n-1\)</span> elements of <span class="math">\(\sigma' = \left(\omega_{n \gets \sigma{l}}^{(n)} \circ \sigma \circ \omega_{l \gets n}^{(n)}\right)\)</span>.</p>
+<ol class="arabic simple" start="4">
+<li>The last case is analogous to the previous one and we will only state the results without a derivation:</li>
+</ol>
+<div class="math">
+\[\begin{split}[P_\sigma \lhd A]_{k \to l} &amp; = P_{\tilde{\sigma}} \lhd  [A]_{\sigma^{-1}(k) \to l},\end{split}\]</div>
+<p>where the reduced permutation is given by the (again well-defined) restriction of <span class="math">\(\omega_{n \gets k}^{(n)} \circ \sigma \circ \omega_{\sigma^{-1}(k) \gets n}^{(n)}\)</span> to <span class="math">\(n-1\)</span> elements.</p>
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="circuit_component.html" title="Circuit Component Definition"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="symbolic_algebra.html" title="Symbolic Algebra"
+             >previous</a> |</li>
+        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Nikolas Tezak.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
