@@ -3,11 +3,13 @@
 Properties and Simplification of Circuit Algebraic Expressions
 ==============================================================
 
+
+
 By observing that we can define for a general system :math:`Q = (\mathbf{S}, \mathbf{L}, H)` its *series inverse* system :math:`Q^{\lhd -1} := (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H)`
 
 .. math::
 
-    (\mathbf{S}, \mathbf{L}, H) \lhd (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H) =   (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H) \lhd (\mathbf{S}, \mathbf{L}, H) = (\mathbb{I}_n, 0, 0) =: {\rm id}{n},
+    (\mathbf{S}, \mathbf{L}, H) \lhd (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H) =   (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H) \lhd (\mathbf{S}, \mathbf{L}, H) = (\mathbb{I}_n, 0, 0) =: {\rm id}_{n},
 
 we see that the series product induces a group structure on the set of :math:`n`-channel circuit components for any :math:`n \ge 1`.
 It can easily be verified that the series inverse of the basic operations is calculated as follows
@@ -33,9 +35,23 @@ A further interesting property that follows intuitively from the graphical repre
     (A \boxplus B) \lhd (C \boxplus D) = (A \lhd C) \boxplus (B \lhd D),
 
 which is valid for :math:`{\rm cdim}\;{A} = {\rm cdim}\;{C}` and :math:`{\rm cdim}\;{B} = {\rm cdim}\;{D}`.
-(figures decomposition_law, Equivalent circuits, where a red box marks a series product and a blue box marks a concatenation. The second version \ref{fig:dist2} has the advantage of making more explicit that the overall circuit consists of two channels without direct optical scattering.)
 
-As mentioned in the caption to Figure, it will most often be preferable to use the RHS expression of Equation () as this enables us to understand the flow of optical channels more easily from the algebraic expression.
+The following figures demonstrate the ambiguity of the circuit algebra:
+
+.. figure:: _static/plots/dist1.png
+    :width: 6cm
+    
+    :math:`(A \boxplus B) \lhd (C \boxplus D)`
+
+.. figure:: _static/plots/dist2.png
+    :width: 6cm
+    
+    :math:`(A \lhd C) \boxplus (B \lhd D)`
+
+
+Here, a red box marks a series product and a blue box marks a concatenation. The second version expression has the advantage of making more explicit that the overall circuit consists of two channels without direct optical scattering.
+
+It will most often be preferable to use the RHS expression of the tensor decomposition law above as this enables us to understand the flow of optical signals more easily from the algebraic expression.
 In [GoughJames09]_ Gough and James denote a system that can be expressed as a concatenation as *reducible*. A system that cannot be further decomposed into concatenated subsystems is accordingly called *irreducible*.
 As follows intuitively from a graphical representation any given complex system :math:`Q = (\mathbf{S}, \mathbf{L}, H)` admits a decomposition into :math:`1 \le N \le {\rm cdim}\;{Q}` irreducible subsystems :math:`Q = Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N`, where their channel dimensions satisfy :math:`{\rm cdim}\;{Q_j}\ge 1, \, j=1,2, \dots N` and :math:`\sum_{j=1}^N {\rm cdim}\;{Q_j} = {\rm cdim}\;{Q}`. While their individual parameter triplets themselves are not uniquely determined\footnote{Actually the scattering matrices :math:`\{\mathbf{S}_j\}` and the coupling vectors :math:`\{\mathbf{L}_j\}` *are* uniquely determined, but the Hamiltonian parameters :math:`\{H_j\}` must only obey the constraint :math:`\sum_{j=1}^N H_j = H`.}, the sequence of their channel dimensions :math:`({\rm cdim}\;{Q_1}, {\rm cdim}\;{Q_2},\dots {\rm cdim}\;{Q_N}) =: {\rm bls}\;{Q}` clearly is. We denote this tuple as the block structure of :math:`Q`.
 We are now able to generalize the decomposition law in the following way:
@@ -48,13 +64,30 @@ Given two systems of :math:`n` channels with the same block structure :math:`{\r
 with :math:`{\rm cdim}\;{A_j} = {\rm cdim}\;{B_j} = n_j,\, j = 1, \dots N`.
 However, even in the case that the two block structures are not equal, there may still exist non-trivial compatible block decompositions that at least allow a partial application of the decomposition law.
 Consider the example presented in Figure (block_structures).
-(figure, block_structures, Even in the case of a series between systems with unequal block structures, there often exists a non-trivial common block decomposition that simplifies the overall expression.)
+
+.. figure:: _static/plots/blocks1.png
+    :width: 6cm
+
+    Series :math:`"(1,2,1) \lhd (2,1,1)"`
+
+.. figure:: _static/plots/blocks2.png
+    :width: 6cm
+
+    Optimal decomposition into :math:`(3,1)`
+
+
+
+Even in the case of a series between systems with unequal block structures, there often exists a non-trivial common block decomposition that simplifies the overall expression.
 
 Permutation objects
 -------------------
 
 The algebraic representation of complex circuits often requires systems that only permute channels without actual scattering. The group of permutation matrices is simply a subgroup of the unitary (operator) matrices. For any permutation matrix :math:`\mathbf{P}`, the system described by :math:`(\mathbf{P},\mathbf{0},0)` represents a pure permutation of the optical fields (ref fig permutation).
-(fig, permutation, A graphical representation of :math:`\mathbf{P}_\sigma` where :math:`\sigma \equiv (4,1,5,2,3)` in image tuple notation.)
+
+.. figure:: _static/plots/permutation.png
+
+    A graphical representation of :math:`\mathbf{P}_\sigma` where :math:`\sigma \equiv (4,1,5,2,3)` in image tuple notation.
+
 
 A permutation :math:`\sigma` of :math:`n` elements (:math:`\sigma \in \Sigma_n`) is often represented in the following form :math:`\begin{pmatrix} 1 & 2 & \dots & n \\ \sigma(1) & \sigma(2) & \dots & \sigma(n)\end{pmatrix}`, but obviously it is also sufficient to specify the tuple of images :math:`(\sigma(1), \sigma(2), \dots, \sigma(n))`.
 We now define the permutation matrix via its matrix elements
@@ -107,8 +140,19 @@ Given a series :math:`P_{\sigma} \lhd (Q_1 \boxplus Q_2 \boxplus \dots \boxplus 
 
 **Block-permuting permutations**
 
-The simples case is realized when the permutation simply permutes whole blocks intactly (fig ref block_permuting_permutations)
-(fig, block_permuting_permutations, A block permuting series).
+The simples case is realized when the permutation simply permutes whole blocks intactly
+
+.. figure:: _static/plots/block_permutation1.png
+    :width: 6cm
+
+    :math:`P_\sigma \lhd (A_1 \boxplus A_2)`
+
+.. figure:: _static/plots/block_permutation2.png
+    :width: 6cm
+
+    :math:`(A_2 \boxplus A_1) \lhd P_\sigma` 
+
+A block permuting series.
 
 Given a block structure :math:`\mathbf{n} := (n_1, n_2, \dots n_N)` a permutation :math:`\sigma \in \Sigma_n` is said to *block permute* :math:`\mathbf{n}` iff there exists a permutation :math:`\tilde{\sigma} \in \Sigma_N` such that
 
@@ -135,9 +179,24 @@ We see that we have reduced the problem to the above discussed case. The result 
     P_{\sigma} \lhd (Q_1 \boxplus \dots \boxplus Q_N) = \left[ (P_{\sigma_{\tilde{\sigma_{\rm b}}(1)}} \lhd Q_{\tilde{\sigma_{\rm b}}(1)}) \boxplus \dots \boxplus (P_{\sigma_{\tilde{\sigma_{\rm b}}(N)}} \lhd Q_{\tilde{\sigma_{\rm b}}(N)})\right] \lhd P_{\sigma_{\rm b}}.
 
 In this case we say that :math:`\sigma` *block factorizes* according to the block structure :math:`\mathbf{n}`.
-Figure  illustrates an example of this case.
+The following figure illustrates an example of this case.
 
-(fig, block_factorizing_permutations, A block factorizable series.)
+.. figure:: _static/plots/block_factorization1.png
+    :height: 2cm
+
+    :math:`P_\sigma \lhd (A_1 \boxplus A_2)`
+
+.. figure:: _static/plots/block_factorization1a.png
+    :height: 2cm
+
+    :math:`P_{\sigma_b} \lhd P_{\sigma_i} \lhd (A_1 \boxplus A_2)`
+
+.. figure:: _static/plots/block_factorization2.png
+    :height: 2cm
+
+    :math:`((P_{\sigma_2} \lhd A_2) \boxplus A_1) \lhd P_{\sigma_{\rm b}}`
+
+A block factorizable series.
 
 A permutation :math:`\sigma` block factorizes according to the block structure :math:`\mathbf{n}` iff for all :math:`1 \le j \le N` we have :math:`\max_{0 \le k < n_j}\sigma(o_j + k)  - \min_{0 \le k' < n_j}\sigma(o_j + k') = n_j - 1`, with the block offsets defined as above. In other words, the image of a single block is coherent in the sense that no other numbers from outside the block are mapped into the integer range spanned by the minimal and maximal points in the block's image. The equivalence follows from our previous result and the bijectivity of :math:`\sigma`.
 
@@ -155,7 +214,22 @@ So what then are the rules according to which we construct the block permuting :
 We wish to define :math:`\sigma_{\rm i}` such that the remainder :math:`\sigma \circ \sigma_{\rm i}^{-1} = \sigma_{\rm x} \circ \sigma_{\rm b}` does not cross any two signals that are emitted from the same block. Since by construction :math:`\sigma_{\rm b}` only permutes full blocks anyway this means that :math:`\sigma_{\rm x}` also does not cross any two signals emitted from the same block.
 This completely determines :math:`\sigma_{\rm i}` and we can therefore calculate :math:`\sigma \circ \sigma_{\rm i}^{-1} = \sigma_{\rm x} \circ \sigma_{\rm b}` as well. To construct :math:`\sigma_{\rm b}` it is sufficient to define an total order relation on the blocks that only depends on the block structure :math:`\mathbf{n}` and on :math:`\sigma \circ \sigma_{\rm i}^{-1}`. We define the order on the blocks such that they are ordered according to their minimal image point under :math:`\sigma`. Since :math:`\sigma \circ \sigma_{\rm i}^{-1}` does not let any block-internal lines cross, we can thus order the blocks according to the order of the images of the first signal :math:`\sigma \circ \sigma_{\rm i}^{-1}(o_j)`. In (ref fig general_factorization) we have illustrated this with an example.
 
-(fig, general_factorization, A general series with a non-factorizable permutation. In the intermediate step \ref{fig:bfg1a} we have explicitly separated :math:`\sigma = \sigma_{\rm x} \circ \sigma_{\rm b} \circ \sigma_{\rm i}`).
+.. figure:: _static/plots/block_factorization_g1.png
+    :height: 1.6cm
+
+    :math:`P_\sigma \lhd (A_1 \boxplus A_2)`
+
+.. figure:: _static/plots/block_factorization_g1a.png
+    :height: 1.6cm
+
+    :math:`P_{\sigma_{\rm x}} \lhd P_{\sigma_{\rm b}} \lhd P_{\sigma_{\rm i}} \lhd (A_1 \boxplus A_2)`
+
+.. figure:: _static/plots/block_factorization_g2.png
+    :height: 1.6cm
+
+    :math:`(P_{\sigma_{\rm x}} \lhd (P_{\sigma_2} \lhd A_2) \boxplus A_1) \lhd P_{\sigma_{\rm b}}`
+
+A general series with a non-factorizable permutation. In the intermediate step we have explicitly separated :math:`\sigma = \sigma_{\rm x} \circ \sigma_{\rm b} \circ \sigma_{\rm i}`.
 
 Finally, it is a whole different question, why we would want move part of a permutation through the concatenated expression in this first place as the expressions usually appear to become more complicated rather than simpler. This is, because we are currently focussing only on single series products between two systems. In a realistic case we have many systems in series and among these there might be quite a few permutations. Here, it would seem advantageous to reduce the total number of permutations within the series by consolidating them where possible: :math:`P_{\sigma_2} \lhd P_{\sigma_1} = P_{\sigma_2 \circ \sigma_1}`. To do this, however, we need to try to move the permutations through the full series and collect them on one side (in our case the RHS) where they can be combined to a single permutation.
 Since it is not always possible to move a permutation through a concatenation (as we have seen above), it makes sense to at some point in the simplification process reverse the direction in which we move the permutations and instead collect them on the LHS. Together these two strategies achieve a near perfect permutation simplification.
@@ -163,16 +237,49 @@ Since it is not always possible to move a permutation through a concatenation (a
 Feedback of a concatenation
 ---------------------------
 
-A feedback operation on a concatenation can always be simplified in one of two ways: If the outgoing and incoming feedback ports belong to the same irreducible subblock of the concatenation, then the feedback can be directly applied only to that single block. For an illustrative example see (Figure ref fc_irr).
-
-(fig, fc_irr, Reduction to feedback of subblock).
+A feedback operation on a concatenation can always be simplified in one of two ways: If the outgoing and incoming feedback ports belong to the same irreducible subblock of the concatenation, then the feedback can be directly applied only to that single block. For an illustrative example see the figures below:
 
 
-If, on the other, the outgoing feedback port is on a different subblock than the incoming, the resulting circuit actually does not contain any real feedback and we can find a way to reexpress it algebraically by means of a series product (cf. Figures fc_re1 and fc_re2).
+.. figure:: _static/plots/feedback_concatenation_irre_a.png
+    :height: 2cm
 
-(fig, fc_re1, Reduction of feedback to series, first example)
+    :math:`[A_1 \boxplus A_2]_{2 \to 3}`
 
-(fig,fc_re2, Reduction of feedback to series, second example)
+.. figure:: _static/plots/feedback_concatenation_irre_b.png
+    :height: 2cm
+
+    :math:`A_1 \boxplus [A_2]_{1 \to 2}`
+
+Reduction to feedback of subblock.
+
+
+If, on the other, the outgoing feedback port is on a different subblock than the incoming, the resulting circuit actually does not contain any real feedback and we can find a way to reexpress it algebraically by means of a series product.
+
+
+.. figure:: _static/plots/feedback_concatenation_re1_a.png
+    :width: 4cm
+
+    :math:`[A_1 \boxplus A_2]_{1 \to 3}`
+
+.. figure:: _static/plots/feedback_concatenation_re1_b.png
+    :width: 10cm
+
+    :math:`A_2 \lhd W_{2 \gets 1}^{(2)} \lhd (A_2 \boxplus {\rm id}_{1})`
+
+
+Reduction of feedback to series, first example
+
+.. figure:: _static/plots/feedback_concatenation_re2_a.png
+    :width: 4cm
+
+    :math:`[A_1 \boxplus A_2]_{2 \to 1}`
+
+.. figure:: _static/plots/feedback_concatenation_re2_b.png
+    :width: 8cm
+
+    :math:`(A_1 \boxplus {\rm id}_{1}) \lhd A_2`
+
+Reduction of feedback to series, second example
 
 
 To discuss the case in full generality consider the feedback expression :math:`[A \boxplus B]_{k \to l}` with :math:`{\rm cdim}\;{A} = n_A` and  :math:`{\rm cdim}\;{B} = n_B` and where :math:`A` and :math:`B` are not necessarily irreducible.
@@ -192,9 +299,27 @@ Feedback of a series
 There are two important cases to consider for the kind of expression at either end of the series:
 A series starting or ending with a permutation system or a series starting or ending with a concatenation.
 
-(fig, fs_c, Reduction of series feedback with a concatenation at the RHS)
+.. figure:: _static/plots/feedback_series_ca.png
+    :height: 1.8cm
 
-(fig, fs_p, Reduction of series feedback with a permutation at the RHS)
+    :math:`[A_3 \lhd (A_1 \boxplus A_2)]_{2 \to 1}`
+
+.. figure:: _static/plots/feedback_series_cb.png
+    :height: 1.8cm
+
+    :math:`(A_3 \lhd (A_1 \boxplus {\rm id}_{2})) \lhd A_2`
+
+Reduction of series feedback with a concatenation at the RHS
+
+.. figure:: _static/plots/feedback_series_pa.png
+
+    :math:`[A_3 \lhd P_\sigma]_{2 \to 1}`
+
+.. figure:: _static/plots/feedback_series_pb.png
+
+    :math:`[A_3]_{2 \to 3} \lhd P_{\tilde{\sigma}}`
+
+Reduction of series feedback with a permutation at the RHS
 
 
     1) :math:`[A \lhd (C \boxplus D)]_{k \to l}`: We define :math:`n_C = {\rm cdim}\;{C}` and :math:`n_A = {\rm cdim}\;{A}`. Without too much loss of generality, let's assume that :math:`l \le n_C` (the other case is quite similar). We can then pull :math:`D` out of the feedback loop:

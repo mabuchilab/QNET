@@ -80,9 +80,12 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
     if isinstance(circuit, str):
         try:
             parsed = parse_circuit_strings.parse_circuit_strings(circuit)
-            if len(parsed) > 1:
-                raise NotImplementedError('Can currently only process a single expression.')
-            circuit = parsed[0]
+            if not isinstance(parsed, ca.Circuit):
+                if len(parsed) > 1:
+                    raise NotImplementedError('Can currently only process a single expression.')
+                circuit = parsed[0]
+            else:
+                circuit = parsed
         except parse_circuit_strings.ParseCircuitStringError as e:
             raise ValueError('Could not parse {}'.format(circuit))
 
@@ -326,7 +329,7 @@ def draw_circuit(circuit, filename, direction = 'lr',
     if any(filename.endswith(suffix) for suffix in ('.pdf', '.eps', '.ps')):
         c.writetofile(filename)
     elif any(filename.endswith(suffix) for suffix in ('.png','.jpg')):
-        c.pipeGS(filename)
+        c.writeGSfile(filename)
     return True
 
 

@@ -2,7 +2,7 @@ QNET
 ====
 
 The QNET package is a set of tools created and compiled to aid in the design and analysis of photonic circuit models.
-Our proposed Quantum Hardware Description Language (QHDL_) serves to describe a circuit topology and specification of a larger entity in terms of parametrizable subcomponents.
+Our proposed Quantum Hardware Description Language (cf. QHDL_) serves to describe a circuit topology and specification of a larger entity in terms of parametrizable subcomponents.
 This is strongly analogous to the specification of electric circuitry using the structural description elements of VHDL or Verilog.
 The physical systems that can be modeled within the framework include quantum optical experiments that can be described as nodes with internal degrees of freedom such as interacting quantum harmonic oscillators and/or N-level quantum systems that,
 in turn are coupled to a finite number of external bosonic quantum fields.
@@ -12,9 +12,10 @@ Contents
 
 The package consists of the following components:
 
-1. A symbolic computer algebra package ``qnet.algebra`` for Hilbert Space quantum mechanical operators, the Gough-James circuit algebra and also an algebra for Hilbert space states and Super-operators.
+1. A symbolic computer algebra package ``qnet.algebra`` for Hilbert Space quantum mechanical operators, the Gough-James circuit algebra and also an algebra for Hilbert space *Ket*-states and *Super-operators* which themselves act on operators.
 2. The QHDL_ language definition and parser ``qnet.qhdl`` including a front-end located at ``bin/parse_qhdl.py`` that can convert a QHDL-file into a circuit component library file.
 3. A library of existing primitive or composite circuit components ``qnet.circuit_components`` that can be embedded into a new circuit definition.
+
 
 .. _Dependencies:
 
@@ -100,7 +101,7 @@ Also, if you want to implement and add your own primitive device models, please 
 Acknowledgements
 ----------------
 
-`Hideo Mabuchi <mailto:hmabuchi@stanford.edu>`_ had the initial idea for a software package that could exploit the Gough-James SLH formalism generate an overall open quantum system model for a quantum feedback network based solely on its topology and the component models.
+`Hideo Mabuchi <mailto:hmabuchi@stanford.edu>`_ had the initial idea for a software package that could exploit the Gough-James SLH formalism to generate an overall open quantum system model for a quantum feedback network based solely on its topology and the component models in analytic form.
 The actual QNET package was then planned and implemented by `Nikolas Tezak <mailto:ntezak@stanford.edu>`_. In its current form, QNET comprises
 functionality [#additionalFeatures]_ that goes well beyond what would be necessary to achieve the original goal, but which has proven to be immensely useful.
 In addition to the authors of the software packages listed under Dependencies_ that QNET relies on, we would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.

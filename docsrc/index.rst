@@ -13,7 +13,7 @@ By design this is analogous to the specification of electric circuitry using the
 The physical systems that can be modeled within the framework include quantum optical experiments that can be described as nodes with internal degrees of freedom such as interacting quantum harmonic oscillators and/or N-level quantum systems that,
 in turn are coupled to a finite number of bosonic quantum fields. Furthermore, the formalism applies also to superconducting microwave circuit (Circuit QED) systems.
 
-For a rigorous introduction to the underlying mathematical physics we refer to the original treatment of Gough and James [GoughJames08]_, [GoughJames09]_and the references given therein.
+For a rigorous introduction to the underlying mathematical physics we refer to the original treatment of Gough and James [GoughJames08]_, [GoughJames09]_ and the references given therein.
 
 
 The main components of this package are:
@@ -42,7 +42,7 @@ Also, if you want to implement and add your own primitive device models, please 
 Contents:
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    install
    symbolic_algebra
@@ -52,8 +52,16 @@ Contents:
    netlisting
    parsing_qhdl
    model_analysis_simulation
-   qnet
    references
+
+API:
+
+.. toctree::
+   :maxdepth: 3
+
+   qnet
+
+   
 
 
 Indices and tables

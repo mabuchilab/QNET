@@ -57,10 +57,10 @@ class TestCircuitParsing(unittest.TestCase):
         self.assertEqual(parse_circuit_strings('a(2) +  (b(1) << c(1))'), Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))))
         self.assertEqual(parse_circuit_strings('[a(2) +  (b(1) << c(1))]_(2->0)'), Feedback(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))),2,0))
 
-class TestVisualization(unittest.TestCase):
+class TestVisualizationPNG(unittest.TestCase):
 
     def setUp(self):
-        self.fname = gettempdir()  + '/tmp.eps'
+        self.fname = gettempdir()  + '/tmp.png'
 
     def tearDown(self):
         if path.exists(self.fname):
@@ -75,7 +75,7 @@ class TestVisualization(unittest.TestCase):
 
         c.text(0, 0, "Hello, world!")
         c.stroke(pyx.path.line(0, 0, 2, 0))
-        c.writeEPSfile(self.fname)
+        c.writeGSfile(self.fname)
         self.assertTrue(path.exists(self.fname))
         remove(self.fname)
 
@@ -128,6 +128,150 @@ class TestVisualization(unittest.TestCase):
         self.assertCanBeDrawn(K.toSLH())
 
 
+class TestVisualizationEPS(unittest.TestCase):
+    def setUp(self):
+        self.fname = gettempdir() + '/tmp.eps'
+
+    def tearDown(self):
+        if path.exists(self.fname):
+            remove(self.fname)
+
+    def testPyX(self):
+        if path.exists(self.fname):
+            remove(self.fname)
+
+        c = pyx.canvas.canvas()
+
+        c.text(0, 0, "Hello, world!")
+        c.stroke(pyx.path.line(0, 0, 2, 0))
+        c.writeEPSfile(self.fname)
+        self.assertTrue(path.exists(self.fname))
+        remove(self.fname)
+
+
+    def assertCanBeDrawn(self, circuit):
+        if path.exists(self.fname):
+            remove(self.fname)
+
+        self.assertTrue(draw_circuit(circuit, self.fname, 'lr'))
+        self.assertTrue(path.exists(self.fname))
+        remove(self.fname)
+
+        self.assertTrue(draw_circuit(circuit, self.fname, 'rl'))
+        self.assertTrue(path.exists(self.fname))
+        remove(self.fname)
+
+    def testDrawSymbol(self):
+        self.assertCanBeDrawn(CircuitSymbol('b', 1))
+        self.assertCanBeDrawn(CircuitSymbol('b', 2))
+
+    def testDrawCPermutation(self):
+        self.assertCanBeDrawn(CPermutation((0, 2, 3, 1)))
+
+    def testDrawSeries(self):
+        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+
+    def testDrawConcatenation(self):
+        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+
+    def testDrawIdentity(self):
+        self.assertCanBeDrawn(cid(5))
+
+    def testDrawFeedback(self):
+        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', 5), 3, 4))
+
+    def testDrawNested(self):
+        self.assertCanBeDrawn(
+            SeriesProduct(CircuitSymbol('a', 2), Concatenation(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
+        self.assertCanBeDrawn(
+            Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
+        self.assertCanBeDrawn(
+            Feedback(Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))),
+                2, 0))
+
+    def testDrawSLH(self):
+        self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(1)]]), Create(1) * Destroy(1)))
+
+    def testDrawComponent(self):
+        from qnet.circuit_components import kerr_cavity_cc as kerr
+
+        K = kerr.KerrCavity()
+        self.assertCanBeDrawn(K)
+        self.assertCanBeDrawn(K.creduce())
+        self.assertCanBeDrawn(K.toSLH())
+
+
+class TestVisualizationPDF(unittest.TestCase):
+    def setUp(self):
+        self.fname = gettempdir() + '/tmp.pdf'
+
+    def tearDown(self):
+        if path.exists(self.fname):
+            remove(self.fname)
+
+    def testPyX(self):
+        if path.exists(self.fname):
+            remove(self.fname)
+
+        c = pyx.canvas.canvas()
+
+        c.text(0, 0, "Hello, world!")
+        c.stroke(pyx.path.line(0, 0, 2, 0))
+        c.writePDFfile(self.fname)
+        self.assertTrue(path.exists(self.fname))
+        remove(self.fname)
+
+
+    def assertCanBeDrawn(self, circuit):
+        if path.exists(self.fname):
+            remove(self.fname)
+
+        self.assertTrue(draw_circuit(circuit, self.fname, 'lr'))
+        self.assertTrue(path.exists(self.fname))
+        remove(self.fname)
+
+        self.assertTrue(draw_circuit(circuit, self.fname, 'rl'))
+        self.assertTrue(path.exists(self.fname))
+        remove(self.fname)
+
+    def testDrawSymbol(self):
+        self.assertCanBeDrawn(CircuitSymbol('b', 1))
+        self.assertCanBeDrawn(CircuitSymbol('b', 2))
+
+    def testDrawCPermutation(self):
+        self.assertCanBeDrawn(CPermutation((0, 2, 3, 1)))
+
+    def testDrawSeries(self):
+        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+
+    def testDrawConcatenation(self):
+        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+
+    def testDrawIdentity(self):
+        self.assertCanBeDrawn(cid(5))
+
+    def testDrawFeedback(self):
+        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', 5), 3, 4))
+
+    def testDrawNested(self):
+        self.assertCanBeDrawn(
+            SeriesProduct(CircuitSymbol('a', 2), Concatenation(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
+        self.assertCanBeDrawn(
+            Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
+        self.assertCanBeDrawn(
+            Feedback(Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))),
+                2, 0))
+
+    def testDrawSLH(self):
+        self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(1)]]), Create(1) * Destroy(1)))
+
+    def testDrawComponent(self):
+        from qnet.circuit_components import kerr_cavity_cc as kerr
+
+        K = kerr.KerrCavity()
+        self.assertCanBeDrawn(K)
+        self.assertCanBeDrawn(K.creduce())
+        self.assertCanBeDrawn(K.toSLH())
 
 
 if __name__ == '__main__':

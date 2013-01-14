@@ -969,6 +969,9 @@ class ScalarTimesOperator(Operator, Operation):
     def _tex(self):
         coeff, term = self.operands
 
+        if ScalarTimesOperator.has_minus_prefactor(coeff):
+            return " -" + (-self).tex()
+
         if isinstance(coeff, Add):
             cs = r" \left({}\right)".format(tex(coeff))
         else:
@@ -990,6 +993,9 @@ class ScalarTimesOperator(Operator, Operation):
             cs = r"({!s})".format()
         else:
             cs = " {!s}".format(coeff)
+
+        if ScalarTimesOperator.has_minus_prefactor(coeff):
+            return " -" + str(-self)
 
         if term == IdentityOperator:
             ct = ""

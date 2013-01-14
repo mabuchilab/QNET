@@ -14,7 +14,7 @@ The Abstract Algebra module
 The module features generic classes for encapsulating expressions and operations on expressions.
 It also includes some basic pattern matching and expression rewriting capabilities.
 
-The most important classes to derive from for implementing a custom 'algebra' are :py:class:`Expression` and :py:class:`Operation`,
+The most important classes to derive from for implementing a custom 'algebra' are :py:class:`qnet.algebra.abstract_algebra.Expression` and :py:class:`qnet.algebra.abstract_algebra.Operation`,
 where the second is actually a subclass of the first.
 
 The ``Operation`` class should be subclassed to implement any structured expression type
@@ -29,35 +29,35 @@ one rather creates a new Operation with modified Operands.
 Defining ``Operation`` subclasses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The single most important method of the ``Operation`` class is the :py:meth:`Operation.create` classmethod.
+The single most important method of the ``Operation`` class is the :py:meth:`qnet.algebra.abstract_algebra.Operation.create` classmethod.
 
 
-**Automatic expression rewriting by modifying/decorating the ``create()`` method**
+**Automatic expression rewriting by modifying/decorating the** :py:meth:`qnet.algebra.abstract_algebra.Operation.create()` **method**
 
 A list of class decorators:
 
-    * :py:func:`assoc`
+    * :py:func:`qnet.algebra.abstract_algebra.assoc`
 
-    * :py:func:`idem`
+    * :py:func:`qnet.algebra.abstract_algebra.idem`
 
-    * :py:func:`orderby`
+    * :py:func:`qnet.algebra.abstract_algebra.orderby`
 
-    * :py:func:`filter_neutral`
+    * :py:func:`qnet.algebra.abstract_algebra.filter_neutral`
 
-    * :py:func:`check_signature`
+    * :py:func:`qnet.algebra.abstract_algebra.check_signature`
 
-    * :py:func:`match_replace`
+    * :py:func:`qnet.algebra.abstract_algebra.match_replace`
 
-    * :py:func:`match_replace_binary`
+    * :py:func:`qnet.algebra.abstract_algebra.match_replace_binary`
 
 
 Pattern matching
 ^^^^^^^^^^^^^^^^
 
-The :py:class:`Wildcard` class.
+The :py:class:`qnet.algebra.abstract_algebra.Wildcard` class.
 
 
-The :py:func:`match` function.
+The :py:func:`qnet.algebra.abstract_algebra.match` function.
 
 
 For a relatively simple example of how an algebra can be defined, see the Hilbert space algebra defined in :py:mod:`qnet.algebra.hilbert_space_algebra`.
@@ -69,19 +69,77 @@ Hilbert Space Algebra
 
 This covers only finite dimensional or countably infinite dimensional Hilbert spaces.
 
-The basic abstract class that features all properties of Hilbert space objects is given by: :py:class:`HilbertSpace`.
+The basic abstract class that features all properties of Hilbert space objects is given by: :py:class:`qnet.algebra.hilbert_space_algebra.HilbertSpace`.
 Its most important subclasses are:
 
-    * local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity mode) are described by a :py:class:`LocalSpace`
+    * local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity mode) are described by a :py:class:`qnet.algebra.hilbert_space_algebra.LocalSpace`. Every local space is identified by
 
-    * composite tensor product spaces are given by instances of the :py:class:`ProductSpace` class.
+    * composite tensor product spaces are given by instances of the :py:class:`qnet.algebra.hilbert_space_algebra.ProductSpace` class.
 
-    * the :py:class:`TrivialSpace` represents a *trivial* [#f1]_ Hilbert space :math:`\mathcal{H}_0 \simeq \mathbb{C}`
+    * the :py:class:`qnet.algebra.hilbert_space_algebra.TrivialSpace` represents a *trivial* [#f1]_ Hilbert space :math:`\mathcal{H}_0 \simeq \mathbb{C}`
 
-    * the :py:class:`FullSpace` represents a Hilbert space that includes all possible degrees of freedom.
+    * the :py:class:`qnet.algebra.hilbert_space_algebra.FullSpace` represents a Hilbert space that includes all possible degrees of freedom.
 
 .. [#f1] *trivial* in the sense that :math:`\mathcal{H}_0 \simeq \mathbb{C}`,
          i.e., all states are multiples of each other and thus equivalent.
+
+Examples
+^^^^^^^^
+
+A single local space can be instantiated in several ways. It is most convenient to use the :py:func:`qnet.algebra.hilbert_space_algebra.local_space` method:
+
+>>> local_space(1)
+    LocalSpace(1, '')
+
+This method also allows for the specification of the ``dimension`` of the local degree of freedom's state space:
+
+>>> s = local_space(1, dimension = 10)
+>>> s
+    LocalSpace(1, '')
+>>> s.dimension
+    10
+>>> s.basis
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+Alternatively, one can pass a sequence of ``basis`` state labels instead of the ``dimension`` argument:
+
+>>> lambda_atom_space = local_space('las', basis = ('e', 'h', 'g'))
+>>> lambda_atom_space
+    LocalSpace('las', '')
+>>> lambda_atom_space.dimension
+    3
+>>> lambda_atom_space.basis
+    ('e', 'h', 'g')
+
+Finally, one can pass a ``namespace`` argument, which is useful if one is working with multiple copies of identical systems, e.g. if one instantiates multiple copies of a particular circuit component with internal degrees of freedom:
+
+>>> s_q1 = local_space('s', namespace = 'q1', basis = ('g', 'h'))
+>>> s_q2 = local_space('s', namespace = 'q2', basis = ('g', 'h'))
+>>> s_q1
+    LocalSpace('s', 'q1')
+>>> s_q2
+    LocalSpace('s', 'q2')
+>>> s_q1 * s_q2
+    ProductSpace(LocalSpace('s', 'q1'), LocalSpace('s', 'q2'))
+
+The default ``namespace`` is the empty string ``''``.
+Here, we have already seen the simplest way to create a tensor product of spaces:
+
+>>> local_space(1) * local_space(2)
+    ProductSpace(LocalSpace(1, ''), LocalSpace(2, ''))
+
+Note that this tensor product is *commutative*
+
+>>> local_space(2) * local_space(1)
+    ProductSpace(LocalSpace(1, ''), LocalSpace(2, ''))
+>>> local_space(2) * local_space(1) == local_space(1) * local_space(2)
+    True
+
+and *associative*
+
+>>> (local_space(1) * local_space(2)) * local_space(3)
+    ProductSpace(LocalSpace('1', ''), LocalSpace('2', ''), LocalSpace('3', ''))
+
 
 
 .. _operator_algebra:
@@ -90,13 +148,13 @@ The Operator Algebra module
 ===========================
 
 This module features classes and functions to define and manipulate symbolic Operator expressions.
-Operator expressions are constructed from sums (:py:class:`OperatorPlus`) and products (:py:class:`OperatorTimes`)
+Operator expressions are constructed from sums (:py:class:`qnet.algebra.operator_algebra.OperatorPlus`) and products (:py:class:`qnet.algebra.operator_algebra.OperatorTimes`)
 of some basic elements, most importantly *local* operators,
-such as the annihilation (:py:class:`Destroy`) and creation (:py:class:`Create`) operators :math:`a_s, a_s^\dagger`
+such as the annihilation (:py:class:`qnet.algebra.operator_algebra.Destroy`) and creation (:py:class:`qnet.algebra.operator_algebra.Create`) operators :math:`a_s, a_s^\dagger`
 of a quantum harmonic oscillator degree of freedom :math:`s`.
 Further important elementary local operators are the switching operators
-:math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (:py:class:`LocalSigma`).
-Each operator has an associated :py:attr:`Operator.space` property which gives the Hilbert space
+:math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (:py:class:`qnet.algebra.operator_algebra.LocalSigma`).
+Each operator has an associated :py:attr:`qnet.algebra.operator_algebra.Operator.space` property which gives the Hilbert space
 (cf :py:class:`qnet.algebra.hilbert_space_algebra.HilbertSpace`) on which it acts *non-trivially*.
 We don't explicitly distinguish between *tensor*-products :math:`X_s\otimes Y_r` of operators on different degrees of freedom :math:`s,r`
 (which we designate as *local* spaces) and *operator-composition*-products :math:`X_s \cdot Y_s` of operators acting on the same degree of freedom :math:`s`.
@@ -109,43 +167,105 @@ All Operator classes
 
 A complete list of all local operators is given below:
 
-    * Harmonic oscillator mode operators :math:`a_s, a_s^\dagger` (cf :py:class:`Destroy`, :py:class:`Create`)
+    * Harmonic oscillator mode operators :math:`a_s, a_s^\dagger` (cf :py:class:`qnet.algebra.operator_algebra.Destroy`, :py:class:`qnet.algebra.operator_algebra.Create`)
 
-    * :math:`\sigma`-switching operators  :math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (cf :py:class:`LocalSigma`)
+    * :math:`\sigma`-switching operators  :math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (cf :py:class:`qnet.algebra.operator_algebra.LocalSigma`)
 
-    * coherent displacement operators :math:`D_s(\alpha) := \exp{\left(\alpha a_s^\dagger - \alpha^* a_s\right)}` (cf :py:class:`Displace`)
+    * coherent displacement operators :math:`D_s(\alpha) := \exp{\left(\alpha a_s^\dagger - \alpha^* a_s\right)}` (cf :py:class:`qnet.algebra.operator_algebra.Displace`)
 
-    * phase operators :math:`P_s(\phi) := \exp {\left(i\phi a_s^\dagger a_s\right)}` (cf :py:class:`Phase`)
+    * phase operators :math:`P_s(\phi) := \exp {\left(i\phi a_s^\dagger a_s\right)}` (cf :py:class:`qnet.algebra.operator_algebra.Phase`)
 
-    * squeezing operators :math:`S_s(\eta) := \exp {\left[{1\over 2}\left({\eta {a_s^\dagger}^2 - \eta^* a_s^2}\right)\right]}` (cf :py:class:`Squeeze`)
+    * squeezing operators :math:`S_s(\eta) := \exp {\left[{1\over 2}\left({\eta {a_s^\dagger}^2 - \eta^* a_s^2}\right)\right]}` (cf :py:class:`qnet.algebra.operator_algebra.Squeeze`)
 
 Furthermore, there exist symbolic representations for constants and symbols:
 
-    * the identity operator (cf :py:class:`IdentityOperator`)
+    * the identity operator (cf :py:class:`qnet.algebra.operator_algebra.IdentityOperator`)
 
-    * and the zero operator (cf :py:class:`ZeroOperator`)
+    * and the zero operator (cf :py:class:`qnet.algebra.operator_algebra.ZeroOperator`)
 
-    * an arbitrary operator symbol (cf :py:class:`OperatorSymbol`)
+    * an arbitrary operator symbol (cf :py:class:`qnet.algebra.operator_algebra.OperatorSymbol`)
 
 Finally, we have the following Operator operations:
 
-    * sums of operators :math:`X_1 + X_2 + \dots + X_n` (cf :py:class:`OperatorPlus`)
+    * sums of operators :math:`X_1 + X_2 + \dots + X_n` (cf :py:class:`qnet.algebra.operator_algebra.OperatorPlus`)
 
-    * products of operators :math:`X_1  X_2  \cdots  X_n` (cf :py:class:`OperatorTimes`)
+    * products of operators :math:`X_1  X_2  \cdots  X_n` (cf :py:class:`qnet.algebra.operator_algebra.OperatorTimes`)
 
-    * the Hilbert space adjoint operator :math:`X^\dagger` (cf :py:class:`Adjoint`)
+    * the Hilbert space adjoint operator :math:`X^\dagger` (cf :py:class:`qnet.algebra.operator_algebra.Adjoint`)
 
-    * scalar multiplication :math:`\lambda X` (cf :py:class:`ScalarTimesOperator`)
+    * scalar multiplication :math:`\lambda X` (cf :py:class:`qnet.algebra.operator_algebra.ScalarTimesOperator`)
 
     * pseudo-inverse of operators :math:`X^+` satisfying :math:`X X^+ X = X` and :math:`X^+ X X^+ = X^+` as well
-        as :math:`(X^+ X)^\dagger = X^+ X` and :math:`(X X^+)^\dagger = X X^+` (cf :py:class:`PseudoInverse`)
+        as :math:`(X^+ X)^\dagger = X^+ X` and :math:`(X X^+)^\dagger = X X^+` (cf :py:class:`qnet.algebra.operator_algebra.PseudoInverse`)
 
     * the kernel projection operator :math:`\mathcal{P}_{{\rm Ker} X}` satisfying both :math:`X \mathcal{P}_{{\rm Ker} X} = 0`
-        and :math:`X^+ X =  1 - \mathcal{P}_{{\rm Ker} X}`  (cf :py:class:`NullSpaceProjector`)
+        and :math:`X^+ X =  1 - \mathcal{P}_{{\rm Ker} X}`  (cf :py:class:`qnet.algebra.operator_algebra.NullSpaceProjector`)
 
-    * Partial traces over Operators :math:`{\rm Tr}_s X` (cf :py:class:`OperatorTrace`)
+    * Partial traces over Operators :math:`{\rm Tr}_s X` (cf :py:class:`qnet.algebra.operator_algebra.OperatorTrace`)
 
-For a list of all properties and methods of an operator object, see the documentation for the basic :py:class:`Operator` class.
+For a list of all properties and methods of an operator object, see the documentation for the basic :py:class:`qnet.algebra.operator_algebra.Operator` class.
+
+
+Examples
+^^^^^^^^
+
+Say we want to write a function that constructs a typical Jaynes-Cummings Hamiltonian 
+
+.. math::
+    H = \Delta \sigma^\dagger \sigma + \Theta a^\dagger a + i g(\sigma a^\dagger - \sigma^\dagger a) + i\epsilon (a - a^\dagger)
+
+for a given set of numerical parameters::
+
+    def H_JaynesCummings(Delta, Theta, epsilon, g, namespace = ''):
+    
+        # create Fock- and Atom local spaces 
+        fock = local_space('fock', namespace = namespace)
+        tls = local_space('tls', namespace = namespace, basis = ('e', 'g'))
+    
+        # create representations of a and sigma
+        a = Destroy(fock)
+        sigma = LocalSigma(tls, 'g', 'e')
+    
+        H = (Delta * sigma.dag() * sigma                        # detuning from atomic resonance
+            + Theta * a.dag() * a                               # detuning from cavity resonance
+            + I * g * (sigma * a.dag() - sigma.dag() * a)       # atom-mode coupling, I = sqrt(-1)
+            + I * epsilon * (a - a.dag()))                      # external driving amplitude
+        return H
+
+Here we have allowed for a variable namespace which would come in handy if we wanted to construct an overall model that features multiple Jaynes-Cummings-type subsystems.
+
+By using the support for symbolic :py:mod:`sympy` expressions as scalar pre-factors to operators, one can instantiate a Jaynes-Cummings Hamiltonian with symbolic parameters::
+    
+
+>>> Delta, Theta, epsilon, g = symbols('Delta, Theta, epsilon, g', real = True)
+>>> H = H_JaynesCummings(Delta, Theta, epsilon, g)
+>>> str(H)
+    'Delta Pi_e^[tls] +  I*g ((a_fock)^* sigma_ge^[tls] - a_fock sigma_eg^[tls]) +  I*epsilon ( - (a_fock)^* + a_fock) +  Theta (a_fock)^* a_fock
+
+>>> H.space
+    ProductSpace(LocalSpace('fock', ''), LocalSpace('tls', ''))
+
+or equivalently, represented in latex via ``H.tex()`` this yields:
+
+.. math::
+    \Delta {\Pi_{{\rm e}}^{{{\rm tls}}}} +  \mathbf{\imath} g \left({a_{{{\rm fock}}}^\dagger} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}}} - {a_{{{\rm fock}}}} {\sigma_{{\rm e},{\rm g}}^{{{\rm tls}}}}\right) +  \mathbf{\imath} \epsilon \left( - {a_{{{\rm fock}}}^\dagger} + {a_{{{\rm fock}}}}\right) +  \Theta {a_{{{\rm fock}}}^\dagger} {a_{{{\rm fock}}}}
+
+
+Operator products between commuting operators are automatically re-arranged such that they are ordered according to their Hilbert Space
+
+>>> Create(2) * Create(1)
+    OperatorTimes(Create(1), Create(2))
+
+There are quite a few built-in replacement rules, e.g., mode operators products are normally ordered:
+
+>>> Destroy(1) * Create(1)
+    1 + Create(1) * Destroy(1)
+
+Or for higher powers one can use the ``expand()`` method:
+
+>>> (Destroy(1) * Destroy(1) * Destroy(1) * Create(1) * Create(1) * Create(1)).expand()
+    (6 + Create(1) * Create(1) * Create(1) * Destroy(1) * Destroy(1) * Destroy(1) + 9 * Create(1) * Create(1) * Destroy(1) * Destroy(1) + 18 * Create(1) * Destroy(1))
+
 
 
 .. _circuit_algebra:
@@ -160,7 +280,7 @@ The only conditions on the parameters are that the hamilton operator is self-adj
 
 .. math::
 
-    H^* = H \text{ and } \mathbf{S}^\dagger \mathbf{S} = \mathbf{S} \mathbf{S}^\dagger = \mathbbm{1}_n.
+    H^* = H \text{ and } \mathbf{S}^\dagger \mathbf{S} = \mathbf{S} \mathbf{S}^\dagger = \mathbf{1}_n.
 
 
 We adhere to the conventions used by Gough and James, i.e. we write the imaginary unit is given by :math:`i := \sqrt{-1}`, the adjoint of an operator :math:`A` is given by :math:`A^*`, the element-wise adjoint of an operator matrix :math:`\mathbf{M}` is given by :math:`\mathbf{M}^\sharp`. Its transpose is given by :math:`\mathbf{M}^T` and the combination of these two operations, i.e. the adjoint operator matrix is given by :math:`\mathbf{M}^\dagger = (\mathbf{M}^T)^\sharp = (\mathbf{M}^\sharp)^T`.
@@ -168,7 +288,20 @@ We adhere to the conventions used by Gough and James, i.e. we write the imaginar
 Fundamental Circuit Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-(figures)
+The basic operations of the Gough-James circuit algebra are given by: 
+
+.. figure:: _static/plots/concatenation.png
+
+    :math:`Q_1 \boxplus Q_2` 
+
+.. figure:: _static/plots/series.png
+
+    :math:`Q_2 \lhd Q_1` 
+
+.. figure:: _static/plots/feedback.png
+
+    :math:`[Q]_{1 \to 4}` 
+
 
 In [GoughJames09]_, Gough and James have introduced two operations that allow the construction of quantum optical 'feedforward' networks:
 
@@ -214,7 +347,7 @@ Representation as Python objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This file features an implementation of the Gough-James circuit algebra rules as introduced in [GoughJames08]_ and [GoughJames09]_.
-Python objects that are of the :py:class:`Circuit` type have some of their operators overloaded to realize symbolic circuit algebra operations:
+Python objects that are of the :py:class:`qnet.algebra.circuit_algebra.Circuit` type have some of their operators overloaded to realize symbolic circuit algebra operations:
 
     >>> A = CircuitSymbol('A', 2)
     >>> B = CircuitSymbol('B', 2)
@@ -226,6 +359,38 @@ Python objects that are of the :py:class:`Circuit` type have some of their opera
         Feedback(A, 0, 1)
 
 For a thorough treatment of the circuit expression simplification rules see :ref:`circuit_rules`.
+
+Examples
+^^^^^^^^
+
+Extending the JaynesCummings problem above to an open system by adding collapse operators :math:`L_1 = \sqrt{\kappa} a` and :math:`L_2 = \sqrt{\gamma}\sigma.` ::
+
+    def SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, namespace = ''):
+    
+        # create Fock- and Atom local spaces 
+        fock = local_space('fock', namespace = namespace)
+        tls = local_space('tls', namespace = namespace, basis = ('e', 'g'))
+    
+        # create representations of a and sigma
+        a = Destroy(fock)
+        sigma = LocalSigma(tls, 'g', 'e')
+    
+        # Trivial scattering matrix
+        S = identity_matrix(2)
+    
+        # Collapse/Jump operators
+        L1 = sqrt(kappa) * a                                    # Decay of cavity mode through mirror
+        L2 = sqrt(gamma) * sigma                                # Atomic decay due to spontaneous emission into outside modes.
+        L = Matrix([[L1], \
+                    [L2]])
+    
+        # Hamilton operator
+        H = (Delta * sigma.dag() * sigma                        # detuning from atomic resonance
+            + Theta * a.dag() * a                               # detuning from cavity resonance
+            + I * g * (sigma * a.dag() - sigma.dag() * a)       # atom-mode coupling, I = sqrt(-1)
+            + I * epsilon * (a - a.dag()))                      # external driving amplitude
+    
+        return SLH(S, L, H)
 
 .. _super_operator_algebra:
 
