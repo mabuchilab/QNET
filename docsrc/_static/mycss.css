@@ -1,0 +1,19 @@
+/* MAKE figures float left to emulate multi-figure environments */
+
+div.figure {
+    float:left;
+    margin: 10px;
+    border: 1px dashed;
+    padding: 10px;
+}
+
+div.figure p.caption {
+    text-align: center;
+}
+
+
+/* necessary to have line-break between last figure and text. */
+
+div.section p {
+    clear: left;
+}
