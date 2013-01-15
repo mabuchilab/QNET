@@ -28,7 +28,7 @@ For more details see :ref:`hilbert_space_algebra`.
 """
 
 
-from qnet.algebra.abstract_algebra import singleton, Operation, inf, AlgebraError, tex, check_signature, idem, assoc, preprocess_create_with, filter_neutral, check_signature_assoc, prod
+from qnet.algebra.abstract_algebra import singleton, Operation, Expression, inf, AlgebraError, tex, check_signature, idem, assoc, preprocess_create_with, filter_neutral, check_signature_assoc, prod
 from functools import reduce
 from abc import ABCMeta, abstractproperty, abstractmethod
 
@@ -171,7 +171,7 @@ class HilbertSpace(object):
 
 
 @singleton
-class TrivialSpace(HilbertSpace):
+class TrivialSpace(HilbertSpace, Expression):
     """
     The 'nullspace', i.e. a one dimensional Hilbert space, which is a factor space of every other Hilbert space.
     """
@@ -181,6 +181,9 @@ class TrivialSpace(HilbertSpace):
 
 #    def tensor(self, other):
 #        return other
+
+    def _all_symbols(self):
+        return set(())
 
     def _remove(self, other):
         return self
@@ -207,7 +210,7 @@ class TrivialSpace(HilbertSpace):
 
 
 @singleton
-class FullSpace(HilbertSpace):
+class FullSpace(HilbertSpace, Expression):
     """
     The 'full space', i.e. a Hilbert space, includes any other Hilbert space as a tensor factor.
     """
@@ -217,6 +220,9 @@ class FullSpace(HilbertSpace):
 
 #    def tensor(self, other):
 #        return self
+
+    def _all_symbols(self):
+        return set(())
 
     def _remove(self, other):
         raise AlgebraError()
@@ -278,6 +284,23 @@ class LocalSpace(HilbertSpace, Operation):
             return True
         return False
 
+
+    def _get_dimension(self):
+        return BasisRegistry.dimension(self)
+
+    def _set_dimension(self, dimension):
+        try:
+            current_basis = list(self.basis)
+            current_length = len(current_basis)
+            if current_length == dimension:
+                return
+            if current_basis != range(current_length):
+                raise ValueError('It appears that the current basis of {} is not simply a range of integer-labelled states: {}'.format(str(self), str(current_basis)))
+            BasisRegistry.set_basis(self, range(dimension))
+        except BasisNotSetError:
+            BasisRegistry.set_basis(self, range(dimension))
+
+    dimension = property(_get_dimension, _set_dimension, doc="The local state space dimension.")
 
     @property
     def basis(self):

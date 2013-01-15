@@ -147,6 +147,7 @@ class Operator(object):
     def expand(self):
         """
         Expand out distributively all products of sums. Note that this does not expand out sums of scalar coefficients.
+
         :return: A fully expanded sum of operators.
         :rtype: Operator
         """
@@ -155,6 +156,21 @@ class Operator(object):
     @abstractmethod
     def _expand(self):
         raise NotImplementedError(self.__class__.__name__)
+
+
+    def simplify_scalar(self):
+        """
+        Simplify all scalar coefficients within the Operator expression.
+
+        :return: The simplified expression.
+        :rtype: Operator
+        """
+        return self._simplify_scalar()
+
+
+    def _simplify_scalar(self):
+        return self
+
 
     def series_expand(self, param, about, order):
         """
@@ -218,10 +234,6 @@ class Operator(object):
             return prod((self,) * other, 1)
         else:
             return NotImplemented
-
-    def simplify_scalars(self):
-        #TODO implement
-        pass
 
 
 def space(obj):
@@ -490,6 +502,23 @@ class Destroy(LocalOperator):
         return r"a_{!s}".format(self.space)
 
 
+def simplify_scalar(s):
+    """
+    Simplify all occurences of scalar expressions in s
+
+    :param s: The expression to simplify.
+    :type s: Expression or SympyBasic
+    :return: The simplified version.
+    :rtype: Expression or SympyBasic
+    """
+    try:
+        return s.simplify_scalar()
+    except AttributeError:
+        pass
+    if isinstance(s, SympyBasic):
+        return s.simplify()
+    return s
+
 @implied_local_space
 @match_replace
 @check_signature
@@ -534,6 +563,10 @@ class Phase(LocalOperator):
         return "P_{!s}({!s})".format(self.space, self.operands[1])
 
 
+    def _simplify_scalar(self):
+        return Phase(self.space, simplify_scalar(self.operands[1]))
+
+
 @implied_local_space
 @match_replace
 @check_signature
@@ -573,6 +606,9 @@ class Displace(LocalOperator):
 
     def __str__(self):
         return "D_{!s}({!s})".format(self.space, self.operands[1])
+
+    def _simplify_scalar(self):
+        return Displace(self.space, simplify_scalar(self.operands[1]))
 
 
 @implied_local_space
@@ -614,6 +650,9 @@ class Squeeze(LocalOperator):
 
     def __str__(self):
         return "S_{!s}({!s})".format(self.space, self.operands[1])
+
+    def _simplify_scalar(self):
+        return Squeeze(self.space, simplify_scalar(self.operands[1]))
 
 
 @implied_local_space
@@ -716,6 +755,9 @@ class OperatorOperation(Operator, Operation):
     @property
     def _space(self):
         return prod((o.space for o in self.operands), TrivialSpace)
+
+    def _simplify_scalar(self):
+        return self.__class__.create(*[o.simplify_scalar() for o in self.operands])
 
 
 def tuple_sum(tuples, inital=0):
@@ -1061,6 +1103,11 @@ class ScalarTimesOperator(Operator, Operation):
         else:
             sc = substitute(self.coeff, var_map)
         return sc * st
+
+
+    def _simplify_scalar(self):
+        coeff, term = self.operands
+        return simplify_scalar(coeff) * term.simplify_scalar()
 
 
 def safe_tex(obj):
@@ -1757,7 +1804,7 @@ class Matrix(Expression):
 
     def _substitute(self, var_map):
 
-        def _substitute(o, var_map):
+        def _substitute(o):
             sympy_var_map = {k:v for (k, v) in var_map.items() if isinstance(k, SympyBasic)}
             if isinstance(o, Operation):
                 return substitute(o, var_map)
@@ -1789,6 +1836,12 @@ class Matrix(Expression):
         :type: HilbertSpace
         """
         return prod((space(o) for o in self.matrix.flatten()), TrivialSpace)
+
+    def simplify_scalar(self):
+        """
+        Simplify all scalar expressions appearing in the Matrix.
+        """
+        return self.element_wise(simplify_scalar)
 
 
 def hstack(matrices):
