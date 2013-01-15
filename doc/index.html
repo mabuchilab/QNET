@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to QNET’s documentation! &mdash; QNET 0.9 documentation</title>
+    <title>Welcome to QNET’s documentation! &mdash; QNET 1.0 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -17,7 +17,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.9',
+        VERSION:     '1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -28,7 +28,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
-    <link rel="top" title="QNET 0.9 documentation" href="#" />
+    <link rel="top" title="QNET 1.0 documentation" href="#" />
     <link rel="next" title="Installation/Setup" href="install.html" /> 
   </head>
   <body>
@@ -44,7 +44,7 @@
         <li class="right" >
           <a href="install.html" title="Installation/Setup"
              accesskey="N">next</a> |</li>
-        <li><a href="#">QNET 0.9 documentation</a> &raquo;</li> 
+        <li><a href="#">QNET 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
@@ -106,9 +106,9 @@ in turn are coupled to a finite number of bosonic quantum fields. Furthermore, t
 <li>Use <tt class="docutils literal"><span class="pre">gschem</span></tt> (of gEDA) to graphically design a circuit model, <a class="reference internal" href="schematic_capture.html"><em>Schematic Capture</em></a></li>
 <li>Export the schematic to QHDL using <tt class="docutils literal"><span class="pre">gnetlist</span></tt> (also part of gEDA) or directly write a QHDL file, <a class="reference internal" href="netlisting.html"><em>Netlisting</em></a></li>
 <li>Parse the QHDL-circuit definition file into a Python circuit library component using the parser front-end <tt class="docutils literal"><span class="pre">bin/parse_qhdl.py</span></tt>, <a class="reference internal" href="parsing_qhdl.html"><em>Parsing QHDL</em></a></li>
-<li>Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP, <a class="reference internal" href="model_analysis_simulation.html"><em>Analyzing and Simulating Component and Circuit models</em></a></li>
+<li>Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP, <a class="reference internal" href="symbolic_algebra.html"><em>Symbolic Algebra</em></a>, <a class="reference internal" href="model_analysis_simulation.html"><em>Symbolic Analysis and Simulation</em></a></li>
 </ol>
-<p>This package is still work in progress and as it is currently developed by a single developer (interested in <a class="reference external" href="mailto:ntezak&#37;&#52;&#48;stanford&#46;edu">helping?</a>), documentation and comprehensive testing code is still somewhat lacking.
+<p>This package is still work in progress and as it is currently being developed by a single developer (interested in <a class="reference external" href="mailto:ntezak&#37;&#52;&#48;stanford&#46;edu">helping?</a>), documentation and comprehensive testing code are still somewhat lacking.
 Any contributions, bug reports and general feedback from end-users would be highly appreciated. If you have found a bug, it would be extremely helpful if you could try to write a minimal code example that reproduces the bug.
 Feature requests will definitely be considered. Higher priority will be given to things that many people ask for and that can be implemented efficiently.</p>
 <p>To learn of how to carry out each of these steps, we recommend looking at the provided examples and reading the relevant sections in the QNET manual.
@@ -149,9 +149,9 @@ Also, if you want to implement and add your own primitive device models, please 
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="parsing_qhdl.html">Parsing QHDL</a></li>
-<li class="toctree-l1"><a class="reference internal" href="model_analysis_simulation.html">Analyzing and Simulating Component and Circuit models</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="model_analysis_simulation.html#analysis">Analysis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="model_analysis_simulation.html#conversion-to-qutip-objects">Conversion to <tt class="docutils literal"><span class="pre">QuTiP</span></tt>-objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model_analysis_simulation.html">Symbolic Analysis and Simulation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="model_analysis_simulation.html#symbolic-analysis-of-the-pseudo-nand-gate-and-the-pseudo-nand-sr-latch">Symbolic Analysis of the Pseudo NAND gate and the Pseudo NAND SR-Latch</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model_analysis_simulation.html#numerical-analysis-via-qutip">Numerical Analysis via QuTiP</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
@@ -240,11 +240,11 @@ Also, if you want to implement and add your own primitive device models, please 
         <li class="right" >
           <a href="install.html" title="Installation/Setup"
              >next</a> |</li>
-        <li><a href="#">QNET 0.9 documentation</a> &raquo;</li> 
+        <li><a href="#">QNET 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Nikolas Tezak.
+        &copy; Copyright 2012-2013, Nikolas Tezak.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>

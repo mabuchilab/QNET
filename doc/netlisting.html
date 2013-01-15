@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Netlisting &mdash; QNET 0.9 documentation</title>
+    <title>Netlisting &mdash; QNET 1.0 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -17,7 +17,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.9',
+        VERSION:     '1.0',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -28,7 +28,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
-    <link rel="top" title="QNET 0.9 documentation" href="index.html" />
+    <link rel="top" title="QNET 1.0 documentation" href="index.html" />
     <link rel="next" title="Parsing QHDL" href="parsing_qhdl.html" />
     <link rel="prev" title="Schematic Capture" href="schematic_capture.html" /> 
   </head>
@@ -48,7 +48,7 @@
         <li class="right" >
           <a href="schematic_capture.html" title="Schematic Capture"
              accesskey="P">previous</a> |</li>
-        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li> 
+        <li><a href="index.html">QNET 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar">
@@ -452,14 +452,19 @@ For details see <a class="reference internal" href="references.html#mabuchi11">[
 <p>This circuit consists of two subcomponents that each act almost (i.e., for all relevant input conditions) like a NAND logic gate
 in a symmetric feedback conditions. As is known from electrical circuits this arrangement allows the fabrication of a bi-stable
 system with memory or state from two systems that have a one-to-one input output behavior. See also <a class="reference internal" href="references.html#mabuchi11">[Mabuchi11]</a></p>
-<div class="highlight-qhdl"><div class="highlight"><pre><span class="c1">--pseudo-NAND latch without explicit parameter dependence</span>
+<div class="highlight-qhdl"><div class="highlight"><pre><span class="c1">--pseudo-NAND latch with explicit parameter dependence</span>
 <span class="k">entity</span> <span class="nc">PseudoNANDLatch</span> <span class="k">is</span>
+    <span class="k">generic</span> <span class="p">(</span><span class="n">Delta</span><span class="p">,</span> <span class="n">chi</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">theta</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+             <span class="n">beta</span> <span class="o">:</span> <span class="n">complex</span><span class="p">);</span>
+
     <span class="k">port</span> <span class="p">(</span><span class="n">NS</span><span class="p">,</span> <span class="n">W1</span><span class="p">,</span> <span class="n">kerr2_extra</span><span class="p">,</span> <span class="n">NR</span><span class="p">,</span> <span class="n">W2</span><span class="p">,</span> <span class="n">kerr1_extra</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span>
           <span class="n">BS1_1_out</span><span class="p">,</span> <span class="n">kerr1_out2</span><span class="p">,</span> <span class="n">OUT2_2</span><span class="p">,</span> <span class="n">BS1_2_out</span><span class="p">,</span> <span class="n">kerr2_out2</span><span class="p">,</span> <span class="n">OUT2_1</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
 <span class="k">end</span> <span class="nc">PseudoNANDLatch</span><span class="p">;</span>
 
 <span class="k">architecture</span> <span class="nc">latch_netlist</span> <span class="k">of</span> <span class="nc">PseudoNANDLatch</span> <span class="k">is</span>
     <span class="k">component</span> <span class="nc">PseudoNAND</span>
+        <span class="k">generic</span> <span class="p">(</span><span class="n">Delta</span><span class="p">,</span> <span class="n">chi</span><span class="p">,</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">theta</span> <span class="o">:</span> <span class="n">real</span><span class="p">;</span>
+                 <span class="n">beta</span> <span class="o">:</span> <span class="n">complex</span><span class="p">);</span>
         <span class="k">port</span> <span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">W_in</span><span class="p">,</span> <span class="n">kerr_in2</span> <span class="o">:</span> <span class="k">in</span> <span class="n">fieldmode</span><span class="p">;</span> 
               <span class="n">uo1</span><span class="p">,</span> <span class="n">kerr_out1</span><span class="p">,</span> <span class="n">NAND_AB</span><span class="p">,</span> <span class="n">OUT2</span> <span class="o">:</span> <span class="k">out</span> <span class="n">fieldmode</span><span class="p">);</span>
     <span class="k">end</span> <span class="k">component</span><span class="p">;</span>    
@@ -468,11 +473,15 @@ system with memory or state from two systems that have a one-to-one input output
 
 <span class="k">begin</span>
     <span class="n">NAND2</span> <span class="o">:</span> <span class="n">PseudoNAND</span>
+    <span class="k">generic</span> <span class="k">map</span> <span class="p">(</span>
+        <span class="n">Delta</span> <span class="o">=&gt;</span> <span class="n">Delta</span><span class="p">,</span> <span class="n">chi</span> <span class="o">=&gt;</span> <span class="n">chi</span><span class="p">,</span> <span class="n">kappa</span> <span class="o">=&gt;</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=&gt;</span> <span class="n">phi</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=&gt;</span> <span class="n">theta</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=&gt;</span> <span class="n">beta</span><span class="p">);</span>
     <span class="k">port</span> <span class="k">map</span> <span class="p">(</span>
         <span class="n">A</span> <span class="o">=&gt;</span> <span class="n">NR</span><span class="p">,</span> <span class="n">B</span> <span class="o">=&gt;</span> <span class="n">FB12</span><span class="p">,</span> <span class="n">W_in</span> <span class="o">=&gt;</span> <span class="n">W2</span><span class="p">,</span> <span class="n">kerr_in2</span> <span class="o">=&gt;</span> <span class="n">kerr2_extra</span><span class="p">,</span>
         <span class="n">uo1</span> <span class="o">=&gt;</span> <span class="n">BS1_2_out</span><span class="p">,</span> <span class="n">kerr_out1</span> <span class="o">=&gt;</span> <span class="n">kerr2_out2</span><span class="p">,</span> <span class="n">NAND_AB</span> <span class="o">=&gt;</span> <span class="n">FB21</span><span class="p">,</span> <span class="n">OUT2</span> <span class="o">=&gt;</span> <span class="n">OUT2_2</span><span class="p">);</span>
 
     <span class="n">NAND1</span> <span class="o">:</span> <span class="n">PseudoNAND</span>
+    <span class="k">generic</span> <span class="k">map</span> <span class="p">(</span>
+        <span class="n">Delta</span> <span class="o">=&gt;</span> <span class="n">Delta</span><span class="p">,</span> <span class="n">chi</span> <span class="o">=&gt;</span> <span class="n">chi</span><span class="p">,</span> <span class="n">kappa</span> <span class="o">=&gt;</span> <span class="n">kappa</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=&gt;</span> <span class="n">phi</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=&gt;</span> <span class="n">theta</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=&gt;</span> <span class="n">beta</span><span class="p">);</span>
     <span class="k">port</span> <span class="k">map</span> <span class="p">(</span>
         <span class="n">A</span> <span class="o">=&gt;</span> <span class="n">NS</span><span class="p">,</span> <span class="n">B</span> <span class="o">=&gt;</span> <span class="n">FB21</span><span class="p">,</span> <span class="n">W_in</span> <span class="o">=&gt;</span> <span class="n">W1</span><span class="p">,</span> <span class="n">kerr_in2</span> <span class="o">=&gt;</span> <span class="n">kerr1_extra</span><span class="p">,</span>
         <span class="n">uo1</span> <span class="o">=&gt;</span> <span class="n">BS1_1_out</span><span class="p">,</span> <span class="n">kerr_out1</span> <span class="o">=&gt;</span> <span class="n">kerr1_out2</span><span class="p">,</span> <span class="n">NAND_AB</span> <span class="o">=&gt;</span> <span class="n">FB12</span><span class="p">,</span> <span class="n">OUT2</span> <span class="o">=&gt;</span> <span class="n">OUT2_1</span><span class="p">);</span>
@@ -505,11 +514,11 @@ system with memory or state from two systems that have a one-to-one input output
         <li class="right" >
           <a href="schematic_capture.html" title="Schematic Capture"
              >previous</a> |</li>
-        <li><a href="index.html">QNET 0.9 documentation</a> &raquo;</li> 
+        <li><a href="index.html">QNET 1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
-        &copy; Copyright 2012, Nikolas Tezak.
+        &copy; Copyright 2012-2013, Nikolas Tezak.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
