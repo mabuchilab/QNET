@@ -99,6 +99,19 @@ class SuperOperator(object):
         """
         return self._expand()
 
+    def simplify_scalar(self):
+        """
+        Simplify all scalar coefficients within the Operator expression.
+
+        :return: The simplified expression.
+        :rtype: Operator
+        """
+        return self._simplify_scalar()
+
+
+    def _simplify_scalar(self):
+        return self
+
     @abstractmethod
     def _expand(self):
         raise NotImplementedError(self.__class__.__name__)
@@ -295,6 +308,8 @@ class SuperOperatorOperation(SuperOperator, Operation):
     def _space(self):
         return prod((o.space for o in self.operands), TrivialSpace)
 
+    def _simplify_scalar(self):
+        return self.__class__.create(*[o.simplify_scalar() for o in self.operands])
 
 
 
@@ -364,6 +379,7 @@ class SuperOperatorPlus(SuperOperatorOperation):
 @filter_neutral
 @match_replace_binary
 @filter_neutral
+#@orderby
 @check_signature_assoc
 class SuperOperatorTimes(SuperOperatorOperation):
     """
@@ -373,6 +389,8 @@ class SuperOperatorTimes(SuperOperatorOperation):
 
     :param SuperOperator factors: Super-operator factors.
     """
+
+
 
     neutral_element = IdentitySuperOperator
     _binary_rules = []
@@ -384,6 +402,8 @@ class SuperOperatorTimes(SuperOperatorOperation):
         I.e., sorted(factors, key = OperatorOrderKey) achieves this ordering.
         """
         def __init__(self, op):
+            if isinstance(op, ScalarTimesSuperOperator):
+                op = op.term
             space = op.space
             self.op = op
             self.full = False
@@ -402,6 +422,8 @@ class SuperOperatorTimes(SuperOperatorOperation):
         def __lt__(self, other):
             if isinstance(self.op, SPre) and isinstance(other.op, SPost):
                 return True
+            elif isinstance(self.op, SPost) and isinstance(other.op, SPre):
+                return False
 
             if self.trivial and other.trivial:
                 return Operation.order_key(self.op) < Operation.order_key(other.op)
@@ -413,6 +435,9 @@ class SuperOperatorTimes(SuperOperatorOperation):
         def __gt__(self, other):
             if isinstance(self.op, SPost) and isinstance(other.op, SPre):
                 return True
+            elif isinstance(self.op, SPre) and isinstance(other.op, SPost):
+                return False
+
             if self.trivial and other.trivial:
                 return Operation.order_key(self.op) > Operation.order_key(other.op)
 
@@ -422,6 +447,9 @@ class SuperOperatorTimes(SuperOperatorOperation):
             return tuple(self.local_spaces) > tuple(other.local_spaces)
 
         def __eq__(self, other):
+            if (isinstance(self.op, SPost) and isinstance(other.op, SPre)) \
+                or (isinstance(self.op, SPre) and isinstance(other.op, SPost)):
+                return False
             if self.trivial and other.trivial:
                 return Operation.order_key(self.op) == Operation.order_key(other.op)
 
@@ -541,6 +569,10 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
             return sum((c * eto for eto in et.operands), ZeroSuperOperator)
         return c * et
 
+    def _simplify_scalar(self):
+        coeff, term = self.operands
+        return simplify_scalar(coeff) * term.simplify_scalar()
+
 #    def _pseudo_inverse(self):
 #        c, t = self.operands
 #        return t.pseudo_inverse() / c
@@ -555,6 +587,17 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
         if self.term is IdentitySuperOperator:
             return float(self.coeff)
         return NotImplemented
+
+
+    def _substitute(self, var_map):
+        coeff, term = self.operands
+        st = term.substitute(var_map)
+        if isinstance(coeff, SympyBasic):
+            svar_map = {k:v for k,v in var_map.items() if not isinstance(k,Expression)}
+            sc = coeff.subs(svar_map)
+        else:
+            sc = substitute(coeff, var_map)
+        return sc * st
 
 
 
@@ -640,6 +683,9 @@ class SPre(SuperOperator, Operation):
             return sum(SPre.create(oet) for oet in oe.operands)
         return SPre.create(oe)
 
+    def _simplify_scalar(self):
+        return self.__class__.create(self.operands[0].simplify_scalar())
+
 
 @match_replace
 @check_signature
@@ -675,6 +721,9 @@ class SPost(SuperOperator, Operation):
         if isinstance(oe, OperatorPlus):
             return sum(SPost.create(oet) for oet in oe.operands)
         return SPost.create(oe)
+
+    def _simplify_scalar(self):
+        return self.__class__.create(self.operands[0].simplify_scalar())
 
 
 @match_replace
@@ -761,6 +810,10 @@ class SuperOperatorTimesOperator(Operator, Operation):
         sop, op = self.operands
         ope = op.series_expand(param, about, order)
         return tuple(sop * opet for opet in ope)
+
+    def _simplify_scalar(self):
+        SOp, Op = self.operands
+        return SOp.simplify_scalar() * Op.simplify_scalar()
 
 #    def _pseudo_inverse(self):
 #        c, t = self.operands
@@ -943,7 +996,7 @@ SuperOperatorTimes._binary_rules += [
 ]
 
 SuperAdjoint._rules += [
-    ((ScalarTimesSuperOperator(u, sA),), lambda u, sA: u.conjugate() * sA.superadjoint()),
+    ((ScalarTimesSuperOperator(u, sA),), lambda u, sA: u * sA.superadjoint()),
     ((sA_plus,), lambda sA: SuperOperatorPlus.create(*[o.superadjoint() for o in sA.operands])),
     ((sA_times,), lambda sA: SuperOperatorTimes.create(*[o.superadjoint() for o in sA.operands[::-1]])),
     ((SuperAdjoint(sA),), lambda sA: sA),
@@ -967,11 +1020,14 @@ SPost._rules +=[
 
 
 SuperOperatorTimesOperator._rules +=[
+    ((sA_plus, B), lambda sA, B: sum([o*B for o in sA.operands], ZeroOperator)),
     ((ScalarTimesSuperOperator(u, sA), B), lambda u, sA, B: u * (sA * B)),
     ((sA, ScalarTimesOperator(u, B)), lambda u, sA, B: u * (sA * B)),
     ((sA, SuperOperatorTimesOperator(sB, C)), lambda sA, sB, C: (sA * sB) * C),
     ((SPre(A), B), lambda A, B: A*B),
+    ((SuperOperatorTimes(sA__, SPre(B)), C), lambda sA, B, C: SuperOperatorTimes.create(*sA) * (SPre(B) * C)),
     ((SPost(A), B), lambda A, B: B*A),
+    ((SuperOperatorTimes(sA__, SPost(B)), C), lambda sA, B, C: SuperOperatorTimes.create(*sA) * (SPost(B) * C)),
 ]
 
 

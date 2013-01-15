@@ -61,55 +61,6 @@ class WrongCDimError(AlgebraError):
     Is raised when two object are tried to joined together in series but have different channel dimensions.
     """
 
-
-class CircuitVisualizer(object):
-    """
-    Visualization wrapper class that implements IPython's _repr_png_ method to
-    generate a graphical representation (in PNG format) of its circuit object.
-    Use as::
-
-        CircuitVisualizer(circuit)
-
-    :param circuit: The circuit expression to visualize
-    :type circuit: Circuit
-    """
-
-    _circuit = None
-
-    def __init__(self, circuit):
-        #noinspection PyRedeclaration
-        self._circuit = circuit
-
-    def _repr_png_(self):
-        import qnet.misc.circuit_visualization as circuit_visualization
-        from tempfile import gettempdir
-
-        tmp_dir = gettempdir()
-        fname = tmp_dir + "/tmp_{}.png" .format(hash(str(self._circuit)))
-
-        if circuit_visualization.draw_circuit(self._circuit, fname):
-
-            for k in range(5):
-                if os.path.exists(fname):
-                    break
-                else:
-                    time.sleep(.5)
-
-            try:
-                with open(fname, "rb") as png_file:
-                    fdata = png_file.read()
-                os.remove(fname)
-                return fdata
-            except:
-                print ("Could not open visualization file for {!s}".format(self._circuit))
-                raise CannotVisualize()
-
-        else:
-            raise CannotVisualize()
-
-    def __repr__(self):
-        return "{}({!r})".format(self.__class__.__name__, self._circuit)
-
 class IncompatibleBlockStructures(AlgebraError):
     """
     Is raised when a circuit decomposition into a block-structure is requested
@@ -257,7 +208,47 @@ class Circuit(object):
         """
         Show the circuit expression in an IPython notebook.
         """
-        return CircuitVisualizer(self)
+        from IPython.display import Image, display
+
+        fname = self.render()
+        display(Image(filename = fname))
+
+
+    def render(self, fname = ''):
+        """
+        Render the circuit expression and store the result in a file
+
+        :param fname: Path to an image file to store the result in.
+        :type fname: basestring
+
+        :return (str): The path to the image file
+        """
+        import qnet.misc.circuit_visualization as circuit_visualization
+
+        if not fname:
+            from tempfile import gettempdir
+            tmp_dir = gettempdir()
+            fname = tmp_dir + "/tmp_{}.png".format(hash(str(self)))
+
+
+        if circuit_visualization.draw_circuit(self, fname):
+            done = False
+            for k in range(20):
+                if os.path.exists(fname):
+                    done = True
+                    break
+                else:
+                    time.sleep(.5)
+            if done:
+                return fname
+
+        raise CannotVisualize()
+
+
+
+
+
+        #return CircuitVisualizer(self)
 
     def creduce(self):
         """
@@ -319,7 +310,8 @@ class Circuit(object):
     def _coherent_input(self, *input_amps):
         if len(input_amps) != self.cdim:
             raise WrongCDimError()
-        return self << SLH(identity_matrix(self.cdim), Matrix((input_amps,)).T, 0)
+        from qnet.circuit_components.displace_cc import Displace as Displace_cc
+        return self << sum([Displace_cc('W', alpha = amp) if amp != 0 else cid(1) for amp in input_amps], cid(0))
 
     @property
     def space(self):
@@ -469,6 +461,15 @@ class SLH(Circuit, Operation):
         """
         return SLH(self.S.expand(), self.L.expand(), self.H.expand())
 
+    def simplify_scalar(self):
+        """
+        Simplify all scalar expressions within S, L and H and return a new SLH object with the simplified expressions.
+
+        :rtype: SLH
+        """
+        return SLH(self.S.simplify_scalar(), self.L.simplify_scalar(), self.H.simplify_scalar())
+
+
     def HL_to_qutip(self, full_space = None):
         """
         Generate and return QuTiP representation matrices for the Hamiltonian and the collapse operators.
@@ -612,6 +613,9 @@ class SLH(Circuit, Operation):
     def _toABCD(self, linearize):
         #TODO implement SLH._toABCD()
         pass
+
+    def _coherent_input(self, *input_amps):
+        return super(SLH, self)._coherent_input(*input_amps).toSLH()
 
 #    def _mathematica(self):
 #        return "SLH[%s, %s, %s]" % (mathematica(self.S), mathematica(self.L), mathematica(self.H))

@@ -95,6 +95,10 @@ class Expression(object):
         """
         For compatibility with the IPython notebook, generate TeX expression and surround it with $'s.
         """
+        import re
+
+        p = re.compile('bla')
+
         return "$%s$" % self.tex()
 
 

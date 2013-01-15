@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #This file is part of QNET.
 #
 #    QNET is free software: you can redistribute it and/or modify
@@ -16,7 +17,13 @@
 # Copyright (C) 2012-2013, Nikolas Tezak
 #
 ###########################################################################
-"""
+
+import sys
+import getopt
+from qnet.qhdl.qhdl_parser import QHDLParser
+from qnet.circuit_components.library import write_component
+
+help_message = """
 Run as
 
     {executable} -f path/to/file.qhdl [options]
@@ -30,12 +37,7 @@ The options are:
 
 """.format(executable = sys.argv[0])
 
-import sys
-import getopt
-from qnet.qhdl.qhdl_parser import QHDLParser
-from qnet.circuit_components.library import write_component
-
-help_message = __doc__
+__doc__ = help_message
 
 parser = None
 
