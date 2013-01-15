@@ -29,9 +29,9 @@ I. Define and specify your basic circuit component model and create a library fi
 II. Use ``gschem`` (of gEDA) to graphically design a circuit model, :doc:`schematic_capture`
 III. Export the schematic to QHDL using ``gnetlist`` (also part of gEDA) or directly write a QHDL file, :doc:`netlisting`
 IV. Parse the QHDL-circuit definition file into a Python circuit library component using the parser front-end ``bin/parse_qhdl.py``, :doc:`parsing_qhdl`
-V. Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP, :doc:`model_analysis_simulation`
+V. Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP, :doc:`symbolic_algebra`, :doc:`model_analysis_simulation`
 
-This package is still work in progress and as it is currently developed by a single developer (interested in `helping? <mailto:ntezak@stanford.edu>`_), documentation and comprehensive testing code is still somewhat lacking.
+This package is still work in progress and as it is currently being developed by a single developer (interested in `helping? <mailto:ntezak@stanford.edu>`_), documentation and comprehensive testing code are still somewhat lacking.
 Any contributions, bug reports and general feedback from end-users would be highly appreciated. If you have found a bug, it would be extremely helpful if you could try to write a minimal code example that reproduces the bug.
 Feature requests will definitely be considered. Higher priority will be given to things that many people ask for and that can be implemented efficiently.
 

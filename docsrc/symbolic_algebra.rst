@@ -234,13 +234,13 @@ for a given set of numerical parameters::
 
 Here we have allowed for a variable namespace which would come in handy if we wanted to construct an overall model that features multiple Jaynes-Cummings-type subsystems.
 
-By using the support for symbolic :py:mod:`sympy` expressions as scalar pre-factors to operators, one can instantiate a Jaynes-Cummings Hamiltonian with symbolic parameters::
+By using the support for symbolic :py:mod:`sympy` expressions as scalar pre-factors to operators, one can instantiate a Jaynes-Cummings Hamiltonian with symbolic parameters:
     
 
 >>> Delta, Theta, epsilon, g = symbols('Delta, Theta, epsilon, g', real = True)
 >>> H = H_JaynesCummings(Delta, Theta, epsilon, g)
 >>> str(H)
-    'Delta Pi_e^[tls] +  I*g ((a_fock)^* sigma_ge^[tls] - a_fock sigma_eg^[tls]) +  I*epsilon ( - (a_fock)^* + a_fock) +  Theta (a_fock)^* a_fock
+    'Delta Pi_e^[tls] +  I*g ((a_fock)^* sigma_ge^[tls] - a_fock sigma_eg^[tls]) +  I*epsilon ( - (a_fock)^* + a_fock) +  Theta (a_fock)^* a_fock'
 
 >>> H.space
     ProductSpace(LocalSpace('fock', ''), LocalSpace('tls', ''))
@@ -391,6 +391,30 @@ Extending the JaynesCummings problem above to an open system by adding collapse 
             + I * epsilon * (a - a.dag()))                      # external driving amplitude
     
         return SLH(S, L, H)
+
+
+Consider now an example where we feed one Jaynes-Cummings system's output into a second one::
+
+    Delta, Theta, epsilon, g = symbols('Delta, Theta, epsilon, g', real = True)
+    kappa, gamma = symbols('kappa, gamma')
+
+    JC1 = SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, namespace = 'jc1')
+    JC2 = SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, namespace = 'jc2')
+
+    SYS = (JC2 + cid(1)) << P_sigma(0, 2, 1) << (JC1 + cid(1))
+
+
+The resulting system's block diagram is:
+
+.. image:: _static/circuit_example.png
+
+and its overall SLH model is given by:
+
+.. math::
+    \left( \begin{pmatrix} 1 & 0 & 0 \\ 0 & 0 & 1 \\ 0 & 1 & 0\end{pmatrix}, \begin{pmatrix}  \sqrt{\kappa} {a_{{{\rm fock}}_{{\rm jc1}}}} +  \sqrt{\kappa} {a_{{{\rm fock}}_{{\rm jc2}}}} \\  \sqrt{\gamma} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}_{{\rm jc2}}}} \\  \sqrt{\gamma} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}_{{\rm jc1}}}}\end{pmatrix},  \Delta {\Pi_{{\rm e}}^{{{\rm tls}}_{{\rm jc1}}}} +  \Delta {\Pi_{{\rm e}}^{{{\rm tls}}_{{\rm jc2}}}} +  \mathbf{\imath} g \left({a_{{{\rm fock}}_{{\rm jc1}}}^\dagger} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}_{{\rm jc1}}}} - {a_{{{\rm fock}}_{{\rm jc1}}}} {\sigma_{{\rm e},{\rm g}}^{{{\rm tls}}_{{\rm jc1}}}}\right) +  \mathbf{\imath} g \left({a_{{{\rm fock}}_{{\rm jc2}}}^\dagger} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}_{{\rm jc2}}}} - {a_{{{\rm fock}}_{{\rm jc2}}}} {\sigma_{{\rm e},{\rm g}}^{{{\rm tls}}_{{\rm jc2}}}}\right) +  \frac{1}{2} \mathbf{\imath} \left( \sqrt{\kappa} \sqrt{\overline{\kappa}} {a_{{{\rm fock}}_{{\rm jc1}}}^\dagger} {a_{{{\rm fock}}_{{\rm jc2}}}} -  \sqrt{\kappa} \sqrt{\overline{\kappa}} {a_{{{\rm fock}}_{{\rm jc1}}}} {a_{{{\rm fock}}_{{\rm jc2}}}^\dagger}\right) +  \mathbf{\imath} \epsilon \left( -{a_{{{\rm fock}}_{{\rm jc1}}}^\dagger} + {a_{{{\rm fock}}_{{\rm jc1}}}}\right) +  \mathbf{\imath} \epsilon \left( -{a_{{{\rm fock}}_{{\rm jc2}}}^\dagger} + {a_{{{\rm fock}}_{{\rm jc2}}}}\right) +  \Theta {a_{{{\rm fock}}_{{\rm jc1}}}^\dagger} {a_{{{\rm fock}}_{{\rm jc1}}}} +  \Theta {a_{{{\rm fock}}_{{\rm jc2}}}^\dagger} {a_{{{\rm fock}}_{{\rm jc2}}}} \right)
+
+
+
 
 .. _super_operator_algebra:
 
