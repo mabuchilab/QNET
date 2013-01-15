@@ -7,6 +7,10 @@ This is strongly analogous to the specification of electric circuitry using the 
 The physical systems that can be modeled within the framework include quantum optical experiments that can be described as nodes with internal degrees of freedom such as interacting quantum harmonic oscillators and/or N-level quantum systems that,
 in turn are coupled to a finite number of external bosonic quantum fields.
 
+To get help installing and using QNET, please read this README, visit our `homepage <http://mabuchilab.github.com/QNET>`_ which includes the `official documentation <http://mabuchilab.github.com/QNET/doc>`_, sign up to our `mailing list <http://groups.google.com/group/qnet-user>`_,
+or consult and perhaps contribute to our `wiki <https://github.com/mabuchilab/QNET/wiki>`_.
+
+
 Contents
 --------
 
