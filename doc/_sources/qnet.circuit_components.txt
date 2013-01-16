@@ -25,6 +25,15 @@ circuit_components Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`delay_cc` Module
+-------------------------
+
+.. automodule:: qnet.circuit_components.delay_cc
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
 :mod:`displace_cc` Module
 -------------------------
 

@@ -28,6 +28,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="top" title="QNET 1.0 documentation" href="index.html" />
     <link rel="up" title="The qnet API" href="qnet.html" />
     <link rel="next" title="circuit_components Package" href="qnet.circuit_components.html" />
@@ -239,18 +240,6 @@ It fails when there are duplicate keys.</p>
 <dd><p>Bases: <a class="reference internal" href="#qnet.algebra.abstract_algebra.Expression" title="qnet.algebra.abstract_algebra.Expression"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.abstract_algebra.Expression</span></tt></a></p>
 <p>Abstract base class for all operations,
 where the operands themselves are also expressions.</p>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="classmethod">
 <dt id="qnet.algebra.abstract_algebra.Operation.create">
 <em class="property">classmethod </em><tt class="descname">create</tt><big>(</big><em>*operands</em><big>)</big><a class="reference internal" href="_modules/qnet/algebra/abstract_algebra.html#Operation.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.abstract_algebra.Operation.create" title="Permalink to this definition">¶</a></dt>
@@ -316,20 +305,6 @@ with the same wildcards. If the wildcard has a name, a successful match leads to
 object that matched the wildcard is stored under that name. One can also restrict the type of the matched Expression
 by providing a head argument and the condition argument allows for passing a function that performs additional tests
 on a potential match.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>name</strong> (<em>str</em>) &#8211; Wildcard name, (default = &#8220;&#8221;)</li>
-<li><strong>mode</strong> (One of <a class="reference internal" href="#qnet.algebra.abstract_algebra.Wildcard.single" title="qnet.algebra.abstract_algebra.Wildcard.single"><tt class="xref py py-attr docutils literal"><span class="pre">Wildcard.single</span></tt></a>, <a class="reference internal" href="#qnet.algebra.abstract_algebra.Wildcard.one_or_more" title="qnet.algebra.abstract_algebra.Wildcard.one_or_more"><tt class="xref py py-attr docutils literal"><span class="pre">Wildcard.one_or_more</span></tt></a>, <a class="reference internal" href="#qnet.algebra.abstract_algebra.Wildcard.zero_or_more" title="qnet.algebra.abstract_algebra.Wildcard.zero_or_more"><tt class="xref py py-attr docutils literal"><span class="pre">Wildcard.zero_or_more</span></tt></a>) &#8211; The matching mode, i.e. how many objects/operands can the wildcard match.</li>
-<li><strong>head</strong> (<em>tuple or type or None</em>) &#8211; Restriction of the type of the matched expression</li>
-<li><strong>condition</strong> (<em>FunctionType or None</em>) &#8211; An additional function that returns True if match should be accepted.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
 <dl class="attribute">
 <dt id="qnet.algebra.abstract_algebra.Wildcard.condition">
 <tt class="descname">condition</tt><em class="property"> = None</em><a class="headerlink" href="#qnet.algebra.abstract_algebra.Wildcard.condition" title="Permalink to this definition">¶</a></dt>
@@ -1041,18 +1016,6 @@ Hilbert spaces of quantum systems.</p>
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="attribute">
 <dt id="qnet.algebra.hilbert_space_algebra.LocalSpace.basis">
 <tt class="descname">basis</tt><a class="reference internal" href="_modules/qnet/algebra/hilbert_space_algebra.html#LocalSpace.basis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.hilbert_space_algebra.LocalSpace.basis" title="Permalink to this definition">¶</a></dt>
@@ -1110,18 +1073,6 @@ of a different type based on the operands.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>factor_spaces</strong> (<em>HilbertSpace</em>) &#8211; The Hilbert spaces to be tensored together.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -1194,18 +1145,6 @@ For more details see <a class="reference internal" href="symbolic_algebra.html#o
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>op</strong> (<em>Operator</em>) &#8211; The operator to take the adjoint of.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -1665,18 +1604,6 @@ but no transposition of matrix elements takes place.
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="classmethod">
 <dt id="qnet.algebra.operator_algebra.NullSpaceProjector.create">
 <em class="property">classmethod </em><tt class="descname">create</tt><big>(</big><em>*args</em><big>)</big><a class="headerlink" href="#qnet.algebra.operator_algebra.NullSpaceProjector.create" title="Permalink to this definition">¶</a></dt>
@@ -1882,18 +1809,6 @@ Note that all symbolic scalar parameters need to be replaced by numerical values
 <em class="property">class </em><tt class="descclassname">qnet.algebra.operator_algebra.</tt><tt class="descname">OperatorOperation</tt><big>(</big><em>*operands</em><big>)</big><a class="reference internal" href="_modules/qnet/algebra/operator_algebra.html#OperatorOperation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.operator_algebra.OperatorOperation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#qnet.algebra.operator_algebra.Operator" title="qnet.algebra.operator_algebra.Operator"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.operator_algebra.Operator</span></tt></a>, <a class="reference internal" href="#qnet.algebra.abstract_algebra.Operation" title="qnet.algebra.abstract_algebra.Operation"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.abstract_algebra.Operation</span></tt></a></p>
 <p>Base class for Operations acting only on Operator arguments.</p>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="attribute">
 <dt id="qnet.algebra.operator_algebra.OperatorOperation.signature">
 <tt class="descname">signature</tt><em class="property"> = (&lt;class 'qnet.algebra.operator_algebra.Operator'&gt;,)</em><a class="headerlink" href="#qnet.algebra.operator_algebra.OperatorOperation.signature" title="Permalink to this definition">¶</a></dt>
@@ -1913,18 +1828,6 @@ Note that all symbolic scalar parameters need to be replaced by numerical values
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>summands</strong> (<em>Operator</em>) &#8211; Operator summands.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -2012,18 +1915,6 @@ of a different type based on the operands.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>factors</strong> (<em>Operator</em>) &#8211; Operator factors.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -2173,18 +2064,6 @@ X^+ X X^+ =  X^+  \\
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="classmethod">
 <dt id="qnet.algebra.operator_algebra.PseudoInverse.create">
 <em class="property">classmethod </em><tt class="descname">create</tt><big>(</big><em>*args</em><big>)</big><a class="reference internal" href="_modules/qnet/algebra/operator_algebra.html#PseudoInverse.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.operator_algebra.PseudoInverse.create" title="Permalink to this definition">¶</a></dt>
@@ -2238,18 +2117,6 @@ X^+ X X^+ =  X^+  \\
 <li><strong>term</strong> (<em>Operator</em>) &#8211; The operator that is multiplied.</li>
 </ul>
 </td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -3043,18 +2910,6 @@ scatters the <span class="math">\(j\)</span>-th input field to the <span class="
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="attribute">
 <dt id="qnet.algebra.circuit_algebra.CPermutation.block_perms">
 <tt class="descname">block_perms</tt><a class="reference internal" href="_modules/qnet/algebra/circuit_algebra.html#CPermutation.block_perms"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.circuit_algebra.CPermutation.block_perms" title="Permalink to this definition">¶</a></dt>
@@ -3348,18 +3203,6 @@ in the expression or if the circuit includes <em>non-passive</em> ABCD models (c
 <tbody valign="top">
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="classmethod">
 <dt id="qnet.algebra.circuit_algebra.CircuitSymbol.create">
 <em class="property">classmethod </em><tt class="descname">create</tt><big>(</big><em>*args</em><big>)</big><a class="headerlink" href="#qnet.algebra.circuit_algebra.CircuitSymbol.create" title="Permalink to this definition">¶</a></dt>
@@ -3410,18 +3253,6 @@ of a different type based on the operands.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>Circuit</em>) &#8211; Circuits in parallel configuration.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -3499,18 +3330,6 @@ and an from an output port index to an input port index.</p>
 <li><strong>in_index</strong> (<em>int</em>) &#8211; The input port index.</li>
 </ul>
 </td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -3789,18 +3608,6 @@ in which an average is taken over the external noise degrees of freedom.</p>
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="classmethod">
 <dt id="qnet.algebra.circuit_algebra.SeriesInverse.create">
 <em class="property">classmethod </em><tt class="descname">create</tt><big>(</big><em>*args</em><big>)</big><a class="reference internal" href="_modules/qnet/algebra/circuit_algebra.html#SeriesInverse.create"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.circuit_algebra.SeriesInverse.create" title="Permalink to this definition">¶</a></dt>
@@ -3845,18 +3652,6 @@ in which an average is taken over the external noise degrees of freedom.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> &#8211; Circuits in feedforward configuration.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -4120,18 +3915,6 @@ of a different type based on the operands.</p>
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="method">
 <dt id="qnet.algebra.state_algebra.Bra.adjoint">
 <tt class="descname">adjoint</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/qnet/algebra/state_algebra.html#Bra.adjoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.state_algebra.Bra.adjoint" title="Permalink to this definition">¶</a></dt>
@@ -4219,18 +4002,6 @@ of a different type based on the operands.</p>
 <li><strong>k</strong> (<em>Ket</em>) &#8211; The linear state argument.</li>
 </ul>
 </td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -4420,18 +4191,6 @@ Note that all symbolic scalar parameters need to be replaced by numerical values
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="attribute">
 <dt id="qnet.algebra.state_algebra.KetBra.bra">
 <tt class="descname">bra</tt><a class="reference internal" href="_modules/qnet/algebra/state_algebra.html#KetBra.bra"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.state_algebra.KetBra.bra" title="Permalink to this definition">¶</a></dt>
@@ -4480,18 +4239,6 @@ of a different type based on the operands.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>summands</strong> (<em>Ket</em>) &#8211; State summands.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -4600,18 +4347,6 @@ of a different type based on the operands.</p>
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="attribute">
 <dt id="qnet.algebra.state_algebra.OperatorTimesKet.coeff">
 <tt class="descname">coeff</tt><a class="reference internal" href="_modules/qnet/algebra/state_algebra.html#OperatorTimesKet.coeff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.state_algebra.OperatorTimesKet.coeff" title="Permalink to this definition">¶</a></dt>
@@ -4658,18 +4393,6 @@ of a different type based on the operands.</p>
 <li><strong>term</strong> (<em>Ket</em>) &#8211; The ket that is multiplied.</li>
 </ul>
 </td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -4727,18 +4450,6 @@ Instantiate as:</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>factors</strong> (<em>Ket</em>) &#8211; Ket factors.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -4816,18 +4527,6 @@ See <a class="reference internal" href="symbolic_algebra.html#super-operator-alg
 </pre></div>
 </div>
 <p>Acting <tt class="docutils literal"><span class="pre">SPost(A)</span></tt> on an operator <tt class="docutils literal"><span class="pre">B</span></tt> just yields the reversed product <tt class="docutils literal"><span class="pre">B</span> <span class="pre">*</span> <span class="pre">A</span></tt>.</p>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="classmethod">
 <dt id="qnet.algebra.super_operator_algebra.SPost.create">
 <em class="property">classmethod </em><tt class="descname">create</tt><big>(</big><em>*args</em><big>)</big><a class="headerlink" href="#qnet.algebra.super_operator_algebra.SPost.create" title="Permalink to this definition">¶</a></dt>
@@ -4862,18 +4561,6 @@ of a different type based on the operands.</p>
 </pre></div>
 </div>
 <p>Acting <tt class="docutils literal"><span class="pre">SPre(A)</span></tt> on an operator <tt class="docutils literal"><span class="pre">B</span></tt> just yields the product <tt class="docutils literal"><span class="pre">A</span> <span class="pre">*</span> <span class="pre">B</span></tt></p>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="classmethod">
 <dt id="qnet.algebra.super_operator_algebra.SPre.create">
 <em class="property">classmethod </em><tt class="descname">create</tt><big>(</big><em>*args</em><big>)</big><a class="headerlink" href="#qnet.algebra.super_operator_algebra.SPre.create" title="Permalink to this definition">¶</a></dt>
@@ -4903,7 +4590,7 @@ of a different type based on the operands.</p>
 <em class="property">class </em><tt class="descclassname">qnet.algebra.super_operator_algebra.</tt><tt class="descname">ScalarTimesSuperOperator</tt><big>(</big><em>*operands</em><big>)</big><a class="reference internal" href="_modules/qnet/algebra/super_operator_algebra.html#ScalarTimesSuperOperator"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.super_operator_algebra.ScalarTimesSuperOperator" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#qnet.algebra.super_operator_algebra.SuperOperator" title="qnet.algebra.super_operator_algebra.SuperOperator"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.super_operator_algebra.SuperOperator</span></tt></a>, <a class="reference internal" href="#qnet.algebra.abstract_algebra.Operation" title="qnet.algebra.abstract_algebra.Operation"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.abstract_algebra.Operation</span></tt></a></p>
 <p>Multiply an operator by a scalar coefficient:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">ScalarTimesOperator</span><span class="p">(</span><span class="n">coefficient</span><span class="p">,</span> <span class="n">term</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">ScalarTimesSuperOperator</span><span class="p">(</span><span class="n">coeff</span><span class="p">,</span> <span class="n">term</span><span class="p">)</span>
 </pre></div>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
@@ -4911,29 +4598,26 @@ of a different type based on the operands.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>coefficient</strong> (<em>Any of SuperOperator.scalar_types</em>) &#8211; Scalar coefficient.</li>
+<li><strong>coeff</strong> (<a class="reference internal" href="#qnet.algebra.super_operator_algebra.SuperOperator.scalar_types" title="qnet.algebra.super_operator_algebra.SuperOperator.scalar_types"><tt class="xref py py-attr docutils literal"><span class="pre">SuperOperator.scalar_types</span></tt></a>) &#8211; Scalar coefficient.</li>
 <li><strong>term</strong> (<em>SuperOperator</em>) &#8211; The super-operator that is multiplied.</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
+<dl class="attribute">
+<dt id="qnet.algebra.super_operator_algebra.ScalarTimesSuperOperator.coeff">
+<tt class="descname">coeff</tt><a class="reference internal" href="_modules/qnet/algebra/super_operator_algebra.html#ScalarTimesSuperOperator.coeff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.super_operator_algebra.ScalarTimesSuperOperator.coeff" title="Permalink to this definition">¶</a></dt>
+<dd><p>The scalar coefficient.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
+<tr class="field-odd field"><th class="field-name">Type :</th><td class="field-body"><a class="reference internal" href="#qnet.algebra.super_operator_algebra.SuperOperator.scalar_types" title="qnet.algebra.super_operator_algebra.SuperOperator.scalar_types"><tt class="xref py py-attr docutils literal"><span class="pre">SuperOperator.scalar_types</span></tt></a></td>
 </tr>
 </tbody>
 </table>
-<dl class="attribute">
-<dt id="qnet.algebra.super_operator_algebra.ScalarTimesSuperOperator.coeff">
-<tt class="descname">coeff</tt><a class="reference internal" href="_modules/qnet/algebra/super_operator_algebra.html#ScalarTimesSuperOperator.coeff"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.super_operator_algebra.ScalarTimesSuperOperator.coeff" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+</dd></dl>
 
 <dl class="classmethod">
 <dt id="qnet.algebra.super_operator_algebra.ScalarTimesSuperOperator.create">
@@ -4960,7 +4644,16 @@ of a different type based on the operands.</p>
 <dl class="attribute">
 <dt id="qnet.algebra.super_operator_algebra.ScalarTimesSuperOperator.term">
 <tt class="descname">term</tt><a class="reference internal" href="_modules/qnet/algebra/super_operator_algebra.html#ScalarTimesSuperOperator.term"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.super_operator_algebra.ScalarTimesSuperOperator.term" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>The super-operator term.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type :</th><td class="field-body">SuperOperator</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
 
 </dd></dl>
 
@@ -4969,28 +4662,21 @@ of a different type based on the operands.</p>
 <em class="property">class </em><tt class="descclassname">qnet.algebra.super_operator_algebra.</tt><tt class="descname">SuperAdjoint</tt><big>(</big><em>*operands</em><big>)</big><a class="reference internal" href="_modules/qnet/algebra/super_operator_algebra.html#SuperAdjoint"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.super_operator_algebra.SuperAdjoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#qnet.algebra.super_operator_algebra.SuperOperatorOperation" title="qnet.algebra.super_operator_algebra.SuperOperatorOperation"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.super_operator_algebra.SuperOperatorOperation</span></tt></a></p>
 <p>The symbolic SuperAdjoint of a super-operator.</p>
-<p>Use as:</p>
-<div class="math">
-\[SuperAdjoint(L)``\]\[For the super-operator :math:`\mathcal{L}`, its super-adjoint :math:`\mathcal{L}^*` satisfies for any pair of operators :math:`M,N`:\]</div>
-<div class="math">
-\[{\rm Tr}(M (LN)) == Tr((SuperAdjoint(L)*M) * N)``\]</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sop</strong> (<em>SuperOperator</em>) &#8211; The super-operator to take the adjoint of.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
+<p>For a super operator <tt class="docutils literal"><span class="pre">L</span></tt> use as:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">SuperAdjoint</span><span class="p">(</span><span class="n">L</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>The math notation for this is typically</p>
+<div class="math">
+\[{\rm SuperAdjoint}(\mathcal{L}) =: \mathcal{L}^*\]</div>
+<p>and for any super operator <span class="math">\(\mathcal{L}\)</span>, its super-adjoint <span class="math">\(\mathcal{L}^*\)</span> satisfies for any pair of operators <span class="math">\(M,N\)</span>:</p>
+<div class="math">
+\[{\rm Tr}[M (\mathcal{L}N)] = Tr[(\mathcal{L}^*M)  N]\]</div>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>L</strong> (<em>SuperOperator</em>) &#8211; The super-operator to take the adjoint of.</td>
 </tr>
 </tbody>
 </table>
@@ -5111,18 +4797,6 @@ Note that all symbolic scalar parameters need to be replaced by numerical values
 <em class="property">class </em><tt class="descclassname">qnet.algebra.super_operator_algebra.</tt><tt class="descname">SuperOperatorOperation</tt><big>(</big><em>*operands</em><big>)</big><a class="reference internal" href="_modules/qnet/algebra/super_operator_algebra.html#SuperOperatorOperation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.super_operator_algebra.SuperOperatorOperation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#qnet.algebra.super_operator_algebra.SuperOperator" title="qnet.algebra.super_operator_algebra.SuperOperator"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.super_operator_algebra.SuperOperator</span></tt></a>, <a class="reference internal" href="#qnet.algebra.abstract_algebra.Operation" title="qnet.algebra.abstract_algebra.Operation"><tt class="xref py py-class docutils literal"><span class="pre">qnet.algebra.abstract_algebra.Operation</span></tt></a></p>
 <p>Base class for Operations acting only on SuperOperator arguments.</p>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="attribute">
 <dt id="qnet.algebra.super_operator_algebra.SuperOperatorOperation.signature">
 <tt class="descname">signature</tt><em class="property"> = (&lt;class 'qnet.algebra.super_operator_algebra.SuperOperator'&gt;,)</em><a class="headerlink" href="#qnet.algebra.super_operator_algebra.SuperOperatorOperation.signature" title="Permalink to this definition">¶</a></dt>
@@ -5144,18 +4818,6 @@ Note that all symbolic scalar parameters need to be replaced by numerical values
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>summands</strong> (<em>SuperOperator</em>) &#8211; super-operator summands.</td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -5249,18 +4911,6 @@ of a different type based on the operands.</p>
 </tr>
 </tbody>
 </table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
-</tr>
-</tbody>
-</table>
 <dl class="class">
 <dt id="qnet.algebra.super_operator_algebra.SuperOperatorTimes.SuperOperatorOrderKey">
 <em class="property">class </em><tt class="descname">SuperOperatorOrderKey</tt><big>(</big><em>op</em><big>)</big><a class="reference internal" href="_modules/qnet/algebra/super_operator_algebra.html#SuperOperatorTimes.SuperOperatorOrderKey"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.algebra.super_operator_algebra.SuperOperatorTimes.SuperOperatorOrderKey" title="Permalink to this definition">¶</a></dt>
@@ -5306,18 +4956,6 @@ I.e., sorted(factors, key = OperatorOrderKey) achieves this ordering.</p>
 <li><strong>op</strong> (<em>Operator</em>) &#8211; The operator it is applied to.</li>
 </ul>
 </td>
-</tr>
-</tbody>
-</table>
-<p>Create a symbolic operation with the given operands.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="n">Operation</span><span class="p">(</span><span class="o">*</span><span class="n">operands</span><span class="p">)</span>
-</pre></div>
-</div>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>operands</strong> (<em>object or as defined in the Operation&#8217;s signature</em>) &#8211; The operands of the expression.</td>
 </tr>
 </tbody>
 </table>
@@ -5464,7 +5102,7 @@ Applied to an operator <span class="math">\(X\)</span> they yield</p>
 \[\begin{split}\left(H, \mathbf{L}\right) &amp; \mapsto \left(H + {1\over 2i}\left(\mathbf{w}^\dagger \mathbf{L} - \mathbf{L}^\dagger \mathbf{w}\right), \mathbf{L} + \mathbf{w} \right) \\
 \left(H, \mathbf{L}\right) &amp; \mapsto \left(H, \mathbf{U}\mathbf{L}\right)\\\end{split}\]</div>
 <p>where <span class="math">\(\mathbf{w}\)</span> is just a vector of complex numbers and <span class="math">\(\mathbf{U}\)</span> is a complex unitary matrix.
-It turns out that for quantum optical circuit models the set of collapse operators is linearly dependent.
+It turns out that for quantum optical circuit models the set of collapse operators is often linearly dependent.
 This routine tries to find a representation of the Liouvillian in terms of a Hamilton operator <tt class="docutils literal"><span class="pre">H</span></tt> with
 as few non-zero collapse operators <tt class="docutils literal"><span class="pre">Ls</span></tt> as possible.
 Consider the following example, which results from a two-port linear cavity with a coherent input into the first port:</p>

@@ -28,6 +28,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <script type="text/javascript" src="_static/mathjax_cancel.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="top" title="QNET 1.0 documentation" href="index.html" />
     <link rel="up" title="The qnet API" href="qnet.html" />
     <link rel="next" title="misc Package" href="qnet.misc.html" />
@@ -61,6 +62,7 @@
 <li><a class="reference internal" href="#id1"><tt class="docutils literal"><span class="pre">circuit_components</span></tt> Package</a></li>
 <li><a class="reference internal" href="#module-qnet.circuit_components.beamsplitter_cc"><tt class="docutils literal"><span class="pre">beamsplitter_cc</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-qnet.circuit_components.component"><tt class="docutils literal"><span class="pre">component</span></tt> Module</a></li>
+<li><a class="reference internal" href="#module-qnet.circuit_components.delay_cc"><tt class="docutils literal"><span class="pre">delay_cc</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-qnet.circuit_components.displace_cc"><tt class="docutils literal"><span class="pre">displace_cc</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-qnet.circuit_components.double_sided_opo_cc"><tt class="docutils literal"><span class="pre">double_sided_opo_cc</span></tt> Module</a></li>
 <li><a class="reference internal" href="#module-qnet.circuit_components.kerr_cavity_cc"><tt class="docutils literal"><span class="pre">kerr_cavity_cc</span></tt> Module</a></li>
@@ -254,6 +256,58 @@ Via the creduce() method, an object can be decomposed into its parts.</p>
 <dl class="attribute">
 <dt id="qnet.circuit_components.component.SubComponent.sub_index">
 <tt class="descname">sub_index</tt><em class="property"> = 0</em><a class="headerlink" href="#qnet.circuit_components.component.SubComponent.sub_index" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-qnet.circuit_components.delay_cc">
+<span id="delay-cc-module"></span><h2><tt class="xref py py-mod docutils literal"><span class="pre">delay_cc</span></tt> Module<a class="headerlink" href="#module-qnet.circuit_components.delay_cc" title="Permalink to this headline">¶</a></h2>
+<p>Component definition file for a pseudo-delay model that works over a limited bandwidth.
+See documentation of <a class="reference internal" href="#qnet.circuit_components.delay_cc.Delay" title="qnet.circuit_components.delay_cc.Delay"><tt class="xref py py-class docutils literal"><span class="pre">Delay</span></tt></a>.</p>
+<dl class="class">
+<dt id="qnet.circuit_components.delay_cc.Delay">
+<em class="property">class </em><tt class="descclassname">qnet.circuit_components.delay_cc.</tt><tt class="descname">Delay</tt><big>(</big><em>name='C'</em>, <em>namespace=''</em>, <em>**kwparams</em><big>)</big><a class="reference internal" href="_modules/qnet/circuit_components/delay_cc.html#Delay"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#qnet.circuit_components.component.Component" title="qnet.circuit_components.component.Component"><tt class="xref py py-class docutils literal"><span class="pre">qnet.circuit_components.component.Component</span></tt></a></p>
+<p>Delay</p>
+<dl class="attribute">
+<dt id="qnet.circuit_components.delay_cc.Delay.CDIM">
+<tt class="descname">CDIM</tt><em class="property"> = 1</em><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay.CDIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.delay_cc.Delay.FOCK_DIM">
+<tt class="descname">FOCK_DIM</tt><em class="property"> = 25</em><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay.FOCK_DIM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.delay_cc.Delay.N">
+<tt class="descname">N</tt><em class="property"> = 3</em><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay.N" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.delay_cc.Delay.PORTSIN">
+<tt class="descname">PORTSIN</tt><em class="property"> = ['In1']</em><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay.PORTSIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.delay_cc.Delay.PORTSOUT">
+<tt class="descname">PORTSOUT</tt><em class="property"> = ['Out1']</em><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay.PORTSOUT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.delay_cc.Delay.name">
+<tt class="descname">name</tt><em class="property"> = 'T'</em><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.delay_cc.Delay.namespace">
+<tt class="descname">namespace</tt><em class="property"> = ''</em><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay.namespace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="qnet.circuit_components.delay_cc.Delay.tau">
+<tt class="descname">tau</tt><em class="property"> = tau</em><a class="headerlink" href="#qnet.circuit_components.delay_cc.Delay.tau" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
