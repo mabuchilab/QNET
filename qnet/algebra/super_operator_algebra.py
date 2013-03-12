@@ -501,10 +501,10 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
     """
     Multiply an operator by a scalar coefficient::
 
-        ScalarTimesOperator(coefficient, term)
+        ScalarTimesSuperOperator(coeff, term)
 
-    :param coefficient: Scalar coefficient.
-    :type coefficient: Any of SuperOperator.scalar_types
+    :param coeff: Scalar coefficient.
+    :type coeff: :py:attr:`SuperOperator.scalar_types`
     :param term: The super-operator that is multiplied.
     :type term: SuperOperator
     """
@@ -517,10 +517,20 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
 
     @property
     def coeff(self):
+        """
+        The scalar coefficient.
+
+        :type: :py:attr:`SuperOperator.scalar_types`
+        """
         return self.operands[0]
 
     @property
     def term(self):
+        """
+        The super-operator term.
+
+        :type: SuperOperator
+        """
         return self.operands[1]
 
 
@@ -607,19 +617,23 @@ class SuperAdjoint(SuperOperatorOperation):
     r"""
     The symbolic SuperAdjoint of a super-operator.
 
-    Use as:
+    For a super operator ``L`` use as::
+
+        SuperAdjoint(L)
+
+    The math notation for this is typically
 
     .. math::
-        SuperAdjoint(L)``
+        {\rm SuperAdjoint}(\mathcal{L}) =: \mathcal{L}^*
 
-     For the super-operator :math:`\mathcal{L}`, its super-adjoint :math:`\mathcal{L}^*` satisfies for any pair of operators :math:`M,N`:
+    and for any super operator :math:`\mathcal{L}`, its super-adjoint :math:`\mathcal{L}^*` satisfies for any pair of operators :math:`M,N`:
 
     .. math::
-        {\rm Tr}(M (LN)) == Tr((SuperAdjoint(L)*M) * N)``
+        {\rm Tr}[M (\mathcal{L}N)] = Tr[(\mathcal{L}^*M)  N]
 
 
-    :param sop: The super-operator to take the adjoint of.
-    :type sop: SuperOperator
+    :param L: The super-operator to take the adjoint of.
+    :type L: SuperOperator
     """
     _rules = []
     @property
@@ -1122,7 +1136,7 @@ def liouvillian_normal_form(L, symbolic = False):
         \left(H, \mathbf{L}\right) & \mapsto \left(H, \mathbf{U}\mathbf{L}\right)\\
 
     where :math:`\mathbf{w}` is just a vector of complex numbers and :math:`\mathbf{U}` is a complex unitary matrix.
-    It turns out that for quantum optical circuit models the set of collapse operators is linearly dependent.
+    It turns out that for quantum optical circuit models the set of collapse operators is often linearly dependent.
     This routine tries to find a representation of the Liouvillian in terms of a Hamilton operator ``H`` with
     as few non-zero collapse operators ``Ls`` as possible.
     Consider the following example, which results from a two-port linear cavity with a coherent input into the first port:

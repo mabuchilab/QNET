@@ -434,7 +434,7 @@ class LocalOperator(Operator, Operation):
         return (self,) + ((0,) * order)
 
     def _all_symbols(self):
-        return (())
+        return set()
 
 
 @implied_local_space
@@ -519,6 +519,16 @@ def simplify_scalar(s):
         return s.simplify()
     return s
 
+def scalar_free_symbols(*operands):
+    if len(operands) > 1:
+        return set_union([scalar_free_symbols(o) for o in operands])
+    if len(operands) < 1:
+        return set()
+    o, = operands
+    if isinstance(o, SympyBasic):
+        return o.free_symbols
+    return set()
+
 @implied_local_space
 @match_replace
 @check_signature
@@ -566,6 +576,9 @@ class Phase(LocalOperator):
     def _simplify_scalar(self):
         return Phase(self.space, simplify_scalar(self.operands[1]))
 
+    def _all_symbols(self):
+        return scalar_free_symbols(self.operands[0])
+
 
 @implied_local_space
 @match_replace
@@ -610,6 +623,9 @@ class Displace(LocalOperator):
     def _simplify_scalar(self):
         return Displace(self.space, simplify_scalar(self.operands[1]))
 
+    def _all_symbols(self):
+        return scalar_free_symbols(self.operands[0])
+
 
 @implied_local_space
 @match_replace
@@ -653,6 +669,9 @@ class Squeeze(LocalOperator):
 
     def _simplify_scalar(self):
         return Squeeze(self.space, simplify_scalar(self.operands[1]))
+
+    def _all_symbols(self):
+        return scalar_free_symbols(self.operands[0])
 
 
 @implied_local_space
@@ -758,6 +777,7 @@ class OperatorOperation(Operator, Operation):
 
     def _simplify_scalar(self):
         return self.__class__.create(*[o.simplify_scalar() for o in self.operands])
+
 
 
 def tuple_sum(tuples, inital=0):
@@ -1109,6 +1129,9 @@ class ScalarTimesOperator(Operator, Operation):
         coeff, term = self.operands
         return simplify_scalar(coeff) * term.simplify_scalar()
 
+    def _all_symbols(self):
+        return scalar_free_symbols(self.coeff) | self.term.all_symbols()
+
 
 def safe_tex(obj):
     if isinstance(obj, (int, float, complex)):
@@ -1419,6 +1442,9 @@ class OperatorTrace(Operator, Operation):
     def _to_qutip(self, full_space):
         # TODO import OperatorTrace._to_qutip()
         raise NotImplementedError(self.__class__.__name__)
+
+    def _all_symbols(self):
+        return self.operands[1].all_symbols()
 
 
 tr = OperatorTrace.create
@@ -1816,7 +1842,13 @@ class Matrix(Expression):
 
 
     def _all_symbols(self):
-        return set_union()
+        ret = set()
+        for o in self.matrix.flatten():
+            if isinstance(o, Operator):
+                ret = ret | o.all_symbols()
+            else:
+                ret = ret | scalar_free_symbols(o)
+        return ret
 
 
     def _tex(self):

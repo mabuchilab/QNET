@@ -564,8 +564,8 @@ class SLH(Circuit, Operation):
         L, H = self.L, self.H
         if rho is None:
             rho = OperatorSymbol('rho', self.space)
-        return -I*(H*rho - rho*H) + sum( Lk * rho * adjoint(Lk)
-                             -  (adjoint(Lk)*Lk * rho + rho * adjoint(Lk)*Lk) / 2
+        return -I * (H * rho - rho * H) + sum(Lk * rho * adjoint(Lk)
+                                                - (adjoint(Lk) * Lk * rho + rho * adjoint(Lk) * Lk) / 2
                                                 for Lk in L.matrix.flatten())
 
 
@@ -597,11 +597,11 @@ class SLH(Circuit, Operation):
             LambdaT = (noises.conjugate() * noises.transpose()).transpose()
             assert noises.shape == L.shape
             S = self.S
-            ret += (adjoint(noises) * S.adjoint() * (X * L - L * X)).evalf()[0,0] \
-                    + ((L.adjoint() *X - X * L.adjoint()) * S * noises).evalf()[0,0]
+            ret += (adjoint(noises) * S.adjoint() * (X * L - L * X)).expand()[0, 0] \
+                    + ((L.adjoint() *X - X * L.adjoint()) * S * noises).expand()[0, 0]
             if len(S.space & X.space):
                 comm = (S.adjoint() * X * S - X)
-                ret +=  (comm * LambdaT).evalf().trace()
+                ret +=  (comm * LambdaT).expand().trace()
         return ret
 
     def __iter__(self):
@@ -1125,10 +1125,8 @@ class Concatenation(Circuit, Operation):
             current_length = 0
         return tuple(blocks)
 
-
     def _series_inverse(self):
         return Concatenation.create(*[o.series_inverse() for o in self.operands])
-
 
     def _feedback(self, out_index, in_index):
 
