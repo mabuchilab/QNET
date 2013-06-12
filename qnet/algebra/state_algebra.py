@@ -378,10 +378,10 @@ class CoherentStateKet(LocalKet):
     signature = (LocalSpace, str, int), Ket.scalar_types
 
     def _tex_ket(self):
-        return r"\left| D\left({!s}\right) \right\rangle_{{{}}}".format(self.operands[1], self.space.tex())
+        return r"\left| D\left({!s}\right) \right\rangle_{{{}}}".format(tex(self.operands[1]), self.space.tex())
 
     def _tex_bra(self):
-        return r"\left\langle D\left({!s}\right) \right|_{{{}}}".format(self.operands[1], self.space.tex())
+        return r"\left\langle D\left({!s}\right) \right|_{{{}}}".format(tex(self.operands[1]), self.space.tex())
 
     def _str_ket(self):
         return r"|D({!s})>_{!s}".format(self.operands[1], self.space)
@@ -518,10 +518,7 @@ class TensorKet(Ket, Operation):
     _binary_rules = []
     neutral_element = TrivialKet
 
-
-
-    def _order_key(self):
-        return Operation.order_key(self.space)
+    order_key = OperatorTimes.order_key
 
     @classmethod
     def create(cls, *ops):
