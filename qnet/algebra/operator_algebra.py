@@ -358,7 +358,7 @@ class ZeroOperator(Operator, Expression):
 
     def _to_qutip(self, full_space):
         return qutip.tensor(
-            *[qutip.Qobj(csr_matrix((), (s.dimension, s.dimension))) for s in full_space.local_factors()])
+            *[qutip.Qobj(csr_matrix((s.dimension, s.dimension))) for s in full_space.local_factors()])
 
     def _expand(self):
         return self

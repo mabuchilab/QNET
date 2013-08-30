@@ -58,8 +58,8 @@ class KerrCavity(Component):
 
     Delta = symbols('Delta', real = True)       # Detuning from cavity
     chi = symbols('chi', real = True)           # Kerr-nonlinear coefficient
-    kappa_1 = symbols('kappa_1', real = True)   # coupling through first port
-    kappa_2 = symbols('kappa_2', real = True)   # coupling through second port
+    kappa_1 = symbols('kappa_1', positive = True)   # coupling through first port
+    kappa_2 = symbols('kappa_2', positive = True)   # coupling through second port
     FOCK_DIM = 75
     _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', FOCK_DIM]
 
