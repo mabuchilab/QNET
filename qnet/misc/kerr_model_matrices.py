@@ -74,7 +74,7 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
     dA': symbolic expression for the output fields
 
     The overall SDE is then:
-    da_t/dt = (A * a_t - 2i (A_kerr * (a_t (*) a_t^*)) (*) a_t + u_c + B_input * u_t) + B * dA_t/dt
+    da_t/dt = (A * a_t + (A_kerr * (a_t (*) a_t^*)) (*) a_t + u_c + B_input * u_t) + B * dA_t/dt
     dA'_t/dt = (C * a_t + U_c + D_input * u_t) + D * dA_t/dt
 
     Here A * b is a matrix product, whereas a (*) b is an element-wise
@@ -128,7 +128,10 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
         coeffsjj = get_coeffs(eoms[jj], epsilon=epsilon)
         for kk, skk in enumerate(modes):
             A[jj, kk] = coeffsjj[Destroy(skk)]
-            A_kerr[jj, kk] = coeffsjj[Create(skk) * Destroy(skk) * Destroy(sjj)]/-2j
+            chi_jjkk = coeffsjj[Create(skk) * Destroy(skk) * Destroy(sjj)]
+            if apply_kerr_diagonal_correction:
+                A[jj, kk] += -(1 + int(jj==kk)) * chi_jjkk / 2
+            A_kerr[jj, kk] = chi_jjkk
         for kk, dAkk in enumerate(noises):
             B[jj, kk] = coeffsjj[dAkk]
         for kk, u_kk in enumerate(inputs):
@@ -182,12 +185,14 @@ def substitute_into_symbolic_model_matrices(model_matrices, params):
     return [m.substitute(params).matrix.astype(complex) for m in model_matrices[:9]] + list(model_matrices[9:])
 
 
-def prepare_sde(numeric_model_matrices, input_fn):
+def prepare_sde(numeric_model_matrices, input_fn, return_jac=False):
     """
-    Compute the SDE functions f, g (see euler_mayurama docs) for the model matrices.
+    Compute the SDE functions f, g and (optionally) the Jacobian of f (see euler_mayurama docs) for the model matrices.
+    
+    Returns f, g[, Jf]
 
     The overall SDE is:
-    da_t/dt = (A * a_t - 2i (A_kerr * (a_t (*) a_t^*)) (*) a_t + u_c + B_input * u_t) + B * dA_t/dt
+    da_t/dt = (A * a_t + (A_kerr * (a_t (*) a_t^*)) (*) a_t + u_c + B_input * u_t) + B * dA_t/dt
     dA'_t/dt = (C * a_t + U_c + D_input * u_t) + D * dA_t/dt
     """
     A, B, C, D, A_kerr, B_input, D_input, u_c, U_c = numeric_model_matrices[:9]
@@ -195,9 +200,63 @@ def prepare_sde(numeric_model_matrices, input_fn):
     u_c = u_c.ravel()
 
     def f(a, t):
-        return A.dot(a) - 2j * (A_kerr.dot(a.conjugate() * a)) * a + u_c + B_input.dot(input_fn(t))
+        "Return A.dot(a) +  (A_kerr.dot(a.conjugate() * a)) * a + u_c + B_input.dot(input_fn(t))."
+        return A.dot(a) +  (A_kerr.dot(a.conjugate() * a)) * a + u_c + B_input.dot(input_fn(t))
     
     def g(a, t):
         return B_over_2
+
+    if not return_jac:    
+        return f, g
     
-    return f, g
+    def Jf(a, t):
+        AA, BB = A + np.diag(A_kerr.dot(a * a.conjugate())) + A_kerr * np.outer(a, a.conjugate()), A_kerr*np.outer(a, a)
+        return np.vstack([
+            np.hstack([AA, BB]),
+            np.hstack([BB.conjugate(), AA.conjugate()]),
+        ])
+    return f, g, Jf
+
+def wrap_fqp(f):
+    "Wrap a complex ode function f(a,t) as f(qp, t) where qp = [a1r, a1i, a2r, a2i,...]"
+    def fqp(qp, t):
+        qp.dtype = np.complex128
+        fa = f(qp, t)
+        qp.dtype = np.float64
+        fa.dtype = np.float64
+        return fa
+    return fqp
+
+def T_qp_a(n):
+    "Basis transfer matrix, qp = T_qp_a.dot([[a],[a.conjugate()]])"
+    ret = np.zeros((2*n, 2*n), dtype=complex)
+    ret[::2,:n] = ret[::2,n:] = np.eye(n)
+    ret[1::2,:n] = -1j* np.eye(n)
+    ret[1::2,n:] = 1j * np.eye(n)
+    return ret/2.
+[]
+def T_a_qp(n):
+    """
+    Basis transfer matrix, [[a],[a.conjugate()]] = T_a_qp.dot(qp),
+    where qp = [a1r, a1i, a2r, a2i,...]
+    """
+    ret = np.zeros((2*n, 2*n), dtype=complex)
+    ret[::2,:n] = ret[::2,n:] = np.eye(n)
+    ret[1::2,:n] = -1j* np.eye(n)
+    ret[1::2,n:] = 1j * np.eye(n)
+    return ret.T.conjugate()
+
+def wrap_Jqp(J):
+    """
+    Wrap the jacobian of a complex ode function f(a,t) as f(qp, t),
+    where qp = [a1r, a1i, a2r, a2i,...]
+    """
+    def Jqp(qp, t):
+        qp.dtype = np.complex128
+        Ja = J(qp, t)
+        qp.dtype = np.float64
+        n = qp.shape[0]/2
+        ret = T_qp_a(n).dot(Ja).dot(T_a_qp(n))
+        assert np.allclose(ret.imag, np.zeros_like(ret))
+        return ret.real
+    return Jqp

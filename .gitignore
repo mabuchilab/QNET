@@ -6,4 +6,5 @@
 *.png
 *.net
 *.synctex.gz
+backup/*
 docsrc/_build/*
