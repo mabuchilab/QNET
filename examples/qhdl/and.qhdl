@@ -9,7 +9,8 @@ ENTITY And IS
         kappa_2 : real := 20.0;
         kappa_3 : real := 10.0;
         theta : real := 0.6435;
-        phi : real := -1.39);
+        phi : real := -1.39;
+        phip : real := 2.65);
     PORT (
         In1 : in fieldmode;
         In2 : in fieldmode;
@@ -53,6 +54,7 @@ ARCHITECTURE netlist OF And IS
         Out1 : out fieldmode);
     END COMPONENT ;
 
+    SIGNAL unnamed_net8 : fieldmode;
     SIGNAL unnamed_net7 : fieldmode;
     SIGNAL unnamed_net6 : fieldmode;
     SIGNAL unnamed_net5 : fieldmode;
@@ -62,11 +64,18 @@ ARCHITECTURE netlist OF And IS
     SIGNAL unnamed_net1 : fieldmode;
 BEGIN
 -- Architecture statement part
-    Phase : Phase
+    Phase2 : Phase
+    GENERIC MAP (
+        phi => phip);
+    PORT MAP (
+        In1 => unnamed_net7,
+        Out1 => unnamed_net8);
+
+    Phase1 : Phase
     GENERIC MAP (
         phi => phi);
     PORT MAP (
-        In1 => unnamed_net3,
+        In1 => unnamed_net2,
         Out1 => unnamed_net6);
 
     B2 : Beamsplitter
@@ -74,9 +83,9 @@ BEGIN
         theta => theta);
     PORT MAP (
         In1 => unnamed_net6,
-        In2 => unnamed_net2,
-        Out1 => unnamed_net7,
-        Out2 => OPEN);
+        In2 => unnamed_net3,
+        Out1 => OPEN,
+        Out2 => unnamed_net7);
 
     B1 : Beamsplitter
     PORT MAP (
@@ -103,5 +112,5 @@ BEGIN
 -- Signal assignment part
 unnamed_net4 <= In1;
 unnamed_net5 <= In2;
-Out1 <= unnamed_net7;
+Out1 <= unnamed_net8;
 END netlist;

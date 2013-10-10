@@ -38,7 +38,8 @@ class And(Component):
     kappa_3 = 10.0
     theta = 0.6435
     phi = -1.39
-    _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', 'kappa_3', 'phi', 'theta']
+    phip = 2.65
+    _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', 'kappa_3', 'phi', 'phip', 'theta']
 
     # list of input port names
     PORTSIN = ['In1', 'In2']
@@ -61,10 +62,14 @@ class And(Component):
         return ThreePortKerrCavity(make_namespace_string(self.name, 'C'), kappa_2 = self.kappa_2, chi = self.chi, kappa_1 = self.kappa_1, kappa_3 = self.kappa_3, Delta = self.Delta)
 
     @property
-    def Phase(self):
-        return Phase(make_namespace_string(self.name, 'Phase'), phi = self.phi)
+    def Phase1(self):
+        return Phase(make_namespace_string(self.name, 'Phase1'), phi = self.phi)
 
-    _sub_components = ['B1', 'B2', 'C', 'Phase']
+    @property
+    def Phase2(self):
+        return Phase(make_namespace_string(self.name, 'Phase2'), phi = self.phip)
+
+    _sub_components = ['B1', 'B2', 'C', 'Phase1', 'Phase2']
     
 
     def _toSLH(self):
@@ -72,9 +77,9 @@ class And(Component):
         
     def _creduce(self):
 
-        B1, B2, C, Phase = self.B1, self.B2, self.C, self.Phase
+        B1, B2, C, Phase1, Phase2 = self.B1, self.B2, self.C, self.Phase1, self.Phase2
 
-        return P_sigma(0, 1, 3, 2) << ((((B2 << (Phase + cid(1))) + cid(1)) << P_sigma(1, 0, 2) << C) + cid(1)) << P_sigma(0, 3, 1, 2) << ((P_sigma(1, 0) << B1) + cid(2))
+        return P_sigma(0, 1, 3, 2) << (((((Phase2 + cid(1)) << P_sigma(1, 0) << B2 << (Phase1 + cid(1))) + cid(1)) << C) + cid(1)) << P_sigma(0, 3, 1, 2) << ((P_sigma(1, 0) << B1) + cid(2))
 
     @property
     def _space(self):

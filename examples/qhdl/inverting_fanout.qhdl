@@ -10,6 +10,7 @@ ENTITY InvertingFanout IS
         kappa_3 : real := 10.0;
         theta : real := 0.473;
         phi : real := -1.45;
+        phip : real := -0.49;
         alpha : complex := -130.0);
     PORT (
         In1 : in fieldmode;
@@ -62,6 +63,7 @@ ARCHITECTURE netlist OF InvertingFanout IS
         Out1 : out fieldmode);
     END COMPONENT ;
 
+    SIGNAL unnamed_net10 : fieldmode;
     SIGNAL unnamed_net9 : fieldmode;
     SIGNAL unnamed_net8 : fieldmode;
     SIGNAL unnamed_net7 : fieldmode;
@@ -73,11 +75,18 @@ ARCHITECTURE netlist OF InvertingFanout IS
     SIGNAL unnamed_net1 : fieldmode;
 BEGIN
 -- Architecture statement part
-    Phase : Phase
+    Phase2 : Phase
+    GENERIC MAP (
+        phi => phip);
+    PORT MAP (
+        In1 => unnamed_net7,
+        Out1 => unnamed_net8);
+
+    Phase1 : Phase
     GENERIC MAP (
         phi => phi);
     PORT MAP (
-        In1 => unnamed_net3,
+        In1 => unnamed_net2,
         Out1 => unnamed_net6);
 
     W : Displace
@@ -89,19 +98,19 @@ BEGIN
 
     B3 : Beamsplitter
     PORT MAP (
-        In1 => unnamed_net7,
+        In1 => unnamed_net8,
         In2 => OPEN,
-        Out1 => unnamed_net8,
-        Out2 => unnamed_net9);
+        Out1 => unnamed_net9,
+        Out2 => unnamed_net10);
 
     B2 : Beamsplitter
     GENERIC MAP (
         theta => theta);
     PORT MAP (
         In1 => unnamed_net6,
-        In2 => unnamed_net2,
-        Out1 => unnamed_net7,
-        Out2 => OPEN);
+        In2 => unnamed_net3,
+        Out1 => OPEN,
+        Out2 => unnamed_net7);
 
     B1 : Beamsplitter
     PORT MAP (
@@ -127,6 +136,6 @@ BEGIN
 
 -- Signal assignment part
 unnamed_net5 <= In1;
-Out1 <= unnamed_net8;
-Out2 <= unnamed_net9;
+Out1 <= unnamed_net9;
+Out2 <= unnamed_net10;
 END netlist;
