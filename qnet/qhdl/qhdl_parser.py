@@ -112,9 +112,9 @@ class QHDLParser(Parser):
         t.type = self.reserved.get(t.value.lower(),"ID")
         return t
     # Integer literal
-    t_ICONST = r'\d+' #([uU]|[lL]|[uU][lL]|[lL][uU])?'
+    t_ICONST = r'-?\d+' #([uU]|[lL]|[uU][lL]|[lL][uU])?'
     # Floating literal
-    t_FCONST = r'((\d+)(\.\d+)(e(\+|-)?(\d+))? | (\d+)e(\+|-)?(\d+))' #([lL]|[fF])?'
+    t_FCONST = r'-?((\d+)(\.\d+)(e(\+|-)?(\d+))? | (\d+)e(\+|-)?(\d+))' #([lL]|[fF])?'
 
     # Comments
     def t_comment(self, t):
