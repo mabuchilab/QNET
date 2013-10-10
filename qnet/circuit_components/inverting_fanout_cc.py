@@ -64,7 +64,7 @@ class InvertingFanout(Component):
 
     @property
     def C(self):
-        return ThreePortKerrCavity(make_namespace_string(self.name, 'C'), kappa_2 = 10, chi = self.chi, kappa_1 = self.kappa_1, kappa_3 = self.kappa_3, Delta = self.Delta)
+        return ThreePortKerrCavity(make_namespace_string(self.name, 'C'), kappa_2 = self.kappa_2, chi = self.chi, kappa_1 = self.kappa_1, kappa_3 = self.kappa_3, Delta = self.Delta)
 
     @property
     def Phase(self):
