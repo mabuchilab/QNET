@@ -47,7 +47,7 @@ def euler_mayurama_complex(f, g, x0, m, h, steps_per_sample, n_samples, include_
 
     return times, xs, dAs
 
-from itertools import reduce
+# from itertools import reduce
 
 def euler_mayurama_complex(f, g, x0, m, h, steps_per_sample, n_samples, include_initial=False):
     """
