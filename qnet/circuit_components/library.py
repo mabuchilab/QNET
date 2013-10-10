@@ -97,7 +97,7 @@ def write_component(entity, architectures, local = False):
     for instance_name in sorted(circuit_symbols):
         component, generic_map = instance_assignments[instance_name][0 : 2]
 
-        generic_assignments = "".join([", {comp_generic} = self.{entity_generic}".format(comp_generic = cg, entity_generic = eg)
+        generic_assignments = "".join([", {comp_generic} = {entity_generic}".format(comp_generic = cg, entity_generic = "self." + eg if isinstance(eg, str) else str(eg))
                                                                         for cg, eg in generic_map.items()])
 
         symbol_assignment_strings.append("""
