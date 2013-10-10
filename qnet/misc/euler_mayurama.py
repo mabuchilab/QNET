@@ -87,8 +87,8 @@ def euler_mayurama_complex(f, g, x0, m, h, steps_per_sample, n_samples, include_
         x, t = reduce(update_step, dA, (x, t))
         times[nn+1] = t
         xs[nn+1] = x
-        dAs[nn] = dA[0]
-    dAs[-1] = np.random.randn(m) * np.sqrt(h) + (np.sqrt(h) * 1j) * np.random.randn(m)
+        dAs[nn+1] = dA.sum(axis=0)
+
 
     if not include_initial:
         return times[1:], xs[1:], dAs[1:]
