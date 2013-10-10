@@ -96,7 +96,13 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
     A = np.zeros((ncav, ncav), dtype=object)
     B = np.zeros((ncav, cdim), dtype=object)
     C = np.zeros((cdim, ncav), dtype=object)
-    D = slh.S
+    def ascomplex(o):
+        try:
+            return complex(o.coeff) if (isinstance(o, ScalarTimesOperator) and o.term is IdentityOperator) else o
+        except:
+            return o
+
+    D = np.array([[ascomplex(o) for o in Sjj] for Sjj in slh.S.matrix])
     A_kerr = np.zeros((ncav, ncav), dtype=object)
     B_input = np.zeros((ncav, ninputs), dtype=object)
     D_input = np.zeros((cdim, ninputs), dtype=object)

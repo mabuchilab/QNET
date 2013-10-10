@@ -210,7 +210,7 @@ class SuperOperatorTimesOperator(unittest.TestCase):
 
 
 
-def testHilbertSpace(self):
+    def testHilbertSpace(self):
         h1 = local_space("h1")
         h2 = local_space("h2")
         a = SuperOperatorSymbol("a", h1)

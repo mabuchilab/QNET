@@ -84,7 +84,7 @@ class InvertingFanout(Component):
 
         B1, B2, B3, C, Phase, W = self.B1, self.B2, self.B3, self.C, self.Phase, self.W
 
-        return P_sigma(0, 1, 2, 4, 3) << (((((B3 + cid(1)) << P_sigma(0, 2, 1) << (B2 + cid(1))) + cid(1)) << P_sigma(0, 1, 3, 2) << (((Phase + cid(2)) << P_sigma(1, 0, 2) << C) + cid(1))) + cid(1)) << P_sigma(0, 4, 1, 2, 3) << ((P_sigma(1, 0) << B1 << (W + cid(1))) + cid(3)) << P_sigma(1, 0, 4, 2, 3)
+        return P_sigma(0, 1, 2, 4, 3) << (((((B3 + cid(1)) << P_sigma(0, 2, 1) << ((P_sigma(1, 0) << B2) + cid(1))) + cid(1)) << P_sigma(0, 1, 3, 2) << (((cid(1) + Phase + cid(1)) << C) + cid(1))) + cid(1)) << P_sigma(0, 4, 1, 2, 3) << ((P_sigma(1, 0) << B1 << (W + cid(1))) + cid(3)) << P_sigma(1, 0, 4, 2, 3)
 
     @property
     def _space(self):

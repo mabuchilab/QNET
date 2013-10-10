@@ -332,14 +332,15 @@ class IdentityOperator(Operator, Expression):
         return "1"
 
     def __str__(self):
-        return "1"
+        return "II"
 
     def __eq__(self, other):
-        return self is other or other == 1
+        return self is other # or other == 1
 
     def _all_symbols(self):
         return set(())
 
+II = IdentityOperator
 
 from scipy.sparse import csr_matrix
 
@@ -1099,15 +1100,15 @@ class ScalarTimesOperator(Operator, Operation):
         return t.pseudo_inverse() / c
 
 
-    def __complex__(self):
-        if self.term is IdentityOperator:
-            return complex(self.coeff)
-        return NotImplemented
+    # def __complex__(self):
+    #     if self.term is IdentityOperator:
+    #         return complex(self.coeff)
+    #     return NotImplemented
 
-    def __float__(self):
-        if self.term is IdentityOperator:
-            return float(self.coeff)
-        return NotImplemented
+    # def __float__(self):
+    #     if self.term is IdentityOperator:
+    #         return float(self.coeff)
+    #     return NotImplemented
 
     def __eq__(self, other):
         if self.term is IdentityOperator and isinstance(other, Operator.scalar_types):
@@ -1790,7 +1791,6 @@ class Matrix(Expression):
         if self.shape[0] == self.shape[1]:
             return sum(self.matrix[k, k] for k in range(self.shape[0]))
         raise NonSquareMatrix(repr(self))
-
 
     @property
     def H(self):

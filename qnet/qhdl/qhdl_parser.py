@@ -538,6 +538,7 @@ class QHDLParser(Parser):
     def p_feedright_port_assignment(self, p):
         """
         feedright_port_assignment : ID FEEDRIGHT ID
+                                  | ID
         """
         if len(p) == 2:
             p[0] = p[1]
