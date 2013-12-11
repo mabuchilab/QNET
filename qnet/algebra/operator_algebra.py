@@ -1876,14 +1876,14 @@ class Matrix(Expression):
         return self.element_wise(simplify_scalar)
 
 
-def hstack(matrices):
+def hstackm(matrices):
     """
     Generalizes `numpy.hstack` to OperatorMatrix objects.
     """
     return Matrix(np_hstack(tuple(m.matrix for m in matrices)))
 
 
-def vstack(matrices):
+def vstackm(matrices):
     """
     Generalizes `numpy.vstack` to OperatorMatrix objects.
     """
@@ -1893,7 +1893,7 @@ def vstack(matrices):
     return Matrix(arr)
 
 
-def diag(v, k=0):
+def diagm(v, k=0):
     """
     Generalizes the diagonal matrix creation capabilities of `numpy.diag` to OperatorMatrix objects.
     """
@@ -1920,7 +1920,7 @@ def block_matrix(A, B, C, D):
     :return: The combined block matrix [[A, B], [C, D]].
     :type: OperatorMatrix
     """
-    return vstack((hstack((A, B)), hstack((C, D))))
+    return vstackm((hstackm((A, B)), hstackm((C, D))))
 
 
 def identity_matrix(N):
@@ -1932,10 +1932,10 @@ def identity_matrix(N):
     :return: Identity matrix in N dimensions
     :rtype: Matrix
     """
-    return diag(np_ones(N, dtype=int))
+    return diagm(np_ones(N, dtype=int))
 
 
-def zeros(shape, *args, **kwargs):
+def zerosm(shape, *args, **kwargs):
     """
     Generalizes ``numpy.zeros`` to :py:class:`Matrix` objects.
     """
