@@ -112,9 +112,9 @@ class QHDLParser(Parser):
         t.type = self.reserved.get(t.value.lower(),"ID")
         return t
     # Integer literal
-    t_ICONST = r'\d+' #([uU]|[lL]|[uU][lL]|[lL][uU])?'
+    t_ICONST = r'-?\d+' #([uU]|[lL]|[uU][lL]|[lL][uU])?'
     # Floating literal
-    t_FCONST = r'((\d+)(\.\d+)(e(\+|-)?(\d+))? | (\d+)e(\+|-)?(\d+))' #([lL]|[fF])?'
+    t_FCONST = r'-?((\d+)(\.\d+)(e(\+|-)?(\d+))? | (\d+)e(\+|-)?(\d+))' #([lL]|[fF])?'
 
     # Comments
     def t_comment(self, t):
@@ -458,7 +458,7 @@ class QHDLParser(Parser):
 
     def p_generic_map(self, p):
         """
-        generic_map : GENERIC MAP LPAREN feedright_assignment_list RPAREN SEMI
+        generic_map : GENERIC MAP LPAREN feedright_generic_assignment_list RPAREN SEMI
                     | empty
         """
         if len(p) == 2:
@@ -466,10 +466,53 @@ class QHDLParser(Parser):
         else:
             p[0] = p[4]
 
-    def p_feedright_assignment_list(self, p):
+    def p_feedright_generic_assignment_list(self, p):
         """
-        feedright_assignment_list : feedright_assignment_list COMMA feedright_assignment
-                             | feedright_assignment
+        feedright_generic_assignment_list : feedright_generic_assignment_list COMMA feedright_generic_assignment
+                             | feedright_generic_assignment
+        """
+        if len(p) == 2:
+            asm = p[1]
+            if isinstance(asm, dict):
+                p[0] = asm
+            else:
+                p[0] = [p[1]]
+        else:
+            asm_list = p[1]
+            asm = p[3]
+            if isinstance(asm, dict):
+                if not isinstance(asm_list, dict):
+                    raise Exception("Either specify ALL assignments as 'from_id=>to_id|number' OR just as 'to_id|number'.")
+                if len(set(asm.keys()) & set(asm_list.keys())) > 0:
+                    raise Exception("Every from_id may only occur once!")
+                asm_list.update(asm)
+                p[0] = asm_list
+            else:
+                if not isinstance(asm_list, list):
+                    raise Exception("Either specify ALL assignments as 'from_id=>to_id|number' OR just as 'to_id|number'.")
+                p[0] = p[1] + [p[3]]
+
+    def p_id_or_value(self, p):
+        """
+        id_or_value : ID
+                   | number
+        """
+        p[0] = p[1]
+
+    def p_feedright_generic_assignment(self, p):
+        """
+        feedright_generic_assignment : ID FEEDRIGHT id_or_value
+                                     | id_or_value
+        """
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            p[0] = {p[1]: p[3]}
+
+    def p_feedright_port_assignment_list(self, p):
+        """
+        feedright_port_assignment_list : feedright_port_assignment_list COMMA feedright_port_assignment
+                             | feedright_port_assignment
         """
         if len(p) == 2:
             asm = p[1]
@@ -492,10 +535,10 @@ class QHDLParser(Parser):
                     raise Exception("Either specify ALL assignments as 'from_id=>to_id' OR just as 'to_id'.")
                 p[0] = p[1] + [p[3]]
 
-    def p_feedright_assignment(self, p):
+    def p_feedright_port_assignment(self, p):
         """
-        feedright_assignment : ID FEEDRIGHT ID
-                        | ID
+        feedright_port_assignment : ID FEEDRIGHT ID
+                                  | ID
         """
         if len(p) == 2:
             p[0] = p[1]
@@ -504,7 +547,7 @@ class QHDLParser(Parser):
 
     def p_port_map(self, p):
         """
-        port_map : PORT MAP LPAREN feedright_assignment_list RPAREN SEMI
+        port_map : PORT MAP LPAREN feedright_port_assignment_list RPAREN SEMI
                  | empty
         """
         if len(p) == 2:

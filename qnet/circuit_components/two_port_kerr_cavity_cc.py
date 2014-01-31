@@ -19,7 +19,7 @@
 
 """
 Component definition file for a Kerr-nonlinear cavity model with two ports.
-See documentation of :py:class:`KerrCavity`.
+See documentation of :py:class:`TwoPortKerrCavity`.
 """
 import unittest
 
@@ -31,7 +31,7 @@ from sympy.core.symbol import symbols
 
 
 
-class KerrCavity(Component):
+class TwoPortKerrCavity(Component):
     r"""
     This model describes a Kerr cavity model with two ports.
 
@@ -39,7 +39,7 @@ class KerrCavity(Component):
 
     .. math::
         S & = \mathbf{1}_2 \\
-        L & = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \end{pmatrix} \\
+        L & = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} \end{pmatrix} \\
         H &= \Delta a^\dagger a + \chi {a^\dagger}^2 a^2
 
     This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
@@ -51,7 +51,7 @@ class KerrCavity(Component):
     PORTSIN = ['In1', 'In2']
     PORTSOUT = ['Out1', 'Out2']
     
-    sub_blockstructure = (1, 1)
+    sub_blockstructure = (1, 1, 1)
 
     name = "K"
     namespace = ""
@@ -59,11 +59,9 @@ class KerrCavity(Component):
     Delta = symbols('Delta', real = True)       # Detuning from cavity
     chi = symbols('chi', real = True)           # Kerr-nonlinear coefficient
     kappa_1 = symbols('kappa_1', positive = True)   # coupling through first port
-    kappa_2 = symbols('kappa_2', positive = True)   # coupling through second port
+    kappa_2 = symbols('kappa_2', positive = True)   # coupling through first port
     FOCK_DIM = 75
     _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', FOCK_DIM]
-
-
 
 
 
@@ -78,7 +76,7 @@ class KerrCavity(Component):
     @property
     def port2(self):
         return KerrPort(self, 1)
-
+    
     def _creduce(self):
         return self.port1 + self.port2
 
@@ -92,7 +90,7 @@ class KerrCavity(Component):
 
 class KerrPort(SubComponent):
     """
-    Sub component model for the individual ports of a :py:class:`KerrCavity`.
+    Sub component model for the individual ports of a :py:class:`TwoPortKerrCavity`.
     The Hamiltonian is included with the first port.
     """
     
@@ -101,15 +99,13 @@ class KerrPort(SubComponent):
         a = Destroy(self.space)
         a_d = a.adjoint()
         S = identity_matrix(1)
+        kappas = [self.kappa_1, self.kappa_2]
+        kappa = kappas[self.sub_index]
         
-        if self.sub_index == 0: 
-            # Include the Hamiltonian only with the first port of the kerr cavity circuit object
-            H = self.Delta * (a_d * a) + self.chi * (a_d * a_d * a * a)
-            L = Matrix([[sqrt(self.kappa_1) * a]])
-        else:
-            H = 0
-            L = Matrix([[sqrt(self.kappa_2) * a]])
-        
+        L = Matrix([[sqrt(kappa) * a]])
+        # Include the Hamiltonian only with the first port of the kerr cavity circuit object
+        H = self.Delta * (a_d * a) + self.chi * (a_d * a_d * a * a) if self.sub_index == 0 else 0
+                
         return SLH(S, L, H)
 
 
@@ -117,31 +113,31 @@ class KerrPort(SubComponent):
 
 
 # Test the circuit
-class _TestKerrCavity(unittest.TestCase):
+class _TestTwoPortKerrCavity(unittest.TestCase):
 
 
   def testCreation(self):
-      a = KerrCavity()
-      self.assertIsInstance(a, KerrCavity)
+      a = TwoPortKerrCavity()
+      self.assertIsInstance(a, TwoPortKerrCavity)
 
   def testCReduce(self):
-      a = KerrCavity().creduce()
+      a = TwoPortKerrCavity().creduce()
 
   def testParameters(self):
-      if len(KerrCavity._parameters):
-          pname = KerrCavity._parameters[0]
-          obj = KerrCavity(name="TestName", namespace="TestNamespace", **{pname: 5})
+      if len(TwoPortKerrCavity._parameters):
+          pname = TwoPortKerrCavity._parameters[0]
+          obj = TwoPortKerrCavity(name="TestName", namespace="TestNamespace", **{pname: 5})
           self.assertEqual(getattr(obj, pname), 5)
           self.assertEqual(obj.name, "TestName")
           self.assertEqual(obj.namespace, "TestNamespace")
 
       else:
-          obj = KerrCavity(name="TestName", namespace="TestNamespace")
+          obj = TwoPortKerrCavity(name="TestName", namespace="TestNamespace")
           self.assertEqual(obj.name, "TestName")
           self.assertEqual(obj.namespace, "TestNamespace")
 
   def testToSLH(self):
-      aslh = KerrCavity().toSLH()
+      aslh = TwoPortKerrCavity().toSLH()
       self.assertIsInstance(aslh, SLH)
 
 if __name__ == "__main__":

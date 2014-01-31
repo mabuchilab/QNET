@@ -1,0 +1,10 @@
+.idea
+*.log
+*.pyc
+*.dvi
+*.pdf
+*.png
+*.net
+*.synctex.gz
+backup/*
+docsrc/_build/*

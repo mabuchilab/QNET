@@ -1068,6 +1068,7 @@ def _check_signature_assoc_mtd(dcls, clsmtd, cls, *ops):
     """
     sgn = cls.signature[0]
     if not all(extended_isinstance(o, sgn, dcls, cls) for o in ops):
+        print sgn, dcls, cls, ops
         raise WrongSignatureError()
     return clsmtd(cls, *ops)
 check_signature_assoc = preprocess_create_with(_check_signature_assoc_mtd)

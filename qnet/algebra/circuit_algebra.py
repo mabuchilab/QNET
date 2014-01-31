@@ -438,8 +438,8 @@ class SLH(Circuit, Operation):
         """
         selfS = self.S
         otherS = other.S
-        new_S = block_matrix(selfS, zeros((selfS.shape[0],otherS.shape[1]), dtype = int), zeros((otherS.shape[0],selfS.shape[1]), dtype = int), otherS)
-        new_L = vstack((self.L, other.L))
+        new_S = block_matrix(selfS, zerosm((selfS.shape[0],otherS.shape[1]), dtype = int), zerosm((otherS.shape[0],selfS.shape[1]), dtype = int), otherS)
+        new_L = vstackm((self.L, other.L))
         new_H = self.H + other.H
 
         return SLH(new_S, new_L, new_H)
@@ -759,7 +759,7 @@ class ABCD(Circuit, Operation):
 
     def _toSLH(self):
         # TODO IMPLEMENT ABCD._toSLH()
-        doubled_up_as = vstack((Matrix([[Destroy(spc) for spc in self.space.local_factors()]]).T,
+        doubled_up_as = vstackm((Matrix([[Destroy(spc) for spc in self.space.local_factors()]]).T,
                                 Matrix([[Create(spc) for spc in self.space.local_factors()]]).T))
 
 
@@ -843,7 +843,7 @@ class CIdentity(Circuit, Expression):
         return self
 
     def _toABCD(self, linearize):
-        return ABCD(zeros((0,0)), zeros((0,2)), zeros((2,0)), identity_matrix(2), zeros((1,1)), TrivialSpace)
+        return ABCD(zerosm((0,0)), zerosm((0,2)), zerosm((2,0)), identity_matrix(2), zerosm((1,1)), TrivialSpace)
 
     def _all_symbols(self):
         return {self}
@@ -880,7 +880,7 @@ class CircuitZero(Circuit, Expression):
         return SLH(Matrix([[]]), Matrix([[]]), 0)
 
     def _toABCD(self, linearize):
-        return ABCD(zeros((0,0)), zeros((0,0)), zeros((0,0)), zeros((0,0)), zeros((0,0)), TrivialSpace)
+        return ABCD(zerosm((0,0)), zerosm((0,0)), zerosm((0,0)), zerosm((0,0)), zerosm((0,0)), TrivialSpace)
 
     def _creduce(self):
         return self
@@ -1247,7 +1247,7 @@ class CPermutation(Circuit, Operation):
 
 
     def _toSLH(self):
-        return SLH(permutation_matrix(self.permutation), zeros((self.cdim,1)), 0)
+        return SLH(permutation_matrix(self.permutation), zerosm((self.cdim,1)), 0)
 
     def _toABCD(self, linearize):
         return self.toSLH().toABCD()

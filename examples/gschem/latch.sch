@@ -1,0 +1,178 @@
+v 20110115 2
+C 24900 65800 1 180 1 three_port_kerr_cavity-1.sym
+{
+T 25595 62705 5 8 0 0 180 6 1
+device=ThreePortKerrCavity
+T 26100 64000 5 8 1 1 180 6 1
+refdes=C1
+T 25200 65900 5 10 1 0 180 6 1
+Delta=Delta
+T 25200 66100 5 10 1 0 180 6 1
+chi=chi
+T 25200 66300 5 10 1 0 180 6 1
+kappa_1=kappa_1
+T 25200 66500 5 10 1 0 180 6 1
+kappa_2=kappa_2
+T 25200 66700 5 10 1 0 180 6 1
+kappa_3=kappa_3
+T 25495 62905 5 8 0 0 180 6 1
+params=Delta:real;chi:real;kappa_1:real;kappa_2:real;kappa_3:real
+}
+C 22900 63400 1 270 1 beamsplitter-1.sym
+{
+T 25000 65400 5 10 0 0 90 2 1
+device=Beamsplitter
+T 24500 64500 5 10 1 1 180 6 1
+refdes=B11
+}
+C 27000 66200 1 180 1 beamsplitter-1.sym
+{
+T 29000 64100 5 10 0 0 180 6 1
+device=Beamsplitter
+T 28800 64500 5 10 1 1 180 6 1
+refdes=B12
+T 29700 65100 5 10 1 0 0 6 1
+theta=theta
+}
+C 22400 61100 1 0 0 input-1.sym
+{
+T 22400 62000 5 10 0 0 0 0 1
+device=IPAD
+T 22700 61500 5 10 1 1 0 0 1
+refdes=In2
+T 22600 61700 5 10 1 0 0 0 1
+pinseq=i2
+}
+C 32700 65100 1 180 0 output-1.sym
+{
+T 32700 64200 5 10 0 0 180 0 1
+device=OPAD
+T 32700 64700 5 10 1 1 180 0 1
+refdes=Out1
+T 32700 64400 5 10 1 0 180 0 1
+pinseq=o1
+}
+C 28000 63000 1 0 1 phase-1.sym
+{
+T 27005 64495 5 8 0 0 0 6 1
+device=Phase
+T 27497 63685 5 8 1 1 0 6 1
+refdes=Phase1
+T 25200 63900 5 10 1 0 180 6 1
+phi=phi
+}
+N 24700 64900 25400 64900 4
+N 23300 64900 23700 64900 4
+T 22200 66900 8 10 1 0 0 0 1
+params=Delta:real:50.0;chi:real:-0.205;kappa_1:real:20.0;kappa_2:real:20.0;kappa_3:real:10.0;theta:real:0.891;thetap:real:0.593;phi:real:2.72;phip:real:0.14;beta:complex:(-79.838356622,-35.806239846)
+T 26300 67200 8 10 1 0 0 0 1
+module-name=Latch
+C 22400 65100 1 180 1 input-1.sym
+{
+T 22400 64200 5 10 0 0 180 6 1
+device=IPAD
+T 22700 64700 5 10 1 1 180 6 1
+refdes=In1
+T 22600 64500 5 10 1 0 180 6 1
+pinseq=i1
+}
+C 29000 63600 1 0 0 beamsplitter-1.sym
+{
+T 31000 65700 5 10 0 0 0 0 1
+device=Beamsplitter
+T 30800 65300 5 10 1 1 0 0 1
+refdes=B3
+T 32100 65400 5 10 1 0 180 0 1
+theta=thetap
+}
+N 31800 64900 31000 64900 4
+N 28000 64900 27000 64900 4
+N 28500 63500 28500 64400 4
+C 24900 60400 1 0 0 three_port_kerr_cavity-1.sym
+{
+T 25595 63495 5 8 0 0 0 0 1
+device=ThreePortKerrCavity
+T 26100 62200 5 8 1 1 0 0 1
+refdes=C2
+T 25800 60300 5 10 1 0 0 0 1
+Delta=Delta
+T 25800 60100 5 10 1 0 0 0 1
+chi=chi
+T 25800 59900 5 10 1 0 0 0 1
+kappa_1=kappa_1
+T 25800 59700 5 10 1 0 0 0 1
+kappa_2=kappa_2
+T 25800 59500 5 10 1 0 0 0 1
+kappa_3=kappa_3
+T 25495 63295 5 8 0 0 0 0 1
+params=Delta:real;chi:real;kappa_1:real;kappa_2:real;kappa_3:real
+}
+C 22900 62800 1 270 0 beamsplitter-1.sym
+{
+T 25000 60800 5 10 0 0 270 0 1
+device=Beamsplitter
+T 24500 61700 5 10 1 1 0 0 1
+refdes=B21
+}
+C 27000 60000 1 0 0 beamsplitter-1.sym
+{
+T 29000 62100 5 10 0 0 0 0 1
+device=Beamsplitter
+T 28800 61700 5 10 1 1 0 0 1
+refdes=B22
+T 29800 61000 5 10 1 0 180 0 1
+theta=theta
+}
+C 28000 63300 1 180 0 phase-1.sym
+{
+T 27005 61805 5 8 0 0 180 0 1
+device=Phase
+T 27397 62615 5 8 1 1 180 0 1
+refdes=Phase2
+T 25400 62400 5 10 1 0 0 0 1
+phi=phi
+}
+N 24700 61300 25400 61300 4
+N 23300 61300 23700 61300 4
+N 28000 61300 27000 61300 4
+N 28500 62800 28500 61800 4
+N 27100 63500 28500 63500 4
+N 28500 62800 27100 62800 4
+N 25900 62800 24200 62800 4
+N 24200 62800 24200 64400 4
+N 25900 63500 23700 63500 4
+N 23700 63500 23700 62400 4
+N 23700 62400 24200 62400 4
+N 24200 62400 24200 61800 4
+C 30000 61600 1 270 1 phase-1.sym
+{
+T 31495 62595 5 8 0 0 270 6 1
+device=Phase
+T 30885 63003 5 8 1 1 270 6 1
+refdes=Phase3
+T 31100 63400 5 10 1 0 180 6 1
+phi=phip
+}
+N 30500 61300 29000 61300 4
+N 30500 61300 30500 62500 4
+N 30500 64400 30500 63700 4
+N 29000 64900 30000 64900 4
+C 29000 58500 1 90 0 displace-1.sym
+{
+T 27805 59495 5 8 0 0 90 0 1
+device=Displace
+T 29105 60115 5 8 1 1 180 0 1
+refdes=W2
+T 28800 59800 5 10 1 0 0 0 1
+alpha=beta
+}
+N 28500 60500 28500 60800 4
+C 28000 67400 1 270 0 displace-1.sym
+{
+T 29195 66405 5 8 0 0 270 0 1
+device=Displace
+T 28795 65785 5 8 1 1 0 0 1
+refdes=W1
+T 28800 66000 5 10 1 0 0 0 1
+alpha=beta
+}
