@@ -1,0 +1,94 @@
+v 20110115 2
+C 40500 52500 1 180 1 two_port_kerr_cavity-2.sym
+{
+T 40795 50205 5 8 0 0 180 6 1
+device=TwoPortKerrCavity
+T 41700 51100 5 8 1 1 180 6 1
+refdes=K1
+T 41300 50800 5 10 1 0 180 6 1
+Delta=Delta
+T 41300 50600 5 10 1 0 180 6 1
+chi=chi
+T 41300 50200 5 10 1 0 180 6 1
+kappa_1=kappa
+T 41300 50400 5 10 1 0 180 6 1
+kappa_2=eta
+}
+C 40500 52000 1 0 0 two_port_kerr_cavity-2.sym
+{
+T 40795 54295 5 8 0 0 0 0 1
+device=TwoPortKerrCavity
+T 41700 53400 5 8 1 1 0 0 1
+refdes=K2
+T 41300 53800 5 10 1 0 0 0 1
+Delta=Delta
+T 41300 54000 5 10 1 0 0 0 1
+chi=chi
+T 41300 54400 5 10 1 0 0 0 1
+kappa_1=kappa
+T 41300 54200 5 10 1 0 0 0 1
+kappa_2=eta
+}
+C 38700 50500 1 0 0 beamsplitter-1.sym
+{
+T 40700 52600 5 10 0 0 0 0 1
+device=Beamsplitter
+T 40400 52200 5 10 1 1 0 0 1
+refdes=BS1
+}
+N 40700 51800 41100 51800 4
+N 40200 52300 40200 52700 4
+N 40200 52700 41100 52700 4
+C 42000 51400 1 0 0 beamsplitter-1.sym
+{
+T 44000 53500 5 10 0 0 180 8 1
+device=Beamsplitter
+T 43700 53100 5 10 1 1 180 8 1
+refdes=BS2
+}
+N 43000 52700 42500 52700 4
+N 42500 51800 43500 51800 4
+N 43500 51800 43500 52200 4
+C 45400 52900 1 180 0 output-1.sym
+{
+T 45400 52000 5 10 0 0 180 0 1
+device=OPAD
+T 45400 52500 5 10 1 1 180 0 1
+refdes=Out1
+T 45800 52300 5 10 1 0 180 0 1
+pinseq=o1
+}
+C 38600 51600 1 0 0 input-1.sym
+{
+T 38600 52500 5 10 0 0 0 0 1
+device=IPAD
+T 38800 52000 5 10 1 1 0 0 1
+refdes=bias
+T 38800 52200 5 10 1 0 0 0 1
+pinseq=i2
+}
+N 39500 51800 39700 51800 4
+C 40400 50100 1 90 0 input-1.sym
+{
+T 39500 50100 5 10 0 0 90 0 1
+device=IPAD
+T 39800 50700 5 10 1 1 180 0 1
+refdes=In1
+T 39800 50500 5 10 1 0 180 0 1
+pinseq=i1
+}
+N 40200 51000 40200 51300 4
+N 44500 52700 44000 52700 4
+T 40200 54800 8 10 1 1 0 0 1
+params=kappa:real;eta:real;Delta:real;chi:real
+T 40200 55100 8 10 1 1 0 0 1
+module-name=KerrAmplifier
+C 43300 54100 1 270 0 output-1.sym
+{
+T 44200 54100 5 10 0 0 270 0 1
+device=OPAD
+T 43600 54100 5 10 1 1 0 0 1
+refdes=bias_noise
+T 43600 53900 5 10 1 0 0 0 1
+pinseq=o2
+}
