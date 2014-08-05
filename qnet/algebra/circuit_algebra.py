@@ -17,7 +17,7 @@
 #
 ###########################################################################
 
-r"""
+"""
 Circuit Algebra
 ===============
 
@@ -35,7 +35,9 @@ References:
 
 
 from __future__ import division
-import os, time
+import os
+import time
+
 from operator_algebra import *
 
 
@@ -44,11 +46,11 @@ class CannotConvertToSLH(AlgebraException):
     Is raised when a circuit algebra object cannot be converted to a concrete SLH object.
     """
 
-
 class CannotConvertToABCD(AlgebraException):
     """
     Is raised when a circuit algebra object cannot be converted to a concrete ABCD object.
     """
+
 
 
 class CannotVisualize(AlgebraException):
@@ -235,6 +237,7 @@ class Circuit(object):
             done = False
             for k in range(20):
                 if os.path.exists(fname):
+
                     done = True
                     break
                 else:
@@ -770,10 +773,10 @@ class CircuitSymbol(Circuit, Operation):
 
         ``CircuitSymbol(identifier, cdim)``
 
-    :type identifier: str
+    :type identifier: basestring
     :type cdim: int >= 0
     """
-    signature = str, int
+    signature = basestring, int
 
     def __str__(self):
         return self.identifier
@@ -1965,4 +1968,3 @@ Feedback._rules += [
     ((SeriesProduct(A__Circuit, B_CPermutation),j_int, k_int ), lambda A, B, j, k: _pull_out_perm_rhs(A,B,j,k)),
     ((SeriesProduct(A__Circuit, B_Concatenation),j_int, k_int ), lambda A, B, j, k: _pull_out_unaffected_blocks_rhs(A,B,j,k)),
 ]
-

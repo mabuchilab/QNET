@@ -1,5 +1,6 @@
 from distutils.core import setup
 from distutils.extension import Extension
+
 from Cython.Distutils import build_ext
 import numpy as np
 
@@ -14,6 +15,8 @@ ext_modules = [
 setup(
     name='QNET',
     version='1.0',
+
+
     cmdclass={'build_ext': build_ext},
     py_modules=['qnet'],
     ext_modules=ext_modules,

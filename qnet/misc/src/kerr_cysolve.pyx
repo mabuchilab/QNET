@@ -1,6 +1,4 @@
 #cython: embedsignature=True
-cimport numpy as np
-cimport cysolve.ode
 
 
 import numpy as np
@@ -194,7 +192,7 @@ cdef class KerrSDE(cysolve.ode.SDEs):
 
         
         print "setting up self.y"
-        self.y = np.zeros((1, 2 * n), dtype=float)
+        self.y = np.zeros((1, 2* n), dtype=float)
         self.t = 0.
         self.dim = 2 * n
         self.N_noises = 2 * m
@@ -204,10 +202,13 @@ cdef class KerrSDE(cysolve.ode.SDEs):
         self.param_size = sizeof(KerrSDEParams)
 
     def _get_y_complex(self):
-        return self.y.view(dtype=complex)
+        return self.get_y()[0].view(dtype=complex)
 
     def _set_y_complex(self, y):
-        self.y.view(dtype=complex)[:] = y
+        y2 = np.zeros((1, self.dim))
+        y2[0,::2] = y.real
+        y2[0,1::2] = y.imag
+        self.set_y(y2)
 
     y_c = property(_get_y_complex, _set_y_complex, doc="Complex internal mode amplitudes")
 
@@ -218,7 +219,7 @@ cdef class KerrSDE(cysolve.ode.SDEs):
         cdef complex * retp = <complex*>np.PyArray_DATA(ret)
         cdef double t = self.t
         for jj in range(N+1):
-            t = jj * delta_t / N
+            t = jj * delta_t / N + self.t
             self.kparams.input_fn(t, &retp[jj*k], self.kparams.input_params)
         if not include_initial:
             ret = ret[1:]
@@ -228,12 +229,12 @@ cdef class KerrSDE(cysolve.ode.SDEs):
     def integrate_kerr_sde(self, double delta_t, double h, Py_ssize_t N, int include_initial=0, 
                            int update_state=1, int sep_output_noise=1, int rngseed=0):
         
+        inputs = self.eval_inputs(delta_t, N, include_initial)
         Y, W, B, success = self.integrate_sde(delta_t, h, N, include_initial=include_initial, 
                                               update_state=update_state, return_noises=1, rngseeds=np.array([rngseed], dtype=np.int64))
 
         Yc = Y[0].view(dtype=complex)
         Ac = W[0].view(dtype=complex)/2
-        inputs = self.eval_inputs(delta_t, N, include_initial)
 
         outputs = Yc.dot(self.C.T) + self.U_c.reshape((1, -1)) + inputs.dot(self.D_input.T)
 
@@ -243,9 +244,9 @@ cdef class KerrSDE(cysolve.ode.SDEs):
         return Yc, inputs, outputs +  Ac.dot(self.D.T)
 
     def integrate_kerr_ode(self, double delta_t, Py_ssize_t N, int include_initial=0, int update_state=1):
+        inputs = self.eval_inputs(delta_t, N, include_initial)
         Y, success = self.integrate(delta_t, N, include_initial=include_initial, update_state=update_state)
         Yc = Y[0].view(dtype=complex)
-        inputs = self.eval_inputs(delta_t, N, include_initial)
         outputs = Yc.dot(self.C.T) + self.U_c.reshape((1, -1)) + inputs.dot(self.D_input.T) 
 
         return Yc, inputs, outputs

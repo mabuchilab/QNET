@@ -30,24 +30,24 @@ For a list of all properties and methods of an operator object, see the document
 
 
 from __future__ import division
-import qnet.algebra.abstract_algebra
-from qnet.algebra.abstract_algebra import singleton, Operation, inf,\
-    AlgebraError, tex, check_signature, idem, assoc,\
-    preprocess_create_with, filter_neutral, check_signature_assoc,\
-    match_replace, match_replace_binary, orderby, wc, CannotSimplify,\
-    Expression, set_union, substitute, prod, AlgebraException, match, Match, PatternTuple, OperandsTuple
-
 from abc import ABCMeta, abstractproperty, abstractmethod
+from itertools import product as cartesian_product
 
-from qnet.algebra.hilbert_space_algebra import HilbertSpace, BasisRegistry, BasisNotSetError, LocalSpace, local_space, TrivialSpace, FullSpace, ProductSpace
-from qnet.algebra.permutations import check_permutation, BadPermutationError, invert_permutation, full_block_perm, block_perm_and_perms_within_blocks, permutation_to_block_permutations, concatenate_permutations, permute
-from itertools import product as cartesian_product, izip
 import qutip
 
+import qnet.algebra.abstract_algebra
+from qnet.algebra.abstract_algebra import singleton, Operation, AlgebraError, tex, check_signature, assoc,\
+    preprocess_create_with, filter_neutral, check_signature_assoc,\
+    match_replace, match_replace_binary, orderby, wc, CannotSimplify,\
+    Expression, set_union, substitute, prod, OperandsTuple
+from qnet.algebra.hilbert_space_algebra import HilbertSpace, LocalSpace, local_space, TrivialSpace, FullSpace, ProductSpace
+from qnet.algebra.permutations import check_permutation
+
+
 #noinspection PyUnresolvedReferences
-from sympy import exp, log, cos, sin, cosh, sinh, tan, cot,\
+from sympy import (exp, log, cos, sin, cosh, sinh, tan, cot,\
     acos, asin, acosh, asinh, atan, atan2, atanh, acot, sqrt,\
-    factorial, pi, I, sympify, Basic as SympyBasic, symbols, Mul, Add, series as sympy_series
+    factorial, pi, I, sympify, Basic as SympyBasic, symbols, Mul, Add, series as sympy_series)
 from sympy.printing import latex as sympy_latex
 
 #noinspection PyUnresolvedReferences
@@ -259,11 +259,11 @@ class OperatorSymbol(Operator, Operation):
         ``OperatorSymbol(name, hs)``
 
     :param name: Symbol identifier
-    :type name: str
+    :type name: basestring
     :param hs: Associated Hilbert space.
     :type hs: HilbertSpace
     """
-    signature = str, (HilbertSpace, str, int, tuple)
+    signature = basestring, (HilbertSpace, basestring, int, tuple)
 
     def __init__(self, name, hs):
         if isinstance(hs, (str, int)):
@@ -458,7 +458,7 @@ class Create(LocalOperator):
     :param space: Associated local Hilbert space.
     :type space: LocalSpace or str
     """
-    signature = (LocalSpace, str, int),
+    signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
         return qutip.create(self.space.dimension)
@@ -491,7 +491,7 @@ class Destroy(LocalOperator):
     :type space: LocalSpace or str
     """
 
-    signature = (LocalSpace, str, int),
+    signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
         return qutip.destroy(self.space.dimension)
@@ -547,11 +547,11 @@ class Phase(LocalOperator):
         ``Phase(space, phi)``
 
     :param space: Associated local Hilbert space.
-    :type space: LocalSpace or str
+    :type space: LocalSpace or basestring
     :param phi: Displacement amplitude.
     :type phi: Any from `Operator.scalar_types`
     """
-    signature = (LocalSpace, str, int), Operator.scalar_types
+    signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
     # TODO implement _series_expand for the phase parameter
@@ -598,11 +598,11 @@ class Displace(LocalOperator):
         ``Displace(space, alpha)``
 
     :param space: Associated local Hilbert space.
-    :type space: LocalSpace or str
+    :type space: LocalSpace or basestring
     :param alpha: Displacement amplitude.
     :type alpha: Any from `Operator.scalar_types`
     """
-    signature = (LocalSpace, str, int), Operator.scalar_types
+    signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
     # TODO implement _series_expand for the coherent displacement parameter
@@ -645,17 +645,17 @@ class Squeeze(LocalOperator):
         ``Squeeze(space, eta)``
 
     :param space: Associated local Hilbert space.
-    :type space: LocalSpace or str
+    :type space: LocalSpace or basestring
     :param eta: Squeeze parameter.
     :type eta: Any from `Operator.scalar_types`
     """
-    signature = (LocalSpace, str, int), Operator.scalar_types
+    signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
     # TODO implement _series_expand for the squeeze parameter
 
     def _to_qutip_local_factor(self):
-        return qutip.displace(self.space.dimension, complex(self.operands[1]))
+        return qutip.squeeze(self.space.dimension, complex(self.operands[1]))
 
     def _adjoint(self):
         return Squeeze(self.operands[0], -self.operands[1])
@@ -690,14 +690,14 @@ class LocalSigma(LocalOperator):
         ``LocalSigma(space, j, k)``
 
     :param space: Associated local Hilbert space.
-    :type space: LocalSpace or str
+    :type space: LocalSpace or basestring
     :param j: State label j.
-    :type j: int or str
+    :type j: int or basestring
     :param k: State label k.
-    :type k: int or str
+    :type k: int or basestring
     """
 
-    signature = (LocalSpace, str, int), (int, str), (int, str)
+    signature = (LocalSpace, basestring, int), (int, basestring), (int, basestring)
 
     def _to_qutip_local_factor(self):
         k, j = self.operands[1:]
@@ -728,7 +728,7 @@ def X(local_space, states=("h", "g")):
     :param local_space: Associated Hilbert space.
     :type local_space: LocalSpace
     :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
+    :type states: tuple with two elements of type int or basestring
     :return: Local X-operator.
     :rtype: Operator
     """
@@ -743,7 +743,7 @@ def Y(local_space, states=("h", "g")):
     :param local_space: Associated Hilbert space.
     :type local_space: LocalSpace
     :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
+    :type states: tuple with two elements of type int or basestring
     :return: Local Y-operator.
     :rtype: Operator
     """
@@ -758,7 +758,7 @@ def Z(local_space, states=("h", "g")):
     :param local_space: Associated Hilbert space.
     :type local_space: LocalSpace
     :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
+    :type states: tuple with two elements of type int or basestring
     :return: Local Z-operator.
     :rtype: Operator
     """
@@ -806,7 +806,10 @@ class OperatorPlus(OperatorOperation):
     @classmethod
     def order_key(cls, a):
         if isinstance(a, ScalarTimesOperator):
-            return Operation.order_key(a.term), a.coeff
+            c = a.coeff
+            if isinstance(c, SympyBasic):
+                c = str(c)
+            return Operation.order_key(a.term), c
         return Operation.order_key(a), 1
 
     def _to_qutip(self, full_space=None):
@@ -874,10 +877,10 @@ class OperatorTimes(OperatorOperation):
             self.op = op
             self.full = False
             self.trivial = False
+            self.local_spaces = set()
             if isinstance(s, LocalSpace):
                 self.local_spaces = {s.operands, }
             elif s is TrivialSpace:
-                self.local_spaces = set(())
                 self.trivial = True
             elif s is FullSpace:
                 self.full = True
@@ -888,7 +891,6 @@ class OperatorTimes(OperatorOperation):
         def __lt__(self, other):
             if self.trivial and other.trivial:
                 return Operation.order_key(self.op) < Operation.order_key(other.op)
-
             if self.full or len(self.local_spaces & other.local_spaces):
                 return False
             return tuple(self.local_spaces) < tuple(other.local_spaces)
@@ -1053,7 +1055,7 @@ class ScalarTimesOperator(Operator, Operation):
         coeff, term = self.operands
 
         if isinstance(coeff, Add):
-            cs = r"({!s})".format()
+            cs = r"({!s})".format(coeff)
         else:
             cs = " {!s}".format(coeff)
 
