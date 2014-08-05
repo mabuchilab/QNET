@@ -867,9 +867,9 @@ def preprocess_create_with(method):
         dclsmtd.method = method
         dclsmtd.decorated = clsmtd
         dclsmtd.dcls = dcls
-        dclsmtd.__doc__ = (clsmtd.__doc__
+        dclsmtd.__doc__ = (str(clsmtd.__doc__)
                            + "\n-- {}.create() preprocessed by {} --\n".format(dcls.__name__, method.__name__)
-                           + method.__doc__)
+                           + str(method.__doc__))
 
         # store a list of all applied decorators as an attribute of the new create method's im_func.
         dclsmtd.decorators = (method,) + getattr(clsmtd, "decorators", ())

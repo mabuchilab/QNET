@@ -24,14 +24,23 @@ Super-Operator Algebra
 The specification of a quantum mechanics symbolic super-operator algebra.
 See :ref:`super_operator_algebra` for more details.
 """
-
-
+from abc import ABCMeta, abstractproperty, abstractmethod
 from collections import defaultdict
+from itertools import product as cartesian_product
 
-from operator_algebra import *
-from sympy import Matrix as SympyMatrix
+import qutip
+from sympy import Matrix as SympyMatrix, Add, I, sqrt, Basic as SympyBasic
 from numpy.linalg import eigh
-from numpy import sqrt as np_sqrt
+from numpy import sqrt as np_sqrt, array as np_array
+
+from qnet.algebra.abstract_algebra import AlgebraException, Operation, prod, AlgebraError, singleton, Expression, \
+    check_signature, assoc, orderby, filter_neutral, match_replace_binary, check_signature_assoc, match_replace, \
+    substitute, wc
+from qnet.algebra.hilbert_space_algebra import HilbertSpace, local_space, TrivialSpace, LocalSpace, FullSpace, \
+    ProductSpace
+from qnet.algebra.operator_algebra import Operator, identifier_to_tex, sympyOne, ZeroOperator, ScalarTimesOperator, \
+    simplify_scalar, OperatorSymbol, OperatorPlus, u, v, A, IdentityOperator, B, C, Matrix, tex
+
 
 class SuperOperator(object):
     """
@@ -1035,6 +1044,8 @@ SPost._rules +=[
 
 SuperOperatorTimesOperator._rules +=[
     ((sA_plus, B), lambda sA, B: sum([o*B for o in sA.operands], ZeroOperator)),
+    ((IdentitySuperOperator, B), lambda B: B),
+    ((ZeroSuperOperator, B), lambda B: ZeroOperator),
     ((ScalarTimesSuperOperator(u, sA), B), lambda u, sA, B: u * (sA * B)),
     ((sA, ScalarTimesOperator(u, B)), lambda u, sA, B: u * (sA * B)),
     ((sA, SuperOperatorTimesOperator(sB, C)), lambda sA, sB, C: (sA * sB) * C),

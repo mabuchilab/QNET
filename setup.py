@@ -19,5 +19,5 @@ setup(
 
     cmdclass={'build_ext': build_ext},
     py_modules=['qnet'],
-    ext_modules=ext_modules,
+    ext_modules=ext_modules, requires=['sympy', 'Cython', 'numpy', 'qutip']
 )

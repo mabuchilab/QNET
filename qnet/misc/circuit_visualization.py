@@ -19,14 +19,14 @@
 
 #TODO add documentation
 
-import parse_circuit_strings
+from itertools import izip
 
-import qnet.algebra.circuit_algebra as ca
-from qnet.circuit_components.component import Component, SubComponent
 import pyx
 
-from itertools import izip
-texrunner = pyx.text.texrunner(mode = 'latex')
+import parse_circuit_strings
+import qnet.algebra.circuit_algebra as ca
+from qnet.circuit_components.component import Component, SubComponent
+texrunner = pyx.text.texrunner(mode='latex')
 
 
 HUNIT = +4      # Basic unit for the width of a single Circuit object
@@ -236,7 +236,6 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         
         return c, (max_width, voffset), total_cin, total_cout
     
-    
     elif isinstance(circuit, ca.Feedback):
         
         # generate and insert graphics of subsystem
@@ -274,7 +273,6 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         return c, (width + rhmargin, height + rhmargin), new_c_in, new_c_out
     
     raise Exception('Visualization not implemented for type %s' % type(circuit))
-
 
 
 def draw_circuit(circuit, filename, direction = 'lr',
@@ -328,7 +326,7 @@ def draw_circuit(circuit, filename, direction = 'lr',
         return False
     if any(filename.endswith(suffix) for suffix in ('.pdf', '.eps', '.ps')):
         c.writetofile(filename)
-    elif any(filename.endswith(suffix) for suffix in ('.png','.jpg')):
+    elif any(filename.endswith(suffix) for suffix in ('.png', '.jpg')):
         c.writeGSfile(filename)
     return True
 

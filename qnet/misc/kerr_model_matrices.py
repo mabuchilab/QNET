@@ -1,40 +1,13 @@
 #!/usr/bin/env python
 
 from __future__ import division
-from collections import defaultdict
 
 import numpy as np
 
 from qnet.algebra.circuit_algebra import *
 
 
-def _coeff_term(expr):
-    if isinstance(expr, ScalarTimesOperator):
-        return expr.coeff, expr.term
-    else:
-        return 1, expr
-    
-def get_coeffs(expr, expand=False, epsilon = 0.):
-    """
-    Create a dictionary with all Operator terms of the expression
-    (understood as a sum) as keys and their coefficients as values.
 
-    The returned object is a defaultdict that return 0. if a term/key 
-    doesn't exist.
-    """
-    if expand: 
-        expr = expr.expand()
-    ret = defaultdict(float)
-    operands = expr.operands if isinstance(expr, OperatorPlus) else [expr]
-    for e in operands:
-        c, t = _coeff_term(e)
-        try:
-            if abs(complex(c)) < epsilon:
-                continue
-        except:
-            pass
-        ret[t] += c
-    return ret
 
 def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True, epsilon = 0., return_eoms=False):
     """

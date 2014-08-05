@@ -1,6 +1,6 @@
-#This file is part of QNET.
+# This file is part of QNET.
 #
-#    QNET is free software: you can redistribute it and/or modify
+# QNET is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #   (at your option) any later version.
@@ -31,39 +31,42 @@ For a list of all properties and methods of an operator object, see the document
 
 from __future__ import division
 from abc import ABCMeta, abstractproperty, abstractmethod
+from collections import defaultdict
 from itertools import product as cartesian_product
 
 import qutip
 
 import qnet.algebra.abstract_algebra
-from qnet.algebra.abstract_algebra import singleton, Operation, AlgebraError, tex, check_signature, assoc,\
-    preprocess_create_with, filter_neutral, check_signature_assoc,\
-    match_replace, match_replace_binary, orderby, wc, CannotSimplify,\
-    Expression, set_union, substitute, prod, OperandsTuple
-from qnet.algebra.hilbert_space_algebra import HilbertSpace, LocalSpace, local_space, TrivialSpace, FullSpace, ProductSpace
+from qnet.algebra.abstract_algebra import singleton, Operation, AlgebraError, tex, check_signature, assoc, \
+    preprocess_create_with, filter_neutral, check_signature_assoc, \
+    match_replace, match_replace_binary, orderby, wc, CannotSimplify, \
+    Expression, set_union, substitute, prod, PatternTuple
+from qnet.algebra.hilbert_space_algebra import HilbertSpace, LocalSpace, local_space, TrivialSpace, FullSpace, \
+    ProductSpace
 from qnet.algebra.permutations import check_permutation
 
 
+
 #noinspection PyUnresolvedReferences
-from sympy import (exp, log, cos, sin, cosh, sinh, tan, cot,\
-    acos, asin, acosh, asinh, atan, atan2, atanh, acot, sqrt,\
-    factorial, pi, I, sympify, Basic as SympyBasic, symbols, Mul, Add, series as sympy_series)
+from sympy import (exp, log, cos, sin, cosh, sinh, tan, cot,
+                   acos, asin, acosh, asinh, atan, atan2, atanh, acot, sqrt,
+                   factorial, pi, I, sympify, Basic as SympyBasic, symbols, Mul, Add, series as sympy_series)
 from sympy.printing import latex as sympy_latex
 
 #noinspection PyUnresolvedReferences
-from numpy import array as np_array,\
-    shape as np_shape,\
-    hstack as np_hstack,\
-    vstack as np_vstack,\
-    diag as np_diag,\
-    ones as np_ones,\
-    conjugate as np_conjugate,\
-    zeros as np_zeros,\
-    ndarray,\
-    arange,\
-    cos as np_cos,\
-    sin as np_sin,\
-    eye as np_eye, argwhere
+from numpy import (array as np_array,
+                   shape as np_shape,
+                   hstack as np_hstack,
+                   vstack as np_vstack,
+                   diag as np_diag,
+                   ones as np_ones,
+                   conjugate as np_conjugate,
+                   zeros as np_zeros,
+                   ndarray,
+                   arange,
+                   cos as np_cos,
+                   sin as np_sin,
+                   eye as np_eye, argwhere)
 
 sympyOne = sympify(1)
 
@@ -167,10 +170,8 @@ class Operator(object):
         """
         return self._simplify_scalar()
 
-
     def _simplify_scalar(self):
         return self
-
 
     def series_expand(self, param, about, order):
         """
@@ -335,14 +336,16 @@ class IdentityOperator(Operator, Expression):
         return "II"
 
     def __eq__(self, other):
-        return self is other # or other == 1
+        return self is other  # or other == 1
 
     def _all_symbols(self):
         return set(())
 
+
 II = IdentityOperator
 
 from scipy.sparse import csr_matrix
+
 
 @singleton
 class ZeroOperator(Operator, Expression):
@@ -391,7 +394,9 @@ def _implied_local_space_mtd(dcls, clsmtd, cls, space, *ops):
         return clsmtd(cls, local_space(space), *ops)
     return clsmtd(cls, space, *ops)
 
+
 implied_local_space = preprocess_create_with(_implied_local_space_mtd)
+
 
 class LocalOperator(Operator, Operation):
     """
@@ -520,6 +525,7 @@ def simplify_scalar(s):
         return s.simplify()
     return s
 
+
 def scalar_free_symbols(*operands):
     if len(operands) > 1:
         return set_union([scalar_free_symbols(o) for o in operands])
@@ -529,6 +535,7 @@ def scalar_free_symbols(*operands):
     if isinstance(o, SympyBasic):
         return o.free_symbols
     return set()
+
 
 @implied_local_space
 @match_replace
@@ -780,7 +787,6 @@ class OperatorOperation(Operator, Operation):
         return self.__class__.create(*[o.simplify_scalar() for o in self.operands])
 
 
-
 def tuple_sum(tuples, inital=0):
     return tuple(sum(tels, 0) for tels in zip(*tuples))
 
@@ -909,7 +915,6 @@ class OperatorTimes(OperatorOperation):
                 return Operation.order_key(self.op) == Operation.order_key(other.op)
 
             return self.full or len(self.local_spaces & other.local_spaces) > 0
-
 
     order_key = OperatorOrderKey
 
@@ -1089,7 +1094,7 @@ class ScalarTimesOperator(Operator, Operation):
                 c = self.coeff.subs({param: about + param})
             else:
                 c = self.coeff
-            ce = list(reversed(sympy_series(c, x=param, x0=0, n=order+1).as_poly(param).all_coeffs()))
+            ce = list(reversed(sympy_series(c, x=param, x0=0, n=order + 1).as_poly(param).all_coeffs()))
             if len(ce) < order + 1:
                 ce += [0] * (order + 1 - len(ce))
             return tuple(sum(ce[k] * te[n - k] for k in range(n + 1)) for n in range(order + 1))
@@ -1121,7 +1126,7 @@ class ScalarTimesOperator(Operator, Operation):
     def _substitute(self, var_map):
         st = self.term.substitute(var_map)
         if isinstance(self.coeff, SympyBasic):
-            svar_map = {k:v for k,v in var_map.items() if not isinstance(k,Expression)}
+            svar_map = {k: v for k, v in var_map.items() if not isinstance(k, Expression)}
             sc = self.coeff.subs(svar_map)
         else:
             sc = substitute(self.coeff, var_map)
@@ -1150,8 +1155,9 @@ def safe_tex(obj):
 
 tex = qnet.algebra.abstract_algebra.tex = safe_tex
 
+
 def format_number_for_tex(num):
-    if num == 0: #also True for 0., 0j
+    if num == 0:  #also True for 0., 0j
         return "0"
     if isinstance(num, complex):
         if num.real == 0:
@@ -1206,6 +1212,7 @@ greekToLatex = {"alpha": "Alpha", "beta": "Beta", "gamma": "Gamma", "delta": "De
 import re
 
 _idtp = re.compile(r'(?!\\)({})(\b|_)'.format("|".join(greek_letter_strings)))
+
 
 def identifier_to_tex(identifier):
     """
@@ -1270,6 +1277,7 @@ class Adjoint(OperatorOperation):
 # for hilbert space dimensions less than or equal to this,
 # compute numerically PseudoInverse and NullSpaceProjector representations
 DENSE_DIMENSION_LIMIT = 1000
+
 
 @check_signature
 @match_replace
@@ -1336,6 +1344,7 @@ class PseudoInverse(OperatorOperation):
         if isinstance(self.operand, OperatorSymbol):
             return "{}^+".format(str(self.operand))
         return "({})^+".format(str(self.operand))
+
 
 PseudoInverse.delegate_to_method = PseudoInverse.delegate_to_method + (PseudoInverse,)
 
@@ -1452,6 +1461,7 @@ class OperatorTrace(Operator, Operation):
 
 tr = OperatorTrace.create
 
+
 def factor_for_trace(ls, op):
     r"""
     Given a local space ls to take the partial trace over and an operator, factor the trace such that operators acting on
@@ -1509,7 +1519,7 @@ def decompose_space(H, A):
     :rtype: Operator
     """
     return OperatorTrace.create(ProductSpace.create(*H.operands[:-1]),
-        OperatorTrace.create(H.operands[-1], A))
+                                OperatorTrace.create(H.operands[-1], A))
 
 
 ## Expression rewriting _rules
@@ -1637,7 +1647,6 @@ class NonSquareMatrix(Exception):
     pass
 
 
-
 class Matrix(Expression):
     """
     Matrix with Operator (or scalar-) valued elements.
@@ -1717,7 +1726,8 @@ class Matrix(Expression):
     def __add__(self, other):
         if isinstance(other, Matrix):
             return Matrix(self.matrix + other.matrix)
-        else: return Matrix(self.matrix + other)
+        else:
+            return Matrix(self.matrix + other)
 
     def __radd__(self, other):
         return Matrix(other + self.matrix)
@@ -1725,7 +1735,8 @@ class Matrix(Expression):
     def __mul__(self, other):
         if isinstance(other, Matrix):
             return Matrix(self.matrix.dot(other.matrix))
-        else: return Matrix(self.matrix * other)
+        else:
+            return Matrix(self.matrix * other)
 
     def __rmul__(self, other):
         return Matrix(other * self.matrix)
@@ -1833,13 +1844,14 @@ class Matrix(Expression):
     def _substitute(self, var_map):
 
         def _substitute(o):
-            sympy_var_map = {k:v for (k, v) in var_map.items() if isinstance(k, SympyBasic)}
+            sympy_var_map = {k: v for (k, v) in var_map.items() if isinstance(k, SympyBasic)}
             if isinstance(o, Operation):
                 return substitute(o, var_map)
             elif isinstance(o, SympyBasic):
                 return o.subs(sympy_var_map)
             else:
                 return o
+
         return self.element_wise(_substitute)
 
 
@@ -1972,7 +1984,7 @@ def permutation_matrix(permutation):
     :param permutation: A permutation image tuple (zero-based indices!)
     :type permutation: tuple
     """
-    assert(check_permutation(permutation))
+    assert (check_permutation(permutation))
     n = len(permutation)
     op_matrix = np_zeros((n, n), dtype=int)
     for i, j in enumerate(permutation):
@@ -1983,6 +1995,7 @@ def permutation_matrix(permutation):
 # for backwards compatibility
 OperatorMatrixInstance = Matrix
 IdentityMatrix = identity_matrix
+
 
 def Im(op):
     """
@@ -2028,7 +2041,31 @@ def ReAdjoint(opmatrix):
     return (opmatrix.H + opmatrix) / 2
 
 
+def _coeff_term(expr):
+    if isinstance(expr, ScalarTimesOperator):
+        return expr.coeff, expr.term
+    else:
+        return 1, expr
 
 
+def get_coeffs(expr, expand=False, epsilon = 0.):
+    """
+    Create a dictionary with all Operator terms of the expression
+    (understood as a sum) as keys and their coefficients as values.
 
-
+    The returned object is a defaultdict that return 0. if a term/key
+    doesn't exist.
+    """
+    if expand:
+        expr = expr.expand()
+    ret = defaultdict(float)
+    operands = expr.operands if isinstance(expr, OperatorPlus) else [expr]
+    for e in operands:
+        c, t = _coeff_term(e)
+        try:
+            if abs(complex(c)) < epsilon:
+                continue
+        except:
+            pass
+        ret[t] += c
+    return ret
