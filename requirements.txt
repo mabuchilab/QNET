@@ -1,0 +1,4 @@
+sympy
+numpy
+qutip
+PyX
