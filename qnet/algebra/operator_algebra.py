@@ -981,7 +981,8 @@ class OperatorTimes(OperatorOperation):
 
     def _tex(self):
         ret = self.operands[0].tex()
-        for o in self.operands[1:]:
+        # for o in self.operands[1:]:
+        for o in self.operands:
             if isinstance(o, OperatorPlus):
                 ret += r" \left({}\right) ".format(tex(o))
             else:
@@ -989,12 +990,18 @@ class OperatorTimes(OperatorOperation):
         return ret
 
     def __str__(self):
-        ret = str(self.operands[0])
-        for o in self.operands[1:]:
+        # ret = str(self.operands[0])
+        # for o in self.operands[1:]:
+        #     if isinstance(o, OperatorPlus):
+        #         ret += r" ({})".format(str(o))
+        #     else:
+        #         ret += " {}".format(str(o))
+        for o in self.operands:
             if isinstance(o, OperatorPlus):
-                ret += r" ({})".format(str(o))
+                ret += r" ({}) ".format(str(o))
             else:
                 ret += " {}".format(str(o))
+
         return ret
 
 

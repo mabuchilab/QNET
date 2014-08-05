@@ -139,3 +139,9 @@ You should have received a copy of the GNU General Public License
 along with QNET.  If not, see `this page <http://www.gnu.org/licenses/>`_.
 
 Copyright (C) 2012, Nikolas Tezak
+
+
+.. image:: https://d2weczhvl823v0.cloudfront.net/mabuchilab/QNET/trend.png
+   :alt: Bitdeli badge
+   :target: https://bitdeli.com/free
+
