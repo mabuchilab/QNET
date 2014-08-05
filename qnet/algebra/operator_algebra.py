@@ -1,6 +1,6 @@
-#This file is part of QNET.
+# This file is part of QNET.
 #
-#    QNET is free software: you can redistribute it and/or modify
+# QNET is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #   (at your option) any later version.
@@ -30,40 +30,43 @@ For a list of all properties and methods of an operator object, see the document
 
 
 from __future__ import division
-import qnet.algebra.abstract_algebra
-from qnet.algebra.abstract_algebra import singleton, Operation, inf,\
-    AlgebraError, tex, check_signature, idem, assoc,\
-    preprocess_create_with, filter_neutral, check_signature_assoc,\
-    match_replace, match_replace_binary, orderby, wc, CannotSimplify,\
-    Expression, set_union, substitute, prod, AlgebraException, match, Match, PatternTuple, OperandsTuple
-
 from abc import ABCMeta, abstractproperty, abstractmethod
+from collections import defaultdict
+from itertools import product as cartesian_product
 
-from qnet.algebra.hilbert_space_algebra import HilbertSpace, BasisRegistry, BasisNotSetError, LocalSpace, local_space, TrivialSpace, FullSpace, ProductSpace
-from qnet.algebra.permutations import check_permutation, BadPermutationError, invert_permutation, full_block_perm, block_perm_and_perms_within_blocks, permutation_to_block_permutations, concatenate_permutations, permute
-from itertools import product as cartesian_product, izip
 import qutip
 
+import qnet.algebra.abstract_algebra
+from qnet.algebra.abstract_algebra import singleton, Operation, AlgebraError, tex, check_signature, assoc, \
+    preprocess_create_with, filter_neutral, check_signature_assoc, \
+    match_replace, match_replace_binary, orderby, wc, CannotSimplify, \
+    Expression, set_union, substitute, prod, PatternTuple
+from qnet.algebra.hilbert_space_algebra import HilbertSpace, LocalSpace, local_space, TrivialSpace, FullSpace, \
+    ProductSpace
+from qnet.algebra.permutations import check_permutation
+
+
+
 #noinspection PyUnresolvedReferences
-from sympy import exp, log, cos, sin, cosh, sinh, tan, cot,\
-    acos, asin, acosh, asinh, atan, atan2, atanh, acot, sqrt,\
-    factorial, pi, I, sympify, Basic as SympyBasic, symbols, Mul, Add, series as sympy_series
+from sympy import (exp, log, cos, sin, cosh, sinh, tan, cot,
+                   acos, asin, acosh, asinh, atan, atan2, atanh, acot, sqrt,
+                   factorial, pi, I, sympify, Basic as SympyBasic, symbols, Mul, Add, series as sympy_series)
 from sympy.printing import latex as sympy_latex
 
 #noinspection PyUnresolvedReferences
-from numpy import array as np_array,\
-    shape as np_shape,\
-    hstack as np_hstack,\
-    vstack as np_vstack,\
-    diag as np_diag,\
-    ones as np_ones,\
-    conjugate as np_conjugate,\
-    zeros as np_zeros,\
-    ndarray,\
-    arange,\
-    cos as np_cos,\
-    sin as np_sin,\
-    eye as np_eye, argwhere
+from numpy import (array as np_array,
+                   shape as np_shape,
+                   hstack as np_hstack,
+                   vstack as np_vstack,
+                   diag as np_diag,
+                   ones as np_ones,
+                   conjugate as np_conjugate,
+                   zeros as np_zeros,
+                   ndarray,
+                   arange,
+                   cos as np_cos,
+                   sin as np_sin,
+                   eye as np_eye, argwhere)
 
 sympyOne = sympify(1)
 
@@ -167,10 +170,8 @@ class Operator(object):
         """
         return self._simplify_scalar()
 
-
     def _simplify_scalar(self):
         return self
-
 
     def series_expand(self, param, about, order):
         """
@@ -259,11 +260,11 @@ class OperatorSymbol(Operator, Operation):
         ``OperatorSymbol(name, hs)``
 
     :param name: Symbol identifier
-    :type name: str
+    :type name: basestring
     :param hs: Associated Hilbert space.
     :type hs: HilbertSpace
     """
-    signature = str, (HilbertSpace, str, int, tuple)
+    signature = basestring, (HilbertSpace, basestring, int, tuple)
 
     def __init__(self, name, hs):
         if isinstance(hs, (str, int)):
@@ -332,16 +333,19 @@ class IdentityOperator(Operator, Expression):
         return "1"
 
     def __str__(self):
-        return "1"
+        return "II"
 
     def __eq__(self, other):
-        return self is other or other == 1
+        return self is other  # or other == 1
 
     def _all_symbols(self):
         return set(())
 
 
+II = IdentityOperator
+
 from scipy.sparse import csr_matrix
+
 
 @singleton
 class ZeroOperator(Operator, Expression):
@@ -358,7 +362,7 @@ class ZeroOperator(Operator, Expression):
 
     def _to_qutip(self, full_space):
         return qutip.tensor(
-            *[qutip.Qobj(csr_matrix((), (s.dimension, s.dimension))) for s in full_space.local_factors()])
+            *[qutip.Qobj(csr_matrix((s.dimension, s.dimension))) for s in full_space.local_factors()])
 
     def _expand(self):
         return self
@@ -390,7 +394,9 @@ def _implied_local_space_mtd(dcls, clsmtd, cls, space, *ops):
         return clsmtd(cls, local_space(space), *ops)
     return clsmtd(cls, space, *ops)
 
+
 implied_local_space = preprocess_create_with(_implied_local_space_mtd)
+
 
 class LocalOperator(Operator, Operation):
     """
@@ -434,7 +440,7 @@ class LocalOperator(Operator, Operation):
         return (self,) + ((0,) * order)
 
     def _all_symbols(self):
-        return (())
+        return set()
 
 
 @implied_local_space
@@ -457,7 +463,7 @@ class Create(LocalOperator):
     :param space: Associated local Hilbert space.
     :type space: LocalSpace or str
     """
-    signature = (LocalSpace, str, int),
+    signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
         return qutip.create(self.space.dimension)
@@ -490,7 +496,7 @@ class Destroy(LocalOperator):
     :type space: LocalSpace or str
     """
 
-    signature = (LocalSpace, str, int),
+    signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
         return qutip.destroy(self.space.dimension)
@@ -519,6 +525,18 @@ def simplify_scalar(s):
         return s.simplify()
     return s
 
+
+def scalar_free_symbols(*operands):
+    if len(operands) > 1:
+        return set_union([scalar_free_symbols(o) for o in operands])
+    if len(operands) < 1:
+        return set()
+    o, = operands
+    if isinstance(o, SympyBasic):
+        return o.free_symbols
+    return set()
+
+
 @implied_local_space
 @match_replace
 @check_signature
@@ -536,11 +554,11 @@ class Phase(LocalOperator):
         ``Phase(space, phi)``
 
     :param space: Associated local Hilbert space.
-    :type space: LocalSpace or str
+    :type space: LocalSpace or basestring
     :param phi: Displacement amplitude.
     :type phi: Any from `Operator.scalar_types`
     """
-    signature = (LocalSpace, str, int), Operator.scalar_types
+    signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
     # TODO implement _series_expand for the phase parameter
@@ -566,6 +584,9 @@ class Phase(LocalOperator):
     def _simplify_scalar(self):
         return Phase(self.space, simplify_scalar(self.operands[1]))
 
+    def _all_symbols(self):
+        return scalar_free_symbols(self.operands[0])
+
 
 @implied_local_space
 @match_replace
@@ -584,11 +605,11 @@ class Displace(LocalOperator):
         ``Displace(space, alpha)``
 
     :param space: Associated local Hilbert space.
-    :type space: LocalSpace or str
+    :type space: LocalSpace or basestring
     :param alpha: Displacement amplitude.
     :type alpha: Any from `Operator.scalar_types`
     """
-    signature = (LocalSpace, str, int), Operator.scalar_types
+    signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
     # TODO implement _series_expand for the coherent displacement parameter
@@ -610,6 +631,9 @@ class Displace(LocalOperator):
     def _simplify_scalar(self):
         return Displace(self.space, simplify_scalar(self.operands[1]))
 
+    def _all_symbols(self):
+        return scalar_free_symbols(self.operands[0])
+
 
 @implied_local_space
 @match_replace
@@ -628,17 +652,17 @@ class Squeeze(LocalOperator):
         ``Squeeze(space, eta)``
 
     :param space: Associated local Hilbert space.
-    :type space: LocalSpace or str
+    :type space: LocalSpace or basestring
     :param eta: Squeeze parameter.
     :type eta: Any from `Operator.scalar_types`
     """
-    signature = (LocalSpace, str, int), Operator.scalar_types
+    signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
     # TODO implement _series_expand for the squeeze parameter
 
     def _to_qutip_local_factor(self):
-        return qutip.displace(self.space.dimension, complex(self.operands[1]))
+        return qutip.squeeze(self.space.dimension, complex(self.operands[1]))
 
     def _adjoint(self):
         return Squeeze(self.operands[0], -self.operands[1])
@@ -653,6 +677,9 @@ class Squeeze(LocalOperator):
 
     def _simplify_scalar(self):
         return Squeeze(self.space, simplify_scalar(self.operands[1]))
+
+    def _all_symbols(self):
+        return scalar_free_symbols(self.operands[0])
 
 
 @implied_local_space
@@ -670,14 +697,14 @@ class LocalSigma(LocalOperator):
         ``LocalSigma(space, j, k)``
 
     :param space: Associated local Hilbert space.
-    :type space: LocalSpace or str
+    :type space: LocalSpace or basestring
     :param j: State label j.
-    :type j: int or str
+    :type j: int or basestring
     :param k: State label k.
-    :type k: int or str
+    :type k: int or basestring
     """
 
-    signature = (LocalSpace, str, int), (int, str), (int, str)
+    signature = (LocalSpace, basestring, int), (int, basestring), (int, basestring)
 
     def _to_qutip_local_factor(self):
         k, j = self.operands[1:]
@@ -708,7 +735,7 @@ def X(local_space, states=("h", "g")):
     :param local_space: Associated Hilbert space.
     :type local_space: LocalSpace
     :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
+    :type states: tuple with two elements of type int or basestring
     :return: Local X-operator.
     :rtype: Operator
     """
@@ -723,7 +750,7 @@ def Y(local_space, states=("h", "g")):
     :param local_space: Associated Hilbert space.
     :type local_space: LocalSpace
     :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
+    :type states: tuple with two elements of type int or basestring
     :return: Local Y-operator.
     :rtype: Operator
     """
@@ -738,7 +765,7 @@ def Z(local_space, states=("h", "g")):
     :param local_space: Associated Hilbert space.
     :type local_space: LocalSpace
     :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
+    :type states: tuple with two elements of type int or basestring
     :return: Local Z-operator.
     :rtype: Operator
     """
@@ -785,7 +812,10 @@ class OperatorPlus(OperatorOperation):
     @classmethod
     def order_key(cls, a):
         if isinstance(a, ScalarTimesOperator):
-            return Operation.order_key(a.term), a.coeff
+            c = a.coeff
+            if isinstance(c, SympyBasic):
+                c = str(c)
+            return Operation.order_key(a.term), c
         return Operation.order_key(a), 1
 
     def _to_qutip(self, full_space=None):
@@ -853,10 +883,10 @@ class OperatorTimes(OperatorOperation):
             self.op = op
             self.full = False
             self.trivial = False
+            self.local_spaces = set()
             if isinstance(s, LocalSpace):
                 self.local_spaces = {s.operands, }
             elif s is TrivialSpace:
-                self.local_spaces = set(())
                 self.trivial = True
             elif s is FullSpace:
                 self.full = True
@@ -867,7 +897,6 @@ class OperatorTimes(OperatorOperation):
         def __lt__(self, other):
             if self.trivial and other.trivial:
                 return Operation.order_key(self.op) < Operation.order_key(other.op)
-
             if self.full or len(self.local_spaces & other.local_spaces):
                 return False
             return tuple(self.local_spaces) < tuple(other.local_spaces)
@@ -886,7 +915,6 @@ class OperatorTimes(OperatorOperation):
                 return Operation.order_key(self.op) == Operation.order_key(other.op)
 
             return self.full or len(self.local_spaces & other.local_spaces) > 0
-
 
     order_key = OperatorOrderKey
 
@@ -1032,7 +1060,7 @@ class ScalarTimesOperator(Operator, Operation):
         coeff, term = self.operands
 
         if isinstance(coeff, Add):
-            cs = r"({!s})".format()
+            cs = r"({!s})".format(coeff)
         else:
             cs = " {!s}".format(coeff)
 
@@ -1066,7 +1094,7 @@ class ScalarTimesOperator(Operator, Operation):
                 c = self.coeff.subs({param: about + param})
             else:
                 c = self.coeff
-            ce = list(reversed(sympy_series(c, x=param, x0=0, n=order+1).as_poly(param).all_coeffs()))
+            ce = list(reversed(sympy_series(c, x=param, x0=0, n=order + 1).as_poly(param).all_coeffs()))
             if len(ce) < order + 1:
                 ce += [0] * (order + 1 - len(ce))
             return tuple(sum(ce[k] * te[n - k] for k in range(n + 1)) for n in range(order + 1))
@@ -1079,15 +1107,15 @@ class ScalarTimesOperator(Operator, Operation):
         return t.pseudo_inverse() / c
 
 
-    def __complex__(self):
-        if self.term is IdentityOperator:
-            return complex(self.coeff)
-        return NotImplemented
+    # def __complex__(self):
+    #     if self.term is IdentityOperator:
+    #         return complex(self.coeff)
+    #     return NotImplemented
 
-    def __float__(self):
-        if self.term is IdentityOperator:
-            return float(self.coeff)
-        return NotImplemented
+    # def __float__(self):
+    #     if self.term is IdentityOperator:
+    #         return float(self.coeff)
+    #     return NotImplemented
 
     def __eq__(self, other):
         if self.term is IdentityOperator and isinstance(other, Operator.scalar_types):
@@ -1098,7 +1126,7 @@ class ScalarTimesOperator(Operator, Operation):
     def _substitute(self, var_map):
         st = self.term.substitute(var_map)
         if isinstance(self.coeff, SympyBasic):
-            svar_map = {k:v for k,v in var_map.items() if not isinstance(k,Expression)}
+            svar_map = {k: v for k, v in var_map.items() if not isinstance(k, Expression)}
             sc = self.coeff.subs(svar_map)
         else:
             sc = substitute(self.coeff, var_map)
@@ -1108,6 +1136,9 @@ class ScalarTimesOperator(Operator, Operation):
     def _simplify_scalar(self):
         coeff, term = self.operands
         return simplify_scalar(coeff) * term.simplify_scalar()
+
+    def _all_symbols(self):
+        return scalar_free_symbols(self.coeff) | self.term.all_symbols()
 
 
 def safe_tex(obj):
@@ -1124,8 +1155,9 @@ def safe_tex(obj):
 
 tex = qnet.algebra.abstract_algebra.tex = safe_tex
 
+
 def format_number_for_tex(num):
-    if num == 0: #also True for 0., 0j
+    if num == 0:  #also True for 0., 0j
         return "0"
     if isinstance(num, complex):
         if num.real == 0:
@@ -1180,6 +1212,7 @@ greekToLatex = {"alpha": "Alpha", "beta": "Beta", "gamma": "Gamma", "delta": "De
 import re
 
 _idtp = re.compile(r'(?!\\)({})(\b|_)'.format("|".join(greek_letter_strings)))
+
 
 def identifier_to_tex(identifier):
     """
@@ -1244,6 +1277,7 @@ class Adjoint(OperatorOperation):
 # for hilbert space dimensions less than or equal to this,
 # compute numerically PseudoInverse and NullSpaceProjector representations
 DENSE_DIMENSION_LIMIT = 1000
+
 
 @check_signature
 @match_replace
@@ -1310,6 +1344,7 @@ class PseudoInverse(OperatorOperation):
         if isinstance(self.operand, OperatorSymbol):
             return "{}^+".format(str(self.operand))
         return "({})^+".format(str(self.operand))
+
 
 PseudoInverse.delegate_to_method = PseudoInverse.delegate_to_method + (PseudoInverse,)
 
@@ -1420,8 +1455,12 @@ class OperatorTrace(Operator, Operation):
         # TODO import OperatorTrace._to_qutip()
         raise NotImplementedError(self.__class__.__name__)
 
+    def _all_symbols(self):
+        return self.operands[1].all_symbols()
+
 
 tr = OperatorTrace.create
+
 
 def factor_for_trace(ls, op):
     r"""
@@ -1480,7 +1519,7 @@ def decompose_space(H, A):
     :rtype: Operator
     """
     return OperatorTrace.create(ProductSpace.create(*H.operands[:-1]),
-        OperatorTrace.create(H.operands[-1], A))
+                                OperatorTrace.create(H.operands[-1], A))
 
 
 ## Expression rewriting _rules
@@ -1608,7 +1647,6 @@ class NonSquareMatrix(Exception):
     pass
 
 
-
 class Matrix(Expression):
     """
     Matrix with Operator (or scalar-) valued elements.
@@ -1688,7 +1726,8 @@ class Matrix(Expression):
     def __add__(self, other):
         if isinstance(other, Matrix):
             return Matrix(self.matrix + other.matrix)
-        else: return Matrix(self.matrix + other)
+        else:
+            return Matrix(self.matrix + other)
 
     def __radd__(self, other):
         return Matrix(other + self.matrix)
@@ -1696,7 +1735,8 @@ class Matrix(Expression):
     def __mul__(self, other):
         if isinstance(other, Matrix):
             return Matrix(self.matrix.dot(other.matrix))
-        else: return Matrix(self.matrix * other)
+        else:
+            return Matrix(self.matrix * other)
 
     def __rmul__(self, other):
         return Matrix(other * self.matrix)
@@ -1765,7 +1805,6 @@ class Matrix(Expression):
             return sum(self.matrix[k, k] for k in range(self.shape[0]))
         raise NonSquareMatrix(repr(self))
 
-
     @property
     def H(self):
         """
@@ -1805,18 +1844,25 @@ class Matrix(Expression):
     def _substitute(self, var_map):
 
         def _substitute(o):
-            sympy_var_map = {k:v for (k, v) in var_map.items() if isinstance(k, SympyBasic)}
+            sympy_var_map = {k: v for (k, v) in var_map.items() if isinstance(k, SympyBasic)}
             if isinstance(o, Operation):
                 return substitute(o, var_map)
             elif isinstance(o, SympyBasic):
                 return o.subs(sympy_var_map)
             else:
                 return o
+
         return self.element_wise(_substitute)
 
 
     def _all_symbols(self):
-        return set_union()
+        ret = set()
+        for o in self.matrix.flatten():
+            if isinstance(o, Operator):
+                ret = ret | o.all_symbols()
+            else:
+                ret = ret | scalar_free_symbols(o)
+        return ret
 
 
     def _tex(self):
@@ -1844,14 +1890,14 @@ class Matrix(Expression):
         return self.element_wise(simplify_scalar)
 
 
-def hstack(matrices):
+def hstackm(matrices):
     """
     Generalizes `numpy.hstack` to OperatorMatrix objects.
     """
     return Matrix(np_hstack(tuple(m.matrix for m in matrices)))
 
 
-def vstack(matrices):
+def vstackm(matrices):
     """
     Generalizes `numpy.vstack` to OperatorMatrix objects.
     """
@@ -1861,7 +1907,7 @@ def vstack(matrices):
     return Matrix(arr)
 
 
-def diag(v, k=0):
+def diagm(v, k=0):
     """
     Generalizes the diagonal matrix creation capabilities of `numpy.diag` to OperatorMatrix objects.
     """
@@ -1888,7 +1934,7 @@ def block_matrix(A, B, C, D):
     :return: The combined block matrix [[A, B], [C, D]].
     :type: OperatorMatrix
     """
-    return vstack((hstack((A, B)), hstack((C, D))))
+    return vstackm((hstackm((A, B)), hstackm((C, D))))
 
 
 def identity_matrix(N):
@@ -1900,10 +1946,10 @@ def identity_matrix(N):
     :return: Identity matrix in N dimensions
     :rtype: Matrix
     """
-    return diag(np_ones(N, dtype=int))
+    return diagm(np_ones(N, dtype=int))
 
 
-def zeros(shape, *args, **kwargs):
+def zerosm(shape, *args, **kwargs):
     """
     Generalizes ``numpy.zeros`` to :py:class:`Matrix` objects.
     """
@@ -1938,7 +1984,7 @@ def permutation_matrix(permutation):
     :param permutation: A permutation image tuple (zero-based indices!)
     :type permutation: tuple
     """
-    assert(check_permutation(permutation))
+    assert (check_permutation(permutation))
     n = len(permutation)
     op_matrix = np_zeros((n, n), dtype=int)
     for i, j in enumerate(permutation):
@@ -1949,6 +1995,7 @@ def permutation_matrix(permutation):
 # for backwards compatibility
 OperatorMatrixInstance = Matrix
 IdentityMatrix = identity_matrix
+
 
 def Im(op):
     """
@@ -1994,7 +2041,31 @@ def ReAdjoint(opmatrix):
     return (opmatrix.H + opmatrix) / 2
 
 
+def _coeff_term(expr):
+    if isinstance(expr, ScalarTimesOperator):
+        return expr.coeff, expr.term
+    else:
+        return 1, expr
 
 
+def get_coeffs(expr, expand=False, epsilon = 0.):
+    """
+    Create a dictionary with all Operator terms of the expression
+    (understood as a sum) as keys and their coefficients as values.
 
-
+    The returned object is a defaultdict that return 0. if a term/key
+    doesn't exist.
+    """
+    if expand:
+        expr = expr.expand()
+    ret = defaultdict(float)
+    operands = expr.operands if isinstance(expr, OperatorPlus) else [expr]
+    for e in operands:
+        c, t = _coeff_term(e)
+        try:
+            if abs(complex(c)) < epsilon:
+                continue
+        except:
+            pass
+        ret[t] += c
+    return ret

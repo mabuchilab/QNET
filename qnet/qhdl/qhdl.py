@@ -3,7 +3,7 @@
 #    QNET is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
+#    (at your option) any later version.
 #
 #    QNET is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -325,25 +325,26 @@ class Architecture(QHDLObject):
             
             #make sure referenced a,b,c,... exist as generics in the entity
             for name_in_c, name_in_e in generic_map.items():
-                entity_g = entity.generics.get(name_in_e, False)
-                if not entity_g:
-                    raise QHDLError('Entity %s does not define a generic of name %s' % (entity.identifier, name_in_e))
+                is_number = isinstance(name_in_e, (int, float, complex))
+                if not is_number:
+                    entity_g = entity.generics.get(name_in_e, False)
+                    if not entity_g:
+                        raise QHDLError('Entity %s does not define a generic of name %s and it cannot be parsed to a numeric value.' % (entity.identifier, name_in_e))
                 
-                component_g = component.generics.get(name_in_c, False)
+                    component_g = component.generics.get(name_in_c, False)
                 
-                #probably redundant
-                if not component_g:
-                    raise QHDLError('Component %s does not define a generic of name %s' % (component.identifier, name_in_c))
-                #check that generics have compatible type
-                #e.g. component_generic_type == real, entity_generic_type == int is okay
-                #because an int may be cast to a real, however the other way around does not always work!
-                if not gtype_compatible(component_g[0], entity_g[0]):
-                    raise QHDLError('Mapped generics are of incompatible type.' \
+                    #probably redundant
+                    if not component_g:
+                        raise QHDLError('Component %s does not define a generic of name %s' % (component.identifier, name_in_c))
+                        #check that generics have compatible type
+                        #e.g. component_generic_type == real, entity_generic_type == int is okay
+                        #because an int may be cast to a real, however the other way around does not always work!
+                    if not gtype_compatible(component_g[0], entity_g[0]) :
+                        raise QHDLError('Mapped generics are of incompatible type.' \
                                         + 'Change the generic\'s type in the entity to %s' % component_g[0])
             
             
-            # rewrite port map based on whether a port is inout
-            
+            # TODO rewrite port map based on whether a port is inout
             
             #convert port map (a,b,c,...) into port map (q=>a, r=>b,...)
             #based on the ports of the component

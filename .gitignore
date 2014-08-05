@@ -1,0 +1,12 @@
+.idea
+*.log
+*.pyc
+*.dvi
+*.pdf
+*.png
+*.net
+*_parsetab.py
+*.py.backup_*
+*.synctex.gz
+backup/*
+docsrc/_build/*

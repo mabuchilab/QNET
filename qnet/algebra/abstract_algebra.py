@@ -1,4 +1,5 @@
-#This file is part of QNET.
+# coding=utf-8
+# This file is part of QNET.
 #
 #    QNET is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,12 +28,11 @@ See :ref:`abstract_algebra` for more details.
 
 """
 from __future__ import division
-from itertools import izip
 from functools import reduce
 from abc import ABCMeta, abstractmethod
 
-#define our own exceptions/errors
 
+#define our own exceptions/errors
 class AlgebraException(Exception):
     """
     Base class for all errors concerning the mathematical definitions and rules of an algebra.
@@ -46,12 +46,13 @@ class AlgebraError(AlgebraException):
     """
     pass
 
-    
+
 class CannotSimplify(AlgebraException):
     """
     Raised when an expression cannot be further simplified
     """
     pass
+
 
 class WrongSignatureError(AlgebraError):
     """
@@ -95,12 +96,7 @@ class Expression(object):
         """
         For compatibility with the IPython notebook, generate TeX expression and surround it with $'s.
         """
-        import re
-
-        p = re.compile('bla')
-
-        return "$%s$" % self.tex()
-
+        return "${}$".format(self.tex())
 
     def all_symbols(self):
         """
@@ -157,6 +153,7 @@ def substitute(expr, var_map):
             return var_map[expr]
         return expr
 
+
 def tex(obj):
     """
     :param obj: Object to represent in LaTeX.
@@ -167,6 +164,7 @@ def tex(obj):
         return obj.tex()
     except AttributeError:
         return r"{{\rm {!s}}}".format(obj)
+
 
 #
 #def mathematica(obj):
@@ -314,6 +312,7 @@ def all_symbols(expr):
     except AttributeError:
         return set(())
 
+
 class Operation(Expression):
     """
     Abstract base class for all operations,
@@ -322,7 +321,6 @@ class Operation(Expression):
 
     # hash str, is generated on demand (lazily)
     __hash = None
-
 
     def __init__(self, *operands):
         """
@@ -358,7 +356,7 @@ class Operation(Expression):
 
     def __repr__(self):
         return "{}({})".format(self.__class__.__name__, ", ".join(map(repr, self.operands)))
-    
+
     # def mathematica(self):
     #     return "%s[%s]" % (self.__class__.__name__, ", ".join(map(mathematica, self.operands)))
 
@@ -399,7 +397,7 @@ class Operation(Expression):
         return (self.__class__.__name__,) + tuple(map(Operation.order_key, self.operands))
 
 
-mathematica = lambda s : s
+mathematica = lambda s: s
 
 
 
@@ -410,6 +408,7 @@ mathematica = lambda s : s
 
 
 inf = float('inf')
+
 
 def match_range(pattern):
     """
@@ -422,7 +421,7 @@ def match_range(pattern):
     """
     if isinstance(pattern, Wildcard):
         if pattern.mode == Wildcard.single:
-            return 1,1
+            return 1, 1
         if pattern.mode == Wildcard.one_or_more:
             return 1, inf
         if pattern.mode == Wildcard.zero_or_more:
@@ -432,7 +431,7 @@ def match_range(pattern):
         if len(pattern):
             a0, b0 = match_range(pattern[0])
             a1, b1 = match_range(pattern[1:])
-#            a1, b1 = match_range(PatternTuple(pattern[1:]))
+            #            a1, b1 = match_range(PatternTuple(pattern[1:]))
             return a0 + a1, b0 + b1
         return 0, 0
     return 1, 1
@@ -442,6 +441,7 @@ class OperandsTuple(tuple):
     """
     Specialized tuple to store expression operands for the purpose of matching them to patterns.
     """
+
     def __getitem__(self, item):
         if isinstance(item, slice):
             #noinspection PyTypeChecker
@@ -449,12 +449,14 @@ class OperandsTuple(tuple):
         return super(OperandsTuple, self).__getitem__(item)
 
     def __getslice__(self, i, j):
-        return OperandsTuple(super(OperandsTuple, self).__getslice__(i,j))
+        return OperandsTuple(super(OperandsTuple, self).__getslice__(i, j))
+
 
 class PatternTuple(tuple):
     """
     Specialized tuple to store expression pattern operands.
     """
+
     def __getitem__(self, item):
         if isinstance(item, slice):
             #noinspection PyTypeChecker
@@ -462,7 +464,7 @@ class PatternTuple(tuple):
         return super(PatternTuple, self).__getitem__(item)
 
     def __getslice__(self, i, j):
-        return PatternTuple(super(PatternTuple, self).__getslice__(i,j))
+        return PatternTuple(super(PatternTuple, self).__getslice__(i, j))
 
 
 class NamedPattern(Operation):
@@ -480,6 +482,7 @@ class NamedPattern(Operation):
     def __init__(self, name, pattern):
         super(NamedPattern, self).__init__(name, pattern)
 
+
 def _trace(fn):
     """
     Function decorator to receive debugging information about function calls and return values.
@@ -491,13 +494,14 @@ def _trace(fn):
     """
 
     def _tfn(*args, **kwargs):
-        print "[", "-"* 40
-        ret =  fn(*args, **kwargs)
+        print "[", "-" * 40
+        ret = fn(*args, **kwargs)
         print "{}({},{}) called".format(fn.__name__, ", ".join(repr(a) for a in args),
-                                        ", ".join(str(k)+"="+repr(v) for k,v in kwargs.items()))
+                                        ", ".join(str(k) + "=" + repr(v) for k, v in kwargs.items()))
         print "-->", repr(ret)
-        print "-"* 40,"]"
+        print "-" * 40, "]"
         return ret
+
     return _tfn
 
 
@@ -517,6 +521,7 @@ def _flatten(seq):
         else:
             sres.append(s)
     return sres
+
 
 #@_trace
 def update_pattern(expr, match_obj):
@@ -541,10 +546,8 @@ def update_pattern(expr, match_obj):
     return expr
 
 
-
 #@_trace
 def match(pattern, expr):
-
     """
     Match a pattern against an expression and return a Match object if successful or False, if not.
     Works recursively.
@@ -581,7 +584,7 @@ def match(pattern, expr):
             if isinstance(p0, Wildcard):
                 if p0.mode != Wildcard.single:
                     a0, b0 = match_range(p0)
-                    for k in range(a0, min(l,b0)+1):
+                    for k in range(a0, min(l, b0) + 1):
                         o0 = expr[:k]
                         orest = expr[k:]
                         m0 = match(p0, o0)
@@ -602,11 +605,12 @@ def match(pattern, expr):
                             mrest = match(update_pattern(prest, m0), orest)
                         else:
                             mrest = match(prest, orest)
-    #                    print m0, update_pattern(prest, m0), mrest
+                            #                    print m0, update_pattern(prest, m0), mrest
                         if mrest:
                             return m0 + mrest
                     return False
             else:
+                # noinspection PyTypeChecker
                 m0 = match(p0, expr[0])
                 if m0:
                     orest = expr[1:]
@@ -614,7 +618,7 @@ def match(pattern, expr):
                         mrest = match(update_pattern(prest, m0), orest)
                     else:
                         mrest = match(prest, orest)
-#                    print m0, update_pattern(prest, m0), mrest
+                    #                    print m0, update_pattern(prest, m0), mrest
                     if mrest:
                         return m0 + mrest
                 return False
@@ -643,24 +647,16 @@ def match(pattern, expr):
                 return Match({pattern.name: expr})
             return Match()
     elif isinstance(pattern, NamedPattern):
-        name, p =  pattern.operands
+        name, p = pattern.operands
         m = match(p, expr)
         if m:
-            return m + Match({name: expr })
+            return m + Match({name: expr})
         return False
     elif isinstance(pattern, Operation):
-        if isinstance(expr,Operation) and type(pattern) is type(expr):
+        if isinstance(expr, Operation) and type(pattern) is type(expr):
             return match(PatternTuple(pattern.operands), OperandsTuple(expr.operands))
     else:
         return Match() if pattern == expr else False
-
-
-
-
-
-
-
-
 
 
 class Wildcard(Expression):
@@ -676,8 +672,7 @@ class Wildcard(Expression):
     single = 1
     """Value of :py:attr:`Wildcard.mode` for matching single operands/objects"""
 
-
-    one_or_more= 2
+    one_or_more = 2
     """Value of :py:attr:`Wildcard.mode` for matching one or more operands/objects"""
 
     zero_or_more = 3
@@ -690,15 +685,15 @@ class Wildcard(Expression):
     """mode of the wildcard, i.e. how many operands it can match (default = ``single``)."""
 
     head = None
-    """head/type of the object that is matched (default = ``None``, corresponding to no restriction)."""
+    """head/type of the matched object (default = ``None``, corresponding to no restriction)."""
 
     condition = None
-    """extra condition that has to be satisfied for a successful match (default = ``None``, corresponding to no restriction)."""
+    """extra condition for a successful match (default = ``None``, corresponding to no restriction)."""
 
     _hash = None
 
     #noinspection PyRedeclaration
-    def __init__(self, name = "", mode = single, head = None, condition = None):
+    def __init__(self, name="", mode=single, head=None, condition=None):
         """
         :param name: Wildcard name, (default = "")
         :type name: str
@@ -752,7 +747,8 @@ class Wildcard(Expression):
         return self._hash
 
     def _tex(self):
-        return r"{\rm " + self.name + ("\_" * self.mode) + self.head.__name__ + ("?{}".format(self.condition.__name__) if hasattr(self.condition, "__name__") else "") + "}"
+        return r"{\rm " + self.name + ("\_" * self.mode) + self.head.__name__ + (
+            "?{}".format(self.condition.__name__) if hasattr(self.condition, "__name__") else "") + "}"
 
     def _all_symbols(self):
         return set(())
@@ -779,23 +775,25 @@ class Match(dict):
         ret.update(other)
         return ret
 
-#    def __repr__(self):
-#        return "Match({})".format(dict.__repr__(self))
-#
-#    def __str__(self):
-#        return "Match({})".format(dict.__str__(self))
+    #    def __repr__(self):
+    #        return "Match({})".format(dict.__repr__(self))
+    #
+    #    def __str__(self):
+    #        return "Match({})".format(dict.__str__(self))
 
+    # noinspection PyMethodMayBeStatic
     def __bool__(self):
         return True
 
     __nonzero__ = __bool__
 
 
-
 import re
+
 name_mode_pattern = re.compile(r"^([A-Za-z]?[A-Za-z0-9]*)(_{0,3})$")
 
-def wc(name_mode = "_", head = None, condition = None):
+
+def wc(name_mode="_", head=None, condition=None):
     """
     Helper function to create a Wildcard object.
 
@@ -821,7 +819,7 @@ def wc(name_mode = "_", head = None, condition = None):
     mode = len(modelength) or Wildcard.single
     if not 1 <= mode <= 3:
         raise ValueError()
-    return Wildcard(name, mode=mode , head=head, condition=condition)
+    return Wildcard(name, mode=mode, head=head, condition=condition)
 
 
 ########################################################################################################################
@@ -830,7 +828,8 @@ def wc(name_mode = "_", head = None, condition = None):
 
 #noinspection PyUnresolvedReferences
 from itertools import izip
-from types import  MethodType
+from types import MethodType
+
 
 def make_classmethod(method, cls):
     """
@@ -845,9 +844,10 @@ def make_classmethod(method, cls):
     """
     return MethodType(method, cls, type(cls))
 
+
 def preprocess_create_with(method):
     """
-    This is a factory method that allows for adding argument pre-processing decorators the a class's ``create`` classmethod.
+    This factory method allows for adding argument pre-processing decorators to a class's ``create`` classmethod.
 
     :param method: A decorating create classmethod ``f()`` with signature:
             ``f(decorated_class, decorated_method, cls, *args)``
@@ -856,20 +856,26 @@ def preprocess_create_with(method):
     :rtype: FunctionType
     """
 
+    # noinspection PyDocstring
     def decorator(dcls):
         clsmtd = getattr(dcls, "create").im_func
+
+        # noinspection PyDocstring
         def dclsmtd(cls, *args):
             return method(dcls, clsmtd, cls, *args)
 
         dclsmtd.method = method
         dclsmtd.decorated = clsmtd
         dclsmtd.dcls = dcls
-        dclsmtd.__doc__ = clsmtd.__doc__
+        dclsmtd.__doc__ = (str(clsmtd.__doc__)
+                           + "\n-- {}.create() preprocessed by {} --\n".format(dcls.__name__, method.__name__)
+                           + str(method.__doc__))
 
         # store a list of all applied decorators as an attribute of the new create method's im_func.
         dclsmtd.decorators = (method,) + getattr(clsmtd, "decorators", ())
         dclsmtd.__name__ = "create"
 
+        # noinspection PyTypeChecker
         nmtd = make_classmethod(dclsmtd, dcls)
         setattr(dcls, "create", nmtd)
         return dcls
@@ -880,29 +886,32 @@ def preprocess_create_with(method):
 
     Automatically generated class decorator based on the method ``qnet.algebra.abstract_algebra.{}()`` using
     :py:func:`preprocess_create_with`.
-""".format(method.__doc__,method.__name__)
+""".format(method.__doc__, method.__name__)
 
     return decorator
 
 
 #noinspection PyUnusedLocal,PyDocstring
-def _assoc_mtd(dcls, clsmtd, cls, *ops):
+def _assoc(dcls, clsmtd, cls, *ops):
     """
     Associatively expand out nested arguments of the flat class.
 
-        >>> @flat
+        >>> @assoc
         >>> class Plus(Operation):
         >>>     pass
         >>> Plus.create(1,Plus(2,3))
             Plus(1,2,3)
     """
-    nops = sum(((o,) if not isinstance(o,cls) else o.operands for o in ops),())
+    nops = sum(((o,) if not isinstance(o, cls) else o.operands for o in ops), ())
     return clsmtd(cls, *nops)
 
-assoc = preprocess_create_with(_assoc_mtd)
+
+# noinspection PyTypeChecker
+assoc = preprocess_create_with(_assoc)
+
 
 #noinspection PyUnusedLocal,PyDocstring
-def _idem_mtd(dcls, clsmtd, cls, *ops):
+def _idem(dcls, clsmtd, cls, *ops):
     """
     Remove duplicate arguments and order them via the cls's order_key key object/function.
     E.g.
@@ -913,35 +922,41 @@ def _idem_mtd(dcls, clsmtd, cls, *ops):
         >>> Set.create(1,2,3,1,3)
             Set(1,2,3)
     """
-    return clsmtd(cls, *sorted(set(ops), key = cls.order_key))
+    return clsmtd(cls, *sorted(set(ops), key=cls.order_key))
 
-idem = preprocess_create_with(_idem_mtd)
+
+# noinspection PyTypeChecker
+idem = preprocess_create_with(_idem)
+
 
 #noinspection PyUnusedLocal,PyDocstring
-def _orderless_mtd(dcls, clsmtd, cls, *ops):
+def _orderby(dcls, clsmtd, cls, *ops):
     """
     Re-order arguments via the class's ``order_key`` key object/function.
     Use this for commutative operations:
     E.g.
 
-        >>> @orderless
+        >>> @orderby
         >>> class Times(Operation):
         >>>     pass
         >>> Times.create(2,1)
             Times(1,2)
     """
-    return clsmtd(cls, *sorted(ops, key = cls.order_key))
+    return clsmtd(cls, *sorted(ops, key=cls.order_key))
 
-orderby = preprocess_create_with(_orderless_mtd)
 
+# noinspection PyTypeChecker
+orderby = preprocess_create_with(_orderby)
 
 unequals = lambda x: (lambda y: x != y)
 
+
 #noinspection PyUnusedLocal,PyDocstring
-def _filter_neutral_mtd(dcls, clsmtd, cls, *ops):
+def _filter_neutral(dcls, clsmtd, cls, *ops):
     """
     Remove occurrences of a neutral element from the argument/operand list, if that list has at least two elements.
-    To use this, one must also specify a neutral element, which can be anything that allows for an equality check with each argument.
+    To use this, one must also specify a neutral element,
+    which can be anything that allows for an equality check with each argument.
     E.g.
 
         >>> @filter_neutral
@@ -964,8 +979,9 @@ def _filter_neutral_mtd(dcls, clsmtd, cls, *ops):
         # the original list of operands consists only of neutral elements
         return ops[0]
 
-filter_neutral = preprocess_create_with(_filter_neutral_mtd)
 
+# noinspection PyTypeChecker
+filter_neutral = preprocess_create_with(_filter_neutral)
 
 CLS = object()
 DCLS = object()
@@ -974,7 +990,8 @@ DCLS = object()
 def extended_isinstance(obj, class_info, dcls, cls):
     """
     Like isinstance but with two extra arguments to allow for placeholder objects ``(DCLS, CLS)``
-    to stand for the class objects passed as extra arguments ``dcls``, ``cls``. This allows one to specify a self-referential
+    to stand for the class objects passed as extra arguments ``dcls``, ``cls``.
+    This allows one to specify a self-referential
     `signature` class attribute to allow for recursive Operation signatures.
     E.g.
 
@@ -1016,8 +1033,9 @@ def extended_isinstance(obj, class_info, dcls, cls):
         class_info = dcls
     return isinstance(obj, class_info)
 
+
 #noinspection PyDocstring
-def _check_signature_mtd(dcls, clsmtd, cls, *ops):
+def _check_signature(dcls, clsmtd, cls, *ops):
     """
     Check that the operands passed to the create classmethod of an Operation type conform to certain types.
     For each allowed argument/operand, provide a tuple of types (or one of ``CLS, DCLS``, see extended_isinstance docs).
@@ -1046,11 +1064,12 @@ def _check_signature_mtd(dcls, clsmtd, cls, *ops):
         raise WrongSignatureError("class: {}, operands: {}".format(str(cls), str(ops)))
     return clsmtd(cls, *ops)
 
-check_signature = preprocess_create_with(_check_signature_mtd)
+
+check_signature = preprocess_create_with(_check_signature)
 
 
 #noinspection PyDocstring
-def _check_signature_assoc_mtd(dcls, clsmtd, cls, *ops):
+def _check_signature_assoc(dcls, clsmtd, cls, *ops):
     """
     Like :py:func:`check_signature` but for :py:func:`assoc`-decorated Operations. In this case the signature need only contain a single entry.
 
@@ -1068,12 +1087,18 @@ def _check_signature_assoc_mtd(dcls, clsmtd, cls, *ops):
     """
     sgn = cls.signature[0]
     if not all(extended_isinstance(o, sgn, dcls, cls) for o in ops):
+        print sgn, dcls, cls, ops
         raise WrongSignatureError()
     return clsmtd(cls, *ops)
-check_signature_assoc = preprocess_create_with(_check_signature_assoc_mtd)
 
-#noinspection PyDocstring
-def _match_replace_mtd(dcls, clsmtd, cls, *ops):
+
+# noinspection PyTypeChecker
+check_signature_assoc = preprocess_create_with(_check_signature_assoc)
+
+
+# noinspection PyDocstring
+# noinspection PyUnusedLocal
+def _match_replace(dcls, clsmtd, cls, *ops):
     """
     Match and replace a full operand specification to a function that provides a replacement for the whole expression
     or raises a :py:class:`CannotSimplify` exception.
@@ -1132,11 +1157,14 @@ def _match_replace_mtd(dcls, clsmtd, cls, *ops):
                 continue
     return clsmtd(cls, *ops)
 
-match_replace = preprocess_create_with(_match_replace_mtd)
+
+# noinspection PyTypeChecker
+match_replace = preprocess_create_with(_match_replace)
 
 
 #noinspection PyDocstring
-def _match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
+# noinspection PyUnusedLocal
+def _match_replace_binary(dcls, clsmtd, cls, *ops):
     """
     Similar to :py:func:`match_replace`, but for arbitrary length operations, such that each two pairs of subsequent operands are matched pairwise.
 
@@ -1162,7 +1190,7 @@ def _match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
     _rules = cls._binary_rules
     j = 1
     while j < len(ops):
-        first, second = ops[j-1], ops[j]
+        first, second = ops[j - 1], ops[j]
         m = False
         r = False
         for patterns, replacement in _rules:
@@ -1174,12 +1202,12 @@ def _match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
                 except CannotSimplify:
                     continue
 
-        if r is not False:
+        if not(r is False):
             # if Operation is also "assoc", then expand out the operands of a binary-simplified result
-            if _assoc_mtd in getattr(cls.create.im_func, "decorators",()) and isinstance(r, cls):
-                ops = ops[:j-1] + r.operands + ops[j+1:]
+            if _assoc in getattr(cls.create.im_func, "decorators", ()) and isinstance(r, cls):
+                ops = ops[:j - 1] + r.operands + ops[j + 1:]
             else:
-                ops = ops[:j-1] + (r,) + ops[j+1:]
+                ops = ops[:j - 1] + (r,) + ops[j + 1:]
             if j > 1:
                 j -= 1
         else:
@@ -1187,8 +1215,8 @@ def _match_replace_binary_mtd(dcls, clsmtd, cls, *ops):
 
     return clsmtd(cls, *ops)
 
-match_replace_binary = preprocess_create_with(_match_replace_binary_mtd)
 
+match_replace_binary = preprocess_create_with(_match_replace_binary)
 
 
 def singleton(cls):
@@ -1201,14 +1229,20 @@ def singleton(cls):
     :rtype: cls
     """
 
+    # noinspection PyDocstring
     class S(cls):
         __instance = None
+
         def __hash__(self):
             return hash(cls)
+
+        # noinspection PyMethodMayBeStatic
         def _symbols(self):
             return set(())
+
         def __repr__(self):
             return cls.__name__
+
         def __call__(self):
             return self.__instance
 

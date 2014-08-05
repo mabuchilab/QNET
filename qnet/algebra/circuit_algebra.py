@@ -1,6 +1,6 @@
-#This file is part of QNET.
+# This file is part of QNET.
 #
-#    QNET is free software: you can redistribute it and/or modify
+# QNET is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #   (at your option) any later version.
@@ -17,7 +17,7 @@
 #
 ###########################################################################
 
-r"""
+"""
 Circuit Algebra
 ===============
 
@@ -33,10 +33,27 @@ References:
 
 """
 
-
 from __future__ import division
-import os, time
-from operator_algebra import *
+from itertools import izip
+import os
+from abc import ABCMeta, abstractmethod, abstractproperty
+
+from sympy import I
+from numpy import zeros as np_zeros
+
+from qnet.algebra.abstract_algebra import (
+    AlgebraException, AlgebraError, Expression, Operation, assoc,
+    check_signature, check_signature_assoc,
+    tex,
+    singleton, preprocess_create_with, filter_neutral,
+    match_replace_binary, prod, match_replace, substitute,
+    CannotSimplify, wc)
+from qnet.algebra.hilbert_space_algebra import HilbertSpace, FullSpace, TrivialSpace
+from qnet.algebra.operator_algebra import (
+    Operator, OperatorSymbol, ScalarTimesOperator, IdentityOperator, adjoint, ImAdjoint, Im, Matrix, block_matrix, sympyOne, zerosm,
+    vstackm, Destroy, Create, identifier_to_tex, identity_matrix, permutation_matrix, space, get_coeffs)
+from qnet.algebra.permutations import check_permutation, BadPermutationError, permutation_to_block_permutations, \
+    invert_permutation, block_perm_and_perms_within_blocks, full_block_perm, concatenate_permutations
 
 
 class CannotConvertToSLH(AlgebraException):
@@ -56,17 +73,18 @@ class CannotVisualize(AlgebraException):
     Is raised when a circuit algebra object cannot be visually represented.
     """
 
+
 class WrongCDimError(AlgebraError):
     """
     Is raised when two object are tried to joined together in series but have different channel dimensions.
     """
+
 
 class IncompatibleBlockStructures(AlgebraError):
     """
     Is raised when a circuit decomposition into a block-structure is requested
     that is icompatible with the actual block structure of the circuit expression.
     """
-
 
 
 class Circuit(object):
@@ -138,14 +156,14 @@ class Circuit(object):
             return channel_index, 0
         i = 1
         while sum(struct[:i]) <= channel_index and i < self.cdim:
-            i +=1
+            i += 1
         block_index = i - 1
         index_in_block = channel_index - sum(struct[:block_index])
 
         return index_in_block, block_index
 
 
-    def get_blocks(self, block_structure = None):
+    def get_blocks(self, block_structure=None):
         """
         For a reducible circuit, get a sequence of subblocks that when concatenated again yield the original circuit.
         The block structure given has to be compatible with the circuits actual block structure,
@@ -183,7 +201,7 @@ class Circuit(object):
     def _series_inverse(self):
         return SeriesInverse.create(self)
 
-    def feedback(self, out_index = None, in_index = None):
+    def feedback(self, out_index=None, in_index=None):
         """
         Return a circuit with self-feedback from the output port (zero-based) ``out_index`` to the input port ``in_index``.
 
@@ -194,10 +212,10 @@ class Circuit(object):
         """
         if out_index is None:
             #noinspection PyRedeclaration
-            out_index = self.cdim -1
+            out_index = self.cdim - 1
         if in_index is None:
             #noinspection PyRedeclaration
-            in_index = self.cdim -1
+            in_index = self.cdim - 1
 
         return self._feedback(out_index, in_index)
 
@@ -211,10 +229,10 @@ class Circuit(object):
         from IPython.display import Image, display
 
         fname = self.render()
-        display(Image(filename = fname))
+        display(Image(filename=fname))
 
 
-    def render(self, fname = ''):
+    def render(self, fname=''):
         """
         Render the circuit expression and store the result in a file
 
@@ -227,14 +245,16 @@ class Circuit(object):
 
         if not fname:
             from tempfile import gettempdir
-            tmp_dir = gettempdir()
-            fname = tmp_dir + "/tmp_{}.png".format(hash(str(self)))
+            from time import time
 
+            tmp_dir = gettempdir()
+            fname = tmp_dir + "/tmp_{}.png".format(hash(time))
 
         if circuit_visualization.draw_circuit(self, fname):
             done = False
             for k in range(20):
                 if os.path.exists(fname):
+
                     done = True
                     break
                 else:
@@ -275,7 +295,7 @@ class Circuit(object):
     def _toSLH(self):
         raise NotImplementedError(self.__class__.__name__)
 
-    def toABCD(self, linearize = False):
+    def toABCD(self, linearize=False):
         """
         Return the ABCD representation of a circuit expression. If `linearize=True` all operator expressions giving rise to non-linear equations of motion are dropped.
         This can fail if there are un-substituted pure circuit all_symbols (:py:class:`CircuitSymbol`) left in the expression or if `linearize = False` and the circuit includes non-linear SLH models.
@@ -311,7 +331,8 @@ class Circuit(object):
         if len(input_amps) != self.cdim:
             raise WrongCDimError()
         from qnet.circuit_components.displace_cc import Displace as Displace_cc
-        return self << sum([Displace_cc('W', alpha = amp) if amp != 0 else cid(1) for amp in input_amps], cid(0))
+
+        return self << sum([Displace_cc('W', alpha=amp) if amp != 0 else cid(1) for amp in input_amps], cid(0))
 
     @property
     def space(self):
@@ -334,7 +355,6 @@ class Circuit(object):
         if isinstance(other, Circuit):
             return Concatenation.create(self, other)
         return NotImplemented
-
 
 
 class SLH(Circuit, Operation):
@@ -417,10 +437,10 @@ class SLH(Circuit, Operation):
         new_S = self.S * other.S
         new_L = self.S * other.L + self.L
 
-        delta =  ImAdjoint(self.L.adjoint() * self.S * other.L)
+        delta = ImAdjoint(self.L.adjoint() * self.S * other.L)
 
         if isinstance(delta, Matrix):
-            new_H = self.H + other.H + delta[0,0]
+            new_H = self.H + other.H + delta[0, 0]
         else:
             assert delta == 0
             new_H = self.H + other.H
@@ -438,8 +458,9 @@ class SLH(Circuit, Operation):
         """
         selfS = self.S
         otherS = other.S
-        new_S = block_matrix(selfS, zeros((selfS.shape[0],otherS.shape[1]), dtype = int), zeros((otherS.shape[0],selfS.shape[1]), dtype = int), otherS)
-        new_L = vstack((self.L, other.L))
+        new_S = block_matrix(selfS, zerosm((selfS.shape[0], otherS.shape[1]), dtype=int),
+                             zerosm((otherS.shape[0], selfS.shape[1]), dtype=int), otherS)
+        new_L = vstackm((self.L, other.L))
         new_H = self.H + other.H
 
         return SLH(new_S, new_L, new_H)
@@ -470,7 +491,7 @@ class SLH(Circuit, Operation):
         return SLH(self.S.simplify_scalar(), self.L.simplify_scalar(), self.H.simplify_scalar())
 
 
-    def HL_to_qutip(self, full_space = None):
+    def HL_to_qutip(self, full_space=None):
         """
         Generate and return QuTiP representation matrices for the Hamiltonian and the collapse operators.
 
@@ -480,7 +501,8 @@ class SLH(Circuit, Operation):
         """
         if full_space:
             if not full_space >= self.space:
-                raise AlgebraError("full_space = {} needs to at least include self.space = {}".format(str(full_space), str(self.space)))
+                raise AlgebraError("full_space = {} needs to at least include self.space = {}".format(str(full_space),
+                                                                                                      str(self.space)))
         else:
             full_space = self.space
         H = self.H.to_qutip(full_space)
@@ -489,24 +511,23 @@ class SLH(Circuit, Operation):
         return H, Ls
 
 
-
-#    _block_structure_ = None
-#
-#    @property
-#    def _block_structure(self):
-#        if self.cdim and not self._block_structure_:
-#            self._block_structure_ = self.S.block_structure
-#        return self._block_structure_
-#
-#    def _get_blocks(self, block_structure):
-#        Sblocks = self.S._get_blocks(block_structure)
-#        Lblocks = self.L._get_blocks(block_structure)
-#        Hblocks = (self.H,) + ((0,)*(len(block_structure)-1))
-#        return tuple(SLH(S,L,H) for (S,L,H) in zip(Sblocks, Lblocks, Hblocks))
+    #    _block_structure_ = None
+    #
+    #    @property
+    #    def _block_structure(self):
+    #        if self.cdim and not self._block_structure_:
+    #            self._block_structure_ = self.S.block_structure
+    #        return self._block_structure_
+    #
+    #    def _get_blocks(self, block_structure):
+    #        Sblocks = self.S._get_blocks(block_structure)
+    #        Lblocks = self.L._get_blocks(block_structure)
+    #        Hblocks = (self.H,) + ((0,)*(len(block_structure)-1))
+    #        return tuple(SLH(S,L,H) for (S,L,H) in zip(Sblocks, Lblocks, Hblocks))
 
 
     def _series_inverse(self):
-        return SLH(self.S.adjoint(), - self.S.adjoint()*self.L, -self.H)
+        return SLH(self.S.adjoint(), - self.S.adjoint() * self.L, -self.H)
 
     def _feedback(self, out_index, in_index):
         if not isinstance(self.S, Matrix) or not isinstance(self.L, Matrix):
@@ -515,14 +536,13 @@ class SLH(Circuit, Operation):
         n = self.cdim - 1
 
         if out_index != n:
-            return (map_signals_circuit({out_index:n}, self.cdim).toSLH() << self).feedback(in_index = in_index)
+            return (map_signals_circuit({out_index: n}, self.cdim).toSLH() << self).feedback(in_index=in_index)
         elif in_index != n:
-            return (self << map_signals_circuit({n:in_index}, self.cdim).toSLH()).feedback()
-
+            return (self << map_signals_circuit({n: in_index}, self.cdim).toSLH()).feedback()
 
         S, L, H = self.operands
 
-        one_minus_Snn = sympyOne - S[n,n]
+        one_minus_Snn = sympyOne - S[n, n]
 
         if isinstance(one_minus_Snn, Operator):
             if isinstance(one_minus_Snn, ScalarTimesOperator) and one_minus_Snn.operands[1] == IdentityOperator():
@@ -530,15 +550,15 @@ class SLH(Circuit, Operation):
             else:
                 raise AlgebraError('Inversion not implemented for general operators')
 
-        one_minus_Snn_inv = sympyOne/one_minus_Snn
+        one_minus_Snn_inv = sympyOne / one_minus_Snn
 
-        new_S = S[:n,:n] + S[0:n , n:] * one_minus_Snn_inv * S[n:, 0 : n]
+        new_S = S[:n, :n] + S[0:n, n:] * one_minus_Snn_inv * S[n:, 0: n]
 
         new_L = L[:n] + S[0:n, n] * one_minus_Snn_inv * L[n]
-        delta_H  = Im((L.adjoint() * S[:,n:]) * one_minus_Snn_inv * L[n,0])
+        delta_H = Im((L.adjoint() * S[:, n:]) * one_minus_Snn_inv * L[n, 0])
 
         if isinstance(delta_H, Matrix):
-            delta_H = delta_H[0,0]
+            delta_H = delta_H[0, 0]
         new_H = H + delta_H
 
         return SLH(new_S, new_L, new_H)
@@ -546,10 +566,11 @@ class SLH(Circuit, Operation):
 
     def symbolic_liouvillian(self):
         from super_operator_algebra import liouvillian
+
         return liouvillian(self.H, self.L)
 
     #noinspection PyRedeclaration
-    def symbolic_master_equation(self, rho = None):
+    def symbolic_master_equation(self, rho=None):
         """
         Compute the symbolic Liouvillian acting on a state rho.
         If no rho is given, an OperatorSymbol is created in its place.
@@ -564,13 +585,13 @@ class SLH(Circuit, Operation):
         L, H = self.L, self.H
         if rho is None:
             rho = OperatorSymbol('rho', self.space)
-        return -I*(H*rho - rho*H) + sum( Lk * rho * adjoint(Lk)
-                             -  (adjoint(Lk)*Lk * rho + rho * adjoint(Lk)*Lk) / 2
-                                                for Lk in L.matrix.flatten())
+        return -I * (H * rho - rho * H) + sum(Lk * rho * adjoint(Lk)
+                                              - (adjoint(Lk) * Lk * rho + rho * adjoint(Lk) * Lk) / 2
+                                              for Lk in L.matrix.flatten())
 
 
     #noinspection PyRedeclaration
-    def symbolic_heisenberg_eom(self, X = None, noises = None):
+    def symbolic_heisenberg_eom(self, X=None, noises=None):
         """
         Compute the symbolic Heisenberg equations of motion of a system operator X.
         If no X is given, an OperatorSymbol is created in its place.
@@ -588,20 +609,20 @@ class SLH(Circuit, Operation):
         if X is None:
             X = OperatorSymbol('X', L.space | H.space)
 
-        ret =  I*(H*X - X*H) + sum(adjoint(Lk)* X * Lk \
-                    -  (adjoint(Lk)*Lk * X + X * adjoint(Lk)*Lk) / 2 \
-                                                            for Lk in L.matrix.flatten())
+        ret = I * (H * X - X * H) + sum(adjoint(Lk) * X * Lk \
+                                        - (adjoint(Lk) * Lk * X + X * adjoint(Lk) * Lk) / 2 \
+                                        for Lk in L.matrix.flatten())
         if noises is not None:
             if not isinstance(noises, Matrix):
                 noises = Matrix(noises)
             LambdaT = (noises.conjugate() * noises.transpose()).transpose()
             assert noises.shape == L.shape
             S = self.S
-            ret += (adjoint(noises) * S.adjoint() * (X * L - L * X)).evalf()[0,0] \
-                    + ((L.adjoint() *X - X * L.adjoint()) * S * noises).evalf()[0,0]
+            ret += (adjoint(noises) * S.adjoint() * (X * L - L * X)).expand()[0, 0] \
+                   + ((L.adjoint() * X - X * L.adjoint()) * S * noises).expand()[0, 0]
             if len(S.space & X.space):
                 comm = (S.adjoint() * X * S - X)
-                ret +=  (comm * LambdaT).evalf().trace()
+                ret += (comm * LambdaT).expand().trace()
         return ret
 
     def __iter__(self):
@@ -616,6 +637,7 @@ class SLH(Circuit, Operation):
 
     def _coherent_input(self, *input_amps):
         return super(SLH, self)._coherent_input(*input_amps).toSLH()
+
 
 #    def _mathematica(self):
 #        return "SLH[%s, %s, %s]" % (mathematica(self.S), mathematica(self.L), mathematica(self.H))
@@ -667,13 +689,13 @@ class ABCD(Circuit, Operation):
         See ABCD documentation
         """
         n2, m2 = B.shape
-        if not (n2%2):
+        if not (n2 % 2):
             raise ValueError()
-        if not (m2%2):
+        if not (m2 % 2):
             raise ValueError()
-        n, m = n2/2, m2/2
+        n, m = n2 / 2, m2 / 2
 
-        if not A.shape == (n2,n2):
+        if not A.shape == (n2, n2):
             raise ValueError()
 
         if not C.shape == (m2, n2):
@@ -688,7 +710,7 @@ class ABCD(Circuit, Operation):
         if not len(space.local_factors()) == n:
             raise AlgebraError(str(space) + " != " + str(n))
 
-        return super(ABCD,cls).create(A, B, C, D, w, space)
+        return super(ABCD, cls).create(A, B, C, D, w, space)
 
     @property
     def A(self):
@@ -739,7 +761,7 @@ class ABCD(Circuit, Operation):
 
         :rtype: int
         """
-        return self.D.shape[0]/2
+        return self.D.shape[0] / 2
 
     @property
     def _cdim(self):
@@ -759,8 +781,8 @@ class ABCD(Circuit, Operation):
 
     def _toSLH(self):
         # TODO IMPLEMENT ABCD._toSLH()
-        doubled_up_as = vstack((Matrix([[Destroy(spc) for spc in self.space.local_factors()]]).T,
-                                Matrix([[Create(spc) for spc in self.space.local_factors()]]).T))
+        doubled_up_as = vstackm((Matrix([[Destroy(spc) for spc in self.space.local_factors()]]).T,
+                                 Matrix([[Create(spc) for spc in self.space.local_factors()]]).T))
 
 
 @check_signature
@@ -770,10 +792,10 @@ class CircuitSymbol(Circuit, Operation):
 
         ``CircuitSymbol(identifier, cdim)``
 
-    :type identifier: str
+    :type identifier: basestring
     :type cdim: int >= 0
     """
-    signature = str, int
+    signature = basestring, int
 
     def __str__(self):
         return self.identifier
@@ -805,6 +827,7 @@ class CircuitSymbol(Circuit, Operation):
         return self
 
     _space = FullSpace
+
 
 @singleton
 class CIdentity(Circuit, Expression):
@@ -843,7 +866,7 @@ class CIdentity(Circuit, Expression):
         return self
 
     def _toABCD(self, linearize):
-        return ABCD(zeros((0,0)), zeros((0,2)), zeros((2,0)), identity_matrix(2), zeros((1,1)), TrivialSpace)
+        return ABCD(zerosm((0, 0)), zerosm((0, 2)), zerosm((2, 0)), identity_matrix(2), zerosm((1, 1)), TrivialSpace)
 
     def _all_symbols(self):
         return {self}
@@ -880,7 +903,7 @@ class CircuitZero(Circuit, Expression):
         return SLH(Matrix([[]]), Matrix([[]]), 0)
 
     def _toABCD(self, linearize):
-        return ABCD(zeros((0,0)), zeros((0,0)), zeros((0,0)), zeros((0,0)), zeros((0,0)), TrivialSpace)
+        return ABCD(zerosm((0, 0)), zerosm((0, 0)), zerosm((0, 0)), zerosm((0, 0)), zerosm((0, 0)), TrivialSpace)
 
     def _creduce(self):
         return self
@@ -895,6 +918,7 @@ class CircuitZero(Circuit, Expression):
 
 cid_1 = CIdentity
 
+
 def circuit_identity(n):
     """
     Return the circuit identity for n channels.
@@ -908,7 +932,8 @@ def circuit_identity(n):
         return CircuitZero
     if n == 1:
         return cid_1
-    return Concatenation(*((cid_1,)*n))
+    return Concatenation(*((cid_1,) * n))
+
 
 cid = circuit_identity
 
@@ -952,15 +977,13 @@ def get_common_block_structure(lhs_bs, rhs_bs):
         lsum = sum(lhs_bs[:i])
         rsum = sum(rhs_bs[:j])
         if lsum < rsum:
-            i +=1
+            i += 1
         elif rsum < lsum:
             j += 1
         else:
             break
 
     return (lsum, ) + get_common_block_structure(lhs_bs[i:], rhs_bs[j:])
-
-
 
 
 def check_cdims_mtd(dcls, clsmtd, cls, *ops):
@@ -971,9 +994,8 @@ def check_cdims_mtd(dcls, clsmtd, cls, *ops):
         raise ValueError("Not all operands have the same cdim:" + str(ops))
     return clsmtd(cls, *ops)
 
+
 check_cdims = preprocess_create_with(check_cdims_mtd)
-
-
 
 
 @assoc
@@ -1001,9 +1023,11 @@ class SeriesProduct(Circuit, Operation):
         """
         Generic neutral element checker of the ``SeriesProduct``, it works for any channel dimension.
         """
+
         def __eq__(self, other):
-#            print "neutral?", other
+            #            print "neutral?", other
             return self is other or other == cid(other.cdim)
+
         def __ne__(self, other):
             return not (self == other)
 
@@ -1021,14 +1045,14 @@ class SeriesProduct(Circuit, Operation):
         return SeriesProduct.create(*[o.series_inverse() for o in reversed(self.operands)])
 
     def _tex(self):
-        ret  = " \lhd ".join("{{{}}}".format(o.tex()) if not isinstance(o, Concatenation)
-                                else r"\left({}\right)".format(o.tex()) for o in self.operands)
-#        print ret
+        ret = " \lhd ".join("{{{}}}".format(o.tex()) if not isinstance(o, Concatenation)
+                            else r"\left({}\right)".format(o.tex()) for o in self.operands)
+        #        print ret
         return ret
 
     def __str__(self):
         return " << ".join(str(o) if not isinstance(o, Concatenation)
-                                else r"({!s})".format(o) for o in self.operands)
+                           else r"({!s})".format(o) for o in self.operands)
 
     def _toABCD(self, linearize):
         # TODO implement SeriesProduct._toABCD()
@@ -1125,30 +1149,25 @@ class Concatenation(Circuit, Operation):
             current_length = 0
         return tuple(blocks)
 
-
     def _series_inverse(self):
         return Concatenation.create(*[o.series_inverse() for o in self.operands])
-
 
     def _feedback(self, out_index, in_index):
 
         n = self.cdim
 
-        if out_index == n -1 and in_index == n -1:
+        if out_index == n - 1 and in_index == n - 1:
             return Concatenation.create(*(self.operands[:-1] + (self.operands[-1].feedback(),)))
-
 
         in_index_in_block, in_block = self.index_in_block(in_index)
         out_index_in_block, out_block = self.index_in_block(out_index)
 
-
         blocks = self.get_blocks()
 
         if in_block == out_block:
-
             return Concatenation.create(*blocks[:out_block]) \
-                + blocks[out_block].feedback(out_index = out_index_in_block, in_index = in_index_in_block) \
-                + Concatenation.create(*blocks[out_block + 1:])
+                   + blocks[out_block].feedback(out_index=out_index_in_block, in_index=in_index_in_block) \
+                   + Concatenation.create(*blocks[out_block + 1:])
         ### no 'real' feedback loop, just an effective series
         #partition all blocks into just two
 
@@ -1157,16 +1176,16 @@ class Concatenation(Circuit, Operation):
             b1 = Concatenation.create(*blocks[:out_block])
             b2 = Concatenation.create(*blocks[out_block:])
 
-            return (b1 + circuit_identity(b2.cdim - 1))  \
-                    << map_signals_circuit({out_index - 1 :in_index}, n - 1) \
-                        << (circuit_identity(b1.cdim - 1) + b2)
+            return (b1 + circuit_identity(b2.cdim - 1)) \
+                   << map_signals_circuit({out_index - 1: in_index}, n - 1) \
+                   << (circuit_identity(b1.cdim - 1) + b2)
         else:
             b1 = Concatenation.create(*blocks[:in_block])
             b2 = Concatenation.create(*blocks[in_block:])
 
             return (circuit_identity(b1.cdim - 1) + b2) \
-                    << map_signals_circuit({out_index : in_index - 1}, n - 1) \
-                        << (b1 + circuit_identity(b2.cdim - 1))
+                   << map_signals_circuit({out_index: in_index - 1}, n - 1) \
+                   << (b1 + circuit_identity(b2.cdim - 1))
 
     def _toABCD(self, linearize):
         # TODO implement Concatenation._toABCD()
@@ -1176,9 +1195,9 @@ class Concatenation(Circuit, Operation):
     def _space(self):
         return prod((o.space for o in self.operands), TrivialSpace)
 
+
 class CannotFactorize(Exception):
     pass
-
 
 
 @check_signature
@@ -1249,7 +1268,7 @@ class CPermutation(Circuit, Operation):
 
 
     def _toSLH(self):
-        return SLH(permutation_matrix(self.permutation), zeros((self.cdim,1)), 0)
+        return SLH(permutation_matrix(self.permutation), zerosm((self.cdim, 1)), 0)
 
     def _toABCD(self, linearize):
         return self.toSLH().toABCD()
@@ -1265,7 +1284,8 @@ class CPermutation(Circuit, Operation):
         return self
 
     def _tex(self):
-        return "\mathbf{{P}}_\sigma \\begin{{pmatrix}} {} \\\ {} \\end{{pmatrix}}".format(" & ".join(map(str, range(self.cdim))), " & ".join(map(str, self.permutation)))
+        return "\mathbf{{P}}_\sigma \\begin{{pmatrix}} {} \\\ {} \\end{{pmatrix}}".format(
+            " & ".join(map(str, range(self.cdim))), " & ".join(map(str, self.permutation)))
 
     def series_with_permutation(self, other):
         """
@@ -1313,7 +1333,6 @@ class CPermutation(Circuit, Operation):
         return tuple(map(CPermutation.create, block_perms))
 
 
-
     def _factorize_for_rhs(self, rhs):
         """
         Factorize a channel permutation circuit according the block structure of the upstream circuit.
@@ -1336,10 +1355,8 @@ class CPermutation(Circuit, Operation):
         block_perm, perms_within_blocks = block_perm_and_perms_within_blocks(self.permutation, block_structure)
         fblockp = full_block_perm(block_perm, block_structure)
 
-
         if not sorted(fblockp) == range(self.cdim):
             raise BadPermutationError()
-
 
         new_rhs_circuit = CPermutation.create(fblockp)
         within_blocks = [CPermutation.create(within_block) for within_block in perms_within_blocks]
@@ -1347,24 +1364,22 @@ class CPermutation(Circuit, Operation):
         rhs_blocks = rhs.get_blocks(block_structure)
 
         permuted_rhs_circuit = Concatenation.create(*[SeriesProduct.create(within_blocks[p], rhs_blocks[p]) \
-                                                                for p in invert_permutation(block_perm)])
+                                                      for p in invert_permutation(block_perm)])
 
         new_lhs_circuit = self << within_perm_circuit.series_inverse() << new_rhs_circuit.series_inverse()
-
 
         return new_lhs_circuit, permuted_rhs_circuit, new_rhs_circuit
 
 
-
-
     def _feedback(self, out_index, in_index):
         n = self.cdim
-        new_perm_circuit = map_signals_circuit( {out_index: (n-1)}, n) << self << map_signals_circuit({(n-1):in_index}, n)
+        new_perm_circuit = map_signals_circuit({out_index: (n - 1)}, n) << self << map_signals_circuit(
+            {(n - 1): in_index}, n)
         if new_perm_circuit == circuit_identity(n):
-            return circuit_identity(n-1)
+            return circuit_identity(n - 1)
         new_perm = list(new_perm_circuit.permutation)
-        n_inv = new_perm.index(n-1)
-        new_perm[n_inv] = new_perm[n-1]
+        n_inv = new_perm.index(n - 1)
+        new_perm[n_inv] = new_perm[n - 1]
 
         return CPermutation.create(tuple(new_perm[:-1]))
 
@@ -1396,12 +1411,13 @@ class CPermutation(Circuit, Operation):
         in_im = self.permutation[in_index]
         # (I) is equivalent to
         #       m_{in_im -> (n-1)} <<  self << m_{(n-1) -> in_index} == (red_self + cid(1))     (I')
-        red_self_plus_cid1 = map_signals_circuit({in_im:(n-1)}, n) << self << map_signals_circuit({(n-1): in_index}, n)
+        red_self_plus_cid1 = map_signals_circuit({in_im: (n - 1)}, n) << self << map_signals_circuit(
+            {(n - 1): in_index}, n)
         if isinstance(red_self_plus_cid1, CPermutation):
 
             #make sure we can factor
             #noinspection PyUnresolvedReferences
-            assert red_self_plus_cid1.permutation[(n-1)] == (n-1)
+            assert red_self_plus_cid1.permutation[(n - 1)] == (n - 1)
 
             #form reduced permutation object
             red_self = CPermutation.create(red_self_plus_cid1.permutation[:-1])
@@ -1412,7 +1428,7 @@ class CPermutation(Circuit, Operation):
             # Actually, this case can only occur
             # when self == m_{in_index ->  in_im}
 
-            return in_im, circuit_identity(n-1)
+            return in_im, circuit_identity(n - 1)
 
     def _factor_lhs(self, out_index):
         """
@@ -1444,12 +1460,13 @@ class CPermutation(Circuit, Operation):
         # (I) is equivalent to
         #       m_{out_index -> (n-1)} <<  self << m_{(n-1) -> out_inv} == (red_self + cid(1))     (I')
 
-        red_self_plus_cid1 = map_signals_circuit({out_index:(n-1)}, n) << self << map_signals_circuit({(n-1): out_inv}, n)
+        red_self_plus_cid1 = map_signals_circuit({out_index: (n - 1)}, n) << self << map_signals_circuit(
+            {(n - 1): out_inv}, n)
 
         if isinstance(red_self_plus_cid1, CPermutation):
 
             #make sure we can factor
-            assert red_self_plus_cid1.permutation[(n-1)] == (n-1)
+            assert red_self_plus_cid1.permutation[(n - 1)] == (n - 1)
 
             #form reduced permutation object
             red_self = CPermutation.create(red_self_plus_cid1.permutation[:-1])
@@ -1460,12 +1477,11 @@ class CPermutation(Circuit, Operation):
             # Actually, this case can only occur
             # when self == m_{in_index ->  in_im}
 
-            return out_inv, circuit_identity(n-1)
+            return out_inv, circuit_identity(n - 1)
 
     @property
     def _space(self):
         return TrivialSpace
-
 
 
 def P_sigma(*permutation):
@@ -1490,7 +1506,7 @@ def extract_signal(k, n):
     :return: Permutation image tuple
     :rtype: tuple
     """
-    return tuple(range(k) + [n-1] + range(k, n-1))
+    return tuple(range(k) + [n - 1] + range(k, n - 1))
 
 
 def extract_signal_circuit(k, cdim):
@@ -1522,7 +1538,6 @@ def map_signals(mapping, n):
     """
     free_values = range(n)
 
-
     for v in mapping.values():
         if v >= n:
             raise ValueError('the mapping cannot take on values larger than cdim - 1')
@@ -1541,6 +1556,7 @@ def map_signals(mapping, n):
     # print permutation
     return tuple(permutation)
 
+
 def map_signals_circuit(mapping, n):
     """
     For a given {input:output} mapping in form of a dictionary,
@@ -1554,7 +1570,6 @@ def map_signals_circuit(mapping, n):
     :rtype: Circuit
     """
     return CPermutation.create(map_signals(mapping, n))
-
 
 
 def pad_with_identity(circuit, k, n):
@@ -1583,7 +1598,6 @@ def pad_with_identity(circuit, k, n):
     combined_circuit = circuit + circuit_identity(n)
     permutation = range(k) + range(circuit_n, circuit_n + n) + range(k, circuit_n)
     return CPermutation.create(invert_permutation(permutation)) << combined_circuit << CPermutation.create(permutation)
-
 
 
 @match_replace
@@ -1660,9 +1674,9 @@ class Feedback(Circuit, Operation):
         return self.operand.creduce().feedback(*self.out_in_pair)
 
 
-#    def substitute(self, var_map):
-#        op = substitute(self.operand, var_map)
-#        return op.feedback(*self.out_in_pair)
+    #    def substitute(self, var_map):
+    #        op = substitute(self.operand, var_map)
+    #        return op.feedback(*self.out_in_pair)
 
     def __str__(self):
         if self.out_in_pair == (self.operand.cdim - 1, self.operand.cdim - 1):
@@ -1672,7 +1686,7 @@ class Feedback(Circuit, Operation):
 
     def _tex(self):
         o, i = self.out_in_pair
-        if self.out_in_pair == (self.cdim -1, self.cdim-1):
+        if self.out_in_pair == (self.cdim - 1, self.cdim - 1):
             return "\left\lfloor%s\\right\\rfloor" % tex(self.operand)
         return "\left\lfloor%s\\right\\rfloor_{%d\\to%d}" % (tex(self.operand), o, i)
 
@@ -1686,7 +1700,7 @@ class Feedback(Circuit, Operation):
 
 
 #noinspection PyRedeclaration
-def FB(circuit, out_index = None, in_index = None):
+def FB(circuit, out_index=None, in_index=None):
     """
     Wrapper for :py:class:Feedback: but with additional default values.
 
@@ -1702,10 +1716,11 @@ def FB(circuit, out_index = None, in_index = None):
     :rtype: Circuit
     """
     if out_index is None:
-        out_index = circuit.cdim -1
+        out_index = circuit.cdim - 1
     if in_index is None:
-        in_index = circuit.cdim -1
+        in_index = circuit.cdim - 1
     return Feedback.create(circuit, out_index, in_index)
+
 
 @check_signature
 class SeriesInverse(Circuit, Operation):
@@ -1799,7 +1814,7 @@ def _tensor_decompose_series(lhs, rhs):
     res_struct = get_common_block_structure(lhs.block_structure, rhs.block_structure)
     if len(res_struct) > 1:
         blocks, oblocks = lhs.get_blocks(res_struct), rhs.get_blocks(res_struct)
-        parallel_series = [SeriesProduct.create(lb, rb)  for (lb, rb) in izip(blocks, oblocks)]
+        parallel_series = [SeriesProduct.create(lb, rb) for (lb, rb) in izip(blocks, oblocks)]
         return Concatenation.create(*parallel_series)
     raise CannotSimplify()
 
@@ -1841,8 +1856,9 @@ def _pull_out_perm_lhs(lhs, rest, out_index, in_index):
     :return: The simplified circuit
     :rtype: Circuit
     """
-    out_inv , lhs_red = lhs._factor_lhs(out_index)
+    out_inv, lhs_red = lhs._factor_lhs(out_index)
     return lhs_red << Feedback.create(SeriesProduct.create(*rest), out_inv, in_index)
+
 
 def _pull_out_unaffected_blocks_lhs(lhs, rest, out_index, in_index):
     """
@@ -1886,6 +1902,7 @@ def _pull_out_perm_rhs(rest, rhs, out_index, in_index):
     in_im, rhs_red = rhs._factor_rhs(in_index)
     return Feedback.create(SeriesProduct.create(*rest), out_index, in_im) << rhs_red
 
+
 def _pull_out_unaffected_blocks_rhs(rest, rhs, out_index, in_index):
     """
     Similar to :py:func:_pull_out_unaffected_blocks_lhs: but on the RHS of a series product self-feedback.
@@ -1914,57 +1931,177 @@ def _series_feedback(series, out_index, in_index):
         raise CannotSimplify()
     return series_s.feedback(out_index, in_index)
 
-A_CPermutation = wc("A", head = CPermutation)
-B_CPermutation = wc("B", head = CPermutation)
-C_CPermutation = wc("C", head = CPermutation)
-D_CPermutation = wc("D", head = CPermutation)
 
-A_Concatenation= wc("A", head = Concatenation)
-B_Concatenation = wc("B", head = Concatenation)
+A_CPermutation = wc("A", head=CPermutation)
+B_CPermutation = wc("B", head=CPermutation)
+C_CPermutation = wc("C", head=CPermutation)
+D_CPermutation = wc("D", head=CPermutation)
 
-A_SeriesProduct = wc("A", head = SeriesProduct)
+A_Concatenation = wc("A", head=Concatenation)
+B_Concatenation = wc("B", head=Concatenation)
 
-A_Circuit = wc("A", head = Circuit)
-B_Circuit = wc("B", head = Circuit)
-C_Circuit = wc("C", head = Circuit)
+A_SeriesProduct = wc("A", head=SeriesProduct)
 
-A__Circuit = wc("A__", head = Circuit)
-B__Circuit = wc("B__", head = Circuit)
-C__Circuit = wc("C__", head = Circuit)
+A_Circuit = wc("A", head=Circuit)
+B_Circuit = wc("B", head=Circuit)
+C_Circuit = wc("C", head=Circuit)
 
-A_SLH = wc("A", head = SLH)
-B_SLH = wc("B", head = SLH)
+A__Circuit = wc("A__", head=Circuit)
+B__Circuit = wc("B__", head=Circuit)
+C__Circuit = wc("C__", head=Circuit)
 
-A_ABCD = wc("A", head = ABCD)
-B_ABCD = wc("B", head = ABCD)
+A_SLH = wc("A", head=SLH)
+B_SLH = wc("B", head=SLH)
 
-j_int = wc("j", head = int)
-k_int = wc("k", head = int)
+A_ABCD = wc("A", head=ABCD)
+B_ABCD = wc("B", head=ABCD)
+
+j_int = wc("j", head=int)
+k_int = wc("k", head=int)
 
 SeriesProduct._binary_rules += [
     ((A_CPermutation, B_CPermutation), lambda A, B: A.series_with_permutation(B)),
     ((A_SLH, B_SLH), lambda A, B: A.series_with_slh(B)),
     ((A_ABCD, B_ABCD), lambda A, B: A.series_with_abcd(B)),
-    ((A_Circuit, B_Circuit), lambda A, B: _tensor_decompose_series(A,B)),
-    ((A_CPermutation, B_Circuit), lambda A, B: _factor_permutation_for_blocks(A,B))
+    ((A_Circuit, B_Circuit), lambda A, B: _tensor_decompose_series(A, B)),
+    ((A_CPermutation, B_Circuit), lambda A, B: _factor_permutation_for_blocks(A, B))
 ]
 
 Concatenation._binary_rules += [
     ((A_SLH, B_SLH), lambda A, B: A.concatenate_slh(B)),
     ((A_ABCD, B_ABCD), lambda A, B: A.concatenate_abcd(B)),
-    ((A_CPermutation, B_CPermutation), lambda A, B: CPermutation.create(concatenate_permutations(A.operands[0], B.operands[0]))),
+    ((A_CPermutation, B_CPermutation),
+     lambda A, B: CPermutation.create(concatenate_permutations(A.operands[0], B.operands[0]))),
     ((A_CPermutation, CIdentity), lambda A: CPermutation.create(concatenate_permutations(A.operands[0], (0,)))),
     ((CIdentity, B_CPermutation ), lambda B: CPermutation.create(concatenate_permutations((0,), B.operands[0]))),
-    ((SeriesProduct(A__Circuit, B_CPermutation), SeriesProduct(C__Circuit, D_CPermutation)), lambda A, B, C, D: (SeriesProduct.create(*A) + SeriesProduct.create(*C)) << (B + D)),
-    ((SeriesProduct(A__Circuit, B_CPermutation), C_Circuit), lambda A, B, C: (SeriesProduct.create(*A) + C) << (B + cid(C.cdim))),
-    ((A_Circuit, SeriesProduct(B__Circuit, C_CPermutation)), lambda A, B, C: (A + SeriesProduct.create(*B)) << (cid(A.cdim) + C)),
+    ((SeriesProduct(A__Circuit, B_CPermutation), SeriesProduct(C__Circuit, D_CPermutation)),
+     lambda A, B, C, D: (SeriesProduct.create(*A) + SeriesProduct.create(*C)) << (B + D)),
+    ((SeriesProduct(A__Circuit, B_CPermutation), C_Circuit),
+     lambda A, B, C: (SeriesProduct.create(*A) + C) << (B + cid(C.cdim))),
+    ((A_Circuit, SeriesProduct(B__Circuit, C_CPermutation)),
+     lambda A, B, C: (A + SeriesProduct.create(*B)) << (cid(A.cdim) + C)),
 ]
 
 Feedback._rules += [
     ((A_SeriesProduct, j_int, k_int), lambda A, j, k: _series_feedback(A, j, k)),
-    ((SeriesProduct(A_CPermutation, B__Circuit),j_int, k_int ), lambda A, B, j, k: _pull_out_perm_lhs(A,B,j,k)),
-    ((SeriesProduct(A_Concatenation, B__Circuit),j_int, k_int ), lambda A, B, j, k: _pull_out_unaffected_blocks_lhs(A,B,j,k)),
-    ((SeriesProduct(A__Circuit, B_CPermutation),j_int, k_int ), lambda A, B, j, k: _pull_out_perm_rhs(A,B,j,k)),
-    ((SeriesProduct(A__Circuit, B_Concatenation),j_int, k_int ), lambda A, B, j, k: _pull_out_unaffected_blocks_rhs(A,B,j,k)),
+    ((SeriesProduct(A_CPermutation, B__Circuit), j_int, k_int ), lambda A, B, j, k: _pull_out_perm_lhs(A, B, j, k)),
+    ((SeriesProduct(A_Concatenation, B__Circuit), j_int, k_int ),
+     lambda A, B, j, k: _pull_out_unaffected_blocks_lhs(A, B, j, k)),
+    ((SeriesProduct(A__Circuit, B_CPermutation), j_int, k_int ), lambda A, B, j, k: _pull_out_perm_rhs(A, B, j, k)),
+    ((SeriesProduct(A__Circuit, B_Concatenation), j_int, k_int ),
+     lambda A, B, j, k: _pull_out_unaffected_blocks_rhs(A, B, j, k)),
 ]
 
+
+def getABCD(slh, double_up=True):
+    """
+    Return the matrices necessary to carry out a semi-classical simulation
+    of the SLH system driven by some dynamic inputs.
+
+    Params
+    ------
+    :param slh: SLH object to linearize
+    :param double_up: Whether the matrices should be returned for the more general, doubled up case
+    :rtype : tuple
+
+    Returns
+    -------
+    A tuple (A, B, C, D, a, c)
+
+    A: coupling of modes to each other
+    B: coupling of external input fields to modes
+    C: coupling of internal modes to output
+    D: coupling of external input fields to output fields
+    a: constant coherent drive term in dx_t
+    c: constant coherent drive term in dA'_t
+
+    The linearized QSDE is then:
+    dx_t = (A * x_t + a)dt + B * dA_t
+    dA'_t = (C * x_t + c) dt + D * dA_t
+
+    If double_up is False x_t corresponds only to the vector of annihilation operators.
+    If it is true, it is the doubled up form, i.e., first all annihilation operators, then all creation operators.
+    
+    Here A * b is a matrix product, whereas a (*) b is an element-wise
+    product of two vectors.
+    """
+
+    # the different degrees of freedom
+    modes = sorted(slh.space.local_factors())
+
+    # various dimensions
+    ncav = len(modes)
+    cdim = slh.cdim
+
+    def _ascomplex(o):
+        try:
+            return complex(o.coeff) if (isinstance(o, ScalarTimesOperator) and o.term is IdentityOperator) else o
+        except:
+            return o
+
+
+    if double_up:
+        # initialize the matrices
+        A = np_zeros((2*ncav, 2*ncav), dtype=object)
+        B = np_zeros((2*ncav, 2*cdim), dtype=object)
+        C = np_zeros((2*cdim, 2*ncav), dtype=object)
+
+        D_ = slh.S.matrix.element_wise(_ascomplex)
+        D = block_matrix(D_, zerosm(D_.shape), zerosm(D_.shape), D_.conjugate()).matrix
+        a = np_zeros(ncav, dtype=object)
+        c = np_zeros(cdim, dtype=object)
+    else:
+        # initialize the matrices
+        A = np_zeros((ncav, ncav), dtype=object)
+        B = np_zeros((ncav, cdim), dtype=object)
+        C = np_zeros((cdim, ncav), dtype=object)
+
+        D = slh.S.matrix.element_wise(_ascomplex).matrix
+        a = np_zeros(ncav, dtype=object)
+        c = np_zeros(cdim, dtype=object)
+
+    # make symbols for the external field modes
+    noises = [OperatorSymbol('b_{{{}}}'.format(n), "ext({})".format(n)) for n in range(cdim)]
+
+    # compute the QSDEs for the internal operators
+    eoms = [slh.symbolic_heisenberg_eom(Destroy(s), noises=noises).expand().simplify_scalar() for s in modes]
+
+    # use the coefficients to generate A, B matrices
+    for jj, sjj in enumerate(modes):
+        coeffsjj = get_coeffs(eoms[jj])
+        for kk, skk in enumerate(modes):
+            A[jj, kk] = coeffsjj[Destroy(skk)]
+            if double_up:
+                A[jj, kk+ncav] = coeffsjj[Create(skk)]
+
+        for kk, dAkk in enumerate(noises):
+            B[jj, kk] = coeffsjj[dAkk]
+            if double_up:
+                B[jj, kk+cdim] = coeffsjj[dAkk.dag()]
+        a[jj] = coeffsjj[IdentityOperator]
+
+    # use the coefficients in the L vector to generate the C, D
+    # matrices
+    for jj, Ljj in enumerate(slh.L.matrix[:, 0]):
+        coeffsjj = get_coeffs(Ljj)
+        for kk, skk in enumerate(modes):
+            C[jj, kk] = coeffsjj[Destroy(skk)]
+            if double_up:
+                C[jj, kk+cdim] = coeffsjj[Create(skk)]
+        c[jj] = coeffsjj[IdentityOperator]
+
+    def _extend_double_up(mat):
+        m, n = mat.shape
+        mat[m//2:, :n//2] = mat[:m//2, n//2:].conjugate()
+        mat[m // 2:, n // 2:] = mat[:m // 2, :n // 2].conjugate()
+
+    if double_up:
+
+        _extend_double_up(A)
+        _extend_double_up(B)
+        _extend_double_up(C)
+        _extend_double_up(D)
+        a[ncav:] = a[:ncav].conjugate()
+        c[cdim:] = c[:cdim].conjugate()
+
+    return map(Matrix, (A, B, C, D, a, c))

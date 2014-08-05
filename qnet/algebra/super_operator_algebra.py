@@ -24,14 +24,23 @@ Super-Operator Algebra
 The specification of a quantum mechanics symbolic super-operator algebra.
 See :ref:`super_operator_algebra` for more details.
 """
-
-
+from abc import ABCMeta, abstractproperty, abstractmethod
 from collections import defaultdict
+from itertools import product as cartesian_product
 
-from operator_algebra import *
-from sympy import Matrix as SympyMatrix
+import qutip
+from sympy import Matrix as SympyMatrix, Add, I, sqrt, Basic as SympyBasic
 from numpy.linalg import eigh
-from numpy import sqrt as np_sqrt
+from numpy import sqrt as np_sqrt, array as np_array
+
+from qnet.algebra.abstract_algebra import AlgebraException, Operation, prod, AlgebraError, singleton, Expression, \
+    check_signature, assoc, orderby, filter_neutral, match_replace_binary, check_signature_assoc, match_replace, \
+    substitute, wc
+from qnet.algebra.hilbert_space_algebra import HilbertSpace, local_space, TrivialSpace, LocalSpace, FullSpace, \
+    ProductSpace
+from qnet.algebra.operator_algebra import Operator, identifier_to_tex, sympyOne, ZeroOperator, ScalarTimesOperator, \
+    simplify_scalar, OperatorSymbol, OperatorPlus, u, v, A, IdentityOperator, B, C, Matrix, tex
+
 
 class SuperOperator(object):
     """
@@ -501,10 +510,10 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
     """
     Multiply an operator by a scalar coefficient::
 
-        ScalarTimesOperator(coefficient, term)
+        ScalarTimesSuperOperator(coeff, term)
 
-    :param coefficient: Scalar coefficient.
-    :type coefficient: Any of SuperOperator.scalar_types
+    :param coeff: Scalar coefficient.
+    :type coeff: :py:attr:`SuperOperator.scalar_types`
     :param term: The super-operator that is multiplied.
     :type term: SuperOperator
     """
@@ -517,10 +526,20 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
 
     @property
     def coeff(self):
+        """
+        The scalar coefficient.
+
+        :type: :py:attr:`SuperOperator.scalar_types`
+        """
         return self.operands[0]
 
     @property
     def term(self):
+        """
+        The super-operator term.
+
+        :type: SuperOperator
+        """
         return self.operands[1]
 
 
@@ -607,19 +626,23 @@ class SuperAdjoint(SuperOperatorOperation):
     r"""
     The symbolic SuperAdjoint of a super-operator.
 
-    Use as:
+    For a super operator ``L`` use as::
+
+        SuperAdjoint(L)
+
+    The math notation for this is typically
 
     .. math::
-        SuperAdjoint(L)``
+        {\rm SuperAdjoint}(\mathcal{L}) =: \mathcal{L}^*
 
-     For the super-operator :math:`\mathcal{L}`, its super-adjoint :math:`\mathcal{L}^*` satisfies for any pair of operators :math:`M,N`:
+    and for any super operator :math:`\mathcal{L}`, its super-adjoint :math:`\mathcal{L}^*` satisfies for any pair of operators :math:`M,N`:
 
     .. math::
-        {\rm Tr}(M (LN)) == Tr((SuperAdjoint(L)*M) * N)``
+        {\rm Tr}[M (\mathcal{L}N)] = Tr[(\mathcal{L}^*M)  N]
 
 
-    :param sop: The super-operator to take the adjoint of.
-    :type sop: SuperOperator
+    :param L: The super-operator to take the adjoint of.
+    :type L: SuperOperator
     """
     _rules = []
     @property
@@ -1021,6 +1044,8 @@ SPost._rules +=[
 
 SuperOperatorTimesOperator._rules +=[
     ((sA_plus, B), lambda sA, B: sum([o*B for o in sA.operands], ZeroOperator)),
+    ((IdentitySuperOperator, B), lambda B: B),
+    ((ZeroSuperOperator, B), lambda B: ZeroOperator),
     ((ScalarTimesSuperOperator(u, sA), B), lambda u, sA, B: u * (sA * B)),
     ((sA, ScalarTimesOperator(u, B)), lambda u, sA, B: u * (sA * B)),
     ((sA, SuperOperatorTimesOperator(sB, C)), lambda sA, sB, C: (sA * sB) * C),
@@ -1122,7 +1147,7 @@ def liouvillian_normal_form(L, symbolic = False):
         \left(H, \mathbf{L}\right) & \mapsto \left(H, \mathbf{U}\mathbf{L}\right)\\
 
     where :math:`\mathbf{w}` is just a vector of complex numbers and :math:`\mathbf{U}` is a complex unitary matrix.
-    It turns out that for quantum optical circuit models the set of collapse operators is linearly dependent.
+    It turns out that for quantum optical circuit models the set of collapse operators is often linearly dependent.
     This routine tries to find a representation of the Liouvillian in terms of a Hamilton operator ``H`` with
     as few non-zero collapse operators ``Ls`` as possible.
     Consider the following example, which results from a two-port linear cavity with a coherent input into the first port:

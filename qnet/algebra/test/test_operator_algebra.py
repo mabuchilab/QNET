@@ -182,7 +182,7 @@ class TestLocalOperatorRelations(unittest.TestCase):
 
     def testPhase(self):
         self.assertEqual(Phase(1, 5).adjoint(), Phase(1, -5))
-        self.assertEqual(Phase(1, 5) * Phase(1, -5), 1)
+        self.assertEqual(Phase(1, 5) * Phase(1, -5), IdentityOperator)
         self.assertEqual(Phase(1, 5) * Create(1) * Phase(1, -5), exp(I * 5) * Create(1))
         self.assertEqual(Phase(1, 5) * LocalSigma(1, 3, 4), exp(15 * I) * LocalSigma(1,3,4))
         self.assertEqual(LocalSigma(1,3,4) * Phase(1, 5), exp(20 * I) * LocalSigma(1,3,4))
@@ -191,7 +191,7 @@ class TestLocalOperatorRelations(unittest.TestCase):
 
     def testDisplace(self):
         self.assertEqual(Displace(1, 5 + 6j).adjoint(), Displace(1, -5-6j))
-        self.assertEqual(Displace(1, 5+6j) * Displace(1, -5-6j), 1)
+        self.assertEqual(Displace(1, 5+6j) * Displace(1, -5-6j), IdentityOperator)
         self.assertEqual(Displace(1, 5+6j) * Create(1) * Displace(1, -5-6j), Create(1) - (5-6j))
 
 #    def testSqueeze(self):

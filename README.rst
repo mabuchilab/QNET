@@ -36,7 +36,7 @@ In addition to these core components, the software uses the following existing s
 5. The SciPy_ and NumPy_ packages (needed for QuTiP but also by the ``qnet.algebra`` package)
 6. The PLY_ python package as a dependency of our Python Lex/Yacc based QHDL parser.
 
-A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the Enthought_ Python Distribution (EPD) which is free for academic use.
+A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the Anaconda_ Python Distribution which is free for academic use.
 A highly recommended way of working with QNET and QuTiP and just scientific python codes in action is to use the excellent IPython_ shell which comes both with a command-line interface as well as a very polished browser-based notebook interface.
 
 .. _Python: http://www.python.org
@@ -49,7 +49,7 @@ A highly recommended way of working with QNET and QuTiP and just scientific pyth
 .. _SciPy: http://www.scipy.org/
 .. _NumPy: http://numpy.scipy.org/
 .. _PLY: http://www.dabeaz.com/ply/
-.. _Enthought: http://www.enthought.com/
+.. _Anaconda: https://store.continuum.io/cshop/anaconda/
 .. _IPython: http://ipython.org/
 
 Installation/Configuration

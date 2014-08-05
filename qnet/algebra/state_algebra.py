@@ -378,10 +378,10 @@ class CoherentStateKet(LocalKet):
     signature = (LocalSpace, str, int), Ket.scalar_types
 
     def _tex_ket(self):
-        return r"\left| D\left({!s}\right) \right\rangle_{{{}}}".format(self.operands[1], self.space.tex())
+        return r"\left| D\left({!s}\right) \right\rangle_{{{}}}".format(tex(self.operands[1]), self.space.tex())
 
     def _tex_bra(self):
-        return r"\left\langle D\left({!s}\right) \right|_{{{}}}".format(self.operands[1], self.space.tex())
+        return r"\left\langle D\left({!s}\right) \right|_{{{}}}".format(tex(self.operands[1]), self.space.tex())
 
     def _str_ket(self):
         return r"|D({!s})>_{!s}".format(self.operands[1], self.space)
@@ -394,6 +394,18 @@ class CoherentStateKet(LocalKet):
 
     def _series_expand(self, param, about, order):
         return (self,) + (0,) * (order - 1)
+
+    def _substitute(self, var_map):
+        hs, amp = self.operands
+        if isinstance(amp, SympyBasic):
+            svar_map = {k:v for k,v in var_map.items() if not isinstance(k,Expression)}
+            ampc = amp.subs(svar_map)
+        else:
+            ampc = substitute(amp, var_map)
+            
+        return CoherentStateKet(hs, ampc)
+            
+
 
 class UnequalSpaces(AlgebraError):
     pass
@@ -518,10 +530,7 @@ class TensorKet(Ket, Operation):
     _binary_rules = []
     neutral_element = TrivialKet
 
-
-
-    def _order_key(self):
-        return Operation.order_key(self.space)
+    order_key = OperatorTimes.order_key
 
     @classmethod
     def create(cls, *ops):
@@ -736,6 +745,16 @@ class ScalarTimesKet(Ket, Operation):
         te = self.term.series_expand(param, about, order)
 
         return tuple(ce[k] * te[n - k] for n in range(order + 1) for k in range(n + 1))
+
+    def _substitute(self, var_map):
+        st = self.term.substitute(var_map)
+        if isinstance(self.coeff, SympyBasic):
+            svar_map = {k:v for k,v in var_map.items() if not isinstance(k, Expression)}
+            sc = self.coeff.subs(svar_map)
+        else:
+            sc = substitute(self.coeff, var_map)
+        return sc * st
+
 
 class SpaceTooLargeError(AlgebraError):
     pass
