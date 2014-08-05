@@ -1,3 +1,4 @@
+# coding=utf-8
 #This file is part of QNET.
 #
 #    QNET is free software: you can redistribute it and/or modify
@@ -27,11 +28,12 @@ Hilbert spaces of quantum systems.
 For more details see :ref:`hilbert_space_algebra`.
 """
 
+from abc import ABCMeta, abstractmethod
 
-from qnet.algebra.abstract_algebra import singleton, Operation, Expression, inf, AlgebraError, tex, check_signature, idem, assoc, preprocess_create_with, filter_neutral, check_signature_assoc, prod
-from functools import reduce
-from abc import ABCMeta, abstractproperty, abstractmethod
-
+from qnet.algebra.abstract_algebra import (singleton, Operation, Expression, inf,
+                                           AlgebraError, tex, check_signature,
+                                           idem, assoc, preprocess_create_with,
+                                           filter_neutral, check_signature_assoc, prod)
 
 
 class HilbertSpace(object):
@@ -120,7 +122,6 @@ class HilbertSpace(object):
         #noinspection PyTypeChecker,PyCallByClass,PyArgumentList
         return BasisRegistry.dimension(self)
 
-
     def is_strict_subfactor_of(self, other):
         """
         Test whether a Hilbert space occures as a strict sub-factor in (larger) Hilbert space
@@ -176,6 +177,9 @@ class TrivialSpace(HilbertSpace, Expression):
     The 'nullspace', i.e. a one dimensional Hilbert space, which is a factor space of every other Hilbert space.
     """
 
+    def __hash__(self):
+        return hash(self.__class__)
+
     def _order_key(self):
         return -1,
 
@@ -214,6 +218,9 @@ class FullSpace(HilbertSpace, Expression):
     """
     The 'full space', i.e. a Hilbert space, includes any other Hilbert space as a tensor factor.
     """
+
+    def __hash__(self):
+        return hash(self.__class__)
 
     def _order_key(self):
         return inf,
@@ -257,7 +264,7 @@ class LocalSpace(HilbertSpace, Operation):
     :param namespace: The namespace for the degree of freedom, useful in hierarchical system models.
     :type namespace: str
     """
-    signature = str, str
+    signature = basestring, basestring
 
     def _order_key(self):
         return self.operands
@@ -283,7 +290,6 @@ class LocalSpace(HilbertSpace, Operation):
         if other is FullSpace:
             return True
         return False
-
 
     def _get_dimension(self):
         return BasisRegistry.dimension(self)

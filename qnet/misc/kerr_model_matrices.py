@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 from __future__ import division
-from collections import defaultdict    
-from qnet.algebra.circuit_algebra import *
+from collections import defaultdict
+
 import numpy as np
+
+from qnet.algebra.circuit_algebra import *
+
 
 def _coeff_term(expr):
     if isinstance(expr, ScalarTimesOperator):
@@ -110,7 +113,7 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
     U_c = np.zeros(cdim, dtype=object)
     
     # make symbols for the external field modes
-    noises = [OperatorSymbol('dA/dt_{{{}}}'.format(n), TrivialSpace) for n in range(cdim)]
+    noises = [OperatorSymbol('b_{{{}}}'.format(n), "ext({})".format(n)) for n in range(cdim)]
     
     # make symbols for the dynamic inputs
     inputs = [OperatorSymbol('u_{{{}}}'.format(u_name), TrivialSpace) for  
@@ -174,7 +177,8 @@ def model_matrices_complex(*args, **kwargs):
         return [arr.astype(complex) for arr in matrices]
     else:
         return [arr.astype(complex) for arr in matrices[:9]] + list(matrices[9:])
-        
+model_matrices_complex.__doc__ += "\n--\ndoc of model_matrices():\n" + model_matrices.__doc__
+
 
 def model_matrices_symbolic(*args, **kwargs):
     "Same as model_matrices() but converts all output to Matrix() objects."
@@ -183,6 +187,7 @@ def model_matrices_symbolic(*args, **kwargs):
         return [Matrix(arr) for arr in matrices]
     else:
         return [Matrix(arr) for arr in matrices[:9]] + list(matrices[9:])
+model_matrices_symbolic.__doc__ += "\n--\ndoc of model_matrices():\n" + model_matrices.__doc__
         
 
 
