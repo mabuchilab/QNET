@@ -1,3 +1,4 @@
+# coding=utf-8
 #This file is part of QNET.
 #
 #    QNET is free software: you can redistribute it and/or modify
@@ -16,3 +17,18 @@
 # Copyright (C) 2012-2013, Nikolas Tezak
 #
 ###########################################################################
+"""
+QNET contains symbolic algebra packages to handle:
+ - quantum operators --> `qnet.algebra.operator_algebra`
+ - quantum feedback circuits --> `qnet.algebra.circuit_algebra`
+ - quantum super operators --> `qnet.algebra.super_operator_algebra`
+ - quantum states --> `qnet.algebra.state_algebra`
+
+It also features a parser for quantum feedback circuits specified
+via Quantum Hardware Description Language:
+
+    parse_qhdl.py -f MyCircuit.qhdl [-l|-L]
+
+See our full docs for more information.
+"""
+__version__ = "1.1"
