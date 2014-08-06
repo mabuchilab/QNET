@@ -24,22 +24,14 @@ Super-Operator Algebra
 The specification of a quantum mechanics symbolic super-operator algebra.
 See :ref:`super_operator_algebra` for more details.
 """
-from abc import ABCMeta, abstractproperty, abstractmethod
-from collections import defaultdict
-from itertools import product as cartesian_product
 
 import qutip
-from sympy import Matrix as SympyMatrix, Add, I, sqrt, Basic as SympyBasic
-from numpy.linalg import eigh
-from numpy import sqrt as np_sqrt, array as np_array
 
-from qnet.algebra.abstract_algebra import AlgebraException, Operation, prod, AlgebraError, singleton, Expression, \
-    check_signature, assoc, orderby, filter_neutral, match_replace_binary, check_signature_assoc, match_replace, \
-    substitute, wc
-from qnet.algebra.hilbert_space_algebra import HilbertSpace, local_space, TrivialSpace, LocalSpace, FullSpace, \
-    ProductSpace
-from qnet.algebra.operator_algebra import Operator, identifier_to_tex, sympyOne, ZeroOperator, ScalarTimesOperator, \
-    simplify_scalar, OperatorSymbol, OperatorPlus, u, v, A, IdentityOperator, B, C, Matrix, tex
+from numpy.linalg import eigh
+from numpy import sqrt as np_sqrt
+
+
+from qnet.algebra.operator_algebra import *
 
 
 class SuperOperator(object):
