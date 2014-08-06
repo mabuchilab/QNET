@@ -15,7 +15,7 @@ In addition to these core components, the software uses the following existing s
 5. The SciPy_ and NumPy_ packages (needed for QuTiP but also by the ``qnet.algebra`` package)
 6. The PLY_ python package as a dependency of our Python Lex/Yacc based QHDL parser.
 
-A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the Enthought_ Python Distribution (EPD) which is free for academic use.
+A convenient way of obtaining Python as well as some of the packages listed here (SymPy, SciPy, NumPy, PLY) is to download the Enthought_ Python Distribution (EPD) or Anaconda_ which are both free for academic use.
 A highly recommended way of working with QNET and QuTiP and just scientific python codes in action is to use the excellent IPython_ shell which comes both with a command-line interface as well as a very polished browser-based notebook interface.
 
 .. _Python: http://www.python.org
@@ -29,32 +29,46 @@ A highly recommended way of working with QNET and QuTiP and just scientific pyth
 .. _NumPy: http://numpy.scipy.org/
 .. _PLY: http://www.dabeaz.com/ply/
 .. _Enthought: http://www.enthought.com/
+.. _Anaconda: https://store.continuum.io/cshop/anaconda/
 .. _IPython: http://ipython.org/
 
 Installation/Configuration
 --------------------------
 
-Copy the QNET folder to any location you'd like. We will tell python how to find it by setting the ``$PYTHONPATH`` environment variable to include the QNET directory's path.
-Append the following to your local bash configuration ``$HOME/.bashrc`` or something equivalent:
+To install QNET you need a working Python installation as well as `pip <https://pip.pypa.io/en/latest/installing.html>`_
+which comes pre-installed with both the Enthought Python distribution and Anaconda.
+If you have already installed PyX_ just run:
+Run::
 
-::
+    pip install QNET
 
-    export QNET=/path/to/cloned/repository
-    export PYTHONPATH=$QNET:$PYTHONPATH
+If you still need to install PyX_, run::
 
-**Note that you should replace "/path/to/cloned/repository" with the full path to the cloned QNET directory!**
-On my personal laptop that path is given by ``/Users/nikolas/Projects/QNET``, but you can place QNET anywhere you'd like.
+    pip install --process-dependency-links QNET
 
-On Windows a similar procedure should exist. Environment variable can generally be set via the windows control panels.
-It should be sufficient to set just the `PYTHONPATH` environment variable.
+gEDA
+----
 
+Setting up gEDA/gschem/gnetlist is a bit more involved.
+If you are using Linux or OSX, geda is available via common package managers such as `port` and `homebrew` on OSX or
+apt for Linux.
 
+To configure interoperability with QNET/QHDL this you will have to locate the installation directory of QNET.
+This can easily be found by running::
+
+    python -c "import qnet, os; print(os.path.join(*os.path.dirname(qnet.__file__).split('/')[:-1]))"
+
+In BASH you can just run::
+
+    QNET=$(python -c "import qnet, os; print(os.path.join(*os.path.dirname(qnet.__file__).split('/')[:-1]))")
+
+to store this path in a shell variable named QNET.
 To configure gEDA to include our special quantum circuit component symbols you will need to copy the following configuration files from the ``$QNET/gEDA_support/config`` directory to the ``$HOME/.gEDA`` directory:
 
 - ``~/.gEDA/gafrc``
 - ``~/.gEDA/gschemrc``
 
-Then install the QHDL netlister plugin within gEDA by creating a symbolic link
+Then install the QHDL netlister plugin within gEDA by creating a symbolic link (or copy the file there)
 
 ::
 
