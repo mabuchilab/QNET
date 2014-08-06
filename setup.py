@@ -41,8 +41,8 @@ setup(
         'sympy',
         # 'Cython',
         'numpy',
-        'qutip',
-        'pyx',
+        'qutip>=3.0.1',
+        'pyx==0.12.1',
     ],
     dependency_links=[
       "http://downloads.sourceforge.net/project/pyx/pyx/0.12.1/PyX-0.12.1.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fpyx%2Ffiles%2Fpyx%2F0.12.1%2F&ts=1407271744&use_mirror=kent"
