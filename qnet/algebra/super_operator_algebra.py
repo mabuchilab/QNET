@@ -344,7 +344,10 @@ class SuperOperatorPlus(SuperOperatorOperation):
     @classmethod
     def order_key(cls, a):
         if isinstance(a, ScalarTimesSuperOperator):
-            return Operation.order_key(a.term), a.coeff
+            c = a.coeff
+            if isinstance(c, SympyBasic):
+                c = str(c)
+            return Operation.order_key(a.term), c
         return Operation.order_key(a), 1
 
     def _to_qutip(self, full_space=None):
