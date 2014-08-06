@@ -24,7 +24,7 @@
         <ul>
           <li><a href="https://github.com/mabuchilab/QNET/zipball/master">Download <strong>ZIP File</strong></a></li>
           <li><a href="https://github.com/mabuchilab/QNET/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="doc/index.html">View <strong>Documentation</strong></a></li>
+          <li><a href="http://qnet.readthedocs.org/en/latest/">View <strong>Documentation</strong></a></li>
           <li><a href="https://github.com/mabuchilab/QNET">View on <strong>GitHub</strong></a></li>
           <li><a href="https://github.com/mabuchilab/QNET/wiki">View our <strong> QNET WIKI</strong></a></li>
           <li><a href="http://groups.google.com/group/qnet-user">Sign up to the <strong> QNET Mailing list</strong></a></li>
@@ -65,42 +65,7 @@ A highly recommended way of working with QNET and QuTiP and just scientific pyth
 </div>
 <div class="section" id="installation-configuration">
 <h1>Installation/Configuration</h1>
-<p>Copy the QNET folder to any location you'd like. We will tell python how to find it by setting the <tt class="docutils literal">$PYTHONPATH</tt> environment variable to include the QNET directory's path.
-Append the following to your local bash configuration <tt class="docutils literal"><span class="pre">$HOME/.bashrc</span></tt> or something equivalent:</p>
-<pre class="literal-block">
-export QNET=/path/to/cloned/repository
-export PYTHONPATH=$QNET:$PYTHONPATH
-</pre>
-<p><strong>Note that you should replace &quot;/path/to/cloned/repository&quot; with the full path to the cloned QNET directory!</strong>
-On my personal laptop that path is given by <tt class="docutils literal">/Users/nikolas/Projects/QNET</tt>, but you can place QNET anywhere you'd like.</p>
-<p>On Windows a similar procedure should exist. Environment variable can generally be set via the windows control panels.
-It should be sufficient to set just the <tt class="docutils literal">$PYTHONPATH</tt> environment variable.</p>
-<p>To configure gEDA to include our special quantum circuit component symbols you will need to copy the following configuration files from the <tt class="docutils literal">$QNET/gEDA_support/config</tt> directory to the <tt class="docutils literal"><span class="pre">$HOME/.gEDA</span></tt> directory:</p>
-<ul class="simple">
-<li><tt class="docutils literal"><span class="pre">~/.gEDA/gafrc</span></tt></li>
-<li><tt class="docutils literal"><span class="pre">~/.gEDA/gschemrc</span></tt></li>
-</ul>
-<p>Then install the QHDL netlister plugin within gEDA by creating a symbolic link</p>
-<pre class="literal-block">
-ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
-</pre>
-<p><strong>Note that you should replace &quot;/path/to/gEDA_resources_folder&quot; with the full path to the gEDA resources directory!</strong></p>
-<p>in my case that path is given by <tt class="docutils literal">/opt/local/share/gEDA</tt>, but in general simply look for the gEDA-directory that contains the file named <tt class="docutils literal"><span class="pre">system-gafrc</span></tt>.</p>
-</div>
-<div class="section" id="using-qnet-in-practice">
-<h1>Using QNET in practice</h1>
-<p>A possible full workflow using QNET is thus:</p>
-<ol class="upperroman simple">
-<li>Use <tt class="docutils literal">gschem</tt> (of gEDA) to graphically design a circuit model.</li>
-<li>Export the schematic to QHDL using <tt class="docutils literal">gnetlist</tt> (also part of gEDA)</li>
-<li>Parse the QHDL-circuit definition file into a Python circuit library component using the parser front-end <tt class="docutils literal">bin/parse_qhdl.py</tt>.</li>
-<li>Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP.</li>
-</ol>
-<p>This package is still work in progress and as it is developed by a single developer, documentation and comprehensive testing code is still somewhat lacking.
-Any contributions, bug reports and general feedback from end-users would be highly appreciated. If you have found a bug, it would be extremely helpful if you could try to write a minimal code example that reproduces the bug.
-Feature requests will definitely be considered. Higher priority will be given to things that many people ask for and that can be implemented efficiently.</p>
-<p>To learn of how to carry out each of these steps, we recommend looking at the provided examples and reading the relevant sections in the QNET manual.
-Also, if you want to implement and add your own primitive device models, please consult the QNET manual.</p>
+<p>Please refer to the <a href="http://qnet.readthedocs.org/en/latest/">View <strong>documentation</strong></a> for information on how to install QNET.</p>
 </div>
 <div class="section" id="acknowledgements">
 <h1>Acknowledgements</h1>
