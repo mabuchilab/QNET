@@ -14,7 +14,7 @@ import qnet
 #               extra_link_args=['-lm']),
 # ]
 
-version = "1.1.2"
+version = qnet.__version__
 
 def find_packages(path=".", prefix=""):
     yield prefix
