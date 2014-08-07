@@ -1,3 +1,4 @@
+# coding=utf-8
 from distutils.core import setup
 from pkgutil import walk_packages
 import qnet
@@ -52,7 +53,7 @@ setup(
         'Programming Language :: Python :: 2',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Operating System :: OS Independent',
-        'Development Status :: 1 - Planning',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Physics',

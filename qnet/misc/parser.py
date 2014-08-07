@@ -1,3 +1,4 @@
+# coding=utf-8
 #This file is part of QNET.
 #
 #    QNET is free software: you can redistribute it and/or modify
@@ -16,11 +17,18 @@
 # Copyright (C) 2012-2013, Nikolas Tezak
 #
 ###########################################################################
+"""
+Generic Parser class.
+"""
 
 from ply import lex, yacc
 import os
 
+
 class ParsingError(SyntaxError):
+    """
+    Raised for parsing error.
+    """
     pass
 
 
@@ -35,7 +43,7 @@ class Parser(object):
         self.debug = kw.get('debug', 0)
         self.names = {}
         try:
-            modname = os.path.splitext(__file__)[0] + "_" + self.__class__.__name__
+            modname = os.path.splitext(os.path.basename(__file__))[0] + "_" + self.__class__.__name__
         except:
             modname = "parser" + "_" + self.__class__.__name__
         self.debugfile = modname + ".dbg"
