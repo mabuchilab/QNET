@@ -61,6 +61,7 @@ from numpy import (array as np_array,
                    cos as np_cos,
                    sin as np_sin,
                    eye as np_eye, argwhere)
+from qnet.algebra.permutations import check_permutation
 
 sympyOne = sympify(1)
 
@@ -974,7 +975,7 @@ class OperatorTimes(OperatorOperation):
 
 
     def _tex(self):
-        ret = self.operands[0].tex()
+        ret = ""
         # for o in self.operands[1:]:
         for o in self.operands:
             if isinstance(o, OperatorPlus):
@@ -990,6 +991,7 @@ class OperatorTimes(OperatorOperation):
         #         ret += r" ({})".format(str(o))
         #     else:
         #         ret += " {}".format(str(o))
+        ret = ""
         for o in self.operands:
             if isinstance(o, OperatorPlus):
                 ret += r" ({}) ".format(str(o))
