@@ -1,3 +1,4 @@
+# coding=utf-8
 # This file is part of QNET.
 #
 # QNET is free software: you can redistribute it and/or modify
@@ -38,8 +39,6 @@ import qutip
 
 import qnet.algebra.abstract_algebra
 from qnet.algebra.hilbert_space_algebra import *
-from qnet.algebra.permutations import *
-
 
 
 #noinspection PyUnresolvedReferences

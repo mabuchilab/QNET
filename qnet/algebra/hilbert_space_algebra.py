@@ -28,7 +28,6 @@ Hilbert spaces of quantum systems.
 For more details see :ref:`hilbert_space_algebra`.
 """
 
-from abc import ABCMeta, abstractmethod
 
 from qnet.algebra.abstract_algebra import *
 

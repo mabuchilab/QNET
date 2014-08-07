@@ -1,3 +1,4 @@
+# coding=utf-8
 # This file is part of QNET.
 #
 # QNET is free software: you can redistribute it and/or modify
@@ -34,13 +35,8 @@ References:
 """
 
 from __future__ import division
-from itertools import izip
-import os
-from abc import ABCMeta, abstractmethod, abstractproperty
 
-from sympy import I, pi, sqrt, exp, sin, cos, log, symbols
-from numpy import zeros as np_zeros
-import qutip
+import os
 
 from qnet.algebra.operator_algebra import *
 from qnet.algebra.permutations import *

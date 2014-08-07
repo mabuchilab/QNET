@@ -1,9 +1,8 @@
-#!/usr/bin/env python
+# coding=utf-8
 
 from __future__ import division
 
 import numpy as np
-
 from qnet.algebra.circuit_algebra import *
 
 

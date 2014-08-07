@@ -10,6 +10,10 @@ in turn are coupled to a finite number of external bosonic quantum fields.
 To get help installing and using QNET, please read this README, visit our `homepage <http://mabuchilab.github.com/QNET>`_ which includes the `official documentation <https://qnet.readthedocs.org/en/latest/>`_, sign up to our `mailing list <http://groups.google.com/group/qnet-user>`_,
 or consult and perhaps contribute to our `wiki <https://github.com/mabuchilab/QNET/wiki>`_.
 
+In particular, check out the `Roadmap <https://github.com/mabuchilab/QNET/wiki/Roadmap>`_.
+In the near future, it will be possible to use QNET together with `Cirq <https://github.com/ntezak/Cirq>`_ which
+allows to edit circuits graphically from within the IPython_ notebook.
+
 
 Contents
 --------
@@ -69,30 +73,20 @@ If you still need to install PyX_, run::
 gEDA
 ----
 
-Setting up gEDA/gschem/gnetlist is a bit more involved.
+Setting up gEDA/gschem/gnetlist is a bit more involved. To do this, you should download the QNET package manually from github.
 If you are using Linux or OSX, geda is available via common package managers such as `port` and `homebrew` on OSX or
 apt for Linux.
 
-To configure interoperability with QNET/QHDL this you will have to locate the installation directory of QNET.
-This can easily be found by running::
-
-    python -c "import qnet, os; print(os.path.join(*os.path.dirname(qnet.__file__).split('/')[:-1]))"
-
-In BASH you can just run::
-
-    QNET=$(python -c "import qnet, os; print(os.path.join(*os.path.dirname(qnet.__file__).split('/')[:-1]))")
-
-to store this path in a shell variable named QNET.
-To configure gEDA to include our special quantum circuit component symbols you will need to copy the following configuration files from the ``$QNET/gEDA_support/config`` directory to the ``$HOME/.gEDA`` directory:
+To configure gEDA to include our special quantum circuit component symbols you will need to copy the following configuration files from the ``QNET/gEDA_support/config`` sub-directory to the ``$HOME/.gEDA`` directory:
 
 - ``~/.gEDA/gafrc``
 - ``~/.gEDA/gschemrc``
 
 Then install the QHDL netlister plugin within gEDA by creating a symbolic link (or copy the file there)
-
+In the shell cd into the QNET directory and then run
 ::
 
-    ln -s $QNET/gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
+    ln -s gEDA_support/gnet-qhdl.scm  /path/to/gEDA_resources_folder/scheme/gnet-qhdl.scm
 
 **Note that you should replace "/path/to/gEDA_resources_folder" with the full path to the gEDA resources directory!**
 
