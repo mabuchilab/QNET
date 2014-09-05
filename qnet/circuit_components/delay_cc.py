@@ -37,59 +37,103 @@ class Delay(Component):
     r"""
     Delay
     """
-    
+
     CDIM = 1
-    
-    name = "T"
-    namespace = ""
-
-    tau = symbols('tau', positive = True) # positive valued delay
-    N = 3
-    FOCK_DIM = 25
-
-    _parameters = ['alpha', 'N', 'FOCK_DIM']
-
     
     PORTSIN = ["In1"]
     PORTSOUT = ["Out1"]
+
+    name = "T"
+    namespace = ""
+
+    # positive valued delay, maximum frequency, and allowed error
+    tau = symbols('tau', positive = True)
+    omega_max = symbols('omega_max', positive = True)
+    err = symbols('err', positive = True)
+    kappa = symbols('kappa', positive = True)
+    N = symbols('N', positive = True)
+    
+    _parameters = ['tau', 'omega_max', 'err']
+
+    # takes the relative error required.
+    # returns [kappa, L] for a single cavity, optimized with T = 1.
+    def _cavity_values(self,err):
+        err = err**2
+        err_vals = [1.1848189096497208e-11,
+                    1.1539713629105108e-10,
+                    1.1811122080374048e-09,
+                    1.0029879926598539e-08,
+                    1.0310528963941579e-07,
+                    1.0561655805485515e-06,
+                    1.0144204457773753e-05,
+                    0.0001016636,
+                    0.0010103962,
+                    0.0050077302,
+                    0.0100810559]
+        
+        returns = [[3.99915799, 0.0648897796],
+                   [3.9982020452,0.0948296593],
+                   [3.9960972991,0.139739479],
+                   [3.9920417727,0.1996192385],
+                   [3.9827159963,0.2944288577],
+                   [3.9625566947,0.4341482966],
+                   [3.9208237531,0.633747495],
+                   [3.8312474713,0.9331462926],
+                   [3.6461141479,1.377254509],
+                   [3.4164640904,1.8163727455],
+                   [3.2789417079,2.0558917836] ]
+        index = 0;
+        for i in err_vals:
+            if err > i:
+                index += 1
+        return returns[index] 
+
+    
+    #single cavity with zero detuning
+    def _SLH_Cav(self, kappa, Delta = 0, namespace = ''):
+        
+        fock = local_space('fock', namespace = namespace)
+        
+        # create representations of a and sigma
+        a = Destroy(fock)
+        
+        # Trivial scattering matrix
+        S = identity_matrix(1) * -1
+        
+        L = Matrix([[ sqrt(kappa) * a]])
+        
+        # Hamilton operator
+        H = Delta * a.dag()*a
+        
+        return SLH(S, L, H) 
     
     def _toSLH(self):
+        return self._creduce().toSLH()
 
-        # These numerically optimal solutions were obtained as outlined in
-        # my blog post on the Mabuchi-Lab internal blog
-        # email me (ntezak@stanford.edu)for details.
-        if self.N == 1:
-            kappa0 = 9.28874141848 / self.tau
-            kappas = np_array([7.35562929]) / self.tau
-            Deltas = np_array([3.50876192]) / self.tau
-        elif self.N == 3:
-            kappa0 = 14.5869543803 / self.tau
-            kappas = np_array([ 13.40782559, 9.29869721]) / self.tau
-            Deltas = np_array([3.48532283, 7.14204585]) / self.tau
-        elif self.N == 5:
-            kappa0 = 19.8871474779 / self.tau
-            kappas = np_array([19.03316217, 10.74270752, 16.28055664]) / self.tau
-            Deltas = np_array([3.47857213, 10.84138821, 7.03434809]) / self.tau
-        else:
-            raise NotImplementedError("The number of cavities to realize the delay must be one of 1,3 or 5.")
-
-        h0 = make_namespace_string(self.name, 'C0')
-        hp =  [make_namespace_string(self.name, "C{:d}p".format(n+1)) for n in range((self.N-1)/2)]
-        hm =  [make_namespace_string(self.name, "C{:d}m".format(n+1)) for n in range((self.N-1)/2)]
-
-
-        S = Matrix([1.])
-        slh0 = SLH(S, Matrix([[sqrt(kappa0) * Destroy(h0)]]), ZeroOperator)
-        slhp = [SLH(S, Matrix([[sqrt(kj) * Destroy(hj)]]), Dj * Create(hj) * Destroy(hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hp)]
-        slhm = [SLH(S, Matrix([[sqrt(kj) * Destroy(hj)]]), -Dj * Create(hj) * Destroy(hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hm)]
-
-        return freduce(lambda a, b: a << b, slhp + slhm, slh0)
-
-
-
-    _space = TrivialSpace
+    ##maybe do it differently so you can access _sub_components ?
         
-    def _tex(self):
+    def _creduce(self):
+
+        #compute number of cavities and kappa for each given 
+        #tau, omega_max, and err.
+        [kappa_single, product_single] = self._cavity_values(self.err)
+        N = (int) (self.tau * self.omega_max / product_single) + 1
+        kappa = kappa_single * N / self.tau
+
+        TD = self._SLH_Cav(1, namespace = '%s_%s' % (self.namespace, 0) )
+        
+        for i in range(1,N):
+            cav = self._SLH_Cav(1, namespace = '%s_%s' % (self.namespace, i) )
+            TD = TD << cav
+        return TD
+
+
+    @property
+    def _space(self):
+        return self.creduce().space
+
+    @property
+    def _tex(self): 
         return r"{T(%s)}" % tex(self.tau)
 
 
