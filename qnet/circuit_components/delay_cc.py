@@ -20,6 +20,11 @@
 """
 Component definition file for a pseudo-delay model that works over a limited bandwidth.
 See documentation of :py:class:`Delay`.
+
+This components takes parameters tau (delay length), omega_max (max frequency), and 
+err (desired error). These are used to compute the number of cavities (N).
+
+Alternatively, the user may give N and kappa, which is used as a parameter for all cavities.
 """
 
 
@@ -53,7 +58,7 @@ class Delay(Component):
     kappa = symbols('kappa', positive = True)
     N = symbols('N', positive = True)
     
-    _parameters = ['tau', 'omega_max', 'err']
+    _parameters = ['tau', 'omega_max', 'err', 'kappa', 'N']
 
     # takes the relative error required.
     # returns [kappa, L] for a single cavity, optimized with T = 1.
@@ -113,17 +118,19 @@ class Delay(Component):
     ##maybe do it differently so you can access _sub_components ?
         
     def _creduce(self):
+    
+    	if type(self.N) != int:
 
-        #compute number of cavities and kappa for each given 
-        #tau, omega_max, and err.
-        [kappa_single, product_single] = self._cavity_values(self.err)
-        N = (int) (self.tau * self.omega_max / product_single) + 1
-        kappa = kappa_single * N / self.tau
+            #compute number of cavities and kappa for each given 
+            #tau, omega_max, and err.
+            [kappa_single, product_single] = self._cavity_values(self.err)
+            self.N = (int) (self.tau * self.omega_max / product_single) + 1
+            self.kappa = kappa_single * self.N / self.tau
 
-        TD = self._SLH_Cav(1, namespace = '%s_%s' % (self.namespace, 0) )
+        TD = self._SLH_Cav(self.kappa, namespace = '%s_%s' % (self.namespace, 0) )
         
-        for i in range(1,N):
-            cav = self._SLH_Cav(1, namespace = '%s_%s' % (self.namespace, i) )
+        for i in range(1,self.N):
+            cav = self._SLH_Cav(self.kappa, namespace = '%s_%s' % (self.namespace, i) )
             TD = TD << cav
         return TD
 
