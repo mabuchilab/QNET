@@ -25,7 +25,6 @@ def find_packages(path=".", prefix=""):
             yield name
 
 packages = list(find_packages(qnet.__path__, qnet.__name__))
-print packages
 
 setup(
     name='QNET',
