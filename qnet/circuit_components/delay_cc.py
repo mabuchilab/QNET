@@ -57,8 +57,9 @@ class Delay(Component):
     err = symbols('err', positive = True)
     kappa = symbols('kappa', positive = True)
     N = symbols('N', positive = True)
+    Delta = symbols('Delta', positive = True)
     
-    _parameters = ['tau', 'omega_max', 'err', 'kappa', 'N']
+    _parameters = ['tau', 'omega_max', 'err', 'kappa', 'N', 'Delta']
 
     # takes the relative error required.
     # returns [kappa, L] for a single cavity, optimized with T = 1.
@@ -95,7 +96,7 @@ class Delay(Component):
 
     
     #single cavity with zero detuning
-    def _SLH_Cav(self, kappa, Delta = 0, namespace = ''):
+    def _SLH_Cav(self, kappa = 0, Delta = 0, S_num = 1, namespace = ''):
         
         fock = local_space('fock', namespace = namespace)
         
@@ -103,7 +104,7 @@ class Delay(Component):
         a = Destroy(fock)
         
         # Trivial scattering matrix
-        S = identity_matrix(1) * -1
+        S = identity_matrix(1) * S_num
         
         L = Matrix([[ sqrt(kappa) * a]])
         
@@ -119,6 +120,9 @@ class Delay(Component):
         
     def _creduce(self):
     
+    	if type(self.Delta) != float:
+    	    self.Delta = 0
+    
     	if type(self.N) != int:
 
             #compute number of cavities and kappa for each given 
@@ -126,11 +130,11 @@ class Delay(Component):
             [kappa_single, product_single] = self._cavity_values(self.err)
             self.N = (int) (self.tau * self.omega_max / product_single) + 1
             self.kappa = kappa_single * self.N / self.tau
-
-        TD = self._SLH_Cav(self.kappa, namespace = '%s_%s' % (self.namespace, 0) )
         
-        for i in range(1,self.N):
-            cav = self._SLH_Cav(self.kappa, namespace = '%s_%s' % (self.namespace, i) )
+        #TD = self._SLH_Cav(kappa = self.kappa, namespace = '%s_%s' % (self.namespace,0)
+        TD = SLH(identity_matrix(1),Matrix([[0]]),0)
+        for i in range(0,self.N):
+            cav = self._SLH_Cav(kappa = self.kappa, namespace = '%s_%s' % (self.namespace, i) )
             TD = TD << cav
         return TD
 
