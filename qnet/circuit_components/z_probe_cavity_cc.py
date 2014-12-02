@@ -43,19 +43,20 @@ class ZProbeCavity(Component):
     
 
     """
-    CDIM = 3
+    CDIM = 5
 
-    gamma = symbols('gamma', real = True)   # decay rate into transverse modes
-    Delta = symbols('Delta', real = True)   # detuning between the cavity (mode) and the atomic transition
-    _parameters = ['gamma', 'Delta']
+    gamma = symbols('gamma', positive=True)   # decay rate into transverse modes
+    gamma_p = symbols('gamma_p', positive=True)  # decay rate into transverse modes
+    Delta = symbols('Delta', real=True)   # detuning between the cavity (mode) and the atomic transition
+    _parameters = ['gamma', 'gamma_p', 'Delta']
             
     PORTSIN = ['PIn', 'FIn1', 'FIn2']
-    PORTSOUT = ['POut', 'UOut1', 'UOut2']
+    PORTSOUT = ['POut']
     
-    sub_blockstructure = (1, 1, 1)
+    sub_blockstructure = (1, 1, 1, 1, 1)
     
     def _creduce(self):
-        return ProbePort(self) + FeedbackPort(self, 1) + FeedbackPort(self, 2)
+        return ProbePort(self) + FeedbackPort(self, 1) + FeedbackPort(self, 2) + LossPort(self, 1) + LossPort(self, 2)
 
     def _toSLH(self):
         return self.creduce().toSLH()
@@ -82,6 +83,7 @@ class ProbePort(SubComponent):
         
         return SLH(S, L, H)
 
+
 class FeedbackPort(SubComponent):
     """
     Feedback beam port for the Z-Probe cavity model.
@@ -95,6 +97,23 @@ class FeedbackPort(SubComponent):
             L = sqrt(self.gamma) * Matrix([[LocalSigma(self.space, 'g', 'r')]])
         elif self.sub_index == 2:
             L = sqrt(self.gamma) * Matrix([[LocalSigma(self.space, 'h', 'r')]])
+        else:
+            raise Exception(str(self.sub_index))
+
+        return SLH(S, L, 0)
+
+
+class LossPort(SubComponent):
+    """
+    Spontaneous decay from the far detuned excited r level.
+    """
+
+    def _toSLH(self):
+        S = identity_matrix(1)
+        if self.sub_index == 1:
+            L = sqrt(self.gamma_p) * Matrix([[LocalSigma(self.space, 'g', 'r')]])
+        elif self.sub_index == 2:
+            L = sqrt(self.gamma_p) * Matrix([[LocalSigma(self.space, 'h', 'r')]])
         else:
             raise Exception(str(self.sub_index))
 
