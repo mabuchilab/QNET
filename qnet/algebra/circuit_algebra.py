@@ -1978,37 +1978,159 @@ Feedback._rules += [
 ]
 
 
-def getABCD(slh, double_up=True):
+# def getABCD(slh, double_up=True):
+#     """
+#     Return the matrices necessary to carry out a semi-classical simulation
+#     of the SLH system driven by some dynamic inputs.
+#
+#     Params
+#     ------
+#     :param slh: SLH object to linearize
+#     :param double_up: Whether the matrices should be returned for the more general, doubled up case
+#     :rtype : tuple
+#
+#     Returns
+#     -------
+#     A tuple (A, B, C, D, a, c)
+#
+#     A: coupling of modes to each other
+#     B: coupling of external input fields to modes
+#     C: coupling of internal modes to output
+#     D: coupling of external input fields to output fields
+#     a: constant coherent drive term in dx_t
+#     c: constant coherent drive term in dA'_t
+#
+#     The linearized QSDE is then:
+#     dx_t = (A * x_t + a)dt + B * dA_t
+#     dA'_t = (C * x_t + c) dt + D * dA_t
+#
+#     If double_up is False x_t corresponds only to the vector of annihilation operators.
+#     If it is true, it is the doubled up form, i.e., first all annihilation operators, then all creation operators.
+#
+#     Here A * b is a matrix product, whereas a (*) b is an element-wise
+#     product of two vectors.
+#     """
+#
+#     # the different degrees of freedom
+#     modes = sorted(slh.space.local_factors())
+#
+#     # various dimensions
+#     ncav = len(modes)
+#     cdim = slh.cdim
+#
+#     def _ascomplex(o):
+#         try:
+#             return complex(o.coeff) if (isinstance(o, ScalarTimesOperator) and o.term is IdentityOperator) else o
+#         except:
+#             return o
+#
+#
+#     if double_up:
+#         # initialize the matrices
+#         A = np_zeros((2*ncav, 2*ncav), dtype=object)
+#         B = np_zeros((2*ncav, 2*cdim), dtype=object)
+#         C = np_zeros((2*cdim, 2*ncav), dtype=object)
+#
+#         D_ = slh.S.matrix.element_wise(_ascomplex)
+#         D = block_matrix(D_, zerosm(D_.shape), zerosm(D_.shape), D_.conjugate()).matrix
+#         a = np_zeros(ncav, dtype=object)
+#         c = np_zeros(cdim, dtype=object)
+#     else:
+#         # initialize the matrices
+#         A = np_zeros((ncav, ncav), dtype=object)
+#         B = np_zeros((ncav, cdim), dtype=object)
+#         C = np_zeros((cdim, ncav), dtype=object)
+#
+#         D = slh.S.matrix.element_wise(_ascomplex).matrix
+#         a = np_zeros(ncav, dtype=object)
+#         c = np_zeros(cdim, dtype=object)
+#
+#     # make symbols for the external field modes
+#     noises = [OperatorSymbol('b_{{{}}}'.format(n), "ext({})".format(n)) for n in range(cdim)]
+#
+#     # compute the QSDEs for the internal operators
+#     eoms = [slh.symbolic_heisenberg_eom(Destroy(s), noises=noises).expand().simplify_scalar() for s in modes]
+#
+#     # use the coefficients to generate A, B matrices
+#     for jj, sjj in enumerate(modes):
+#         coeffsjj = get_coeffs(eoms[jj])
+#         for kk, skk in enumerate(modes):
+#             A[jj, kk] = coeffsjj[Destroy(skk)]
+#             if double_up:
+#                 A[jj, kk+ncav] = coeffsjj[Create(skk)]
+#
+#         for kk, dAkk in enumerate(noises):
+#             B[jj, kk] = coeffsjj[dAkk]
+#             if double_up:
+#                 B[jj, kk+cdim] = coeffsjj[dAkk.dag()]
+#         a[jj] = coeffsjj[IdentityOperator]
+#
+#     # use the coefficients in the L vector to generate the C, D
+#     # matrices
+#     for jj, Ljj in enumerate(slh.L.matrix[:, 0]):
+#         coeffsjj = get_coeffs(Ljj)
+#         for kk, skk in enumerate(modes):
+#             C[jj, kk] = coeffsjj[Destroy(skk)]
+#             if double_up:
+#                 C[jj, kk+cdim] = coeffsjj[Create(skk)]
+#         c[jj] = coeffsjj[IdentityOperator]
+#
+#     def _extend_double_up(mat):
+#         m, n = mat.shape
+#         mat[m//2:, :n//2] = mat[:m//2, n//2:].conjugate()
+#         mat[m // 2:, n // 2:] = mat[:m // 2, :n // 2].conjugate()
+#
+#     if double_up:
+#
+#         _extend_double_up(A)
+#         _extend_double_up(B)
+#         _extend_double_up(C)
+#         _extend_double_up(D)
+#         a[ncav:] = a[:ncav].conjugate()
+#         c[cdim:] = c[:cdim].conjugate()
+#
+#     return map(Matrix, (A, B, C, D, a, c))
+
+
+# noinspection PyPep8Naming,PyShadowingNames
+def getABCD(slh, a0=None, doubled_up=True):
     """
-    Return the matrices necessary to carry out a semi-classical simulation
-    of the SLH system driven by some dynamic inputs.
+    Return the A, B, C, D and (a, c) matrices that linearize an SLH model
+        about a coherent displacement amplitude a0.
+
+    The equations of motion and the input-output relation are then:
+
+    dX = (A X + a) dt + B dA_in
+    dA_out = (C X + c) dt + D dA_in
+
+    where, if doubled_up == False
+        dX = [a_1, ..., a_m] if doubled_up == False
+     and
+        dA_in = [dA_1, ..., dA_n]
+
+    or if doubled_up == True
+        dX = [a_1, ..., a_m, a_1^*, ... a_m^*]
+     and
+        dA_in = [dA_1, ..., dA_n, dA_1^*, ..., dA_n^*]
 
     Params
     ------
-    :param slh: SLH object to linearize
-    :param double_up: Whether the matrices should be returned for the more general, doubled up case
-    :rtype : tuple
+    :param slh: SLH object
+    :param a0: dictionary of coherent amplitudes {a1: a1_0, a2: a2_0, ...} with annihilation mode operators
+        as keys and (numeric or symbolic) amplitude as values.
+    :param doubled_up: boolean, necessary for phase-sensitive / active systems
 
-    Returns
-    -------
-    A tuple (A, B, C, D, a, c)
+    Returns SymPy matrix objects
+    ----------------------------
+    A tuple (A, B, C, D, a, c])
 
     A: coupling of modes to each other
     B: coupling of external input fields to modes
     C: coupling of internal modes to output
     D: coupling of external input fields to output fields
-    a: constant coherent drive term in dx_t
-    c: constant coherent drive term in dA'_t
 
-    The linearized QSDE is then:
-    dx_t = (A * x_t + a)dt + B * dA_t
-    dA'_t = (C * x_t + c) dt + D * dA_t
-
-    If double_up is False x_t corresponds only to the vector of annihilation operators.
-    If it is true, it is the doubled up form, i.e., first all annihilation operators, then all creation operators.
-    
-    Here A * b is a matrix product, whereas a (*) b is an element-wise
-    product of two vectors.
+    a: constant coherent input vector for mode e.o.m.
+    c: constant coherent input vector of scattered amplitudes contributing to the output
     """
 
     # the different degrees of freedom
@@ -2018,75 +2140,163 @@ def getABCD(slh, double_up=True):
     ncav = len(modes)
     cdim = slh.cdim
 
-    def _ascomplex(o):
-        try:
-            return complex(o.coeff) if (isinstance(o, ScalarTimesOperator) and o.term is IdentityOperator) else o
-        except:
-            return o
-
-
-    if double_up:
-        # initialize the matrices
+    # initialize the matrices
+    if doubled_up:
         A = np_zeros((2*ncav, 2*ncav), dtype=object)
         B = np_zeros((2*ncav, 2*cdim), dtype=object)
         C = np_zeros((2*cdim, 2*ncav), dtype=object)
+        a = np_zeros(2*ncav, dtype=object)
+        c = np_zeros(2*cdim, dtype=object)
 
-        D_ = slh.S.matrix.element_wise(_ascomplex)
-        D = block_matrix(D_, zerosm(D_.shape), zerosm(D_.shape), D_.conjugate()).matrix
-        a = np_zeros(ncav, dtype=object)
-        c = np_zeros(cdim, dtype=object)
     else:
-        # initialize the matrices
         A = np_zeros((ncav, ncav), dtype=object)
         B = np_zeros((ncav, cdim), dtype=object)
         C = np_zeros((cdim, ncav), dtype=object)
-
-        D = slh.S.matrix.element_wise(_ascomplex).matrix
         a = np_zeros(ncav, dtype=object)
         c = np_zeros(cdim, dtype=object)
+
+    def _as_complex(o):
+        try:
+            return complex(o.coeff) if (isinstance(o, ScalarTimesOperator) and o.term is IdentityOperator) else o
+        except TypeError:
+            return o
+
+    D = np_array([[_as_complex(o) for o in Sjj] for Sjj in slh.S.matrix])
+
+    if doubled_up:
+        # need to explicitly compute D^* because numpy object-dtype array's conjugate() method
+        # doesn't work
+        Dc = np_array([[D[ii, jj].conjugate() for jj in range(cdim)] for ii in range(cdim)])
+        D = np_vstack((np_hstack((D, np_zeros((cdim, cdim)))),
+                       np_hstack((np_zeros((cdim, cdim)), Dc))))
+
+    # create substitutions to displace the model
+    mode_substitutions = {aj: aj + aj_0 * IdentityOperator for aj, aj_0 in a0.items()}
+    mode_substitutions.update({
+        aj.dag(): aj.dag() + aj_0.conjugate() * IdentityOperator for aj, aj_0 in a0.items()
+    })
+    if len(mode_substitutions):
+        slh_displaced = slh.substitute(mode_substitutions).expand().simplify_scalar()
+    else:
+        slh_displaced = slh
 
     # make symbols for the external field modes
     noises = [OperatorSymbol('b_{{{}}}'.format(n), "ext({})".format(n)) for n in range(cdim)]
 
+    print("computing QSDEs")
     # compute the QSDEs for the internal operators
-    eoms = [slh.symbolic_heisenberg_eom(Destroy(s), noises=noises).expand().simplify_scalar() for s in modes]
+    eoms = [slh_displaced.symbolic_heisenberg_eom(Destroy(s), noises=noises).expand().simplify_scalar() for s in modes]
 
+    print("Extracting matrices")
     # use the coefficients to generate A, B matrices
     for jj, sjj in enumerate(modes):
         coeffsjj = get_coeffs(eoms[jj])
+        a[jj] = coeffsjj[IdentityOperator]
+        if doubled_up:
+            a[jj+ncav] = coeffsjj[IdentityOperator].conjugate()
+
         for kk, skk in enumerate(modes):
             A[jj, kk] = coeffsjj[Destroy(skk)]
-            if double_up:
-                A[jj, kk+ncav] = coeffsjj[Create(skk)]
+            if doubled_up:
+                A[jj+ncav, kk+ncav] = coeffsjj[Destroy(skk)].conjugate()
+                A[jj, kk + ncav] = coeffsjj[Create(skk)]
+                A[jj+ncav, kk] = coeffsjj[Create(skk)].conjugate()
 
         for kk, dAkk in enumerate(noises):
             B[jj, kk] = coeffsjj[dAkk]
-            if double_up:
+            if doubled_up:
+                B[jj+ncav, kk+cdim] = coeffsjj[dAkk].conjugate()
                 B[jj, kk+cdim] = coeffsjj[dAkk.dag()]
-        a[jj] = coeffsjj[IdentityOperator]
+                B[jj + ncav, kk] = coeffsjj[dAkk.dag()].conjugate()
 
     # use the coefficients in the L vector to generate the C, D
     # matrices
-    for jj, Ljj in enumerate(slh.L.matrix[:, 0]):
+    for jj, Ljj in enumerate(slh_displaced.L.matrix[:, 0]):
         coeffsjj = get_coeffs(Ljj)
+        c[jj] = coeffsjj[IdentityOperator]
+        if doubled_up:
+            c[jj+cdim] + coeffsjj[IdentityOperator].conjugate()
+
         for kk, skk in enumerate(modes):
             C[jj, kk] = coeffsjj[Destroy(skk)]
-            if double_up:
-                C[jj, kk+cdim] = coeffsjj[Create(skk)]
-        c[jj] = coeffsjj[IdentityOperator]
+            if doubled_up:
+                C[jj+cdim, kk+ncav] = coeffsjj[Destroy(skk)].conjugate()
+                C[jj, kk+ncav] = coeffsjj[Create(skk)]
+                C[jj+cdim, kk] = coeffsjj[Create(skk)].conjugate()
 
-    def _extend_double_up(mat):
-        m, n = mat.shape
-        mat[m//2:, :n//2] = mat[:m//2, n//2:].conjugate()
-        mat[m // 2:, n // 2:] = mat[:m // 2, :n // 2].conjugate()
+    return map(SympyMatrix, (A, B, C, D, a, c))
 
-    if double_up:
 
-        _extend_double_up(A)
-        _extend_double_up(B)
-        _extend_double_up(C)
-        _extend_double_up(D)
-        a[ncav:] = a[:ncav].conjugate()
-        c[cdim:] = c[:cdim].conjugate()
+# noinspection PyPep8Naming
+def move_drive_to_H(slh, which=[]):
+    """
+    Take an SLH model and replace it by one with the same master equation,
+    but where the coherent drive terms have been shifted to the Hamilton operator.
 
-    return map(Matrix, (A, B, C, D, a, c))
+
+    :param slh: The SLH model to convert.
+    :param which: Specifies for which indices this should happen. If [], for all.
+    :rtype : SLH
+    """
+    slh = slh.expand()
+    S, L, H = slh.S, slh.L, slh.H
+    scalarcs = []
+    for jj, Lj in enumerate(L.matrix[:, 0]):
+        if not which or jj in which:
+            scalarcs.append(-get_coeffs(Lj)[IdentityOperator])
+        else:
+            scalarcs.append(0)
+
+    return (SLH(identity_matrix(slh.cdim), scalarcs, 0) << slh).expand().simplify_scalar()
+
+
+# noinspection PyPep8Naming
+def prepare_adiabatic_limit(slh, k=None):
+    """
+    Prepare the adiabatic elimination procedure for an SLH object with scaling parameter k->\infty
+
+    :param slh: The SLH object to take the limit for
+    :param k: The scaling parameter.
+    :return:  The objects Y, A, B, F, G, N necessary to compute the limiting system.
+    :rtype: tuple
+    """
+    if k is None:
+        k = symbols('k', positive=True)
+    Ld = slh.L.dag()
+    LdL = (Ld * slh.L)[0, 0]
+    K = (-LdL / 2 + I * slh.H).expand().simplify_scalar()
+    N = slh.S.dag()
+    B, A, Y = K.series_expand(k, 0, 2)
+    G, F = Ld.series_expand(k, 0, 1)
+
+    return Y, A, B, F, G, N
+
+
+# noinspection PyPep8Naming
+def eval_adiabatic_limit(YABFGN, Ytilde, P0):
+    """
+    Compute the limiting SLH model for the adiabatic approximation.
+
+    :param YABFGN: The tuple (Y, A, B, F, G, N) as returned by prepare_adiabatic_limit.
+    :param Ytilde: The pseudo-inverse of Y, satisfying Y * Ytilde = P0.
+    :param P0: The projector onto the null-space of Y.
+    :return: Limiting SLH model
+    :rtype: SLH
+    """
+    Y, A, B, F, G, N = YABFGN
+
+    Klim = (P0 * (B - A * Ytilde * A) * P0).expand().simplify_scalar()
+    Hlim = ((Klim - Klim.dag())/2/I).expand().simplify_scalar()
+
+    Ldlim = (P0 * (G - A * Ytilde * F) * P0).expand().simplify_scalar()
+
+    dN = identity_matrix(N.shape[0]) + F.H * Ytilde * F
+    Nlim = (P0 * N * dN * P0).expand().simplify_scalar()
+
+    return SLH(Nlim.dag(), Ldlim.dag(), Hlim.dag())
+
+
+
+
+
+
