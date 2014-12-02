@@ -7,4 +7,3 @@ include gEDA_support/config/*rc
 include examples/qhdl/*.qhdl
 include examples/gschem/*.sch
 include examples/notebooks/*.ipynb
-include qnet/circuit_components/template_cc.py.txt
