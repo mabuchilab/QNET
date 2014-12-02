@@ -113,7 +113,7 @@ def write_component(entity, architectures, local = False):
     symbol_instantiation = ", ".join(sorted(circuit_symbols.keys())) + " = " + ", ".join("self."+k for k in sorted(circuit_symbols.keys()))
     symbolic_expression = str(arch_circuit)
     
-    with open(MODULE_DIR + '/template_cc.py.txt', 'r') as template:
+    with open(MODULE_DIR + '/_template_cc.py', 'r') as template:
         file_template = template.read()
 
 
