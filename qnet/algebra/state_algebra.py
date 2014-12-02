@@ -505,6 +505,7 @@ class KetPlus(Ket, Operation):
     def _str_bra(self):
         return self._str_ketbra(bra=True)
 
+    @property
     def _space(self):
         return self.operands[0].space
 

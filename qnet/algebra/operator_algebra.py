@@ -44,7 +44,9 @@ from qnet.algebra.hilbert_space_algebra import *
 #noinspection PyUnresolvedReferences
 from sympy import (exp, log, cos, sin, cosh, sinh, tan, cot,
                    acos, asin, acosh, asinh, atan, atan2, atanh, acot, sqrt,
-                   factorial, pi, I, sympify, Basic as SympyBasic, symbols, Mul, Add, series as sympy_series)
+                   factorial, pi, I, sympify,
+                   Matrix as SympyMatrix,
+                   Basic as SympyBasic, symbols, Mul, Add, series as sympy_series)
 from sympy.printing import latex as sympy_latex
 
 #noinspection PyUnresolvedReferences
@@ -886,6 +888,7 @@ class OperatorTimes(OperatorOperation):
             elif s is FullSpace:
                 self.full = True
             else:
+                # print(op, s)
                 assert isinstance(s, ProductSpace)
                 self.local_spaces = {s.operands for s in s.operands}
 
@@ -927,7 +930,6 @@ class OperatorTimes(OperatorOperation):
             ops_on_spc = [o for o in self.operands if (o.space & spc) > TrivialSpace]
             ops_not_on_spc = [o for o in self.operands if (o.space & spc) is TrivialSpace]
         return OperatorTimes.create(*ops_on_spc), OperatorTimes.create(*ops_not_on_spc)
-
 
     def _to_qutip(self, full_space=None):
         # if any factor acts non-locally, we need to expand distributively.
@@ -972,7 +974,6 @@ class OperatorTimes(OperatorOperation):
         cfirst = self.operands[0].series_expand(param, about, order)
         crest = OperatorTimes.create(*self.operands[1:]).series_expand(param, about, order)
         return tuple(sum(cfirst[k] * crest[n - k] for k in range(n + 1)) for n in range(order + 1))
-
 
     def _tex(self):
         ret = ""
@@ -1097,13 +1098,16 @@ class ScalarTimesOperator(Operator, Operation):
                 c = self.coeff.subs({param: about + param})
             else:
                 c = self.coeff
-            ce = list(reversed(sympy_series(c, x=param, x0=0, n=order + 1).as_poly(param).all_coeffs()))
+            try:
+                ce = list(reversed(sympy_series(c, x=param, x0=0, n=order + 1).as_poly(param).all_coeffs()))
+            except AttributeError:
+                ce = [c] + [0] * order
+
             if len(ce) < order + 1:
                 ce += [0] * (order + 1 - len(ce))
             return tuple(sum(ce[k] * te[n - k] for k in range(n + 1)) for n in range(order + 1))
         else:
             return tuple(self.coeff * tek for tek in te)
-
 
     def _pseudo_inverse(self):
         c, t = self.operands
@@ -1834,6 +1838,23 @@ class Matrix(Expression):
         emat = [method(o) for o in self.matrix.flatten()]
         return Matrix(np_array(emat).reshape(s))
 
+    def series_expand(self, param, about, order):
+        """
+        Expand the matrix expression as a truncated power series in a scalar parameter.
+
+        :param param: Expansion parameter.
+        :type param: sympy.core.symbol.Symbol
+        :param about: Point about which to expand.
+        :type about:  Any one of Operator.scalar_types
+        :param order: Maximum order of expansion.
+        :type order: int >= 0
+        :return: tuple of length (order+1), where the entries are the expansion coefficients.
+        :rtype: tuple of Operator
+        """
+        s = self.shape
+        emats = zip(*[o.series_expand(param, about, order) for o in self.matrix.flatten()])
+        return tuple((Matrix(np_array(em).reshape(s)) for em in emats))
+
 
     def expand(self):
         """
@@ -1875,7 +1896,6 @@ class Matrix(Expression):
         ret += r"\end{pmatrix}"
 
         return ret
-
 
     @property
     def space(self):
@@ -2051,13 +2071,18 @@ def _coeff_term(expr):
         return 1, expr
 
 
-def get_coeffs(expr, expand=False, epsilon = 0.):
+def get_coeffs(expr, expand=False, epsilon=0.):
     """
     Create a dictionary with all Operator terms of the expression
     (understood as a sum) as keys and their coefficients as values.
 
     The returned object is a defaultdict that return 0. if a term/key
     doesn't exist.
+    :param expr: The operator expression to get all coefficients from.
+    :param expand: Whether to expand the expression distributively.
+    :param epsilon: If non-zero, drop all Operators with coefficients that have absolute value less than epsilon.
+    :return: A dictionary of {op1: coeff1, op2: coeff2, ...}
+    :rtype: dict
     """
     if expand:
         expr = expr.expand()
@@ -2068,7 +2093,57 @@ def get_coeffs(expr, expand=False, epsilon = 0.):
         try:
             if abs(complex(c)) < epsilon:
                 continue
-        except:
+        except TypeError:
             pass
         ret[t] += c
     return ret
+
+
+# class CannotFactorException(AlgebraException):
+#     pass
+
+# def factor_right(op1, op2, expand_op1=False, expand_op2=False):
+#     """
+#     Try to factor the operator op1 as X * op2.
+#
+#     :param op1: The full expression.
+#     :type op1: Operator
+#     :param op2: The operator to factor out.
+#     :type op2: Operator
+#     :param expand_op1: Whether to expand out op1 distributively.
+#     :param expand_op2: Whether to expand out op2 distributively.
+#     :return: The left factor X.
+#     :rtype: Operator
+#     """
+#     if expand_op1:
+#         op1 = op1.expand()
+#     if expand_op2:
+#         op2 = op2.expand()
+#
+#     if isinstance(op1, ScalarTimesOperator):
+#         return op1.coeff * factor_right(op1.term, op2)
+#
+#     if isinstance(op2, ScalarTimesOperator):
+#         return factor_right(op1, op2.term)/op2.coeff
+#
+#     if op1 is ZeroOperator:
+#         return op1
+#
+#     if op2 is IdentityOperator:
+#         return op1
+#
+#     if isinstance(op1, OperatorPlus):
+#         if isinstance(op2, OperatorPlus):
+#             A = op1
+#             R = ZeroOperator
+#             Qs = []
+#             for Xj in op2.operands:
+#                 Qj = ZeroOperator
+#                 for Ak in A.operands:
+#                     try:
+#                         Qj += factor_right(Ak, Xj)
+#                     except CannotFactorException:
+#                         pass
+
+
+
