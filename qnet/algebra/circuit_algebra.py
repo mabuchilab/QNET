@@ -540,7 +540,7 @@ class SLH(Circuit, Operation):
         new_S = S[:n, :n] + S[0:n, n:] * one_minus_Snn_inv * S[n:, 0: n]
 
         new_L = L[:n] + S[0:n, n] * one_minus_Snn_inv * L[n]
-        delta_H = Im((L.adjoint() * S[:, n:]) * one_minus_Snn_inv * L[n, 0])
+        delta_H = Im((L[:-1].adjoint() * S[:-1, n:]) * one_minus_Snn_inv * L[n, 0])
 
         if isinstance(delta_H, Matrix):
             delta_H = delta_H[0, 0]
