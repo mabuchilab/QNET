@@ -208,15 +208,11 @@ class TestCircuitAlgebra(unittest.TestCase):
         self.assertEqual(permuted_rhs, (P_sigma(0,1,3,2) << CircuitSymbol('NAND1', 4)) + cid(3))
         self.assertEqual(new_rhs, P_sigma(4,5,6, 0,1,2,3))
 
-        
-    
-    
     def testFeedback(self):
-        A, B, C, D, A1, A2 = get_symbols(3,2,1,1,1,1)
-        
+        A, B, C, D, A1, A2 = get_symbols(3, 2, 1, 1, 1, 1)
         n = 4
         cid1 = circuit_identity(1)
-        
+
 #        self.assertRaises(Exception, Feedback, ())
 #        self.assertRaises(Exception, Feedback, (C,))
 #        self.assertRaises(Exception, Feedback, (C + D,))
@@ -246,3 +242,33 @@ class TestCircuitAlgebra(unittest.TestCase):
         self.assertEquals((B << (cid(1)  + C)).feedback(0,1).substitute({B: (A1 + A2)}), A2 << C << A1)
         self.assertEquals(((cid(1)  + C)<< P_sigma(1,0) << B).feedback(1,1).substitute({B: (A1 + A2)}), A2 << C << A1)
         self.assertEquals(((cid(1)  + C)<< P_sigma(1,0) << B << (cid(1) + D)).feedback(1,1).substitute({B: (A1 + A2)}), A2 << D<< C << A1)
+
+    def testABCD(self):
+        a = Destroy(1)
+        slh = SLH(identity_matrix(1), [a],
+                  2*a.dag() * a).coherent_input(3)
+        A, B, C, D, a, c = getABCD(slh, doubled_up=True)
+        self.assertEquals(A[0, 0], -sympyOne / 2 - 2 * I)
+        self.assertEquals(A[1, 1], -sympyOne / 2 + 2 * I)
+        self.assertEquals(B[0, 0],  -1)
+        self.assertEquals(C[0, 0], 1)
+        self.assertEquals(D[0, 0], 1)
+
+    def testConnect(self):
+        A, B, C = get_symbols(1, 1, 2)
+        connections = [
+            ((0, 0), (1, 0))
+            ]
+        self.assertEqual(connect([A, B], connections), B << A)
+
+        connections = [
+            ((0, 0), (2, 0)),
+            ((1, 0), (2, 1)),
+            ]
+        self.assertEqual(connect([A, B, C], connections), C << (A + B))
+
+        connections = [
+            ((0, 0), (1, 0))
+        ]
+        self.assertEqual(connect([A, C], connections), C << (A + cid(1)))
+

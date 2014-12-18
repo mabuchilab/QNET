@@ -521,7 +521,8 @@ class SLH(Circuit, Operation):
         n = self.cdim - 1
 
         if out_index != n:
-            return (map_signals_circuit({out_index: n}, self.cdim).toSLH() << self).feedback(in_index=in_index)
+            return (map_signals_circuit({out_index: n}, self.cdim).toSLH() 
+                << self).feedback(in_index=in_index)
         elif in_index != n:
             return (self << map_signals_circuit({n: in_index}, self.cdim).toSLH()).feedback()
 
@@ -530,7 +531,7 @@ class SLH(Circuit, Operation):
         one_minus_Snn = sympyOne - S[n, n]
 
         if isinstance(one_minus_Snn, Operator):
-            if isinstance(one_minus_Snn, ScalarTimesOperator) and one_minus_Snn.operands[1] == IdentityOperator():
+            if isinstance(one_minus_Snn, ScalarTimesOperator) and one_minus_Snn.term is IdentityOperator:
                 one_minus_Snn = one_minus_Snn.coeff
             else:
                 raise AlgebraError('Inversion not implemented for general operators')
@@ -540,7 +541,7 @@ class SLH(Circuit, Operation):
         new_S = S[:n, :n] + S[0:n, n:] * one_minus_Snn_inv * S[n:, 0: n]
 
         new_L = L[:n] + S[0:n, n] * one_minus_Snn_inv * L[n]
-        delta_H = Im((L.adjoint() * S[:, n:]) * one_minus_Snn_inv * L[n, 0])
+        delta_H = Im((L[:-1].adjoint() * S[:-1, n:]) * one_minus_Snn_inv * L[n, 0])
 
         if isinstance(delta_H, Matrix):
             delta_H = delta_H[0, 0]
@@ -2093,7 +2094,7 @@ Feedback._rules += [
 
 
 # noinspection PyPep8Naming,PyShadowingNames
-def getABCD(slh, a0=None, doubled_up=True):
+def getABCD(slh, a0={}, doubled_up=True):
     """
     Return the A, B, C, D and (a, c) matrices that linearize an SLH model
         about a coherent displacement amplitude a0.
@@ -2247,17 +2248,20 @@ def move_drive_to_H(slh, which=[]):
         else:
             scalarcs.append(0)
 
-    return (SLH(identity_matrix(slh.cdim), scalarcs, 0) << slh).expand().simplify_scalar()
+    return (SLH(identity_matrix(slh.cdim), scalarcs, 0)
+            << slh).expand().simplify_scalar()
 
 
 # noinspection PyPep8Naming
 def prepare_adiabatic_limit(slh, k=None):
     """
-    Prepare the adiabatic elimination procedure for an SLH object with scaling parameter k->\infty
+    Prepare the adiabatic elimination procedure for
+        an SLH object with scaling parameter k->\infty
 
     :param slh: The SLH object to take the limit for
     :param k: The scaling parameter.
-    :return:  The objects Y, A, B, F, G, N necessary to compute the limiting system.
+    :return:  The objects Y, A, B, F, G, N
+        necessary to compute the limiting system.
     :rtype: tuple
     """
     if k is None:
@@ -2277,7 +2281,8 @@ def eval_adiabatic_limit(YABFGN, Ytilde, P0):
     """
     Compute the limiting SLH model for the adiabatic approximation.
 
-    :param YABFGN: The tuple (Y, A, B, F, G, N) as returned by prepare_adiabatic_limit.
+    :param YABFGN: The tuple (Y, A, B, F, G, N)
+        as returned by prepare_adiabatic_limit.
     :param Ytilde: The pseudo-inverse of Y, satisfying Y * Ytilde = P0.
     :param P0: The projector onto the null-space of Y.
     :return: Limiting SLH model
@@ -2295,6 +2300,53 @@ def eval_adiabatic_limit(YABFGN, Ytilde, P0):
 
     return SLH(Nlim.dag(), Ldlim.dag(), Hlim.dag())
 
+
+def _cumsum(lst):
+    if not len(lst):
+        return []
+    sm = lst[0]
+    ret = [sm]
+    for s in lst[1:]:
+        sm += s
+        ret += [sm]
+    return ret
+
+
+def connect(components, connections):
+    """
+    Connect a list of components according to a list of connections.
+
+    :param components: sequence of circuit components
+    :param connections: sequence of nested tuples
+        ((c1_index, p1_index), (c2_index, p2_index)),
+        ((c3_index, p3_index), (c4_index, p4_index)), ...
+        specifying connections from component c1, port p1
+            to component c2, port c2, etc.
+    """
+    combined = Concatenation.create(*components)
+    cdims = [c.cdim for c in components]
+    offsets = _cumsum([0] + cdims[:-1])
+    imap = []
+    omap = []
+    for (c1, op), (c2, ip) in connections:
+        op_idx = offsets[c1] + op
+        ip_idx = offsets[c2] + ip
+        imap.append(ip_idx)
+        omap.append(op_idx)
+    n = combined.cdim
+    nfb = len(connections)
+    
+    imapping = map_signals_circuit({k: im for k, im
+                                    in zip(range(n-nfb, n), imap)}, n)
+
+    omapping = map_signals_circuit({om: k for k, om
+                                    in zip(range(n-nfb, n), omap)}, n)
+
+    combined = omapping << combined << imapping
+    
+    for k in range(nfb):
+        combined = combined.feedback()
+    return combined
 
 
 
