@@ -530,7 +530,7 @@ class SLH(Circuit, Operation):
         one_minus_Snn = sympyOne - S[n, n]
 
         if isinstance(one_minus_Snn, Operator):
-            if isinstance(one_minus_Snn, ScalarTimesOperator) and one_minus_Snn.operands[1] == IdentityOperator():
+            if isinstance(one_minus_Snn, ScalarTimesOperator) and one_minus_Snn.term is IdentityOperator:
                 one_minus_Snn = one_minus_Snn.coeff
             else:
                 raise AlgebraError('Inversion not implemented for general operators')
