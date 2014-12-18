@@ -521,7 +521,8 @@ class SLH(Circuit, Operation):
         n = self.cdim - 1
 
         if out_index != n:
-            return (map_signals_circuit({out_index: n}, self.cdim).toSLH() << self).feedback(in_index=in_index)
+            return (map_signals_circuit({out_index: n}, self.cdim).toSLH() 
+                << self).feedback(in_index=in_index)
         elif in_index != n:
             return (self << map_signals_circuit({n: in_index}, self.cdim).toSLH()).feedback()
 
