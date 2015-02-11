@@ -31,12 +31,11 @@ For more details see :ref:`state_algebra`.
 
 from qnet.algebra.operator_algebra import *
 
-
+@six.add_metaclass(ABCMeta)
 class Ket(object):
     """
     Basic Ket algebra class to represent Hilbert Space states
     """
-    __metaclass__ = ABCMeta
 
     scalar_types = Operator.scalar_types
 

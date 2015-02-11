@@ -120,7 +120,7 @@ class _TestDelay(unittest.TestCase):
 
     def testToSLH(self):
         aslh = Delay().toSLH()
-        print aslh
+        print(aslh)
         self.assertIsInstance(aslh, SLH)
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ class QHDLParser(Parser):
         arch = self.architectures[arch_id]
         
         arch_circuit = arch.to_circuit()
-        print arch_circuit
+        print(arch_circuit)
         
     
     reserved = {
@@ -70,7 +70,7 @@ class QHDLParser(Parser):
         'int': 'INT'
     }
 
-    tokens = reserved.values() + [
+    tokens = list(reserved.values()) + [
         # Literals (identifier, integer constant, float constant, string constant, char const)
         'ID',
         'ICONST', 'FCONST',
@@ -582,6 +582,6 @@ class QHDLParser(Parser):
         
 
     def p_error(self, p):
-        print p, self.lexer.lineno
+        print(p, self.lexer.lineno)
         raise ParsingError()
 

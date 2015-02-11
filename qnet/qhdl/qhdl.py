@@ -35,7 +35,7 @@ from qnet.circuit_components.library import getCDIM
 
 def my_debug(msg):
     pass
-    # print msg
+    # print(msg)
 
 
 class QHDLError(Exception):
@@ -383,7 +383,7 @@ class Architecture(QHDLObject):
                     if name_in_e == 'OPEN':
                         continue
                     else:
-                        print self.signals, self.lossy_signals
+                        print(self.signals, self.lossy_signals)
                         
                         raise QHDLError('The entity %s does not define a port\
 and the architecture %s \
@@ -531,7 +531,7 @@ name %s ' % (entity.identifier, self.identifier, name_in_e))
         
         # Add signals as passthru lines below rest
         circuit = circuit + ca.cid(len(SS))
-#        print circuit
+#        print(circuit)
         
         # Do feedback from instance output to signals
         SSp = list(SS)
@@ -548,7 +548,7 @@ name %s ' % (entity.identifier, self.identifier, name_in_e))
                 circuit = circuit.feedback(k,l)
                 SSp.remove(sname)
                 OOp.remove((iname, pname))
-#        print circuit
+#        print(circuit)
         # Do feedback from signal output to instance inputs
         IIp = list(II)
         SSpp = list(SS)
@@ -592,7 +592,7 @@ name %s ' % (entity.identifier, self.identifier, name_in_e))
             if eport:
                 k = list(self.entity.in_port_identifiers).index(eport)
                 imapping[k] = i
-#        print imapping, II_effective,self.signal_to_global_in
+#        print(imapping, II_effective,self.signal_to_global_in)
         
         circuit = ca.map_signals_circuit(omapping, circuit.cdim) << circuit << ca.map_signals_circuit(imapping, circuit.cdim)
 
@@ -618,7 +618,7 @@ name %s ' % (entity.identifier, self.identifier, name_in_e))
         signals_qhdl = "    signal %s: fieldmode;\n" % ", ".join(self.signals.keys())
         format_map = lambda dd: ", ".join(["%s=>%s" % mm for mm in dd.items()])
         
-        format_ass = lambda name, (cname, generic_map, port_map) : \
+        format_ass = lambda name, cname, generic_map, port_map : \
                             "    %s: %s %s %s;" % (name, cname,\
                                                 ("" if not len(generic_map) \
                                                     else "generic map(%s);\n" % format_map(generic_map)),\
@@ -632,7 +632,7 @@ architecture %s of %s is %s %s
 """ % (self.identifier, self.entity.identifier,
         components_qhdl,
         signals_qhdl,
-        "\n     ".join([format_ass(a, v) for a,v in self.instance_assignments.items()]),
+        "\n     ".join([format_ass(a, *v) for a,v in self.instance_assignments.items()]),
         self.identifier)
         
         return ("\t"*tab_level) + ret_str.replace('\n', "\n"+ ("\t"*tab_level))

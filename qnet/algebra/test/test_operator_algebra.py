@@ -69,15 +69,28 @@ class TestOperatorAddition(unittest.TestCase):
         self.assertEqual(a+0, a)
         self.assertEqual(0+a, a)
         self.assertEqual(1 + a + 1, a + 2)
-        self.assertEqual(a + 2, OperatorPlus(ScalarTimesOperator(2,id),a))
+        self.assertEqual(a + 2, OperatorPlus(ScalarTimesOperator(2, id), a))
 
+    def testOperatorOrdering(self):
+        hs = local_space("1")
+        a = OperatorSymbol("a", hs)
+        b = OperatorSymbol("b", hs)
+        c = OperatorSymbol("c", hs)
+        self.assertEqual(c+b+a, OperatorPlus(a, b, c))
 
     def testAdditionToOperator(self):
         hs = local_space("hs")
         a = OperatorSymbol("a", hs)
         b = OperatorSymbol("b", hs)
         self.assertEqual(a + b, b + a)
-        self.assertEqual(a + b, OperatorPlus(a,b))
+        self.assertEqual(a + b, OperatorPlus(a, b))
+    
+    def testAdditionToOperatorProduct(self):
+        hs = local_space("hs")
+        a = OperatorSymbol("a", hs)
+        b = OperatorSymbol("b", hs)
+        self.assertEqual(a + b*b*a, b*b*a + a)
+        self.assertEqual(a + b*b*a, OperatorPlus(a, OperatorTimes(b, b, a)))
 
     def testSubtraction(self):
         hs = local_space("hs")
@@ -85,7 +98,7 @@ class TestOperatorAddition(unittest.TestCase):
         b = OperatorSymbol("b", hs)
         z = ZeroOperator
         self.assertEqual(a-a, z)
-        self.assertEqual(a-b, OperatorPlus(a, ScalarTimesOperator(-1,b)))
+        self.assertEqual(a-b, OperatorPlus(a, ScalarTimesOperator(-1, b)))
 
     def testHilbertSpace(self):
         h1 = local_space("h1")

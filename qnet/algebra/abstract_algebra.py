@@ -22,7 +22,8 @@ r"""
 Abstract Algebra
 ================
 
-The abstract algebra package provides a basic interface for defining custom Algebras.
+The abstract algebra package provides a basic interface
+    for defining custom Algebras.
 
 See :ref:`abstract_algebra` for more details.
 
@@ -30,19 +31,55 @@ See :ref:`abstract_algebra` for more details.
 from __future__ import division
 from functools import reduce
 from abc import ABCMeta, abstractmethod
+from types import MethodType
+import six
+
+import sys
+
+if six.PY3:
+    basestring = str
+    long = int
 
 
-#define our own exceptions/errors
+def _trace(fn):
+    """
+    Function decorator to receive debugging information about function calls and return values.
+
+    :param fn: Function whose calls to _trace
+    :type fn: FunctionType
+    :return: Decorated function
+    :rtype: FunctionType
+    """
+
+    ### uncomment for debugging
+    # def _tfn(*args, **kwargs):
+    #     print("[", "-" * 40)
+    #     ret = fn(*args, **kwargs)
+    #     print("{}({},{}) called".format(fn.__name__, ", ".join(repr(a) for a in args),
+    #                                     ", ".join(str(k) + "=" + repr(v) for k, v in kwargs.items())))
+    #     print("-->", repr(ret))
+    #     print("-" * 40, "]")
+    #     return ret
+    # return _tfn
+
+    return fn
+
+
+
+
+# define our own exceptions/errors
 class AlgebraException(Exception):
     """
-    Base class for all errors concerning the mathematical definitions and rules of an algebra.
+    Base class for all errors concerning the mathematical
+        definitions and rules of an algebra.
     """
     pass
 
 
 class AlgebraError(AlgebraException):
     """
-    Base class for all errors concerning the mathematical definitions and rules of an algebra.
+    Base class for all errors concerning the mathematical
+        definitions and rules of an algebra.
     """
     pass
 
@@ -56,16 +93,16 @@ class CannotSimplify(AlgebraException):
 
 class WrongSignatureError(AlgebraError):
     """
-    Raise when an operation is instantiated with operands of the wrong signature.
+    Raise when an operation is instantiated
+        with operands of the wrong signature.
     """
     pass
 
-
+@six.add_metaclass(ABCMeta)
 class Expression(object):
     """
     Basic class defining the basic methods any Expression object should implement.
     """
-    __metaclass__ = ABCMeta
 
     def substitute(self, var_map):
         """
@@ -287,6 +324,26 @@ def tex(obj):
 #    return p.sub(repl, identifier)
 
 
+class KeyTuple(tuple):
+    def __lt__(self, other):
+        print("<", self, other)
+        if isinstance(other, (long, basestring)):
+            return False
+        if isinstance(other, KeyTuple):
+            return super(KeyTuple, self).__lt__(other)
+        raise AlgebraException("Cannot compare: {}".format(other))
+
+    def __gt__(self, other):
+        print(">", self, other)
+        if isinstance(other, (long, basestring)):
+            return True
+        if isinstance(other, KeyTuple):
+            return super(KeyTuple, self).__gt__(other)
+        raise AlgebraException("Cannot compare: {}".format(other))
+
+
+
+
 def set_union(*sets):
     """
     Similar to ``sum()``, but for sets. Generate the union of an arbitrary number of set arguments.
@@ -361,6 +418,7 @@ class Operation(Expression):
     #     return "%s[%s]" % (self.__class__.__name__, ", ".join(map(mathematica, self.operands)))
 
     def __eq__(self, other):
+        # print(type(self), type(other), type(self) == type(other))
         return type(self) == type(other) and self.operands == other.operands
 
     def __hash__(self):
@@ -390,11 +448,11 @@ class Operation(Expression):
         try:
             return obj._order_key()
         except AttributeError:
-            return hash(obj)
+            return str(obj)
 
 
     def _order_key(self):
-        return (self.__class__.__name__,) + tuple(map(Operation.order_key, self.operands))
+        return KeyTuple((self.__class__.__name__,) + tuple(map(Operation.order_key, self.operands)))
 
 
 mathematica = lambda s: s
@@ -409,7 +467,7 @@ mathematica = lambda s: s
 
 inf = float('inf')
 
-
+@_trace
 def match_range(pattern):
     """
     Compute how many objects/operands a given pattern can minimally and maximally match.
@@ -460,7 +518,7 @@ class PatternTuple(tuple):
     def __getitem__(self, item):
         if isinstance(item, slice):
             #noinspection PyTypeChecker
-            return OperandsTuple(super(PatternTuple, self).__getitem__(item))
+            return PatternTuple(super(PatternTuple, self).__getitem__(item))
         return super(PatternTuple, self).__getitem__(item)
 
     def __getslice__(self, i, j):
@@ -483,26 +541,7 @@ class NamedPattern(Operation):
         super(NamedPattern, self).__init__(name, pattern)
 
 
-def _trace(fn):
-    """
-    Function decorator to receive debugging information about function calls and return values.
 
-    :param fn: Function whose calls to _trace
-    :type fn: FunctionType
-    :return: Decorated function
-    :rtype: FunctionType
-    """
-
-    def _tfn(*args, **kwargs):
-        print "[", "-" * 40
-        ret = fn(*args, **kwargs)
-        print "{}({},{}) called".format(fn.__name__, ", ".join(repr(a) for a in args),
-                                        ", ".join(str(k) + "=" + repr(v) for k, v in kwargs.items()))
-        print "-->", repr(ret)
-        print "-" * 40, "]"
-        return ret
-
-    return _tfn
 
 
 def _flatten(seq):
@@ -523,7 +562,7 @@ def _flatten(seq):
     return sres
 
 
-#@_trace
+@_trace
 def update_pattern(expr, match_obj):
     """
     Replace all wildcards in the pattern expression with their matched values as specified in a Match object.
@@ -546,7 +585,7 @@ def update_pattern(expr, match_obj):
     return expr
 
 
-#@_trace
+@_trace
 def match(pattern, expr):
     """
     Match a pattern against an expression and return a Match object if successful or False, if not.
@@ -605,7 +644,7 @@ def match(pattern, expr):
                             mrest = match(update_pattern(prest, m0), orest)
                         else:
                             mrest = match(prest, orest)
-                            #                    print m0, update_pattern(prest, m0), mrest
+                            #                    print(m0, update_pattern(prest, m0), mrest)
                         if mrest:
                             return m0 + mrest
                     return False
@@ -618,7 +657,7 @@ def match(pattern, expr):
                         mrest = match(update_pattern(prest, m0), orest)
                     else:
                         mrest = match(prest, orest)
-                    #                    print m0, update_pattern(prest, m0), mrest
+                    #                    print(m0, update_pattern(prest, m0), mrest)
                     if mrest:
                         return m0 + mrest
                 return False
@@ -826,9 +865,6 @@ def wc(name_mode="_", head=None, condition=None):
 ########################### CLASS DECORATORS TO ACHIEVE OPERAND PREPROCESSING ##########################################
 ########################################################################################################################
 
-#noinspection PyUnresolvedReferences
-from itertools import izip
-from types import MethodType
 
 
 def make_classmethod(method, cls):
@@ -858,7 +894,10 @@ def preprocess_create_with(method):
 
     # noinspection PyDocstring
     def decorator(dcls):
-        clsmtd = getattr(dcls, "create").im_func
+        if six.PY2:
+            clsmtd = getattr(dcls, "create").im_func
+        else:
+            clsmtd = getattr(dcls, "create").__func__
 
         # noinspection PyDocstring
         def dclsmtd(cls, *args):
@@ -876,7 +915,8 @@ def preprocess_create_with(method):
         dclsmtd.__name__ = "create"
 
         # noinspection PyTypeChecker
-        nmtd = make_classmethod(dclsmtd, dcls)
+        # nmtd = make_classmethod(dclsmtd, dcls)
+        nmtd = classmethod(dclsmtd)
         setattr(dcls, "create", nmtd)
         return dcls
 
@@ -942,7 +982,11 @@ def _orderby(dcls, clsmtd, cls, *ops):
         >>> Times.create(2,1)
             Times(1,2)
     """
-    return clsmtd(cls, *sorted(ops, key=cls.order_key))
+    try:
+        return clsmtd(cls, *sorted(ops, key=cls.order_key))
+    except TypeError as te:
+        print(list(map(cls.order_key,ops)))
+        raise te
 
 
 # noinspection PyTypeChecker
@@ -1060,7 +1104,7 @@ def _check_signature(dcls, clsmtd, cls, *ops):
     sgn = cls.signature
     if not len(ops) == len(sgn):
         raise WrongSignatureError()
-    if not all(extended_isinstance(o, s, dcls, cls) for o, s in izip(ops, sgn)):
+    if not all(extended_isinstance(o, s, dcls, cls) for o, s in zip(ops, sgn)):
         raise WrongSignatureError("class: {}, operands: {}".format(str(cls), str(ops)))
     return clsmtd(cls, *ops)
 
@@ -1087,7 +1131,7 @@ def _check_signature_assoc(dcls, clsmtd, cls, *ops):
     """
     sgn = cls.signature[0]
     if not all(extended_isinstance(o, sgn, dcls, cls) for o in ops):
-        print sgn, dcls, cls, ops
+        print(sgn, dcls, cls, ops)
         raise WrongSignatureError()
     return clsmtd(cls, *ops)
 
@@ -1204,7 +1248,10 @@ def _match_replace_binary(dcls, clsmtd, cls, *ops):
 
         if not(r is False):
             # if Operation is also "assoc", then expand out the operands of a binary-simplified result
-            if _assoc in getattr(cls.create.im_func, "decorators", ()) and isinstance(r, cls):
+            if _assoc in getattr(cls.create.im_func
+                                 if six.PY2
+                                 else cls.create.__func__,
+                                 "decorators", ()) and isinstance(r, cls):
                 ops = ops[:j - 1] + r.operands + ops[j + 1:]
             else:
                 ops = ops[:j - 1] + (r,) + ops[j + 1:]

@@ -36,7 +36,7 @@ def check_permutation(permutation):
     :type permutation: tuple
     :rtype: bool
     """
-    return list(sorted(permutation)) == range(len(permutation))
+    return list(sorted(permutation)) == list(range(len(permutation)))
 
 
 def invert_permutation(permutation):
@@ -78,7 +78,7 @@ def permutation_to_disjoint_cycles(permutation):
     current_cycle = [0]
 
     # keep track of all remaining/unvisited indices
-    permutation_nums = range(1,len(permutation))
+    permutation_nums = list(range(1,len(permutation)))
 
 
     cycles = []
@@ -116,7 +116,7 @@ def permutation_from_disjoint_cycles(cycles, offset = 0):
     :rtype: tuple
     """
     perm_length = sum(map(len, cycles))
-    res_perm = range(perm_length)
+    res_perm = list(range(perm_length))
     for c in cycles:
         p1 = c[0] - offset
         for p2 in c[1:]:
@@ -124,7 +124,7 @@ def permutation_from_disjoint_cycles(cycles, offset = 0):
             res_perm[p1] = p2
             p1 = p2
         res_perm[p1] = c[0] - offset #close cycle
-    assert sorted(res_perm) == range(perm_length)
+    assert sorted(res_perm) == list(range(perm_length))
     return tuple(res_perm)
 
 def permutation_to_block_permutations(permutation):
@@ -271,7 +271,7 @@ def full_block_perm(block_permutation, block_structure):
         offset = sum([block_structure[bp_inv[j]] for j in range(p_k)])
         fblockp += range(offset, offset + block_length)
 
-    assert sorted(fblockp) == range(sum(block_structure))
+    assert sorted(fblockp) == list(range(sum(block_structure)))
 
     return tuple(fblockp)
 
@@ -295,14 +295,14 @@ def block_perm_and_perms_within_blocks(permutation, block_structure):
     offsets = [sum(block_structure[:k]) for k in range(nblocks)]
     images = [permutation[offset: offset + length] for (offset, length) in zip(offsets, block_structure)]
 
-    images_mins = map(min, images)
+    images_mins = list(map(min, images))
 
 
     key_block_perm_inv = lambda block_index: images_mins[block_index]
 
     block_perm_inv = tuple(sorted(range(nblocks), key = key_block_perm_inv))
-    # print images_mins
-    # print permutation, block_structure, "-->", block_perm, invert_permutation(block_perm)
+    # print(images_mins)
+    # print(permutation, block_structure, "-->", block_perm, invert_permutation(block_perm))
     block_perm = invert_permutation(block_perm_inv)
 
     assert images_mins[block_perm_inv[0]] == min(images_mins)

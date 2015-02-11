@@ -57,7 +57,7 @@ def getCDIM(component_name):
     try:
         component_module = __import__("qnet.circuit_components.%s_cc" % camelcase_to_underscore(component_name),
             fromlist=['qnet.circuit_components'])
-    except ImportError, e:
+    except ImportError as e:
         raise ImportError("Could not retrieve Circuit file: %s" % e)
     return getattr(component_module, component_name).CDIM
 
@@ -83,7 +83,7 @@ def write_component(entity, architectures, local = False):
     """
 
     if len(architectures) > 1:
-        print "Warning: using only first architecture"
+        print("Warning: using only first architecture")
     arch = architectures.values().pop(0)
 
     arch_circuit, circuit_symbols, instance_assignments = arch.to_circuit()

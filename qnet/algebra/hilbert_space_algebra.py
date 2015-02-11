@@ -31,13 +31,11 @@ For more details see :ref:`hilbert_space_algebra`.
 
 from qnet.algebra.abstract_algebra import *
 
-
+@six.add_metaclass(ABCMeta)
 class HilbertSpace(object):
     """
     Basic Hilbert space class from which concrete classes are derived.
     """
-
-    __metaclass__ = ABCMeta
 
     def tensor(self, other):
         """
@@ -177,7 +175,7 @@ class TrivialSpace(HilbertSpace, Expression):
         return hash(self.__class__)
 
     def _order_key(self):
-        return -1,
+        return "____",
 
 #    def tensor(self, other):
 #        return other
@@ -219,7 +217,7 @@ class FullSpace(HilbertSpace, Expression):
         return hash(self.__class__)
 
     def _order_key(self):
-        return inf,
+        return "____",
 
 #    def tensor(self, other):
 #        return self

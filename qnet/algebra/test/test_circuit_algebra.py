@@ -141,7 +141,7 @@ class TestCircuitAlgebra(unittest.TestCase):
         self.assertEqual(CPermutation((1,0,3,2)).get_blocks(), (CPermutation((1,0)), CPermutation((1,0))))
         nt = len(test_perm)
         self.assertEqual(qtp << qtp.series_inverse(), circuit_identity(nt))
-        self.assertEqual(permute(list(invert_permutation(test_perm)), test_perm), range(nt))
+        self.assertEqual(permute(list(invert_permutation(test_perm)), test_perm), list(range(nt)))
         
     def testFactorizePermutation(self):
         self.assertEqual(full_block_perm((0,1,2), (1,1,1)), (0,1,2))
