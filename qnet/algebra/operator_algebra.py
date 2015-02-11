@@ -62,7 +62,9 @@ from numpy import (array as np_array,
                    arange,
                    cos as np_cos,
                    sin as np_sin,
-                   eye as np_eye, argwhere)
+                   eye as np_eye, 
+                   argwhere,
+                   int64, complex128, float64)
 from qnet.algebra.permutations import check_permutation
 
 sympyOne = sympify(1)
@@ -77,7 +79,7 @@ def adjoint(obj):
     except AttributeError:
         return obj.conjugate()
 
-
+@six.add_metaclass(ABCMeta)
 class Operator(object):
     """
     The basic operator class, which fixes the abstract interface of operator objects 
@@ -85,9 +87,9 @@ class Operator(object):
     Any operator contains an associated HilbertSpace object, 
     on which it is taken to act non-trivially.
     """
-    __metaclass__ = ABCMeta
+
     # which data types may serve as scalar coefficients
-    scalar_types = int, long, float, complex, SympyBasic
+    scalar_types = int, long, float, complex, SympyBasic, int64, complex128, float64
 
 
     @property
@@ -788,6 +790,7 @@ def tuple_sum(tuples, inital=0):
     return tuple(sum(tels, 0) for tels in zip(*tuples))
 
 
+
 @assoc
 @orderby
 @filter_neutral
@@ -808,12 +811,13 @@ class OperatorPlus(OperatorOperation):
 
     @classmethod
     def order_key(cls, a):
+
         if isinstance(a, ScalarTimesOperator):
             c = a.coeff
             if isinstance(c, SympyBasic):
-                c = str(c)
-            return Operation.order_key(a.term), c
-        return Operation.order_key(a), 1
+                c = inf
+            return KeyTuple((Operation.order_key(a.term), c))
+        return KeyTuple((Operation.order_key(a), 1))
 
     def _to_qutip(self, full_space=None):
         if full_space is None:
@@ -1925,8 +1929,8 @@ def vstackm(matrices):
     Generalizes `numpy.vstack` to OperatorMatrix objects.
     """
     arr = np_vstack(tuple(m.matrix for m in matrices))
-    #    print tuple(m.matrix.dtype for m in matrices)
-    #    print arr.dtype
+    #    print(tuple(m.matrix.dtype for m in matrices))
+    #    print(arr.dtype)
     return Matrix(arr)
 
 

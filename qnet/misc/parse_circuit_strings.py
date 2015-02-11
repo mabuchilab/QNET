@@ -22,7 +22,7 @@ Parse strings into Circuit expressions. See documentation for :py:func:`parse_ci
 """
 
 import qnet.algebra.circuit_algebra as ca
-from parser import Parser, ParsingError
+from qnet.misc.parser import Parser, ParsingError
 
 def parse_circuit_strings(circuit_string):
     """
@@ -92,7 +92,7 @@ class _CircuitExpressionParser(Parser):
         'p_sigma': 'PSIGMA',
     }
 
-    tokens = reserved.values() + [
+    tokens = list(reserved.values()) + [
         # Literals: identifier, integer constant
         'ID', 'ICONST',
         # Operations +, <<, >>
@@ -272,6 +272,6 @@ class _CircuitExpressionParser(Parser):
         )
         
     def p_error(self, p):
-        print self.lexer
-        print p, self.lexer.lineno  
+        print(self.lexer)
+        print(p, self.lexer.lineno  )
         raise ParseCircuitStringError(str(self.lexer) + ", " + str(p) + ", " + str(self.lexer.lineno))

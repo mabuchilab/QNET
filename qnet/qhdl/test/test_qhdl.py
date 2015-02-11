@@ -29,7 +29,7 @@ def parse(qhdl_string):
 
 def parse_first_architecture_to_circuit(qhdl_string):
     data = parse(qhdl_string)
-    return data['architectures'].values().pop().to_circuit()
+    return list(data['architectures'].values()).pop().to_circuit()
 
 
 qhdl_example_simplest_feedback = \
@@ -174,31 +174,31 @@ class TestQHDLtoCircuit(unittest.TestCase):
     def testFeedback2(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_feedback_2)
         self.assertEqual(circuit, symbols['BS'].feedback(0 , 1))
-        #print circuit, all_symbols['BS'].feedback(0 , 1)
+        #print(circuit, all_symbols['BS'].feedback(0 , 1))
     
     def testRedheffer(self):
         
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_redheffer)
         BS1, BS2 = symbols['BS1'], symbols['BS2']
-        # print circuit
+        # print(circuit)
         self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), 1, 1))
     
     def testOpenPorts1(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_Open1)
         BS1, BS2 = symbols['BS1'], symbols['BS2']
-        # print circuit
+        # print(circuit)
         self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), 1, 1))
             
     def testOpenPorts2(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_Open2)
         BS1, BS2 = symbols['BS1'], symbols['BS2']
-        # print circuit
+        # print(circuit)
         self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), 1, 1))
 
     def testOpenPorts3(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_Open3)
         BS1, BS2 = symbols['BS1'], symbols['BS2']
-        # print circuit
+        # print(circuit)
         self.assertEqual(circuit.series_inverse().series_inverse(), P_sigma(1,0) << FB(((BS1 + cid(1)) << (cid(1) + BS2 )), 1, 1))    
 
 if __name__ == '__main__':

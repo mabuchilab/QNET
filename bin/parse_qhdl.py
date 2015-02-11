@@ -60,14 +60,14 @@ def parse_qhdl_file(filename):
     # try:
     e_a_dict = parser.parse_file(filename)
     return keys_dict(e_a_dict)
-    # except Exception, err:
+    # except Exception as err:
         # raise Usage(str(err))
 
 def parse_qhdl(qhdl_string):
     try:
         e_a_dict =  parser.parse(qhdl_string)
         return keys_dict(e_a_dict)
-    except Exception, err:
+    except Exception as err:
         
         
         raise Usage(str(err))
@@ -109,7 +109,7 @@ def main(argv=None):
         if True:
             try:
                 opts, args = getopt.getopt(argv[1:], "hf:dLl", ["help",  "file=", "debug", "write-lib", "write-local"])
-            except getopt.error, msg:
+            except getopt.error as msg:
                 raise Usage(msg)
             debug = False
             input_file = False
@@ -140,49 +140,49 @@ def main(argv=None):
             if input_file:
                 try:
                     p_dict = parse_qhdl_file(input_file)
-                except Exception, e:
-                    print "An Error occurred while parsing: ", type(e), str(e)
+                except Exception as e:
+                    print("An Error occurred while parsing: ", type(e), str(e))
             else:
-                 print "No input file supplied"
+                 print("No input file supplied")
                  raise Usage(help_message)
             
-            print "/* " + "-"*37
+            print("/* " + "-"*37)
 
 
             for name, lst in p_dict.items():
-                print "-"*40
-                print "Found %s:" % name
-                print "\t" + ", ".join(lst)
-                print "-"*40
+                print("-"*40)
+                print("Found %s:" % name)
+                print("\t" + ", ".join(lst))
+                print("-"*40)
 
             
 
-            print "Creating algebraic Circuit expressions for all architectures..."
+            print("Creating algebraic Circuit expressions for all architectures...")
             for name, (circuit, circuit_symbols, assignments) in circuit_generator():
-                print "Circuit for entity '%s':" % name
-                print str(circuit)
-                print "-"*40
-                print "Python representation:"
-                print repr(circuit)
-                print "-"*40
-                print "LaTeX expression"
-                print circuit.tex()
-                print "-"*40
+                print("Circuit for entity '%s':" % name)
+                print(str(circuit))
+                print("-"*40)
+                print("Python representation:")
+                print(repr(circuit))
+                print("-"*40)
+                print("LaTeX expression")
+                print(circuit.tex())
+                print("-"*40)
 
             if write_lib:
-                print "Writing and installing library file entity..."
+                print("Writing and installing library file entity...")
                 for file_name in write_modules():
-                    print "Wrote %s" % file_name
-                print "-"*40
+                    print("Wrote %s" % file_name)
+                print("-"*40)
 
             if write_local:
-                print "Creating local python module..."
+                print("Creating local python module...")
                 for file_name in write_modules(local = True):
-                    print "Wrote %s" % file_name
-                print "-" * 40
+                    print("Wrote %s" % file_name)
+                print("-" * 40)
 
-    except Usage, err:
-        print >> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg)
+    except Usage as err:
+        print(>> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg))
         return 2
     
     return 0

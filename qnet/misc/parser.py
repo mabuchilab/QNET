@@ -48,7 +48,7 @@ class Parser(object):
             modname = "parser" + "_" + self.__class__.__name__
         self.debugfile = modname + ".dbg"
         self.tabmodule = modname + "_" + "parsetab"
-        # print self.debugfile, self.tabmodule
+        # print(self.debugfile, self.tabmodule)
 
         # Build the lexer and parser
 

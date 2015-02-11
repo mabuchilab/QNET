@@ -18,16 +18,17 @@
 #
 ###########################################################################
 
-#TODO add documentation
 
-from itertools import izip
+import sys
+
 
 import pyx
 
-import parse_circuit_strings
+import qnet.misc.parse_circuit_strings as parse_circuit_strings
 import qnet.algebra.circuit_algebra as ca
 from qnet.circuit_components.component import Component, SubComponent
-texrunner = pyx.text.texrunner(mode='latex')
+if sys.version_info < (3,0):
+    from itertools import izip as zip
 
 
 HUNIT = +4      # Basic unit for the width of a single Circuit object
@@ -114,7 +115,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         c.text(hunit/2., nc * vunit/2., texstr , [pyx.text.halign.boxcenter, pyx.text.valign.middle])
         
         # draw connectors at half-unit positions
-        connector_positions = tuple((.5 + k) for k in xrange(nc))
+        connector_positions = tuple((.5 + k) for k in range(nc))
         for y in connector_positions:
             c.stroke(pyx.path.line(0, y * vunit, rhmargin * hunit, y * vunit), [pyx.deco.earrow()])
             c.stroke(pyx.path.line(hunit * (1 - rhmargin), y * vunit, hunit, y * vunit))
@@ -124,11 +125,11 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
     elif isinstance(circuit, ca.CPermutation):
         permutation = circuit.permutation
         
-        connector_positions = tuple((k + 0.5) for k in xrange(nc))
+        connector_positions = tuple((k + 0.5) for k in range(nc))
         target_positions = [connector_positions[permutation[k]] for k in range(nc)]
         
         # draw curves
-        for y1, y2 in izip(connector_positions, target_positions):
+        for y1, y2 in zip(connector_positions, target_positions):
             if permutation_arrows:
                 c.stroke(_curve(0, y1, rpermutation_length, y2, hunit = hunit, vunit = vunit), [pyx.deco.earrow()])
             else:
@@ -323,7 +324,7 @@ def draw_circuit(circuit, filename, direction = 'lr',
                                             draw_boxes = draw_boxes,
                                             permutation_arrows = permutation_arrows)
     except ValueError as e:
-        print ("No graphics returned for circuit {!r}".format(circuit))
+        print( ("No graphics returned for circuit {!r}".format(circuit)))
         return False
     if any(filename.endswith(suffix) for suffix in ('.pdf', '.eps', '.ps')):
         c.writetofile(filename)

@@ -36,7 +36,7 @@ def euler_mayurama_complex(f, g, x0, m, h, steps_per_sample, n_samples, include_
         for mm in range(steps_per_sample):
             x += f(x, t) * h + g(x, t).dot(dA[mm])
             t += h
-        # print ".",
+        # print(".",)
         times[nn+1] = t
         xs[nn+1] = x
         dAs[nn] = dA[0]
@@ -79,11 +79,11 @@ def euler_mayurama_complex(f, g, x0, m, h, steps_per_sample, n_samples, include_
     t = 0.
     for nn in range(n_samples):
         dA = np.random.randn(steps_per_sample, m) * np.sqrt(h) + (np.sqrt(h) * 1j) * np.random.randn(steps_per_sample, m)
-        update_step = lambda (x, t), dAt: (x + f(x, t) * h + g(x, t).dot(dAt), t+h)
+        update_step = lambda x_t, dAt: (x_t[0] + f(*x_t) * h + g(*x_t).dot(dAt), x_t[1]+h)
         # for mm in range(steps_per_sample):
         #     x += f(x, t) * h + g(x, t).dot(dA[mm])
         #     t += h
-        # print ".",
+        # print(".",)
         x, t = reduce(update_step, dA, (x, t))
         times[nn+1] = t
         xs[nn+1] = x

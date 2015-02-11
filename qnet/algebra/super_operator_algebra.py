@@ -34,7 +34,7 @@ from numpy import sqrt as np_sqrt
 
 from qnet.algebra.operator_algebra import *
 
-
+@six.add_metaclass(ABCMeta)
 class SuperOperator(object):
     """
     The super-operator abstract base class.
@@ -42,8 +42,6 @@ class SuperOperator(object):
     Any super-operator contains an associated HilbertSpace object,
     on which it is taken to act non-trivially.
     """
-
-    __metaclass__ = ABCMeta
 
     # which data types may serve as scalar coefficients
     scalar_types = Operator.scalar_types

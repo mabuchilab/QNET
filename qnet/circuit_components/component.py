@@ -93,7 +93,7 @@ class Component(Circuit, Expression):
                 setattr(self, pname, val)
             else:
                 del kwparams[pname]
-                print "Unknown parameter!"
+                print("Unknown parameter!")
         self._repr = "{}({!r},{!r}{})".format(self.__class__.__name__, self.name, self.namespace, "".join(", {}={!r}".format(k,v) for k,v in kwparams.items()))
         self._hash = hash((self.__class__, name, namespace, tuple(sorted(kwparams.items()))))
 

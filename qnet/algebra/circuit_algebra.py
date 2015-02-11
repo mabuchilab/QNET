@@ -71,13 +71,11 @@ class IncompatibleBlockStructures(AlgebraError):
     that is icompatible with the actual block structure of the circuit expression.
     """
 
-
+@six.add_metaclass(ABCMeta)
 class Circuit(object):
     """
     Abstract base class for the circuit algebra elements.
     """
-
-    __metaclass__ = ABCMeta
 
     @property
     def cdim(self):
@@ -1011,7 +1009,7 @@ class SeriesProduct(Circuit, Operation):
         """
 
         def __eq__(self, other):
-            #            print "neutral?", other
+            #            print("neutral?", other)
             return self is other or other == cid(other.cdim)
 
         def __ne__(self, other):
@@ -1033,7 +1031,7 @@ class SeriesProduct(Circuit, Operation):
     def _tex(self):
         ret = " \lhd ".join("{{{}}}".format(o.tex()) if not isinstance(o, Concatenation)
                             else r"\left({}\right)".format(o.tex()) for o in self.operands)
-        #        print ret
+        #        print(ret)
         return ret
 
     def __str__(self):
@@ -1125,7 +1123,7 @@ class Concatenation(Circuit, Operation):
         current_length = 0
         for bl in block_structure:
             while current_length < bl:
-                next_op = block_iter.next()
+                next_op = next(block_iter)
                 cbo.append(next_op)
                 current_length += next_op.cdim
             if current_length != bl:
@@ -1224,7 +1222,7 @@ class CPermutation(Circuit, Operation):
         """
         if not check_permutation(permutation):
             raise BadPermutationError(str(permutation))
-        if list(permutation) == range(len(permutation)):
+        if list(permutation) == list(range(len(permutation))):
             return cid(len(permutation))
         return super(CPermutation, cls).create(permutation)
 
@@ -1308,10 +1306,10 @@ class CPermutation(Circuit, Operation):
         for l in block_structure:
             while len(current_perm) < l:
                 offset = len(current_perm)
-                current_perm += [p + offset for p in block_perm_iter.next()]
+                current_perm += [p + offset for p in next(block_perm_iter)]
 
             if len(current_perm) != l:
-                # print block_structure, self.block_perms, block_perms
+                # print(block_structure, self.block_perms, block_perms)
                 raise Exception
 
             block_perms.append(tuple(current_perm))
@@ -1341,7 +1339,7 @@ class CPermutation(Circuit, Operation):
         block_perm, perms_within_blocks = block_perm_and_perms_within_blocks(self.permutation, block_structure)
         fblockp = full_block_perm(block_perm, block_structure)
 
-        if not sorted(fblockp) == range(self.cdim):
+        if not sorted(fblockp) == list(range(self.cdim)):
             raise BadPermutationError()
 
         new_rhs_circuit = CPermutation.create(fblockp)
@@ -1439,7 +1437,7 @@ class CPermutation(Circuit, Operation):
         """
         n = self.cdim
         if not (0 <= out_index < n):
-            print self, out_index
+            print(self, out_index)
             raise Exception
         out_inv = self.permutation.index(out_index)
 
@@ -1522,7 +1520,7 @@ def map_signals(mapping, n):
     :rtype: tuple
     :raise: ValueError
     """
-    free_values = range(n)
+    free_values = list(range(n))
 
     for v in mapping.values():
         if v >= n:
@@ -1533,13 +1531,13 @@ def map_signals(mapping, n):
             raise ValueError('the mapping cannot map keys larger than cdim - 1')
     # sorted(set(range(n)).difference(set(mapping.values())))
     permutation = []
-    # print free_values, mapping, n
+    # print(free_values, mapping, n)
     for k in range(n):
         if k in mapping:
             permutation.append(mapping[k])
         else:
             permutation.append(free_values.pop(0))
-    # print permutation
+    # print(permutation)
     return tuple(permutation)
 
 
@@ -1797,10 +1795,16 @@ def _tensor_decompose_series(lhs, rhs):
     """
     if isinstance(rhs, CPermutation):
         raise CannotSimplify()
-    res_struct = get_common_block_structure(lhs.block_structure, rhs.block_structure)
+    res_struct = get_common_block_structure(
+        lhs.block_structure,
+        rhs.block_structure
+        )
     if len(res_struct) > 1:
-        blocks, oblocks = lhs.get_blocks(res_struct), rhs.get_blocks(res_struct)
-        parallel_series = [SeriesProduct.create(lb, rb) for (lb, rb) in izip(blocks, oblocks)]
+        blocks, oblocks = (
+            lhs.get_blocks(res_struct),
+            rhs.get_blocks(res_struct))
+        parallel_series = [SeriesProduct.create(lb, rb)
+                           for (lb, rb) in zip(blocks, oblocks)]
         return Concatenation.create(*parallel_series)
     raise CannotSimplify()
 
