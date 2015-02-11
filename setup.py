@@ -47,13 +47,17 @@ setup(
         'qutip>=3.0.1',
         'pyx==0.12.1' if sys.version_info < (3, 0) else 'pyx>=0.13',
     ],
-    dependency_links=(
-        ["http://downloads.sourceforge.net/project/pyx/pyx/0.12.1/"
+    dependency_links=[
+        ("http://downloads.sourceforge.net/project/pyx/pyx/0.12.1/"
          + "PyX-0.12.1.tar.gz?r=http%3A%2F%2Fsourceforge.net"
          + "%2Fprojects%2Fpyx%2Ffiles%2Fpyx%2F"
-         + "0.12.1%2F&ts=1407271744&use_mirror=kent"]
-        if sys.version_info < (3, 0) else []
-    ),
+         + "0.12.1%2F&ts=1407271744&use_mirror=kent")
+        if sys.version_info < (3, 0) else (
+            "http://downloads.sourceforge.net/project/pyx/pyx/0.13/"
+            + "PyX-0.13.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects"
+            + "%2Fpyx%2Ffiles%2F&ts=1423687678&use_mirror=iweb"
+            )
+    ],
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
