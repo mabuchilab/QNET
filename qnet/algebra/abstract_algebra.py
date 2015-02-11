@@ -326,7 +326,7 @@ def tex(obj):
 
 class KeyTuple(tuple):
     def __lt__(self, other):
-        print("<", self, other)
+        # print("<", self, other)
         if isinstance(other, (long, basestring)):
             return False
         if isinstance(other, KeyTuple):
@@ -334,7 +334,7 @@ class KeyTuple(tuple):
         raise AlgebraException("Cannot compare: {}".format(other))
 
     def __gt__(self, other):
-        print(">", self, other)
+        # print(">", self, other)
         if isinstance(other, (long, basestring)):
             return True
         if isinstance(other, KeyTuple):
