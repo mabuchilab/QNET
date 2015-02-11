@@ -23,12 +23,16 @@ import sys
 
 
 import pyx
-
+import six
 import qnet.misc.parse_circuit_strings as parse_circuit_strings
 import qnet.algebra.circuit_algebra as ca
 from qnet.circuit_components.component import Component, SubComponent
-if sys.version_info < (3,0):
+
+if six.PY2:
     from itertools import izip as zip
+    texrunner = pyx.text.texrunner(mode='latex')
+else:
+    pyx.text.set(pyx.text.LatexRunner)
 
 
 HUNIT = +4      # Basic unit for the width of a single Circuit object
@@ -42,6 +46,7 @@ VUNIT = -1.     # Basic unit for the height of a single Circuit object,
 RHMARGIN = .1   # Relative horizontal margin between gridline and Circuit object
 RVMARGIN = .2   # Relative vertical margin between gridline and Circuit object
 RPLENGTH = .4   # Relative width of a channel permutation
+
 
 
 # helper function
