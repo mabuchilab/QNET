@@ -555,7 +555,7 @@ class SLH(Circuit, Operation):
 
 
     def symbolic_liouvillian(self):
-        from super_operator_algebra import liouvillian
+        from qnet.algebra.super_operator_algebra import liouvillian
 
         return liouvillian(self.H, self.L)
 
