@@ -2340,7 +2340,7 @@ def try_adiabatic_elimination(slh, k=None, fock_trunc=6, sub_P0=True):
         terms = set(termcoeffs.keys())
 
         for term in terms - projectors:
-            if not isinstance(term, LocalProjector):
+            if (not isinstance(term, LocalSigma) or not term.operands[1] == term.operands[2]):
                 raise CannotEliminateAutomatically(
                     "Proj. Y operator has off-diagonal term: ~{}".format(term)
                     )
