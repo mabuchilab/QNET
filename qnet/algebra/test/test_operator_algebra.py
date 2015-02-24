@@ -170,6 +170,12 @@ class TestScalarTimesOperator(unittest.TestCase):
         self.assertEqual(a*0, z)
         self.assertEqual(10 * z, z)
 
+    def testHashability(self):
+        self.assertEqual(
+            hash(ScalarTimesOperator(1, Create(1))),
+            hash((ScalarTimesOperator, (1, Create(1))))
+        )
+
     def testEquality(self):
         self.assertEqual(5*Create(1), (6-1)* Create(1))
 

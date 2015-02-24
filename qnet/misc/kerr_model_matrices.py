@@ -100,7 +100,7 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
     
     print("computing QSDEs")
     # compute the QSDEs for the internal operators
-    eoms = [slh_input.symbolic_heisenberg_eom(Destroy(s), noises=noises).expand().simplify_scalar() for s in modes]
+    eoms = [slh_input.symbolic_heisenberg_eom(Destroy(s), noises=noises) for s in modes]
     
     
     print("Extracting matrices")

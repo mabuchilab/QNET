@@ -71,6 +71,12 @@ class IncompatibleBlockStructures(AlgebraError):
     that is icompatible with the actual block structure of the circuit expression.
     """
 
+
+class CannotEliminateAutomatically(AlgebraError):
+    """
+    Raised when attempted automatic adiabatic elimination fails.
+    """
+
 @six.add_metaclass(ABCMeta)
 class Circuit(object):
     """
@@ -549,7 +555,7 @@ class SLH(Circuit, Operation):
 
 
     def symbolic_liouvillian(self):
-        from super_operator_algebra import liouvillian
+        from qnet.algebra.super_operator_algebra import liouvillian
 
         return liouvillian(self.H, self.L)
 
@@ -575,7 +581,7 @@ class SLH(Circuit, Operation):
 
 
     #noinspection PyRedeclaration
-    def symbolic_heisenberg_eom(self, X=None, noises=None):
+    def symbolic_heisenberg_eom(self, X=None, noises=None, expand_simplify=True):
         """
         Compute the symbolic Heisenberg equations of motion of a system operator X.
         If no X is given, an OperatorSymbol is created in its place.
@@ -607,6 +613,8 @@ class SLH(Circuit, Operation):
             if len(S.space & X.space):
                 comm = (S.adjoint() * X * S - X)
                 ret += (comm * LambdaT).expand().trace()
+        if expand_simplify:
+            ret = ret.expand().simplify_scalar()
         return ret
 
     def __iter__(self):
@@ -2054,7 +2062,7 @@ Feedback._rules += [
 #     noises = [OperatorSymbol('b_{{{}}}'.format(n), "ext({})".format(n)) for n in range(cdim)]
 #
 #     # compute the QSDEs for the internal operators
-#     eoms = [slh.symbolic_heisenberg_eom(Destroy(s), noises=noises).expand().simplify_scalar() for s in modes]
+#     eoms = [slh.symbolic_heisenberg_eom(Destroy(s), noises=noises) for s in modes]
 #
 #     # use the coefficients to generate A, B matrices
 #     for jj, sjj in enumerate(modes):
@@ -2190,7 +2198,7 @@ def getABCD(slh, a0={}, doubled_up=True):
 
     print("computing QSDEs")
     # compute the QSDEs for the internal operators
-    eoms = [slh_displaced.symbolic_heisenberg_eom(Destroy(s), noises=noises).expand().simplify_scalar() for s in modes]
+    eoms = [slh_displaced.symbolic_heisenberg_eom(Destroy(s), noises=noises) for s in modes]
 
     print("Extracting matrices")
     # use the coefficients to generate A, B matrices
@@ -2303,6 +2311,58 @@ def eval_adiabatic_limit(YABFGN, Ytilde, P0):
     Nlim = (P0 * N * dN * P0).expand().simplify_scalar()
 
     return SLH(Nlim.dag(), Ldlim.dag(), Hlim.dag())
+
+
+def try_adiabatic_elimination(slh, k=None, fock_trunc=6, sub_P0=True):
+    """
+    Attempt to automatically carry out the adiabatic elimination procedure
+     on slh with scaling parameter k.
+
+    This will project the Y operator onto
+    a truncated basis with dimension specified by fock_trunc.
+    sub_P0 controls whether an attempt is made to replace the
+    kernel projector P0 by an IdentityOperator.
+    """
+    ops = prepare_adiabatic_limit(slh, k)
+    Y = ops[0]
+    if isinstance(Y.space, LocalSpace):
+        try:
+            b = Y.space.basis()
+            if len(b) > fock_trunc:
+                b = b[:fock_trunc]
+        except BasisNotSetError:
+            b = range(fock_trunc)
+        projectors = set(LocalProjector(Y.space, ll) for ll in b)
+        Id_trunc = sum(projectors, ZeroOperator)
+        Yprojection = ((Id_trunc * Y).expand()
+                       * Id_trunc).expand().simplify_scalar()
+        termcoeffs = get_coeffs(Yprojection)
+        terms = set(termcoeffs.keys())
+
+        for term in terms - projectors:
+            if (not isinstance(term, LocalSigma) or not term.operands[1] == term.operands[2]):
+                raise CannotEliminateAutomatically(
+                    "Proj. Y operator has off-diagonal term: ~{}".format(term)
+                    )
+        P0 = sum(projectors - terms, ZeroOperator)
+        if P0 == ZeroOperator:
+            raise CannotEliminateAutomatically("Empty null-space of Y!")
+
+        Yinv = sum(t/termcoeffs[t] for t in terms & projectors)
+        assert ((Yprojection*Yinv).expand().simplify_scalar()
+                == (Id_trunc - P0).expand())
+        slhlim = eval_adiabatic_limit(ops, Yinv, P0)
+
+        if sub_P0:
+            # TODO for non-unit rank P0, this will not work
+            slhlim = slhlim.substitute(
+                {P0: IdentityOperator}).expand().simplify_scalar()
+        return slhlim
+
+    else:
+        raise CannotEliminateAutomatically(
+            "Currently only single degree of freedom Y-operators supported"
+            )
 
 
 def _cumsum(lst):

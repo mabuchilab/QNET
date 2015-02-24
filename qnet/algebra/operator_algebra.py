@@ -1133,6 +1133,11 @@ class ScalarTimesOperator(Operator, Operation):
             return self.coeff == other
         return super(ScalarTimesOperator, self).__eq__(other)
 
+    # When overloading __eq__ it can mess up the hashability unless we explicitly also overload
+    # __hash__, very subtle python3 bug, first found by David Richie.
+    def __hash__(self):
+        return super(ScalarTimesOperator, self).__hash__()
+
 
     def _substitute(self, var_map):
         st = self.term.substitute(var_map)
