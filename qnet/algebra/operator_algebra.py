@@ -853,7 +853,33 @@ class OperatorPlus(OperatorOperation):
         return ret
 
 
+def _coeff_term(op):
+    if isinstance(op, ScalarTimesOperator):
+        return op.coeff, op.term
+    else:
+        return 1, op
+
+# noinspection PyDocstring
+# noinspection PyUnusedLocal
+def _factor_coeff(dcls, clsmtd, cls, *ops):
+    """
+    Factor out coefficients of all factors.
+
+    """
+    coeffs, nops = zip(*map(_coeff_term, ops))
+    coeff = prod(coeffs, 1)
+    if coeff == 1:
+        return clsmtd(cls, *nops)
+    else:
+        return coeff * clsmtd(cls, *nops)
+
+
+# noinspection PyTypeChecker
+factor_coeff = preprocess_create_with(_factor_coeff)
+
+
 @assoc
+@factor_coeff
 @orderby
 @filter_neutral
 @match_replace_binary
