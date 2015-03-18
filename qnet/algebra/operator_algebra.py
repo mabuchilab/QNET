@@ -879,7 +879,7 @@ factor_coeff = preprocess_create_with(_factor_coeff)
 
 
 @assoc
-@factor_coeff
+# @factor_coeff
 @orderby
 @filter_neutral
 @match_replace_binary
@@ -994,7 +994,7 @@ class OperatorTimes(OperatorOperation):
         # store tuples of summands of all expanded factors
         eopssummands = [eo.operands if isinstance(eo, OperatorPlus) else (eo,) for eo in eops]
         # iterate over a cartesian product of all factor summands, form product of each tuple and sum over result
-        ret = sum((OperatorTimes.create(*combo) for combo in cartesian_product(*eopssummands)), ZeroOperator)
+        ret = sum((prod(combo) for combo in cartesian_product(*eopssummands)), ZeroOperator)
         if isinstance(ret, OperatorPlus):
             return ret.expand()
         return ret
