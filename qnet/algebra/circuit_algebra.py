@@ -2228,7 +2228,7 @@ def getABCD(slh, a0={}, doubled_up=True):
         coeffsjj = get_coeffs(Ljj)
         c[jj] = coeffsjj[IdentityOperator]
         if doubled_up:
-            c[jj+cdim] + coeffsjj[IdentityOperator].conjugate()
+            c[jj+cdim] = coeffsjj[IdentityOperator].conjugate()
 
         for kk, skk in enumerate(modes):
             C[jj, kk] = coeffsjj[Destroy(skk)]
