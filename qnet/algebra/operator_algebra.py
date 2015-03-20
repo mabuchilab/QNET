@@ -1763,7 +1763,9 @@ class Matrix(Expression):
         return self._hash
 
     def __eq__(self, other):
-        return isinstance(other, Matrix) and (self.matrix == other.matrix).all()
+        return (isinstance(other, Matrix) 
+                and self.shape == other.shape 
+                and (self.matrix == other.matrix).all())
 
     def __add__(self, other):
         if isinstance(other, Matrix):
