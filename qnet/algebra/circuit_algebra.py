@@ -2176,6 +2176,8 @@ def getABCD(slh, a0={}, doubled_up=True):
             o = o.expand()
             if o is IdentityOperator:
                 o = 1
+            elif o is ZeroOperator:
+                o = 0
             elif isinstance(o, ScalarTimesOperator):
                 assert o.term is IdentityOperator
                 o = o.coeff
