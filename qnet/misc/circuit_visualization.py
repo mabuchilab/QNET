@@ -164,13 +164,14 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         c.insert(previous_csub)
         hoffset += previous_dims[0]
         
-        max_height = nc
+        max_height = previous_dims[1]
         
         # this will later become the full series in-port coordinate tuple
         first_c_in = previous_c_in
         
         # now add all other operand subsystems
         for csub, dims, c_in, c_out in sub_graphics[1:]:
+            assert dims[1] >= 0
             
             max_height = max(dims[1], max_height)
             
@@ -191,7 +192,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
             c.insert(csub, [pyx.trafo.translate(hunit * hoffset, 0)])
             hoffset += dims[0]
         if draw_boxes:
-            b = pyx.path.rect(.5 * rhmargin * hunit, .5 * rvmargin * vunit, hoffset * hunit - 1. * rhmargin * hunit, max_height * vunit -  rvmargin * vunit)
+            b = pyx.path.rect(.5 * rhmargin * hunit, .5 * rvmargin * vunit, hoffset * hunit - 1. * rhmargin * hunit, max_height * vunit +  rvmargin * vunit)
             c.stroke(b, [pyx.style.linewidth.thin, pyx.style.linestyle.dashed, pyx.color.rgb.red])
         
         
@@ -277,7 +278,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         for y in new_c_out:
             c.stroke(pyx.path.line((width + .5 * rhmargin) * hunit, y * vunit, (width + rhmargin) * hunit, y * vunit))
         
-        return c, (width + rhmargin, height + 1 + rvmargin), new_c_in, new_c_out
+        return c, (width + rhmargin, height + rvmargin), new_c_in, new_c_out
     
     raise Exception('Visualization not implemented for type %s' % type(circuit))
 
