@@ -1232,6 +1232,7 @@ def _match_replace_binary(dcls, clsmtd, cls, *ops):
             FilterDupes(1,2,3,2,4)
     """
     _rules = cls._binary_rules
+    # print("entering: ", ops)
     j = 1
     while j < len(ops):
         first, second = ops[j - 1], ops[j]
@@ -1259,7 +1260,7 @@ def _match_replace_binary(dcls, clsmtd, cls, *ops):
                 j -= 1
         else:
             j += 1
-
+    # print("exiting: ", ops)
     return clsmtd(cls, *ops)
 
 

@@ -345,7 +345,6 @@ class Circuit(object):
             return Concatenation.create(self, other)
         return NotImplemented
 
-
 class SLH(Circuit, Operation):
     """
     SLH class to encapsulate an open system model that is parametrized as described in [2]_ , [3]_ ::
@@ -364,9 +363,11 @@ class SLH(Circuit, Operation):
     #noinspection PyRedeclaration,PyUnresolvedReferences
     def __init__(self, S, L, H):
         if not isinstance(S, Matrix):
-            S = Matrix(S)
+            S = Matrix(S) * IdentityOperator
         if not isinstance(L, Matrix):
-            L = Matrix(L)
+            L = Matrix(L) * IdentityOperator
+        if not isinstance(H, Operator):
+            H = H * IdentityOperator
         if S.shape[0] != L.shape[0]:
             raise ValueError('S and L misaligned: S = {!r}, L = {!r}'.format(S, L))
 
@@ -535,10 +536,12 @@ class SLH(Circuit, Operation):
         one_minus_Snn = sympyOne - S[n, n]
 
         if isinstance(one_minus_Snn, Operator):
-            if isinstance(one_minus_Snn, ScalarTimesOperator) and one_minus_Snn.term is IdentityOperator:
+            if one_minus_Snn is IdentityOperator:
+                one_minus_Snn = 1
+            elif isinstance(one_minus_Snn, ScalarTimesOperator) and one_minus_Snn.term is IdentityOperator:
                 one_minus_Snn = one_minus_Snn.coeff
             else:
-                raise AlgebraError('Inversion not implemented for general operators')
+                raise AlgebraError('Inversion not implemented for general operators: {}'.format(one_minus_Snn))
 
         one_minus_Snn_inv = sympyOne / one_minus_Snn
 
@@ -2169,8 +2172,19 @@ def getABCD(slh, a0={}, doubled_up=True):
         c = np_zeros(cdim, dtype=object)
 
     def _as_complex(o):
+        if isinstance(o, Operator):
+            o = o.expand()
+            if o is IdentityOperator:
+                o = 1
+            elif o is ZeroOperator:
+                o = 0
+            elif isinstance(o, ScalarTimesOperator):
+                assert o.term is IdentityOperator
+                o = o.coeff
+            else:
+                raise ValueError("{} is not trivial operator".format(o))
         try:
-            return complex(o.coeff) if (isinstance(o, ScalarTimesOperator) and o.term is IdentityOperator) else o
+            return complex(o)
         except TypeError:
             return o
 
@@ -2228,7 +2242,7 @@ def getABCD(slh, a0={}, doubled_up=True):
         coeffsjj = get_coeffs(Ljj)
         c[jj] = coeffsjj[IdentityOperator]
         if doubled_up:
-            c[jj+cdim] + coeffsjj[IdentityOperator].conjugate()
+            c[jj+cdim] = coeffsjj[IdentityOperator].conjugate()
 
         for kk, skk in enumerate(modes):
             C[jj, kk] = coeffsjj[Destroy(skk)]
@@ -2376,7 +2390,7 @@ def _cumsum(lst):
     return ret
 
 
-def connect(components, connections):
+def connect(components, connections, force_SLH=True, expand_simplify=True):
     """
     Connect a list of components according to a list of connections.
 
@@ -2386,6 +2400,9 @@ def connect(components, connections):
         ((c3_index, p3_index), (c4_index, p4_index)), ...
         specifying connections from component c1, port p1
             to component c2, port c2, etc.
+    :param force_SLH: Enforce conversion to an SLH object before applying
+        feedback. Set to False if you are working with pure
+        CircuitSymbol objects.
     """
     combined = Concatenation.create(*components)
     cdims = [c.cdim for c in components]
@@ -2399,7 +2416,7 @@ def connect(components, connections):
         omap.append(op_idx)
     n = combined.cdim
     nfb = len(connections)
-    
+
     imapping = map_signals_circuit({k: im for k, im
                                     in zip(range(n-nfb, n), imap)}, n)
 
@@ -2407,9 +2424,15 @@ def connect(components, connections):
                                     in zip(range(n-nfb, n), omap)}, n)
 
     combined = omapping << combined << imapping
-    
+
+    if force_SLH:
+        combined = combined.toSLH()
+
     for k in range(nfb):
         combined = combined.feedback()
+        if expand_simplify:
+            combined = combined.expand().simplify_scalar()
+
     return combined
 
 
