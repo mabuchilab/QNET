@@ -2172,8 +2172,17 @@ def getABCD(slh, a0={}, doubled_up=True):
         c = np_zeros(cdim, dtype=object)
 
     def _as_complex(o):
+        if isinstance(o, Operator):
+            o = o.expand()
+            if o is IdentityOperator:
+                o = 1
+            elif isinstance(o, ScalarTimesOperator):
+                assert o.term is IdentityOperator
+                o = o.coeff
+            else:
+                raise ValueError("{} is not trivial operator".format(o))
         try:
-            return complex(o.coeff) if (isinstance(o, ScalarTimesOperator) and o.term is IdentityOperator) else o
+            return complex(o)
         except TypeError:
             return o
 
