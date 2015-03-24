@@ -277,7 +277,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         for y in new_c_out:
             c.stroke(pyx.path.line((width + .5 * rhmargin) * hunit, y * vunit, (width + rhmargin) * hunit, y * vunit))
         
-        return c, (width + rhmargin, height + vunit + rvmargin), new_c_in, new_c_out
+        return c, (width + rhmargin, height + 1 + rvmargin), new_c_in, new_c_out
     
     raise Exception('Visualization not implemented for type %s' % type(circuit))
 
