@@ -2123,7 +2123,7 @@ def get_coeffs(expr, expand=False, epsilon=0.):
     """
     if expand:
         expr = expr.expand()
-    ret = defaultdict(float)
+    ret = defaultdict(int)
     operands = expr.operands if isinstance(expr, OperatorPlus) else [expr]
     for e in operands:
         c, t = _coeff_term(e)
