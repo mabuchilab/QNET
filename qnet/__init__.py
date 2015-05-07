@@ -31,4 +31,4 @@ via Quantum Hardware Description Language:
 
 See our full docs for more information.
 """
-__version__ = "1.2.4"
+__version__ = "1.2.5"
