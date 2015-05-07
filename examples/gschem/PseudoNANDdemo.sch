@@ -1,0 +1,143 @@
+v 20111231 2
+C 24700 48600 1 0 0 kerr_cavity.sym
+{
+T 25900 50400 5 8 1 1 0 0 1
+refdes=K
+T 25400 51300 5 10 1 0 0 0 1
+Delta=Delta
+T 25400 51100 5 10 1 0 0 0 1
+chi=chi
+T 25400 50900 5 10 1 0 0 0 1
+kappa_1=kappa
+T 25400 50700 5 10 1 0 0 0 1
+kappa_2=kappa
+T 25395 50995 5 8 0 0 0 0 1
+device=KerrCavity
+}
+N 24300 49500 25200 49500 4
+{
+T 24600 49200 5 10 1 1 0 0 1
+netname=w
+}
+C 22100 50100 1 0 0 input-1.sym
+{
+T 22100 51000 5 10 0 0 0 0 1
+device=IPAD
+T 22000 50200 5 10 1 1 0 0 1
+refdes=A
+T 22200 50600 5 10 1 0 0 0 1
+pinseq=i1
+}
+C 22100 49300 1 0 0 input-1.sym
+{
+T 22100 50200 5 10 0 0 0 0 1
+device=IPAD
+T 22000 49400 5 10 1 1 0 0 1
+refdes=B
+T 22200 49000 5 10 1 0 0 0 1
+pinseq=i2
+}
+C 26800 47600 1 90 0 input-1.sym
+{
+T 25900 47600 5 10 0 0 90 0 1
+device=IPAD
+T 26800 47700 5 10 1 1 180 0 1
+refdes=VIn2
+T 26900 47500 5 10 1 0 180 0 1
+pinseq=i4
+}
+C 28000 52200 1 270 0 input-1.sym
+{
+T 28900 52200 5 10 0 0 270 0 1
+device=IPAD
+T 28000 52000 5 10 1 1 0 0 1
+refdes=VIn1
+T 28500 51700 5 10 1 0 0 0 1
+pinseq=i3
+}
+C 24000 47600 1 90 0 output-1.sym
+{
+T 23100 47600 5 10 0 0 90 0 1
+device=OPAD
+T 24000 47700 5 10 1 1 180 0 1
+refdes=UOut1
+T 24200 47500 5 10 1 0 180 0 1
+pinseq=o1
+}
+C 25600 47600 1 90 0 output-1.sym
+{
+T 24700 47600 5 10 0 0 90 0 1
+device=OPAD
+T 25600 47700 5 10 1 1 180 0 1
+refdes=UOut2
+T 25800 47500 5 10 1 0 180 0 1
+pinseq=o2
+}
+C 31100 49700 1 180 0 output-1.sym
+{
+T 31100 48800 5 10 0 0 180 0 1
+device=OPAD
+T 31000 49400 5 10 1 1 0 0 1
+refdes=OUT2
+T 30300 49800 5 10 1 0 0 0 1
+pinseq=o4
+}
+C 31100 49000 1 180 0 output-1.sym
+{
+T 31100 48100 5 10 0 0 180 0 1
+device=OPAD
+T 31900 48900 5 10 1 1 180 0 1
+refdes=NAND_AB
+T 31200 48500 5 10 1 0 180 0 1
+pinseq=o3
+}
+C 28100 48300 1 0 0 phase-1.sym
+{
+T 29503 49185 5 8 1 1 0 0 1
+refdes=P
+T 29300 48100 5 10 1 0 0 0 1
+phi=phi
+T 29095 49795 5 8 0 0 0 0 1
+device=Phase
+}
+T 21600 52200 9 10 1 0 0 0 1
+module-name=PseudoNANDdemo
+N 23000 50300 23800 50300 4
+C 22500 51000 1 270 0 beamsplitter-1.sym
+{
+T 24600 49000 5 10 0 0 270 0 1
+device=Beamsplitter
+T 24100 50200 5 10 1 1 0 0 1
+refdes=BS1
+}
+C 26900 51000 1 270 0 beamsplitter-1.sym
+{
+T 29000 49000 5 10 0 0 270 0 1
+device=Beamsplitter
+T 28900 49900 5 10 1 1 0 0 1
+refdes=BS2
+T 28800 49600 5 10 1 0 0 0 1
+theta=theta
+}
+N 23800 50300 23800 50000 4
+N 23000 49500 23300 49500 4
+N 23800 48500 23800 49000 4
+N 27700 49500 26800 49500 4
+N 28200 49000 28200 48800 4
+N 28200 48800 29000 48800 4
+N 30200 49500 28700 49500 4
+C 27700 52200 1 270 0 displace-1.sym
+{
+T 28695 50985 5 8 1 1 0 0 1
+refdes=W_beta
+T 28700 50700 5 10 1 0 0 0 1
+alpha=beta
+T 28895 51205 5 8 0 0 270 0 1
+device=Displace
+}
+T 20700 51900 8 10 1 0 0 0 1
+params=Delta:real;chi:real;kappa:real;phi:real;theta:real;beta:complex
+N 28200 50200 28200 50000 4
+N 28200 51200 28200 51300 4
+N 25400 48500 25400 49100 4
+N 26600 48500 26600 49100 4
