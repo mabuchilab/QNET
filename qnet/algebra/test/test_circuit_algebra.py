@@ -259,16 +259,16 @@ class TestCircuitAlgebra(unittest.TestCase):
         connections = [
             ((0, 0), (1, 0))
             ]
-        self.assertEqual(connect([A, B], connections), B << A)
+        self.assertEqual(connect([A, B], connections, force_SLH=False), B << A)
 
         connections = [
             ((0, 0), (2, 0)),
             ((1, 0), (2, 1)),
             ]
-        self.assertEqual(connect([A, B, C], connections), C << (A + B))
+        self.assertEqual(connect([A, B, C], connections, force_SLH=False), C << (A + B))
 
         connections = [
             ((0, 0), (1, 0))
         ]
-        self.assertEqual(connect([A, C], connections), C << (A + cid(1)))
+        self.assertEqual(connect([A, C], connections, force_SLH=False), C << (A + cid(1)))
 

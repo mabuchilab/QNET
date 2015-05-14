@@ -71,6 +71,7 @@ class Ket(object):
         :return: The numerical representation of the operator.
         :rtype: qutip.Qobj
         """
+        check_qutip()
         return self._to_qutip()
 
     @abstractmethod

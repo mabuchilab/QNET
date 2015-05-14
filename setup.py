@@ -44,9 +44,11 @@ setup(
         'ply',
         'six',
         'numpy',
-        'qutip>=3.0.1',
-        'pyx==0.12.1' if sys.version_info < (3, 0) else 'pyx>=0.13',
     ],
+    extra_require={
+        'simulation': 'qutip>=3.0.1',
+        'circuit_visualization': 'pyx==0.12.1' if sys.version_info < (3, 0) else 'pyx>=0.13',
+    },
     dependency_links=[
         ("http://downloads.sourceforge.net/project/pyx/pyx/0.12.1/"
          + "PyX-0.12.1.tar.gz?r=http%3A%2F%2Fsourceforge.net"

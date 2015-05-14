@@ -215,6 +215,7 @@ class Circuit(object):
         """
         Show the circuit expression in an IPython notebook.
         """
+
         from IPython.display import Image, display
 
         fname = self.render()
@@ -2430,7 +2431,7 @@ def connect(components, connections, force_SLH=True, expand_simplify=True):
 
     for k in range(nfb):
         combined = combined.feedback()
-        if expand_simplify:
+        if force_SLH and expand_simplify:
             combined = combined.expand().simplify_scalar()
 
     return combined
