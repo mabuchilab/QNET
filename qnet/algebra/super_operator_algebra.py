@@ -82,6 +82,7 @@ class SuperOperator(object):
         :return: The matrix representation of the superoperator.
         :rtype: qutip.Qobj
         """
+        check_qutip()
         if full_space is None:
             full_space = self.space
         return self._to_qutip(full_space)

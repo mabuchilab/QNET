@@ -35,7 +35,10 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from collections import defaultdict
 from itertools import product as cartesian_product
 
-import qutip
+try:
+    import qutip
+except ImportError:
+    qutip = None
 
 import qnet.algebra.abstract_algebra
 from qnet.algebra.hilbert_space_algebra import *
@@ -69,6 +72,13 @@ from qnet.algebra.permutations import check_permutation
 
 sympyOne = sympify(1)
 
+
+def check_qutip():
+    if qutip is None:
+        raise ImportError("""
+QuTiP is not installed. Cannot convert to numerical representation. 
+Please install QuTiP by running: `pip install qutip`.
+""")
 
 def adjoint(obj):
     """
@@ -137,6 +147,7 @@ class Operator(object):
         :return: The matrix representation of the operator.
         :rtype: qutip.Qobj (:py:class:`qutip.Qobj`)
         """
+        check_qutip()
         if full_space is None:
             return self._to_qutip(self.space)
         else:
@@ -314,6 +325,8 @@ class IdentityOperator(Operator, Expression):
         return self
 
     def _to_qutip(self, full_space):
+        
+
         return qutip.tensor(*[qutip.qeye(s.dimension) for s in full_space.local_factors()])
 
     #    def mathematica(self):
@@ -413,6 +426,7 @@ class LocalOperator(Operator, Operation):
         return self.operands[0]
 
     def _to_qutip(self, full_space=None):
+
         if full_space is None or full_space == self.space:
             return self.to_qutip_local_factor()
         else:
@@ -1419,9 +1433,11 @@ class NullSpaceProjector(OperatorOperation):
         return self.operands[0]
 
     def to_qutip(self, full_space=None):
+        check_qutip()
         mo = self.operand.to_qutip(full_space)
         if full_space.dimension <= DENSE_DIMENSION_LIMIT:
             arr = mo.data.toarray()
+
             from scipy.linalg import svd
             # compute Singular Value Decomposition
             U, s, Vh = svd(arr)

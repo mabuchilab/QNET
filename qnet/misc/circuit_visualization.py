@@ -21,8 +21,12 @@
 
 import sys
 
+try:
+    import pyx
+except ImportError as e:
+    print("PyX is not installed. Please install PyX for circuit visualization purposes.")
+    raise e
 
-import pyx
 import six
 import qnet.misc.parse_circuit_strings as parse_circuit_strings
 import qnet.algebra.circuit_algebra as ca
