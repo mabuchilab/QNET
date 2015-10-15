@@ -16,7 +16,16 @@ import qnet
 #               extra_link_args=['-lm']),
 # ]
 
-version = qnet.__version__
+
+def get_version(filename):
+    with open(filename) as in_fh:
+        for line in in_fh:
+            if line.startswith('__version__'):
+                return line.split('=')[1].strip()[1:-1]
+    raise ValueError("Cannot extract version from %s" % filename)
+
+
+version = get_version('qnet/__init__.py')
 
 
 def find_packages(path=".", prefix=""):
