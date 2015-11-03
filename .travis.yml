@@ -4,8 +4,8 @@ python:
   - "2.7"
   - "3.3"
   - "3.4"
-sudo: false # use container-based infrastructure (pre-requisite for caching)
 install:
+  - sudo apt-get install texlive
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
     else
