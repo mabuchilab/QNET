@@ -49,13 +49,14 @@ setup(
     packages=packages,
     # ext_modules=ext_modules,
     install_requires=[
+        'matplotlib',
         'sympy',
         'ply',
         'six',
         'numpy',
     ],
-    extra_require={
-        'simulation': 'qutip>=3.0.1',
+    extras_require={
+        'simulation': ['cython', 'qutip>=3.0.1'],
         'circuit_visualization': 'pyx==0.12.1' if sys.version_info < (3, 0) else 'pyx>=0.13',
     },
     dependency_links=[
