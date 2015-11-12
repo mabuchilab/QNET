@@ -1,5 +1,5 @@
 PROJECT_NAME = QNET
-PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest nose ply cython
+PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest sphinx nose ply cython
 TESTPYPI = https://testpypi.python.org/pypi
 
 #TESTOPTIONS = --doctest-modules
@@ -9,7 +9,7 @@ TESTS = qnet
 #     make test TESTS="qnet/algebra/test"
 
 develop:
-	pip install --process-dependency-links -e .[simulation,circuit_visualization]
+	pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 install:
 	pip install --process-dependency-links .
