@@ -64,5 +64,8 @@ test34: .venv/py34/bin/py.test
 
 test: test27 test33 test34
 
+doc:
+	make -C docs html
+
 .PHONY: install develop uninstall upload test-upload test-install sdist clean \
-test test27 test33 test34
+test test27 test33 test34 doc
