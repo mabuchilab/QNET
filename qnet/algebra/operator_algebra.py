@@ -395,7 +395,7 @@ class ZeroOperator(Operator, Expression):
         return "0"
 
     def _all_symbols(self):
-        return (())
+        return set(())
 
 
 def _implied_local_space_mtd(dcls, clsmtd, cls, space, *ops):
@@ -546,7 +546,7 @@ def scalar_free_symbols(*operands):
         return set()
     o, = operands
     if isinstance(o, SympyBasic):
-        return o.free_symbols
+        return set(o.free_symbols)
     return set()
 
 
