@@ -16,7 +16,16 @@ import qnet
 #               extra_link_args=['-lm']),
 # ]
 
-version = qnet.__version__
+
+def get_version(filename):
+    with open(filename) as in_fh:
+        for line in in_fh:
+            if line.startswith('__version__'):
+                return line.split('=')[1].strip()[1:-1]
+    raise ValueError("Cannot extract version from %s" % filename)
+
+
+version = get_version('qnet/__init__.py')
 
 
 def find_packages(path=".", prefix=""):
@@ -40,13 +49,15 @@ setup(
     packages=packages,
     # ext_modules=ext_modules,
     install_requires=[
+        'matplotlib',
         'sympy',
         'ply',
         'six',
         'numpy',
     ],
-    extra_require={
-        'simulation': 'qutip>=3.0.1',
+    extras_require={
+        'dev': ['pytest', 'sphinx', 'nose', 'cython'],
+        'simulation': ['cython', 'qutip>=3.0.1'],
         'circuit_visualization': 'pyx==0.12.1' if sys.version_info < (3, 0) else 'pyx>=0.13',
     },
     dependency_links=[
