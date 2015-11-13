@@ -41,7 +41,7 @@ class QSDCodeGen(object):
     #include "Traject.h"
 
     int main()
-    {
+    {{
     // Primary Operators
     {OPERATORBASIS}
       /*AnnihilationOperator A1(0);  // 1st freedom*/
@@ -78,18 +78,18 @@ class QSDCodeGen(object):
     {NLINDBLADS}
       /*const int nL = 3;*/
     {LINDBLADS}
-      /*Operator L[nL]={
+      /*Operator L[nL]={{
       sqrt(2*gamma1)*A1,
       sqrt(2*gamma2)*A2,
       sqrt(2*kappa)*Sm
-      };*/
+      }};*/
 
     // Initial state
     {INITIAL_STATE}
       /*State phi1(50,FIELD);       // see paper Section 4.2*/
       /*State phi2(50,FIELD);*/
       /*State phi3(2,SPIN);*/
-      /*State stateList[3] = {phi1,phi2,phi3};*/
+      /*State stateList[3] = {{phi1,phi2,phi3}};*/
       /*State psiIni(3,stateList);*/
 
     // Trajectory
@@ -106,17 +106,16 @@ class QSDCodeGen(object):
     // Output
     {OBSERVABLES}
       /*const int nOfOut = 3;*/
-      /*Operator outlist[nOfOut]={ Sp*A2*Sm*Sp, Sm*Sp*A2*Sm, A2 };*/
-      /*char *flist[nOfOut]={"X1.out","X2.out","A2.out"};*/
-      /*int pipe[] = {1,5,9,11}; // controls standard output (see `onespin.cc')*/
-      int pipe[4] = {1,2,3,4};
+      /*Operator outlist[nOfOut]={{ Sp*A2*Sm*Sp, Sm*Sp*A2*Sm, A2 }};*/
+      /*char *flist[nOfOut]={{"X1.out","X2.out","A2.out"}};*/
+      /*int pipe[] = {{1,5,9,11}}; // controls standard output (see `onespin.cc')*/
+      int pipe[4] = {{1,2,3,4}};
 
     // Simulate one trajectory (for several trajectories see `onespin.cc')
       Trajectory traj(psiIni, dt, stepper, &rndm);  // see paper Section 5
       traj.plotExp( nOfOut, outlist, flist, pipe, numdts, numsteps,
                     nOfMovingFreedoms, epsilon, nPad );
-    }"""
-    ''').strip()
+    }}''').strip()
 
     def __init__(self, circuit, num_vals=None):
         self.circuit = circuit.toSLH()
@@ -145,7 +144,8 @@ class QSDCodeGen(object):
                 OPERATORBASIS=self._operator_basis_lines(),
                 PARAMETERS=self._parameters_lines(),
                 HAMILTONIAN=self._hamiltonian_lines(),
-                NLINDBLADS='',
+                NLINDBLADS='const int nL = {nL:d};'\
+                           .format(nL=self.circuit.cdim),
                 LINDBLADS='',
                 INITIAL_STATE ='',
                 TRAJECTORYPARAMS ='',

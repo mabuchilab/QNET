@@ -90,3 +90,24 @@ def test_qsd_codegen_hamiltonian():
     scode = codegen._hamiltonian_lines()
     assert scode.strip() == (r'Operator H = ((c) * (A0c) + (c) * (A0) + (chi) '
                              r'* (((A0c * A0c) + (A0 * A0))));')
+
+
+def test_qsd_codegen_nlinkblads():
+    k = symbols("kappa", positive=True)
+    x = symbols("chi", real=True)
+    c = symbols("c",real=True)
+    a = Destroy(1)
+    ad = a.dag()
+    s = LocalSigma(2, 1, 0)
+    sd = s.dag()
+
+    circuit = SLH(identity_matrix(0), [], a*ad + s + sd)
+    codegen = QSDCodeGen(circuit, num_vals={x: 2., c: 1, k: 2})
+    result = codegen.generate_code()
+    assert "const int nL = 0;" in codegen.generate_code()
+
+    H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
+    L = sqrt(k) * a
+    circuit = SLH(identity_matrix(1), [L], H)
+    codegen = QSDCodeGen(circuit, num_vals={x: 2., c: 1, k: 2})
+    assert "const int nL = 1;" in codegen.generate_code()
