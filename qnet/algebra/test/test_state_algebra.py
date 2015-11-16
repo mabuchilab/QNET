@@ -28,7 +28,7 @@ class TestStateAddition(unittest.TestCase):
     def testAdditionToZero(self):
         hs = local_space("hs")
         a = KetSymbol("a", hs)
-        z = KetZero
+        z = ZeroKet
         self.assertEqual(a+z, a)
         self.assertEqual(z+a, a)
         self.assertEqual(z+z, z)
@@ -46,7 +46,7 @@ class TestStateAddition(unittest.TestCase):
         hs = local_space("hs")
         a = KetSymbol("a", hs)
         b = KetSymbol("b", hs)
-        z = KetZero
+        z = ZeroKet
         self.assertEqual(a-a, z)
         self.assertEqual(a-b, KetPlus(a, ScalarTimesKet(-1,b)))
 
@@ -106,7 +106,7 @@ class TestScalarTimesKet(unittest.TestCase):
         h2 = local_space("h2")
         a = KetSymbol("a", h1)
         b = KetSymbol("b", h2)
-        z = KetZero
+        z = ZeroKet
 
         self.assertEqual(a+a,2*a)
         self.assertEqual(a*1,a)
@@ -173,7 +173,7 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
     def testCreateDestroy(self):
         self.assertEqual(Create(1) * BasisKet(1, 2), sqrt(3) * BasisKet(1, 3))
         self.assertEqual(Destroy(1) * BasisKet(1, 2), sqrt(2) * BasisKet(1, 1))
-        self.assertEqual(Destroy(1) * BasisKet(1, 0), KetZero)
+        self.assertEqual(Destroy(1) * BasisKet(1, 0), ZeroKet)
         self.assertEqual(Destroy(1) * CoherentStateKet(1, 10.), 10 * CoherentStateKet(1, 10.))
 
 
@@ -187,7 +187,7 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
 
     def testLocalSigmaPi(self):
         self.assertEqual(LocalSigma(1, 0, 1) * BasisKet(1, 1), BasisKet(1, 0))
-        self.assertEqual(LocalSigma(1, 0, 0) * BasisKet(1, 1), KetZero)
+        self.assertEqual(LocalSigma(1, 0, 0) * BasisKet(1, 1), ZeroKet)
 
     def testActLocally(self):
         self.assertEqual((Create(1) * Destroy(2)) * (BasisKet(1, 2) * BasisKet(2, 1)), sqrt(3) * BasisKet(1, 3) * BasisKet(2,0))
@@ -201,5 +201,5 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
         self.assertEqual((Create(1)*Destroy(1)*Destroy(1))*(BasisKet(1,2)*BasisKet(2,1)), sqrt(2)*BasisKet(1,1)*BasisKet(2,1))
         self.assertEqual((Create(1)*Destroy(1)*Destroy(1))*BasisKet(1,2), sqrt(2)*BasisKet(1,1))
         self.assertEqual((Create(1)*Destroy(1))*BasisKet(1,1), BasisKet(1,1))
-        self.assertEqual((Create(1) * Destroy(1)) * BasisKet(1,0), KetZero)
+        self.assertEqual((Create(1) * Destroy(1)) * BasisKet(1,0), ZeroKet)
 

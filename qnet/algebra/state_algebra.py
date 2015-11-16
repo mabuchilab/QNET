@@ -226,9 +226,9 @@ class KetSymbol(Ket, Operation):
 
 
 @singleton
-class KetZero(Ket, Expression):
+class ZeroKet(Ket, Expression):
     """
-    KetZero constant (singleton) object for the null-state.
+    ZeroKet constant (singleton) object for the null-state.
     """
 
     @property
@@ -441,7 +441,7 @@ class KetPlus(Ket, Operation):
     :type summands: Ket
     """
     signature = Ket,
-    neutral_element = KetZero
+    neutral_element = ZeroKet
     _binary_rules = []
 
 
@@ -455,10 +455,10 @@ class KetPlus(Ket, Operation):
         return sum((op.to_qutip() for op in self.operands), 0)
 
     def _expand(self):
-        return sum((o.expand() for o in self.operands), KetZero)
+        return sum((o.expand() for o in self.operands), ZeroKet)
 
     def _series_expand(self, param, about, order):
-        res = sum((o.series_expand(param, about, order) for o in self.operands), KetZero)
+        res = sum((o.series_expand(param, about, order) for o in self.operands), ZeroKet)
         return res
 
     def _tex_ketbra(self, bra = False):
@@ -536,8 +536,8 @@ class TensorKet(Ket, Operation):
 
     @classmethod
     def create(cls, *ops):
-        if any(o == KetZero for o in ops):
-            return KetZero
+        if any(o == ZeroKet for o in ops):
+            return ZeroKet
         spc = TrivialSpace
         for o in ops:
             if o.space & spc > TrivialSpace:
@@ -581,7 +581,7 @@ class TensorKet(Ket, Operation):
         # store tuples of summands of all expanded factors
         eopssummands = [eo.operands if isinstance(eo, KetPlus) else (eo,) for eo in eops]
         # iterate over a cartesian product of all factor summands, form product of each tuple and sum over result
-        return sum((TensorKet.create(*combo) for combo in cartesian_product(*eopssummands)), KetZero)
+        return sum((TensorKet.create(*combo) for combo in cartesian_product(*eopssummands)), ZeroKet)
 
     def _tex_ketbra(self, bra = False):
         if bra:
@@ -738,7 +738,7 @@ class ScalarTimesKet(Ket, Operation):
         c, t = self.operands
         et = t.expand()
         if isinstance(et, KetPlus):
-            return sum((c * eto for eto in et.operands), KetZero)
+            return sum((c * eto for eto in et.operands), ZeroKet)
         return c * et
 
     def _series_expand(self, param, about, order):
@@ -881,11 +881,11 @@ class OperatorTimesKet(Ket, Operation):
         et = t.expand()
         if isinstance(et, KetPlus):
             if isinstance(ct, OperatorPlus):
-                return sum((cto * eto for eto in et.operands for cto in ct.operands), KetZero)
+                return sum((cto * eto for eto in et.operands for cto in ct.operands), ZeroKet)
             else:
-                return sum((c * eto for eto in et.operands), KetZero)
+                return sum((c * eto for eto in et.operands), ZeroKet)
         elif isinstance(ct, OperatorPlus):
-            return sum((cto * et for cto in ct.operands), KetZero)
+            return sum((cto * et for cto in ct.operands), ZeroKet)
         return ct * et
 
     def _series_expand(self, param, about, order):
@@ -1156,8 +1156,8 @@ Phi_tensor = wc("Phi", head=TensorKet)
 
 ScalarTimesKet._rules += [
     ((1, Psi), lambda Psi: Psi),
-    ((0, Psi), lambda Psi: KetZero),
-    ((u, KetZero), lambda u: KetZero),
+    ((0, Psi), lambda Psi: ZeroKet),
+    ((u, ZeroKet), lambda u: ZeroKet),
     ((u, ScalarTimesKet(v, Psi)), lambda u, v, Psi: (u * v) * Psi)
 ]
 
@@ -1167,10 +1167,10 @@ def local_rule(A, B, Psi):
 
 OperatorTimesKet._rules += [
     ((IdentityOperator, Psi), lambda Psi: Psi),
-    ((ZeroOperator, Psi), lambda Psi: KetZero),
-    ((A, KetZero), lambda A: KetZero),
+    ((ZeroOperator, Psi), lambda Psi: ZeroKet),
+    ((A, ZeroKet), lambda A: ZeroKet),
     ((A, ScalarTimesKet(v, Psi)), lambda A, v, Psi:  v *(A* Psi)),
-    ((LocalSigma(ls, n, m), BasisKet(ls, k)), lambda ls, n, m, k: BasisKet(ls, n) if m == k else KetZero),
+    ((LocalSigma(ls, n, m), BasisKet(ls, k)), lambda ls, n, m, k: BasisKet(ls, n) if m == k else ZeroKet),
     ((Create(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n+1) * BasisKet(ls, n + 1)),
     ((Destroy(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n) * BasisKet(ls, n - 1)),
     ((Destroy(ls), CoherentStateKet(ls, u)), lambda ls, u: u * CoherentStateKet(ls, u)),
