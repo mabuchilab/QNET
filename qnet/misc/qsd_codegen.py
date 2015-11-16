@@ -33,23 +33,10 @@ def local_ops(expr):
 class QSDOperator(object):
     """Encapsulation of a QSD (symbolic) Operator, containing all information
     required to instantiate that operator and to use it in C++ code
-    expressions
-
-    :param qsd_type: QSD object type, i.e., name of the C++ class. See
-        ``_known_types`` class attribute for allowed type names
-    :type qsd_type: str
-    :param name: The name of the operator object. Must be a valid C++ variable
-        name
-    :type name: str
-    :param instantiator: String that instantiates the operator object. This
-        must either be the constructur arguments of the operator's QSD class,
-        or a C++ expression (starting with an equal sign) that initializes the
-        object
-    :type instantiator: str
+    expressions.
 
     Examples:
 
-    .. doctest::
         >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
         >>> Ad0 = QSDOperator('Operator', 'Ad0', '= A0.hc()')
 
@@ -68,6 +55,9 @@ class QSDOperator(object):
 
     @property
     def qsd_type(self):
+        """QSD object type, i.e., name of the C++ class. See
+        ``_known_types`` class attribute for allowed type names
+        """
         return self._type
 
     @qsd_type.setter
@@ -79,6 +69,9 @@ class QSDOperator(object):
 
     @property
     def name(self):
+        """The name of the operator object. Must be a valid C++ variable
+        name.
+        """
         return self._name
 
     @name.setter
@@ -90,6 +83,11 @@ class QSDOperator(object):
 
     @property
     def instantiator(self):
+        """String that instantiates the operator object. This
+        must either be the constructur arguments of the operator's QSD class,
+        or a C++ expression (starting with an equal sign) that initializes the
+        object
+        """
         return self._instantiator.strip() # strip out leading space for ' = ..'
 
     @instantiator.setter
@@ -109,7 +107,8 @@ class QSDOperator(object):
     def instantiation(self):
         """Complete line of C++ code that instantiates the operator
 
-        .. doctest::
+        Example:
+
             >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
             >>> print(A0.instantiation)
             AnnihilationOperator A0(0);
@@ -120,8 +119,10 @@ class QSDOperator(object):
         return 3
 
     def __iter__(self):
-        """
-        .. doctest::
+        """Allows to convert ``QSDOperator`` into a tuple.
+
+        Example:
+
             >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
             >>> qsd_type, name, instantiator = A0
         """
@@ -130,7 +131,8 @@ class QSDOperator(object):
     def __str__(self):
         """The string representation of an operator is simply its name
 
-        .. doctest::
+        Example:
+
             >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
             >>> assert(str(A0) == str(A0.name))
         """
