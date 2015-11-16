@@ -1,3 +1,6 @@
+import re
+from textwrap import dedent
+
 from qnet.algebra.abstract_algebra import prod
 from qnet.algebra.hilbert_space_algebra import TrivialSpace
 from qnet.algebra.circuit_algebra import (
@@ -6,7 +9,6 @@ from qnet.algebra.circuit_algebra import (
     ScalarTimesOperator, OperatorPlus, OperatorTimes
 )
 import sympy
-from textwrap import dedent
 
 
 def local_ops(expr):
@@ -26,6 +28,114 @@ def local_ops(expr):
         return set_union(*tuple(map(local_ops, expr.operands)))
     else:
         raise TypeError(str(expr))
+
+
+class QSDOperator(object):
+    """Encapsulation of a QSD (symbolic) Operator, containing all information
+    required to instantiate that operator and to use it in C++ code
+    expressions
+
+    :param qsd_type: QSD object type, i.e., name of the C++ class. See
+        ``_known_types`` class attribute for allowed type names
+    :type qsd_type: str
+    :param name: The name of the operator object. Must be a valid C++ variable
+        name
+    :type name: str
+    :param instantiator: String that instantiates the operator object. This
+        must either be the constructur arguments of the operator's QSD class,
+        or a C++ expression (starting with an equal sign) that initializes the
+        object
+    :type instantiator: str
+
+    Examples:
+
+    .. doctest::
+        >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
+        >>> Ad0 = QSDOperator('Operator', 'Ad0', '= A0.hc()')
+
+    """
+
+    _known_types = ['AnnihilationOperator', 'TransitionOperator',
+                    'IdentityOperator', 'Operator']
+
+    def __init__(self, qsd_type, name, instantiator):
+        self._type = None
+        self._name = None
+        self._instantiator = None
+        self.qsd_type = qsd_type.strip()
+        self.name = name.strip()
+        self.instantiator = instantiator.strip()
+
+    @property
+    def qsd_type(self):
+        return self._type
+
+    @qsd_type.setter
+    def qsd_type(self, value):
+        if not value in self._known_types:
+            raise ValueError("Type '%s' must be one of %s"
+                              % (value, self._known_types))
+        self._type = value
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if not re.match(r'\w[\w\d]+', value):
+            raise ValueError("Name '%s' is not a valid C++ variable name"
+                             % value)
+        self._name = value
+
+    @property
+    def instantiator(self):
+        return self._instantiator.strip() # strip out leading space for ' = ..'
+
+    @instantiator.setter
+    def instantiator(self, value):
+        if value[0] not in ['=', '(']:
+            raise ValueError(("Instantiator '%s' does not start with '=' "
+                              "(assignement instantiation) or '"
+                              "(' (constructor instantiation)") % value)
+        if (value.startswith('(') and not value.endswith(')')):
+            raise ValueError("Instantiator '%s' does not end with ')'" % value)
+        if value.startswith('='):
+            # ensure that '=' is surrounded by spaces
+            value = ' = ' + value[1:].strip()
+        self._instantiator = value
+
+    @property
+    def instantiation(self):
+        """Complete line of C++ code that instantiates the operator
+
+        .. doctest::
+            >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
+            >>> print(A0.instantiation)
+            AnnihilationOperator A0(0);
+        """
+        return '{_type} {_name}{_instantiator};'.format(**self.__dict__)
+
+    def __len__(self):
+        return 3
+
+    def __iter__(self):
+        """
+        .. doctest::
+            >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
+            >>> qsd_type, name, instantiator = A0
+        """
+        return iter((self.qsd_type, self.name, self.instantiator))
+
+    def __str__(self):
+        """The string representation of an operator is simply its name
+
+        .. doctest::
+            >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
+            >>> assert(str(A0) == str(A0.name))
+        """
+        return str(self.name)
+
 
 
 class QSDCodeGen(object):
@@ -125,8 +235,8 @@ class QSDCodeGen(object):
         self._full_space = self.circuit.space
         self._local_factors = {space: index for (index, space)
                 in enumerate(self._full_space.local_factors())}
-        self.lop_str = {}
-        self._build_lop_str()
+        self._qsd_ops = {}
+        self._build_qsd_ops()
 
         if num_vals is not None:
             self.num_vals.update(num_vals)
@@ -136,11 +246,14 @@ class QSDCodeGen(object):
         """Return set of operators occuring in circuit"""
         return self._local_ops
 
-    def _build_lop_str(self):
+    def _build_qsd_ops(self):
         visited = set()
-        self.lop_str[IdentityOperator] = "({})".format(
-                "*".join(["Id{k}".format(k=k)
-                    for k, __ in enumerate(self._local_factors)]))
+        self._qsd_ops[IdentityOperator] = QSDOperator(
+                qsd_type='Operator',
+                name="Id",
+                instantiator='= '+'*'.join(
+                            ["Id{k}".format(k=k)
+                            for k in range(len(self._local_factors))]))
         for op in self.local_ops:
             if isinstance(op, IdentityOperator.__class__):
                 continue
@@ -150,17 +263,24 @@ class QSDCodeGen(object):
                 else:
                     visited.add(op.space)
                 a = Destroy(op.space)
-                ad = a.dag()
                 k = self._local_factors[op.space]
-                a_str = "A{}".format(k)
-                ad_str = "A{}c".format(k)
-                self.lop_str[a] = a_str
-                self.lop_str[ad] = ad_str
+                self._qsd_ops[a] = QSDOperator(
+                    qsd_type='AnnihilationOperator',
+                    name="A{k}".format(k=k),
+                    instantiator=('(%d)'%k))
+                ad = a.dag()
+                self._qsd_ops[ad] = QSDOperator(
+                    qsd_type='Operator',
+                    name="Ad{k}".format(k=k),
+                    instantiator=('= A{k}.hc()'.format(k=k)))
             elif isinstance(op, LocalSigma):
                 k = self._local_factors[op.space]
-                i,j = op.operands[1:]
-                op_str = "S{}_{}_{}".format(k,i,j)
-                self.lop_str[op] = op_str
+                i, j = op.operands[1:]
+                self._qsd_ops[op] = QSDOperator(
+                    qsd_type='TransitionOperator',
+                    name="S{k}_{i}_{j}".format(k=k,i=i,j=j),
+                    instantiator='({kij})'.format(
+                                 kij=','.join([str(n) for n in (k, i, j)])))
             else:
                 raise TypeError(str(op))
 
@@ -190,43 +310,14 @@ class QSDCodeGen(object):
 
 
     def _operator_basis_lines(self):
-        """Given a set of qnet.algebra.operator_algebra.Operator instances,
-        return a multiline string of QSD C++ code that defines an appropriate
-        set of QSD operators. These are limited to AnnihilationOperator,
-        IdentityOperator, and TansitionOperator, labeled by a unique index
-        for each (local) Hilbert space"""
+        """Return a mulitline string of C++ code that defines and initializes
+        all operators in the system"""
         lines = set()
         visited = set()
         for k, s in enumerate(self._local_factors):
             lines.add("IdentityOperator Id{k}({k});".format(k=k))
-        for op in self.local_ops:
-            if isinstance(op, IdentityOperator.__class__):
-                continue
-            elif isinstance(op, (Create, Destroy)):
-                if op.space in visited:
-                    continue
-                else:
-                    visited.add(op.space)
-                k = self._local_factors[op.space]
-                a = Destroy(op.space)
-                ad = a.dag()
-                a_str = self.lop_str[a]
-                ad_str = self.lop_str[ad]
-
-                # QSD only has annihilation operators, so for every creation
-                # operator, we must add the corresponding creation operator
-                lines.add("AnnihilationOperator {a_str}({k});"
-                          .format(a_str=a_str, k=k))
-                lines.add("Operator {ad_str} = {a_str}.hc();"
-                          .format(ad_str=ad_str, a_str=a_str))
-            elif isinstance(op, LocalSigma):
-                k = self._local_factors[op.space]
-                i,j = op.operands[1:]
-                op_str = self.lop_str[op]
-                lines.add("TransitionOperator {op_str}({k},{i},{j});".format(
-                        op_str=op_str, k=k, i=i, j=j))
-            else:
-                raise TypeError(str(op))
+        for op in self._qsd_ops:
+            lines.add(self._qsd_ops[op].instantiation)
         return "\n".join(sorted(lines))
 
     def _parameters_lines(self):
@@ -244,8 +335,12 @@ class QSDCodeGen(object):
         return "\n".join(sorted(lines))
 
     def _operator_str(self, op):
+        """For a given instance of ``qnet.operator_algebra.Operator``,
+        recursively generate the C++ expression that will instantiate the
+        operator.
+        """
         if isinstance(op, LocalOperator):
-            return self.lop_str[op]
+            return str(self._qsd_ops[op])
         elif isinstance(op, ScalarTimesOperator):
             return "({}) * ({})".format(self._scalar_str(op.coeff),
                     self._operator_str(op.term))
@@ -256,7 +351,7 @@ class QSDCodeGen(object):
             return "({})".format(" * ".join([self._operator_str(o)
                 for o in op.operands]))
         elif op is IdentityOperator:
-            return self.lop_str[op]
+            return str(self._qsd_ops[op])
         else:
             raise TypeError(str(op))
 

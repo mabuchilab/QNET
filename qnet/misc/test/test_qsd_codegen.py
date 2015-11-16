@@ -1,4 +1,4 @@
-from qnet.misc.qsd_codegen import local_ops, QSDCodeGen
+from qnet.misc.qsd_codegen import local_ops, QSDCodeGen, QSDOperator
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
@@ -35,7 +35,8 @@ def test_qsd_codegen_operator_basis():
     AnnihilationOperator A0(0);
     IdentityOperator Id0(0);
     IdentityOperator Id1(1);
-    Operator A0c = A0.hc();
+    Operator Ad0 = A0.hc();
+    Operator Id = Id0*Id1;
     TransitionOperator S1_0_1(1,0,1);
     TransitionOperator S1_1_0(1,1,0);""").strip()
     circuit = SLH(identity_matrix(0), [], ad)
@@ -44,7 +45,8 @@ def test_qsd_codegen_operator_basis():
     assert dedent(ob).strip() == dedent("""
     AnnihilationOperator A0(0);
     IdentityOperator Id0(0);
-    Operator A0c = A0.hc();
+    Operator Ad0 = A0.hc();
+    Operator Id = Id0;
     """).strip()
 
 
@@ -89,8 +91,53 @@ def test_qsd_codegen_hamiltonian():
 
     codegen._operator_basis_lines()
     scode = codegen._hamiltonian_lines()
-    assert scode.strip() == (r'Operator H = ((c) * (A0c) + (c) * (A0) + (chi) '
-                             r'* (((A0c * A0c) + (A0 * A0))));')
+    assert scode.strip() == (r'Operator H = ((c) * (Ad0) + (c) * (A0) + (chi) '
+                             r'* (((Ad0 * Ad0) + (A0 * A0))));')
+
+def test_QSDOperator():
+    A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
+    assert A0.qsd_type == 'AnnihilationOperator'
+    assert A0.name == 'A0'
+    assert A0.instantiator == '(0)'
+    assert A0.instantiation == 'AnnihilationOperator A0(0);'
+    assert str(A0) == str(A0.name)
+    assert len(A0) == 3
+    qsd_type, name, instantiator = A0
+    assert qsd_type == A0.qsd_type
+    assert name == A0.name
+    assert instantiator == A0.instantiator
+
+    Id0 = QSDOperator('IdentityOperator', 'Id0', '(0)')
+    assert Id0.instantiation == 'IdentityOperator Id0(0);'
+
+    S = QSDOperator('TransitionOperator', 'S1_0_1', '(1,0,1)')
+    assert S.instantiation == 'TransitionOperator S1_0_1(1,0,1);'
+
+    Ad0 = QSDOperator('Operator', 'Ad0', '= A0.hc()')
+    assert Ad0.instantiator == '= A0.hc()'
+    assert Ad0.instantiation == 'Operator Ad0 = A0.hc();'
+
+    # spaces around the '=' should be stripped out
+    Ad0_2 = QSDOperator('Operator', 'Ad0', '  =   A0.hc()')
+    assert Ad0_2.instantiator == Ad0.instantiator
+    Ad0_2 = QSDOperator('Operator', 'Ad0', '=A0.hc()')
+    assert Ad0_2.instantiator == Ad0.instantiator
+
+    with pytest.raises(ValueError) as excinfo:
+        Ad0 = QSDOperator('CreationOperator', 'Ad0', '(0)')
+    assert "Type 'CreationOperator' must be one of" in str(excinfo.value)
+
+    with pytest.raises(ValueError) as excinfo:
+        A0 = QSDOperator('AnnihilationOperator', 'A 0', '(0)')
+    assert "Name 'A 0' is not a valid C++ variable name" in str(excinfo.value)
+
+    with pytest.raises(ValueError) as excinfo:
+        Ad0 = QSDOperator('Operator', 'Ad0', 'A0.hc()')
+    assert "Instantiator 'A0.hc()' does not start with" in str(excinfo.value)
+
+    with pytest.raises(ValueError) as excinfo:
+        Id0 = QSDOperator('IdentityOperator', 'Id0', '(0')
+    assert "Instantiator '(0' does not end with ')'" in str(excinfo.value)
 
 
 def test_qsd_codegen_nlinkblads():
