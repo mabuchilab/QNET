@@ -33,18 +33,11 @@ misc Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`parser_QHDLParser_parsetab` Module
-----------------------------------------
 
-.. automodule:: qnet.misc.parser_QHDLParser_parsetab
-    :members:
-    :undoc-members:
-    :show-inheritance:
+:mod:`qsd_codegen` Module
+--------------------
 
-:mod:`parser__CircuitExpressionParser_parsetab` Module
-------------------------------------------------------
-
-.. automodule:: qnet.misc.parser__CircuitExpressionParser_parsetab
+.. automodule:: qnet.misc.qsd_codegen
     :members:
     :undoc-members:
     :show-inheritance:
