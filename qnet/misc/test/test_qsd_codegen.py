@@ -2,7 +2,7 @@ from qnet.misc.qsd_codegen import local_ops, QSDCodeGen
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
-    LocalSigma, identity_matrix
+    LocalSigma, identity_matrix, I
 )
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
@@ -73,6 +73,7 @@ def test_qsd_codegen_parameters():
     Complex c(1,0);
     double chi = 2;
     double kappa = 2;""").strip()
+    # TODO: test missing values
 
 
 def test_qsd_codegen_hamiltonian():
@@ -111,3 +112,42 @@ def test_qsd_codegen_nlinkblads():
     circuit = SLH(identity_matrix(1), [L], H)
     codegen = QSDCodeGen(circuit, num_vals={x: 2., c: 1, k: 2})
     assert "const int nL = 1;" in codegen.generate_code()
+
+
+def test_qsd_codegen_lindblads():
+    E      = symbols("E", positive=True)
+    chi    = symbols("chi", real=True)
+    omega  = symbols("omega",real=True)
+    eta    = symbols("eta",real=True)
+    gamma1 = symbols("gamma1", positive=True)
+    gamma2 = symbols("gamma2", positive=True)
+    kappa  = symbols("kamma", positive=True)
+    A1 = Destroy(0)
+    Ac1 = A1.dag()
+    N1 = Ac1*A1
+    Id1 = identity_matrix(0)
+    A2 = Destroy(1)
+    Ac2 = A2.dag()
+    N2 = Ac2*A2
+    Id2 = identity_matrix(1)
+    Sp = LocalSigma(2, 1, 0)
+    Sm = Sp.dag()
+    Id3 = identity_matrix(3)
+
+    H  = E*I*(Ac1-A1) + 0.5*chi*I*(Ac1*Ac1*A2 - A1*A1*Ac2) \
+         + omega*Sp*Sm + eta*I*(A2*Sp-Ac2*Sm)
+    Lindblads = [sqrt(2*gamma1)*A1, sqrt(2*gamma2)*A2, sqrt(2*kappa)*Sm]
+
+    slh = SLH(identity_matrix(3), Lindblads, H)
+
+    codegen = QSDCodeGen(circuit=slh,
+              num_vals={E: 20.0, chi: 0.4, omega: -0.7, eta: 0.001,
+                        gamma1: 1.0, gamma2: 1.0, kappa: 0.1})
+    scode = codegen._lindblads_lines()
+    assert dedent(scode).strip() == dedent(r'''
+    Operator L[nL]={
+    (sqrt(2)*sqrt(gamma1)) * (A0),
+    (sqrt(2)*sqrt(gamma2)) * (A1),
+    (sqrt(2)*sqrt(kamma)) * (S2_0_1)
+    }''').strip()
+

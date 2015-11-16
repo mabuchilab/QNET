@@ -123,10 +123,10 @@ class QSDCodeGen(object):
         self.syms = circuit.all_symbols()
         self._local_ops = local_ops(self.circuit)
         self._full_space = self.circuit.space
-        self.lop_str = {}
-
         self._local_factors = {space: index for (index, space)
                 in enumerate(self._full_space.local_factors())}
+        self.lop_str = {}
+        self._build_lop_str()
 
         if num_vals is not None:
             self.num_vals.update(num_vals)
@@ -135,6 +135,34 @@ class QSDCodeGen(object):
     def local_ops(self):
         """Return set of operators occuring in circuit"""
         return self._local_ops
+
+    def _build_lop_str(self):
+        visited = set()
+        self.lop_str[IdentityOperator] = "({})".format(
+                "*".join(["Id{k}".format(k=k)
+                    for k, __ in enumerate(self._local_factors)]))
+        for op in self.local_ops:
+            if isinstance(op, IdentityOperator.__class__):
+                continue
+            elif isinstance(op, (Create, Destroy)):
+                if op.space in visited:
+                    continue
+                else:
+                    visited.add(op.space)
+                a = Destroy(op.space)
+                ad = a.dag()
+                k = self._local_factors[op.space]
+                a_str = "A{}".format(k)
+                ad_str = "A{}c".format(k)
+                self.lop_str[a] = a_str
+                self.lop_str[ad] = ad_str
+            elif isinstance(op, LocalSigma):
+                k = self._local_factors[op.space]
+                i,j = op.operands[1:]
+                op_str = "S{}_{}_{}".format(k,i,j)
+                self.lop_str[op] = op_str
+            else:
+                raise TypeError(str(op))
 
 
     def generate_code(self):
@@ -146,7 +174,7 @@ class QSDCodeGen(object):
                 HAMILTONIAN=self._hamiltonian_lines(),
                 NLINDBLADS='const int nL = {nL:d};'\
                            .format(nL=self.circuit.cdim),
-                LINDBLADS='',
+                LINDBLADS=self._lindblads_lines(),
                 INITIAL_STATE ='',
                 TRAJECTORYPARAMS ='',
                 OBSERVABLES ='',
@@ -171,9 +199,6 @@ class QSDCodeGen(object):
         visited = set()
         for k, s in enumerate(self._local_factors):
             lines.add("IdentityOperator Id{k}({k});".format(k=k))
-        self.lop_str[IdentityOperator] = "({})".format(
-                "*".join(["Id{k}".format(k=k)
-                    for k, __ in enumerate(self._local_factors)]))
         for op in self.local_ops:
             if isinstance(op, IdentityOperator.__class__):
                 continue
@@ -182,24 +207,22 @@ class QSDCodeGen(object):
                     continue
                 else:
                     visited.add(op.space)
+                k = self._local_factors[op.space]
                 a = Destroy(op.space)
                 ad = a.dag()
-                k = self._local_factors[op.space]
-                a_str = "A{}".format(k)
-                ad_str = "A{}c".format(k)
-
-                self.lop_str[a] = a_str
-                self.lop_str[ad] = ad_str
+                a_str = self.lop_str[a]
+                ad_str = self.lop_str[ad]
 
                 # QSD only has annihilation operators, so for every creation
-                # operator, we must add the corresponding annihilation operator
-                lines.add("AnnihilationOperator {a_str}({k});".format(a_str=a_str, k=k))
-                lines.add("Operator {ad_str} = {a_str}.hc();".format(ad_str=ad_str, a_str=a_str))
+                # operator, we must add the corresponding creation operator
+                lines.add("AnnihilationOperator {a_str}({k});"
+                          .format(a_str=a_str, k=k))
+                lines.add("Operator {ad_str} = {a_str}.hc();"
+                          .format(ad_str=ad_str, a_str=a_str))
             elif isinstance(op, LocalSigma):
                 k = self._local_factors[op.space]
                 i,j = op.operands[1:]
-                op_str = "S{}_{}_{}".format(k,i,j)
-                self.lop_str[op] = op_str
+                op_str = self.lop_str[op]
                 lines.add("TransitionOperator {op_str}({k},{i},{j});".format(
                         op_str=op_str, k=k, i=i, j=j))
             else:
@@ -245,5 +268,11 @@ class QSDCodeGen(object):
     def _hamiltonian_lines(self):
         H = self.circuit.H
         return "Operator H = {};".format(self._operator_str(H))
+
+    def _lindblads_lines(self):
+        L_op_lines = []
+        for L_op in self.circuit.L.matrix.flatten():
+            L_op_lines.append(self._operator_str(L_op))
+        return "Operator L[nL]={\n" + ",\n".join(L_op_lines) + "\n}"
 
 
