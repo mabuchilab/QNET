@@ -1014,6 +1014,18 @@ class BraKet(Operator, Operation):
             ks = self.ket.tex()
         return bs + ks
 
+    def _to_qutip(self):
+        bq = self.bra.to_qutip()
+        kq = self.ket.to_qutip()
+        return bq * kq
+
+    def _series_expand(self, param, about, order):
+        be = self.bra.series_expand(param, about, order)
+        ke = self.ket.series_expand(param, about, order)
+        return tuple(be[k] * ke[n - k]
+                     for n in range(order + 1) for k in range(n + 1))
+
+
 
 
 @check_same_space
@@ -1052,7 +1064,8 @@ class KetBra(Operator, Operation):
         be, ke = b.expand(), k.expand()
         kesummands = ke.operands if isinstance(ke, KetPlus) else (ke,)
         besummands = be.operands if isinstance(be, KetPlus) else (be,)
-        return sum(KetBra.create(kes, bes) for bes in besummands for kes in kesummands)
+        return sum(KetBra.create(kes, bes)
+                   for bes in besummands for kes in kesummands)
 
     def _tex(self):
         if isinstance(self.bra.ket, KetPlus):
@@ -1065,8 +1078,17 @@ class KetBra(Operator, Operation):
             ks = self.ket.tex()
         return ks + bs
 
+    def _to_qutip(self):
+        bq = self.bra.to_qutip()
+        kq = self.ket.to_qutip()
+        return kq * bq
 
+    def _series_expand(self, param, about, order):
 
+        ke = self.ket.series_expand(param, about, order)
+        be = self.bra.series_expand(param, about, order)
+        return tuple(ke[k] * be[n - k]
+                     for n in range(order + 1) for k in range(n + 1))
 
 
 def act_locally(op, ket):
@@ -1139,10 +1161,14 @@ ScalarTimesKet._rules += [
     ((u, ScalarTimesKet(v, Psi)), lambda u, v, Psi: (u * v) * Psi)
 ]
 
+local_rule = lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)
+def local_rule(A, B, Psi):
+    return OperatorTimes.create(*A) * (B * Psi)
+
 OperatorTimesKet._rules += [
     ((IdentityOperator, Psi), lambda Psi: Psi),
     ((ZeroOperator, Psi), lambda Psi: KetZero),
-    ((A, KetZero), lambda u: KetZero),
+    ((A, KetZero), lambda A: KetZero),
     ((A, ScalarTimesKet(v, Psi)), lambda A, v, Psi:  v *(A* Psi)),
     ((LocalSigma(ls, n, m), BasisKet(ls, k)), lambda ls, n, m, k: BasisKet(ls, n) if m == k else KetZero),
     ((Create(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n+1) * BasisKet(ls, n + 1)),
@@ -1151,7 +1177,7 @@ OperatorTimesKet._rules += [
     ((A_local, Psi_tensor), lambda A, Psi: act_locally(A, Psi)),
     ((A_times, Psi_tensor), lambda A, Psi: act_locally_times_tensor(A, Psi)),
     ((A, OperatorTimesKet(B, Psi)), lambda A, B, Psi: (A * B) * Psi if (B * Psi) == OperatorTimesKet(B, Psi) else A * (B * Psi)),
-    ((OperatorTimes(A__, B_local), Psi_local), lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)),
+    ((OperatorTimes(A__, B_local), Psi_local), local_rule),
     ((ScalarTimesOperator(u, A), Psi), lambda u, A, Psi: u * (A * Psi)),
     ((Displace(ls, u), BasisKet(ls, 0)), lambda ls, u: CoherentStateKet(ls, u)),
     ((Displace(ls, u), CoherentStateKet(ls, v)), lambda ls, u, v: (Displace(ls,u) * Displace(ls, v)) * BasisKet(ls, 0)),

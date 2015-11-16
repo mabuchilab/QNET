@@ -19,8 +19,8 @@
 
 
 import unittest
-from qnet.algebra.state_algebra import *
 
+from qnet.algebra.state_algebra import *
 
 
 class TestStateAddition(unittest.TestCase):
@@ -191,3 +191,15 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
 
     def testActLocally(self):
         self.assertEqual((Create(1) * Destroy(2)) * (BasisKet(1, 2) * BasisKet(2, 1)), sqrt(3) * BasisKet(1, 3) * BasisKet(2,0))
+
+
+    def testOperatorTensorProduct(self):
+        self.assertEqual((Create(1)*Destroy(2))*(BasisKet(1,0)*BasisKet(2,1)), BasisKet(1,1)*BasisKet(2,0))
+
+    def testOperatorProduct(self):
+        self.assertEqual((Create(1)*Destroy(1))*(BasisKet(1,1)*BasisKet(2,1)), BasisKet(1,1)*BasisKet(2,1))
+        self.assertEqual((Create(1)*Destroy(1)*Destroy(1))*(BasisKet(1,2)*BasisKet(2,1)), sqrt(2)*BasisKet(1,1)*BasisKet(2,1))
+        self.assertEqual((Create(1)*Destroy(1)*Destroy(1))*BasisKet(1,2), sqrt(2)*BasisKet(1,1))
+        self.assertEqual((Create(1)*Destroy(1))*BasisKet(1,1), BasisKet(1,1))
+        self.assertEqual((Create(1) * Destroy(1)) * BasisKet(1,0), KetZero)
+
