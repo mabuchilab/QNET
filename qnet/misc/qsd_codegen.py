@@ -232,7 +232,7 @@ class QSDCodeGen(object):
     def __init__(self, circuit, num_vals=None):
         self.circuit = circuit.toSLH()
         self.num_vals = {}
-        self.syms = circuit.all_symbols()
+        self.syms = set(circuit.all_symbols())
         self._local_ops = local_ops(self.circuit)
         self._full_space = self.circuit.space
         self._local_factors = {space: index for (index, space)
@@ -320,15 +320,21 @@ class QSDCodeGen(object):
     def _parameters_lines(self):
         lines = set()
         lines.add("Complex I(0.0,1.0);")
-        for s in self.syms:
+        for s in list(self.syms):
+            try:
+                val = self.num_vals[s]
+            except KeyError:
+                raise KeyError(("There is no value for symbol %s in "
+                                "self.num_vals") % s)
             if s.is_real is True:
-                if self.num_vals[s].imag != 0:
-                    raise ValueError(self.num_vals[s])
-                lines.add("double {!s} = {:g};".format(s,
-                          self.num_vals[s].real))
+                if val.imag != 0:
+                    raise ValueError(("Value %s for %s is complex, but "
+                                     "should be real") % (val, s))
+                lines.add("double {!s} = {:g};"
+                          .format(s, val.real))
             else:
-                lines.add("Complex {!s}({:g},{:g});".format(
-                        s, self.num_vals[s].real, self.num_vals[s].imag))
+                lines.add("Complex {!s}({:g},{:g});"
+                          .format(s, val.real, val.imag))
         return "\n".join(sorted(lines))
 
     def _operator_str(self, op):
