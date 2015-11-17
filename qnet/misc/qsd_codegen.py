@@ -233,10 +233,16 @@ class QSDCodeGen(object):
         self.circuit = circuit.toSLH()
         self.num_vals = {}
         self.syms = set(circuit.all_symbols())
+
+        # Set of qnet.algebra.operator_algebra.Operator, contains operators in
+        # circuit and operators in observables (see add_observable method)
         self._local_ops = local_ops(self.circuit)
+
         self._full_space = self.circuit.space
-        self._local_factors = {space: index for (index, space)
-                in enumerate(self._full_space.local_factors())}
+        self._local_spaces = self._full_space.local_factors()
+        self._hilbert_space_index = {space: index
+                                    for (index, space)
+                                    in enumerate(self._local_spaces)}
         self._qsd_ops = {}
         self._build_qsd_ops()
 
@@ -250,7 +256,7 @@ class QSDCodeGen(object):
                 name="Id",
                 instantiator='= '+'*'.join(
                             ["Id{k}".format(k=k)
-                            for k in range(len(self._local_factors))]))
+                            for k in range(len(self._hilbert_space_index))]))
         for op in self._local_ops:
             if isinstance(op, IdentityOperator.__class__):
                 continue
@@ -260,7 +266,7 @@ class QSDCodeGen(object):
                 else:
                     visited.add(op.space)
                 a = Destroy(op.space)
-                k = self._local_factors[op.space]
+                k = self._hilbert_space_index[op.space]
                 self._qsd_ops[a] = QSDOperator(
                     qsd_type='AnnihilationOperator',
                     name="A{k}".format(k=k),
@@ -271,7 +277,7 @@ class QSDCodeGen(object):
                     name="Ad{k}".format(k=k),
                     instantiator=('= A{k}.hc()'.format(k=k)))
             elif isinstance(op, LocalSigma):
-                k = self._local_factors[op.space]
+                k = self._hilbert_space_index[op.space]
                 i, j = op.operands[1:]
                 self._qsd_ops[op] = QSDOperator(
                     qsd_type='TransitionOperator',
@@ -311,7 +317,7 @@ class QSDCodeGen(object):
         all operators in the system"""
         lines = set()
         visited = set()
-        for k, s in enumerate(self._local_factors):
+        for k in range(len(self._local_spaces)):
             lines.add("IdentityOperator Id{k}({k});".format(k=k))
         for op in self._qsd_ops:
             lines.add(self._qsd_ops[op].instantiation)
