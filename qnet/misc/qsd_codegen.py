@@ -243,11 +243,6 @@ class QSDCodeGen(object):
         if num_vals is not None:
             self.num_vals.update(num_vals)
 
-    @property
-    def local_ops(self):
-        """Return set of operators occuring in circuit"""
-        return self._local_ops
-
     def _build_qsd_ops(self):
         visited = set()
         self._qsd_ops[IdentityOperator] = QSDOperator(
@@ -256,7 +251,7 @@ class QSDCodeGen(object):
                 instantiator='= '+'*'.join(
                             ["Id{k}".format(k=k)
                             for k in range(len(self._local_factors))]))
-        for op in self.local_ops:
+        for op in self._local_ops:
             if isinstance(op, IdentityOperator.__class__):
                 continue
             elif isinstance(op, (Create, Destroy)):
