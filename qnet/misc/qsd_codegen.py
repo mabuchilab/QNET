@@ -12,9 +12,10 @@ import sympy
 
 
 def local_ops(expr):
-    """Given a QNET symbolic expression, return a set of operators
+    """Given a QNET symbolic expression, return a set of "atomic" operators
     occuring in that expression (instances of
-    qnet.algebra.operator_algebra.Operator)"""
+    qnet.algebra.operator_algebra.Operator). The set is "atomic" in the sense
+    that the operators are not algebraic combinations of other operators."""
     if isinstance(expr, Operator.scalar_types + (str,)):
         return set()
     elif isinstance(expr, (LocalOperator, IdentityOperator.__class__)):
@@ -247,8 +248,8 @@ class QSDCodeGen(object):
         self.num_vals = {}
         self.syms = set(circuit.all_symbols())
 
-        # Set of qnet.algebra.operator_algebra.Operator, contains operators in
-        # circuit and operators in observables (see add_observable method)
+        # Set of qnet.algebra.operator_algebra.Operator, all "atomic"
+        # operators required in the code generation
         self._local_ops = local_ops(self.circuit)
 
         self._full_space = self.circuit.space
@@ -256,28 +257,46 @@ class QSDCodeGen(object):
         self._hilbert_space_index = {space: index
                                     for (index, space)
                                     in enumerate(self._local_spaces)}
+
+        # List of qnet.algebra.operator_algebra.Operator instances
+        self._observables = []
+        # ... and the output file for each observable
+        self._outfiles = []
+        # Both of these attributes are managed via the add_observable method
+
+        # Mapping QNET Operator => QSDOperator for every operator in
+        # self._local_ops
         self._qsd_ops = {}
-        self._build_qsd_ops()
+        self._update_qsd_ops(self._local_ops)
 
         if num_vals is not None:
             self.num_vals.update(num_vals)
 
-    def _build_qsd_ops(self):
-        visited = set()
+    def _update_qsd_ops(self, operators):
+        """Update self._qsd_ops to that every operator in operators is mapped
+        to an appropriate QSDOperator. The names of the QSDOperators are chosen
+        automatically based on the operator type and the index of the Hilbert
+        space they act in. For a Hilbert space index k, the operators names are
+        chosen as follows:
+
+            IdentityOperator => Id
+            Create => A{k}
+            Destroy => Ad{k}
+            LocalSigma |i><j| => S{k}_{i}_{j}
+
+        :param operators: iterable (list, set, ...) of operators
+        :type operators: [qnet.operator_algebra.Operator, ...]
+        """
         self._qsd_ops[IdentityOperator] = QSDOperator(
                 qsd_type='Operator',
                 name="Id",
                 instantiator='= '+'*'.join(
                             ["Id{k}".format(k=k)
                             for k in range(len(self._hilbert_space_index))]))
-        for op in self._local_ops:
+        for op in operators:
             if isinstance(op, IdentityOperator.__class__):
                 continue
             elif isinstance(op, (Create, Destroy)):
-                if op.space in visited:
-                    continue
-                else:
-                    visited.add(op.space)
                 a = Destroy(op.space)
                 k = self._hilbert_space_index[op.space]
                 self._qsd_ops[a] = QSDOperator(
