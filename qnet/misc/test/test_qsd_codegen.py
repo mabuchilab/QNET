@@ -75,7 +75,11 @@ def test_qsd_codegen_parameters():
     Complex c(1,0);
     double chi = 2;
     double kappa = 2;""").strip()
-    # TODO: test missing values
+
+    del codegen.num_vals[c]
+    with pytest.raises(KeyError) as excinfo:
+        scode = codegen._parameters_lines()
+    assert "There is no value for symbol c" in str(excinfo.value)
 
 
 def test_qsd_codegen_hamiltonian():
