@@ -100,6 +100,7 @@ def test_qsd_codegen_hamiltonian():
 
 def test_QSDOperator():
     A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
+    assert A0.__repr__() == "QSDOperator('AnnihilationOperator', 'A0', '(0)')"
     assert A0.qsd_type == 'AnnihilationOperator'
     assert A0.name == 'A0'
     assert A0.instantiator == '(0)'
@@ -123,9 +124,25 @@ def test_QSDOperator():
 
     # spaces around the '=' should be stripped out
     Ad0_2 = QSDOperator('Operator', 'Ad0', '  =   A0.hc()')
-    assert Ad0_2.instantiator == Ad0.instantiator
+    assert Ad0_2 == Ad0
     Ad0_2 = QSDOperator('Operator', 'Ad0', '=A0.hc()')
-    assert Ad0_2.instantiator == Ad0.instantiator
+    assert Ad0_2 == Ad0
+
+    # having __hash__ implemente allows usage in dicts and sets
+    d = {Ad0: 1}
+    assert d[Ad0] == 1
+    assert d[Ad0_2] == 1
+    s = set([Ad0, ])
+    assert Ad0_2 in s
+
+    # Changing an attribute is a change in __key()
+    Ad0.name = 'Adagger0'
+    assert Ad0 != Ad0_2
+    with pytest.raises(KeyError):
+        v = d[Ad0]
+    assert Ad0 not in s
+    d[Ad0] = 2
+    assert len(d) == 2
 
     with pytest.raises(ValueError) as excinfo:
         Ad0 = QSDOperator('CreationOperator', 'Ad0', '(0)')
