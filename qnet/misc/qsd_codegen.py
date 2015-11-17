@@ -53,6 +53,19 @@ class QSDOperator(object):
         self.name = name.strip()
         self.instantiator = instantiator.strip()
 
+    def __key(self):
+        return (self._type, self._name, self._instantiator)
+
+    def __eq__(self, other):
+        return self.__key() == other.__key()
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __repr__(self):
+        return "{cls}{args}".format(cls=self.__class__.__name__,
+                                    args=str(self.__key()))
+
     @property
     def qsd_type(self):
         """QSD object type, i.e., name of the C++ class. See
