@@ -218,5 +218,5 @@ def test_qsd_codegen_lindblads():
     (sqrt(2)*sqrt(gamma1)) * (A0),
     (sqrt(2)*sqrt(gamma2)) * (A1),
     (sqrt(2)*sqrt(kamma)) * (S2_0_1)
-    }''').strip()
+    };''').strip()
 

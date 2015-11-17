@@ -418,6 +418,6 @@ class QSDCodeGen(object):
         L_op_lines = []
         for L_op in self.circuit.L.matrix.flatten():
             L_op_lines.append(self._operator_str(L_op))
-        return "Operator L[nL]={\n" + ",\n".join(L_op_lines) + "\n}"
+        return "Operator L[nL]={\n" + ",\n".join(L_op_lines) + "\n};"
 
 
