@@ -1,5 +1,6 @@
 import re
 from textwrap import dedent
+from collections import OrderedDict
 
 from qnet.algebra.abstract_algebra import prod
 from qnet.algebra.hilbert_space_algebra import TrivialSpace
@@ -265,8 +266,10 @@ class QSDCodeGen(object):
         # Both of these attributes are managed via the add_observable method
 
         # Mapping QNET Operator => QSDOperator for every operator in
-        # self._local_ops
-        self._qsd_ops = {}
+        # self._local_ops. This is kept as an ordered dictionary, such that the
+        # instantiation of an operator may refer to a previously defined
+        # operator
+        self._qsd_ops = OrderedDict()
         self._update_qsd_ops(self._local_ops)
 
         if num_vals is not None:
@@ -284,7 +287,9 @@ class QSDCodeGen(object):
             Destroy => Ad{k}
             LocalSigma |i><j| => S{k}_{i}_{j}
 
-        :param operators: iterable (list, set, ...) of operators
+        :param operators: iterable (list, set, ...) of operators for which to
+            define QSDOpertors. These operators must be "atomic", i.e. they
+            must not be an algebraic combination of other operators
         :type operators: [qnet.operator_algebra.Operator, ...]
         """
         self._qsd_ops[IdentityOperator] = QSDOperator(
@@ -293,7 +298,10 @@ class QSDCodeGen(object):
                 instantiator='= '+'*'.join(
                             ["Id{k}".format(k=k)
                             for k in range(len(self._hilbert_space_index))]))
-        for op in operators:
+        # In order to achieve stable output, we go through the operators in an
+        # arbitrary, but well-defined order (sorting them according to their
+        # string representation)
+        for op in sorted(operators, key=str):
             if isinstance(op, IdentityOperator.__class__):
                 continue
             elif isinstance(op, (Create, Destroy)):
@@ -345,18 +353,19 @@ class QSDCodeGen(object):
 
 
     def _operator_basis_lines(self):
-        """Return a mulitline string of C++ code that defines and initializes
+        """Return a multiline string of C++ code that defines and initializes
         all operators in the system"""
-        lines = set()
-        visited = set()
+        lines = [] # order of lines is important, see below
         for k in range(len(self._local_spaces)):
-            lines.add("IdentityOperator Id{k}({k});".format(k=k))
+            lines.append("IdentityOperator Id{k}({k});".format(k=k))
         for op in self._qsd_ops:
-            lines.add(self._qsd_ops[op].instantiation)
-        return "\n".join(sorted(lines))
+            # We assume that self._qsd_ops is an OrderedDict, so that
+            # instantiations may refer to earlier operators
+            lines.append(self._qsd_ops[op].instantiation)
+        return "\n".join(lines)
 
     def _parameters_lines(self):
-        lines = set()
+        lines = set() # parameter definitions may be in any order
         lines.add("Complex I(0.0,1.0);")
         for s in list(self.syms):
             try:

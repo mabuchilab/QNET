@@ -32,21 +32,22 @@ def test_qsd_codegen_operator_basis():
     codegen = QSDCodeGen(circuit)
     ob = codegen._operator_basis_lines()
     assert dedent(ob).strip() == dedent("""
-    AnnihilationOperator A0(0);
     IdentityOperator Id0(0);
     IdentityOperator Id1(1);
-    Operator Ad0 = A0.hc();
     Operator Id = Id0*Id1;
+    AnnihilationOperator A0(0);
+    Operator Ad0 = A0.hc();
     TransitionOperator S1_0_1(1,0,1);
-    TransitionOperator S1_1_0(1,1,0);""").strip()
+    TransitionOperator S1_1_0(1,1,0);
+    """).strip()
     circuit = SLH(identity_matrix(0), [], ad)
     codegen = QSDCodeGen(circuit)
     ob = codegen._operator_basis_lines()
     assert dedent(ob).strip() == dedent("""
-    AnnihilationOperator A0(0);
     IdentityOperator Id0(0);
-    Operator Ad0 = A0.hc();
     Operator Id = Id0;
+    AnnihilationOperator A0(0);
+    Operator Ad0 = A0.hc();
     """).strip()
 
 
