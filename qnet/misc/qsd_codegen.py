@@ -252,6 +252,7 @@ class QSDCodeGen(object):
         # Set of qnet.algebra.operator_algebra.Operator, all "atomic"
         # operators required in the code generation
         self._local_ops = local_ops(self.circuit)
+        # The add_observable method may later extend this set
 
         self._full_space = self.circuit.space
         self._local_spaces = self._full_space.local_factors()
@@ -271,6 +272,7 @@ class QSDCodeGen(object):
         # operator
         self._qsd_ops = OrderedDict()
         self._update_qsd_ops(self._local_ops)
+        # The add_observable method may later extend this mapping
 
         if num_vals is not None:
             self.num_vals.update(num_vals)
@@ -328,6 +330,22 @@ class QSDCodeGen(object):
                 raise TypeError(str(op))
 
 
+    def add_observable(self, op, filename):
+        """Register an operators as an observable, together with a filename
+        in which the expectation values and standard deviations of the operator
+        will be written.
+
+        :param op: Observable
+        :type op: qnet.algebra.operator_algebra.Operator
+        :param filename: Name of file to which to write output
+        :type filename: str
+        """
+        self._update_qsd_ops(local_ops(op))
+        self.syms.update(op.all_symbols())
+        self._observables.append(op)
+        self._outfiles.append(filename)
+
+
     def generate_code(self):
         """Return C++ program that corresponds to the circuit as a multiline
         string"""
@@ -340,7 +358,7 @@ class QSDCodeGen(object):
                 LINDBLADS=self._lindblads_lines(),
                 INITIAL_STATE ='',
                 TRAJECTORYPARAMS ='',
-                OBSERVABLES ='',
+                OBSERVABLES=self._observables_lines(),
                 )
 
     def write(self, filename):
@@ -365,6 +383,8 @@ class QSDCodeGen(object):
         return "\n".join(lines)
 
     def _parameters_lines(self):
+        """Return a multiline string of C++ code that defines all numerical
+        constants"""
         lines = set() # parameter definitions may be in any order
         lines.add("Complex I(0.0,1.0);")
         for s in list(self.syms):
@@ -384,8 +404,28 @@ class QSDCodeGen(object):
                           .format(s, val.real, val.imag))
         return "\n".join(sorted(lines))
 
+
+    def _observables_lines(self):
+        """Return a multiline string of C++ code that defines all
+        observables"""
+        lines = []
+        n_of_out = len(self._observables)
+        lines.append('const int nOfOut = %d' % n_of_out)
+        outlist_lines = []
+        for observable in self._observables:
+            outlist_lines.append(self._operator_str(observable))
+        lines.append("Operator outlist[nOfOut] = {\n  "
+                     + ",\n  ".join(outlist_lines) + "\n};")
+        lines.append('char *flist[nOfOut] = {{{filenames}}};'
+                     .format(filenames=", ".join(
+                         [('"'+fn+'"') for fn in self._outfiles]
+                     )))
+        lines.append(r'int pipe[4] = {1,2,3,4};')
+        return "\n".join(lines)
+
+
     def _operator_str(self, op):
-        """For a given instance of ``qnet.operator_algebra.Operator``,
+        """For a given instance of ``qnet.algebra.operator_algebra.Operator``,
         recursively generate the C++ expression that will instantiate the
         operator.
         """
@@ -418,6 +458,6 @@ class QSDCodeGen(object):
         L_op_lines = []
         for L_op in self.circuit.L.matrix.flatten():
             L_op_lines.append(self._operator_str(L_op))
-        return "Operator L[nL]={\n" + ",\n".join(L_op_lines) + "\n};"
+        return "Operator L[nL]={\n  " + ",\n  ".join(L_op_lines) + "\n};"
 
 

@@ -183,7 +183,9 @@ def test_qsd_codegen_nlinkblads():
     assert "const int nL = 1;" in codegen.generate_code()
 
 
-def test_qsd_codegen_lindblads():
+@pytest.fixture
+def slh_Sec6():
+    """SHL for the model in Section 6 of the QSD paper"""
     E      = symbols("E", positive=True)
     chi    = symbols("chi", real=True)
     omega  = symbols("omega",real=True)
@@ -207,16 +209,43 @@ def test_qsd_codegen_lindblads():
          + omega*Sp*Sm + eta*I*(A2*Sp-Ac2*Sm)
     Lindblads = [sqrt(2*gamma1)*A1, sqrt(2*gamma2)*A2, sqrt(2*kappa)*Sm]
 
-    slh = SLH(identity_matrix(3), Lindblads, H)
+    return SLH(identity_matrix(3), Lindblads, H)
 
-    codegen = QSDCodeGen(circuit=slh,
-              num_vals={E: 20.0, chi: 0.4, omega: -0.7, eta: 0.001,
-                        gamma1: 1.0, gamma2: 1.0, kappa: 0.1})
+
+def test_qsd_codegen_lindblads(slh_Sec6):
+    codegen = QSDCodeGen(circuit=slh_Sec6)
     scode = codegen._lindblads_lines()
     assert dedent(scode).strip() == dedent(r'''
     Operator L[nL]={
-    (sqrt(2)*sqrt(gamma1)) * (A0),
-    (sqrt(2)*sqrt(gamma2)) * (A1),
-    (sqrt(2)*sqrt(kamma)) * (S2_0_1)
-    };''').strip()
+      (sqrt(2)*sqrt(gamma1)) * (A0),
+      (sqrt(2)*sqrt(gamma2)) * (A1),
+      (sqrt(2)*sqrt(kamma)) * (S2_0_1)
+    };
+    ''').strip()
+
+
+def test_qsd_codegen_observables(slh_Sec6):
+    A2 = Destroy(1)
+    Sp = LocalSigma(2, 1, 0)
+    Sm = Sp.dag()
+    codegen = QSDCodeGen(circuit=slh_Sec6)
+    codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
+    codegen.add_observable(Sm*Sp*A2*Sm, "X2.out")
+    codegen.add_observable(A2, "A2.out")
+    scode = codegen._observables_lines()
+    assert dedent(scode).strip() == dedent(r'''
+    const int nOfOut = 3
+    Operator outlist[nOfOut] = {
+      (A1 * S2_1_0),
+      (A1 * S2_0_1),
+      A1
+    };
+    char *flist[nOfOut] = {"X1.out", "X2.out", "A2.out"};
+    int pipe[4] = {1,2,3,4};
+    ''').strip()
+    # Note how the observables have been simplified
+    assert Sp*A2*Sm*Sp == Sp*A2
+    assert codegen._operator_str(Sp*A2) == '(A1 * S2_1_0)'
+    assert Sm*Sp*A2*Sm == Sm*A2
+    assert codegen._operator_str(Sm*A2) == '(A1 * S2_0_1)'
 
