@@ -1,10 +1,11 @@
-from qnet.misc.qsd_codegen import (local_ops, QSDCodeGen, QSDOperator,
-    QSDCodeGenError, UNSIGNED_MAXINT)
+from qnet.misc.qsd_codegen import (local_ops, local_kets, QSDCodeGen,
+    QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT)
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
     LocalSigma, identity_matrix, I
 )
+from qnet.algebra.state_algebra import BasisKet
 import re
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
@@ -23,6 +24,33 @@ def test_local_ops():
     assert local_ops(10*a) == set([a])
     with pytest.raises(TypeError):
         local_ops({})
+
+
+def test_local_kets():
+    #                  hs n
+    psi_A_0 = BasisKet(0, 0)
+    psi_A_1 = BasisKet(0, 1)
+    psi_B_0 = BasisKet(1, 0)
+    psi_B_1 = BasisKet(1, 1)
+
+    psi_00 = psi_A_0 * psi_B_0
+    psi_01 = psi_A_0 * psi_B_1
+    psi_10 = psi_A_1 * psi_B_0
+    psi_11 = psi_A_1 * psi_B_1
+
+    all_psi = [psi_A_0, psi_A_1, psi_B_0, psi_B_1]
+    a1 = Destroy(psi_A_1.space)
+
+    assert set((psi_A_0, )) == local_kets(psi_A_0)
+
+    psi = 0.5*(psi_00 + psi_01 + psi_10 + psi_11)
+    assert set(all_psi) == local_kets(psi)
+
+    psi = 0.5 * a1 * psi_10 # = 0.5 * psi_00
+    assert set([psi_A_0, psi_B_0]) == local_kets(psi)
+
+    with pytest.raises(TypeError):
+        local_kets({})
 
 
 def test_qsd_codegen_operator_basis():

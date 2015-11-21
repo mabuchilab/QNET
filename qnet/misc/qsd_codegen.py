@@ -14,6 +14,7 @@ from qnet.algebra.circuit_algebra import (
     Operation, Circuit, set_union, TrivialSpace, LocalSigma,
     ScalarTimesOperator, OperatorPlus, OperatorTimes
 )
+from qnet.algebra.state_algebra import Ket, LocalKet
 import sympy
 
 # max unsigned int in C/C++ when compiled the same way as python
@@ -36,6 +37,19 @@ def local_ops(expr):
         return set_union(*tuple(map(local_ops, Ls))) | local_ops(H)
     elif isinstance(expr, Operation):
         return set_union(*tuple(map(local_ops, expr.operands)))
+    else:
+        raise TypeError(str(expr))
+
+
+def local_kets(expr):
+    """Given a QNET Ket instance, return the set of LocalKet instances
+    contained in it"""
+    if isinstance(expr, Operator.scalar_types + (str,)):
+        return set()
+    elif isinstance(expr, LocalKet):
+        return set([expr])
+    elif isinstance(expr, Operation):
+        return set_union(*tuple(map(local_kets, expr.operands)))
     else:
         raise TypeError(str(expr))
 
