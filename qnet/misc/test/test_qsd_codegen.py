@@ -193,6 +193,19 @@ def slh_Sec6():
     return SLH(identity_matrix(3), Lindblads, H)
 
 
+@pytest.fixture
+def slh_Sec6_vals():
+    return {
+        symbols("E", positive=True):     20.0,
+        symbols("chi", real=True):        0.4,
+        symbols("omega",real=True):      -0.7,
+        symbols("eta",real=True):         0.001,
+        symbols("gamma1", positive=True): 1.0,
+        symbols("gamma2", positive=True): 1.0,
+        symbols("kamma", positive=True):  0.1
+    }
+
+
 def test_qsd_codegen_lindblads(slh_Sec6):
     codegen = QSDCodeGen(circuit=slh_Sec6)
     scode = codegen._lindblads_lines()
@@ -206,11 +219,11 @@ def test_qsd_codegen_lindblads(slh_Sec6):
     ''').strip()
 
 
-def test_qsd_codegen_observables(slh_Sec6):
+def test_qsd_codegen_observables(slh_Sec6, slh_Sec6_vals):
     A2 = Destroy(1)
     Sp = LocalSigma(2, 1, 0)
     Sm = Sp.dag()
-    codegen = QSDCodeGen(circuit=slh_Sec6)
+    codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
     with pytest.raises(QSDCodeGenError) as excinfo:
         scode = codegen._observables_lines()
     assert "Must register at least one observable" in str(excinfo.value)
@@ -233,6 +246,17 @@ def test_qsd_codegen_observables(slh_Sec6):
     assert codegen._operator_str(Sp*A2) == '(A1 * S2_1_0)'
     assert Sm*Sp*A2*Sm == Sm*A2
     assert codegen._operator_str(Sm*A2) == '(A1 * S2_0_1)'
+    # If the oberservables introduce new operators or symbols, these should
+    # extend the existing ones
+    P1 = LocalSigma(2, 1, 1)
+    zeta = symbols("zeta", real=True)
+    codegen.add_observable(zeta*P1, "P1.out")
+    assert P1 in codegen._local_ops
+    assert str(codegen._qsd_ops[P1]) == 'S2_1_1'
+    assert zeta in codegen.syms
+    codegen.num_vals.update({zeta: 1.0})
+    assert 'zeta' in codegen._parameters_lines()
+    assert str(codegen._qsd_ops[P1]) in codegen._operator_basis_lines()
 
 
 def test_qsd_codegen_traj(slh_Sec6):

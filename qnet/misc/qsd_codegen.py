@@ -311,7 +311,9 @@ class QSDCodeGen(object):
             (averaged) expectation values for the observable.
         :type filename: str
         """
-        self._update_qsd_ops(local_ops(op))
+        op_local_ops = local_ops(op)
+        self._local_ops.update(op_local_ops)
+        self._update_qsd_ops(op_local_ops)
         self.syms.update(op.all_symbols())
         self._observables.append(op)
         self._outfiles.append(filename)
