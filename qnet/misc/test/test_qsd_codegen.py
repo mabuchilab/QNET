@@ -1,9 +1,11 @@
-from qnet.misc.qsd_codegen import local_ops, QSDCodeGen, QSDOperator
+from qnet.misc.qsd_codegen import (local_ops, QSDCodeGen, QSDOperator,
+    QSDCodeGenError, UNSIGNED_MAXINT)
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
     LocalSigma, identity_matrix, I
 )
+import re
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
 import pytest
@@ -209,6 +211,9 @@ def test_qsd_codegen_observables(slh_Sec6):
     Sp = LocalSigma(2, 1, 0)
     Sm = Sp.dag()
     codegen = QSDCodeGen(circuit=slh_Sec6)
+    with pytest.raises(QSDCodeGenError) as excinfo:
+        scode = codegen._observables_lines()
+    assert "Must register at least one observable" in str(excinfo.value)
     codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
     codegen.add_observable(Sm*Sp*A2*Sm, "X2.out")
     codegen.add_observable(A2, "A2.out")
@@ -229,3 +234,81 @@ def test_qsd_codegen_observables(slh_Sec6):
     assert Sm*Sp*A2*Sm == Sm*A2
     assert codegen._operator_str(Sm*A2) == '(A1 * S2_0_1)'
 
+
+def test_qsd_codegen_traj(slh_Sec6):
+    A2 = Destroy(1)
+    Sp = LocalSigma(2, 1, 0)
+    Sm = Sp.dag()
+    codegen = QSDCodeGen(circuit=slh_Sec6)
+    codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
+    codegen.add_observable(Sm*Sp*A2*Sm, "X2.out")
+    codegen.add_observable(A2, "A2.out")
+
+    with pytest.raises(QSDCodeGenError) as excinfo:
+        scode = codegen._trajectory_lines()
+    assert "No trajectories set up"  in str(excinfo.value)
+
+    codegen.set_trajectories(psi_initial=None, stepper='AdaptiveStep', dt=0.01,
+            nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
+            add_to_existing_traj=True, traj_save=10, rnd_seed=None)
+    scode = codegen._trajectory_lines()
+    m = re.search(r'int rndSeed = (\d+);', scode)
+    assert int(m.group(1)) <= UNSIGNED_MAXINT
+
+    codegen.set_trajectories(psi_initial=None, stepper='AdaptiveStep', dt=0.01,
+            nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
+            add_to_existing_traj=True, traj_save=10, rnd_seed=0)
+    scode = codegen._trajectory_lines()
+    assert dedent(scode).strip() == dedent(r'''
+    int rndSeed = 0;
+    ACG gen(rndSeed); // random number generator
+    ComplexNormal rndm(&gen); // Complex Gaussian random numbers
+
+    double dt = 0.01;
+    int dtsperStep = 100;
+    int nOfSteps = 5;
+    int nTrajSave = 10;
+    int nTrajectory = 1;
+    int ReadFile = 0;
+
+    AdaptiveStep stepper(psiIni, H, nL, L);
+    Trajectory traj(psiIni, dt, stepper, &rndm);
+
+    traj.sumExp(nOfOut, outlist, flist , dtsperStep, nOfSteps,
+                nTrajectory, nTrajSave, ReadFile);
+    ''').strip()
+
+    with pytest.raises(ValueError) as excinfo:
+        codegen.set_moving_basis(move_dofs=0, delta=0.01, width=2,
+                                 move_eps=0.01)
+    assert "move_dofs must be an integer >0" in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        codegen.set_moving_basis(move_dofs=4, delta=0.01, width=2,
+                                 move_eps=0.01)
+    assert "move_dofs must not be larger" in str(excinfo.value)
+    codegen.set_moving_basis(move_dofs=2, delta=0.01, width=2, move_eps=0.01)
+    scode = codegen._trajectory_lines()
+    assert dedent(scode).strip() == dedent(r'''
+    int rndSeed = 0;
+    ACG gen(rndSeed); // random number generator
+    ComplexNormal rndm(&gen); // Complex Gaussian random numbers
+
+    double dt = 0.01;
+    int dtsperStep = 100;
+    int nOfSteps = 5;
+    int nTrajSave = 10;
+    int nTrajectory = 1;
+    int ReadFile = 0;
+
+    AdaptiveStep stepper(psiIni, H, nL, L);
+    Trajectory traj(psiIni, dt, stepper, &rndm);
+
+    int move = 2;
+    double delta = 0.01;
+    int width = 2;
+    int moveEps = 0.01
+
+    traj.sumExp(nOfOut, outlist, flist , dtsperStep, nOfSteps,
+                nTrajectory, nTrajSave, ReadFile, move,
+                delta, width, moveEps);
+    ''').strip()

@@ -1,4 +1,9 @@
 import re
+import random
+import sys
+import os
+import logging
+import struct
 from textwrap import dedent
 from collections import OrderedDict
 
@@ -10,6 +15,9 @@ from qnet.algebra.circuit_algebra import (
     ScalarTimesOperator, OperatorPlus, OperatorTimes
 )
 import sympy
+
+# max unsigned int in C/C++ when compiled the same way as python
+UNSIGNED_MAXINT = 2 ** (struct.Struct('I').size * 8 - 1) - 1
 
 
 def local_ops(expr):
@@ -154,9 +162,17 @@ class QSDOperator(object):
         return str(self.name)
 
 
+class QSDCodeGenError(Exception):
+    """Exception raised for missing data in QSDCodeGen instance"""
+    pass
+
 
 class QSDCodeGen(object):
     """Object that allows to generate QSD programs for QNET expressions"""
+
+    _known_steppers = ['Order4Step', 'AdaptiveStep', 'AdaptiveJump',
+                       'AdaptiveOrthoJump']
+
     template = dedent(r'''
     #include "Complex.h"
     #include "ACG.h"
@@ -171,44 +187,17 @@ class QSDCodeGen(object):
     {{
     // Primary Operators
     {OPERATORBASIS}
-      /*AnnihilationOperator A1(0);  // 1st freedom*/
-      /*NumberOperator N1(0);*/
-      /*IdentityOperator Id1(0);*/
-      /*AnnihilationOperator A2(1);  // 2nd freedom*/
-      /*NumberOperator N2(1);*/
-      /*IdentityOperator Id2(1);*/
-      /*SigmaPlus Sp(2);             // 3rd freedom*/
-      /*IdentityOperator Id3(2);*/
-      /*Operator Sm = Sp.hc();       // Hermitian conjugate*/
-      /*Operator Ac1 = A1.hc();*/
-      /*Operator Ac2 = A2.hc();*/
-
 
     // Hamiltonian
     {PARAMETERS}
-      /*double E = 20.0;           */
-      /*double chi = 0.4;      */
-      /*double omega = -0.7;       */
-      /*double eta = 0.001;*/
-      /*Complex I(0.0,1.0);*/
-      /*double gamma1 = 1.0;       */
-      /*double gamma2 = 1.0;       */
-      /*double kappa = 0.1;        */
-
-
 
     {HAMILTONIAN}
-      /*Operator H = (E*I)*(Ac1-A1)*/
-                 /*+ (0.5*chi*I)*(Ac1*Ac1*A2 - A1*A1*Ac2)*/
-                 /*+ omega*Sp*Sm + (eta*I)*(A2*Sp-Ac2*Sm);*/
+
     // Lindblad operators
     {LINDBLADS}
-      /*const int nL = 3;*/
-      /*Operator L[nL]={{
-      sqrt(2*gamma1)*A1,
-      sqrt(2*gamma2)*A2,
-      sqrt(2*kappa)*Sm
-      }};*/
+
+    // Observables
+    {OBSERVABLES}
 
     // Initial state
     {INITIAL_STATE}
@@ -219,34 +208,17 @@ class QSDCodeGen(object):
       /*State psiIni(3,stateList);*/
 
     // Trajectory
-    {TRAJECTORYPARAMS}
-      /*double dt = 0.01;    // basic time step                            */
-      /*int numdts = 100;    // time interval between outputs = numdts*dt  */
-      /*int numsteps = 5;    // total integration time = numsteps*numdts*dt*/
-      /*int nOfMovingFreedoms = 2;*/
-      /*double epsilon = 0.01;     // cutoff probability*/
-      /*int nPad = 2;              // pad size*/
-      /*ACG gen(38388389);         // random number generator with seed*/
-      /*ComplexNormal rndm(&gen);  // Complex Gaussian random numbers*/
-      /*AdaptiveStep stepper(psiIni, H, nL, L);       // see paper Section 5*/
-    // Output
-    {OBSERVABLES}
-      /*const int nOfOut = 3;*/
-      /*Operator outlist[nOfOut]={{ Sp*A2*Sm*Sp, Sm*Sp*A2*Sm, A2 }};*/
-      /*char *flist[nOfOut]={{"X1.out","X2.out","A2.out"}};*/
-      /*int pipe[] = {{1,5,9,11}}; // controls standard output (see `onespin.cc')*/
-      int pipe[4] = {{1,2,3,4}};
-
-    // Simulate one trajectory (for several trajectories see `onespin.cc')
-      Trajectory traj(psiIni, dt, stepper, &rndm);  // see paper Section 5
-      traj.plotExp( nOfOut, outlist, flist, pipe, numdts, numsteps,
-                    nOfMovingFreedoms, epsilon, nPad );
+    {TRAJECTORY}
     }}''').strip()
 
     def __init__(self, circuit, num_vals=None):
         self.circuit = circuit.toSLH()
         self.num_vals = {}
         self.syms = set(circuit.all_symbols())
+        self._psi_initial = None
+        self._traj_params = {}
+        self._moving_params = {}
+        self._rnd_seed = None
 
         # Set of qnet.algebra.operator_algebra.Operator, all "atomic"
         # operators required in the code generation
@@ -335,13 +307,166 @@ class QSDCodeGen(object):
 
         :param op: Observable
         :type op: qnet.algebra.operator_algebra.Operator
-        :param filename: Name of file to which to write output
+        :param filename: Name of file to which to write the "plot" of
+            (averaged) expectation values for the observable.
         :type filename: str
         """
         self._update_qsd_ops(local_ops(op))
         self.syms.update(op.all_symbols())
         self._observables.append(op)
         self._outfiles.append(filename)
+
+    def set_moving_basis(self, move_dofs, delta=1e-4, width=2, move_eps=1e-4):
+        """Activate the use of the the moving basis, see Section 6 of the QSD
+        Paper.
+
+        :param move_dofs: degrees of freedome for which to use a moving basis
+            (the first 'move_dofs' freedoms are recentered, and their cutoffs
+            adjusted.)
+        :type move_dofs: int
+        :param delta: probability threshold for the cutoff adjustment
+        :type delta: float
+        :param width: size of the "pad" for the cutoff
+        :type width: int
+        :param move_eps: numerical accuracy with which to make the shift. Cf.
+            ``shiftAccuracy`` in QSD ``State::recenter`` method
+        :type move_eps: float
+        """
+        if move_dofs <= 0:
+            raise ValueError("move_dofs must be an integer >0")
+        if move_dofs > len(self._local_spaces):
+            raise ValueError("move_dofs must not be larger than the number "
+                             "of local Hilbert spaces")
+        self._moving_params['move_dofs'] = move_dofs
+        self._moving_params['delta'] = delta
+        if move_dofs <= 0:
+            raise ValueError("width must be an integer >0")
+        self._moving_params['width'] = width
+        self._moving_params['move_eps'] = move_eps
+
+    def set_trajectories(self, psi_initial, stepper, dt, nt_plot_step,
+            n_plot_steps, n_trajectories, add_to_existing_traj=True,
+            traj_save=10, rnd_seed=None):
+        """Set the parameters that control the trajectories from which a plot
+        of expectation values for the registered observables will be generated.
+
+        :param psi_initial: The initial state
+        :type psi_initial: qnet.agebra.state_algebra.Ket
+        :param stepper: Name of the QSD stepper that should handle propagation
+            of a single time step. See ``_known_steppers`` class attribute for
+            allowed values
+        :type stepper: str
+        :param dt: The duration for a single propagation step. Note that the
+            plot of expectation values will generally be on a coarser grid, as
+            controlled by the ``set_plotting`` routine
+        :type dt: float
+        :param nt_plot_step: Number of propagation steps per plot step. That
+            is, expectation values of the observables will be written out every
+            `nt_plot_step` propagation steps
+        :type nt_plot_step: int
+        :param n_plot_steps: Number of plot steps. The total number of
+            propagation steps for each trajectory will be
+            ``nt_plot_step * n_plot_steps``, and duration T of the entire
+            trajectory will be ``dt * nt_plot_step * n_plot_steps``
+        :type n_plot_stpes: int
+        :param n_trajectories: The number of trajectories over which to average
+            for getting the expectation values of the observables
+        :type n_trajectories: int
+        :param add_to_existing_traj: If True, and if the output file for every
+            observable already exists and contains data for a matching
+            trajectory, include the existing data when calculating the averaged
+            expectation values. In this case, the average will be determined
+            from the existing trajectories and ``n_trajectories`` new
+            trajectories. Note that when adding to existing trajectories, it is
+            essential that the random number generator starts from a different
+            seed.
+        :type add_to_existing_traj: boolean
+        :param traj_save: Number of trajectories to propagate before writing
+            the averaged expectation values of all oberservables to file. This
+            ensures that if the program is terminated before the calculation of
+            ``n_trajectories`` is complete, the lost data is at most that of
+            the last ``traj_save`` trajectories is lost. A value of 0
+            indictates that the values are to be written out only after
+            completing all trajectories.
+        :type traj_save: int
+        :rnd_seed: Seed for the QSD random number generator. If None, a new
+            random number will be used anytime the QSD program is generated. To
+            ensure exact reproducibility, the seed may be set manually. If not
+            None, must be in the range of C unsigned integers.
+        :type rnd_seed: int, None
+        """
+        self._psi_initial = psi_initial
+        if not stepper in self._known_steppers:
+            raise ValueError("stepper '%s' must be one of %s"
+                              % (value, self._known_steppers))
+        self._traj_params['stepper'] = stepper
+        self._traj_params['dt'] = dt
+        self._traj_params['nt_plot_step'] = nt_plot_step
+        self._traj_params['n_plot_steps'] = n_plot_steps
+        self._traj_params['n_trajectories'] = n_trajectories
+        self._traj_params['traj_save'] = traj_save
+        self._rnd_seed = rnd_seed
+        if add_to_existing_traj:
+            self._traj_params['read_files'] = 1
+        else:
+            self._traj_params['read_files'] = 0
+
+    def _initial_state_lines(self):
+        raise NotImplementedError()
+
+    def _trajectory_lines(self):
+        logger = logging.getLogger(__name__)
+        try:
+            read_files = self._traj_params['read_files']
+        except KeyError:
+            raise QSDCodeGenError("No trajectories set up. Ensure that "
+                                  "'set_trajectories' method has been called")
+        if read_files == 1:
+            for filename in self._outfiles:
+                if not os.path.isfile(filename):
+                    logger.info("Not all output files exist. "
+                                "Disabling 'add_to_existing_traj'")
+                    self._traj_params['read_files'] = 0
+
+        lines = [
+        'int rndSeed = {rnd_seed};',
+        'ACG gen(rndSeed); // random number generator',
+        'ComplexNormal rndm(&gen); // Complex Gaussian random numbers',
+        '',
+        'double dt = {dt};',
+        'int dtsperStep = {nt_plot_step};',
+        'int nOfSteps = {n_plot_steps};',
+        'int nTrajSave = {traj_save};',
+        'int nTrajectory = {n_trajectories};',
+        'int ReadFile = {read_files};',
+        '',
+        '{stepper} stepper(psiIni, H, nL, L);',
+        'Trajectory traj(psiIni, dt, stepper, &rndm);',
+        '',
+        ]
+        if len(self._moving_params) > 0:
+            lines.extend([
+                'int move = {move_dofs};',
+                'double delta = {delta};',
+                'int width = {width};',
+                'int moveEps = {move_eps}',
+                '',
+                'traj.sumExp(nOfOut, outlist, flist , dtsperStep, nOfSteps,',
+                '            nTrajectory, nTrajSave, ReadFile, move,',
+                '            delta, width, moveEps);'
+            ])
+        else:
+            lines.extend([
+                'traj.sumExp(nOfOut, outlist, flist , dtsperStep, nOfSteps,',
+                '            nTrajectory, nTrajSave, ReadFile);'
+            ])
+        fmt_mapping = self._traj_params.copy()
+        fmt_mapping.update(self._moving_params)
+        rnd_seed = self._rnd_seed
+        if rnd_seed is None:
+            rnd_seed = random.randint(0, UNSIGNED_MAXINT)
+        fmt_mapping['rnd_seed'] = rnd_seed
+        return "\n".join([line.format(**fmt_mapping) for line in lines])
 
 
     def generate_code(self):
@@ -352,14 +477,14 @@ class QSDCodeGen(object):
                 PARAMETERS=self._parameters_lines(),
                 HAMILTONIAN=self._hamiltonian_lines(),
                 LINDBLADS=self._lindblads_lines(),
-                INITIAL_STATE ='',
-                TRAJECTORYPARAMS ='',
                 OBSERVABLES=self._observables_lines(),
+                INITIAL_STATE ='',
+                TRAJECTORY =self._trajectory_lines(),
                 )
 
-    def write(self, filename):
+    def write(self, outfile):
         """Write C++ program that corresponds to the circuit"""
-        with open(filename, 'w') as out_fh:
+        with open(outfile, 'w') as out_fh:
             out_fh.write(self.generate_code())
 
     def __str__(self):
@@ -408,6 +533,8 @@ class QSDCodeGen(object):
         n_of_out = len(self._observables)
         lines.append('const int nOfOut = %d' % n_of_out)
         outlist_lines = []
+        if len(self._observables) < 1:
+            raise QSDCodeGenError("Must register at least one observable")
         for observable in self._observables:
             outlist_lines.append(self._operator_str(observable))
         lines.append("Operator outlist[nOfOut] = {\n  "
