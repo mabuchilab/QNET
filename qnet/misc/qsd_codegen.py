@@ -202,9 +202,8 @@ class QSDCodeGen(object):
                  /*+ (0.5*chi*I)*(Ac1*Ac1*A2 - A1*A1*Ac2)*/
                  /*+ omega*Sp*Sm + (eta*I)*(A2*Sp-Ac2*Sm);*/
     // Lindblad operators
-    {NLINDBLADS}
-      /*const int nL = 3;*/
     {LINDBLADS}
+      /*const int nL = 3;*/
       /*Operator L[nL]={{
       sqrt(2*gamma1)*A1,
       sqrt(2*gamma2)*A2,
@@ -329,7 +328,6 @@ class QSDCodeGen(object):
             else:
                 raise TypeError(str(op))
 
-
     def add_observable(self, op, filename):
         """Register an operators as an observable, together with a filename
         in which the expectation values and standard deviations of the operator
@@ -353,8 +351,6 @@ class QSDCodeGen(object):
                 OPERATORBASIS=self._operator_basis_lines(),
                 PARAMETERS=self._parameters_lines(),
                 HAMILTONIAN=self._hamiltonian_lines(),
-                NLINDBLADS='const int nL = {nL:d};'\
-                           .format(nL=self.circuit.cdim),
                 LINDBLADS=self._lindblads_lines(),
                 INITIAL_STATE ='',
                 TRAJECTORYPARAMS ='',
@@ -455,9 +451,13 @@ class QSDCodeGen(object):
         return "Operator H = {};".format(self._operator_str(H))
 
     def _lindblads_lines(self):
+        lines = []
+        lines.append('const int nL = {nL};'.format(nL=self.circuit.cdim))
         L_op_lines = []
         for L_op in self.circuit.L.matrix.flatten():
             L_op_lines.append(self._operator_str(L_op))
-        return "Operator L[nL]={\n  " + ",\n  ".join(L_op_lines) + "\n};"
+        lines.append(
+            "Operator L[nL]={\n  " + ",\n  ".join(L_op_lines) + "\n};")
+        return "\n".join(lines)
 
 

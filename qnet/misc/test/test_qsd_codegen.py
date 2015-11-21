@@ -162,27 +162,6 @@ def test_QSDOperator():
     assert "Instantiator '(0' does not end with ')'" in str(excinfo.value)
 
 
-def test_qsd_codegen_nlinkblads():
-    k = symbols("kappa", positive=True)
-    x = symbols("chi", real=True)
-    c = symbols("c",real=True)
-    a = Destroy(1)
-    ad = a.dag()
-    s = LocalSigma(2, 1, 0)
-    sd = s.dag()
-
-    circuit = SLH(identity_matrix(0), [], a*ad + s + sd)
-    codegen = QSDCodeGen(circuit, num_vals={x: 2., c: 1, k: 2})
-    result = codegen.generate_code()
-    assert "const int nL = 0;" in codegen.generate_code()
-
-    H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
-    L = sqrt(k) * a
-    circuit = SLH(identity_matrix(1), [L], H)
-    codegen = QSDCodeGen(circuit, num_vals={x: 2., c: 1, k: 2})
-    assert "const int nL = 1;" in codegen.generate_code()
-
-
 @pytest.fixture
 def slh_Sec6():
     """SHL for the model in Section 6 of the QSD paper"""
@@ -216,6 +195,7 @@ def test_qsd_codegen_lindblads(slh_Sec6):
     codegen = QSDCodeGen(circuit=slh_Sec6)
     scode = codegen._lindblads_lines()
     assert dedent(scode).strip() == dedent(r'''
+    const int nL = 3;
     Operator L[nL]={
       (sqrt(2)*sqrt(gamma1)) * (A0),
       (sqrt(2)*sqrt(gamma2)) * (A1),
