@@ -6,15 +6,18 @@ import logging
 import struct
 from textwrap import dedent
 from collections import OrderedDict
+from functools import partial
 
 from qnet.algebra.abstract_algebra import prod
-from qnet.algebra.hilbert_space_algebra import TrivialSpace
+from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, set_union, TrivialSpace, LocalSigma,
     ScalarTimesOperator, OperatorPlus, OperatorTimes
 )
-from qnet.algebra.state_algebra import Ket, LocalKet
+from qnet.algebra.state_algebra import (
+    Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet
+)
 import sympy
 
 # max unsigned int in C/C++ when compiled the same way as python
@@ -41,15 +44,16 @@ def local_ops(expr):
         raise TypeError(str(expr))
 
 
-def local_kets(expr):
+def find_kets(expr, cls=LocalKet):
     """Given a QNET Ket instance, return the set of LocalKet instances
     contained in it"""
     if isinstance(expr, Operator.scalar_types + (str,)):
         return set()
-    elif isinstance(expr, LocalKet):
+    elif isinstance(expr, cls):
         return set([expr])
     elif isinstance(expr, Operation):
-        return set_union(*tuple(map(local_kets, expr.operands)))
+        finder = partial(find_kets, cls=cls)
+        return set_union(*tuple(map(finder, expr.operands)))
     else:
         raise TypeError(str(expr))
 

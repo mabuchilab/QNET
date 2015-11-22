@@ -1,11 +1,11 @@
-from qnet.misc.qsd_codegen import (local_ops, local_kets, QSDCodeGen,
+from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
     QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT)
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
     LocalSigma, identity_matrix, I
 )
-from qnet.algebra.state_algebra import BasisKet
+from qnet.algebra.state_algebra import BasisKet, LocalKet, TensorKet
 import re
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
@@ -26,31 +26,33 @@ def test_local_ops():
         local_ops({})
 
 
-def test_local_kets():
+def test_find_kets():
     #                  hs n
     psi_A_0 = BasisKet(0, 0)
     psi_A_1 = BasisKet(0, 1)
     psi_B_0 = BasisKet(1, 0)
     psi_B_1 = BasisKet(1, 1)
+    local_psi = [psi_A_0, psi_A_1, psi_B_0, psi_B_1]
 
     psi_00 = psi_A_0 * psi_B_0
     psi_01 = psi_A_0 * psi_B_1
     psi_10 = psi_A_1 * psi_B_0
     psi_11 = psi_A_1 * psi_B_1
-
-    all_psi = [psi_A_0, psi_A_1, psi_B_0, psi_B_1]
+    tensor_psi = [psi_00, psi_01, psi_10, psi_11]
     a1 = Destroy(psi_A_1.space)
 
-    assert set((psi_A_0, )) == local_kets(psi_A_0)
+    assert set((psi_A_0, )) == find_kets(psi_A_0, LocalKet)
 
     psi = 0.5*(psi_00 + psi_01 + psi_10 + psi_11)
-    assert set(all_psi) == local_kets(psi)
+    assert set(local_psi) == find_kets(psi, LocalKet)
+    assert set(tensor_psi) == find_kets(psi, TensorKet)
 
     psi = 0.5 * a1 * psi_10 # = 0.5 * psi_00
-    assert set([psi_A_0, psi_B_0]) == local_kets(psi)
+    assert set([psi_A_0, psi_B_0]) == find_kets(psi, LocalKet)
+    assert set([psi_00, ]) == find_kets(psi, TensorKet)
 
     with pytest.raises(TypeError):
-        local_kets({})
+        find_kets({}, cls=LocalKet)
 
 
 def test_qsd_codegen_operator_basis():
