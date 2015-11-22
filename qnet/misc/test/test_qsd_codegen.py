@@ -289,6 +289,15 @@ def test_qsd_codegen_observables(slh_Sec6, slh_Sec6_vals):
     assert str(codegen._qsd_ops[P1]) in codegen._operator_basis_lines()
 
 
+def test_ordered_tensor_operands(slh_Sec6):
+    codegen = QSDCodeGen(circuit=slh_Sec6)
+    psi = BasisKet(0, 0) * BasisKet(1, 0)
+    assert (list(psi.operands) == list(codegen._ordered_tensor_operands(psi)))
+    psi = TensorKet(BasisKet(1, 0), BasisKet(0, 0))
+    assert (list(reversed(psi.operands))
+            == list(codegen._ordered_tensor_operands(psi)))
+
+
 def test_qsd_codegen_traj(slh_Sec6):
     A2 = Destroy(1)
     Sp = LocalSigma(2, 1, 0)

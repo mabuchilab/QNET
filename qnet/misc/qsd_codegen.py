@@ -431,6 +431,19 @@ class QSDCodeGen(object):
         else:
             self._traj_params['read_files'] = 0
 
+    def _ordered_tensor_operands(self, state):
+        """Return the operands of the given TensorKet instance ordered by their
+        Hilbert space (using self._hilbert_space_index)
+
+        This is necessary because in QNET, state carry a label for their
+        Hilbert space, while in QSD they do not. Instead, in a Tensor product
+        in QSD the order of the operands associates them with their Hilbert
+        space.
+        """
+        def sort_key(ket):
+            return self._hilbert_space_index[ket.space]
+        return sorted(state.operands, key=sort_key)
+
     def _initial_state_lines(self):
         raise NotImplementedError()
 
