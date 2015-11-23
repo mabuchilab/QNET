@@ -1267,9 +1267,10 @@ def _match_replace_binary(dcls, clsmtd, cls, *ops):
 match_replace_binary = preprocess_create_with(_match_replace_binary)
 
 
-
+# Store all singletons in a dict
 _singletons = {}
 def _get_singleton(name):
+    """Retrieve singletons by name."""
     return _singletons[name]
 
 def singleton(cls):
@@ -1300,6 +1301,10 @@ def singleton(cls):
             return self.__instance
 
         def __reduce__(self):
+            """
+            This magic method ensures that singletons can be pickled.
+            See also https://docs.python.org/3.1/library/pickle.html#pickle.object.__reduce__
+            """
             return (_get_singleton, (cls.__name__,))
 
     S.__name__ = cls.__name__
