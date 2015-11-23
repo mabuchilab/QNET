@@ -14,14 +14,14 @@ int main()
 IdentityOperator Id0(0);
 IdentityOperator Id1(1);
 IdentityOperator Id2(2);
-Operator Id = Id0*Id1*Id2;
 AnnihilationOperator A0(0);
-Operator Ad0 = A0.hc();
 AnnihilationOperator A1(1);
-Operator Ad1 = A1.hc();
 TransitionOperator S2_1_1(2,1,1);
 TransitionOperator S2_0_1(2,0,1);
 TransitionOperator S2_1_0(2,1,0);
+Operator Id = Id0*Id1*Id2;
+Operator Ad0 = A0.hc();
+Operator Ad1 = A1.hc();
 
 // Hamiltonian
 Complex I(0.0,1.0);

@@ -616,18 +616,26 @@ class QSDCodeGen(object):
     def __str__(self):
         return self.generate_code()
 
-
     def _operator_basis_lines(self):
         """Return a multiline string of C++ code that defines and initializes
         all operators in the system"""
-        lines = [] # order of lines is important, see below
+        # QSD demands that we first define all "special" operators (instances
+        # of classes derived from PrimaryOperator) before an instance of the
+        # class Operator (algebraic combinations of other operators).
+        # Therefore, we collect the lines for these two cases separately.
+        special_op_lines = []
+        general_op_lines = []
         for k in range(len(self._local_spaces)):
-            lines.append("IdentityOperator Id{k}({k});".format(k=k))
+            special_op_lines.append("IdentityOperator Id{k}({k});".format(k=k))
         for op in self._qsd_ops:
             # We assume that self._qsd_ops is an OrderedDict, so that
             # instantiations may refer to earlier operators
-            lines.append(self._qsd_ops[op].instantiation)
-        return "\n".join(lines)
+            line = self._qsd_ops[op].instantiation
+            if line.startswith("Operator "):
+                general_op_lines.append(line)
+            else:
+                special_op_lines.append(line)
+        return "\n".join(special_op_lines + general_op_lines)
 
     def _parameters_lines(self):
         """Return a multiline string of C++ code that defines all numerical
