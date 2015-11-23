@@ -29,12 +29,12 @@ See :ref:`abstract_algebra` for more details.
 
 """
 from __future__ import division
-from functools import reduce
-from abc import ABCMeta, abstractmethod
-from types import MethodType
-import six
 
-import sys
+from abc import ABCMeta, abstractmethod
+from functools import reduce
+from types import MethodType
+
+import six
 
 if six.PY3:
     basestring = str
@@ -1267,6 +1267,11 @@ def _match_replace_binary(dcls, clsmtd, cls, *ops):
 match_replace_binary = preprocess_create_with(_match_replace_binary)
 
 
+
+_singletons = {}
+def _get_singleton(name):
+    return _singletons[name]
+
 def singleton(cls):
     """
     Singleton class decorator. Turns a class object into a unique instance.
@@ -1294,10 +1299,16 @@ def singleton(cls):
         def __call__(self):
             return self.__instance
 
+        def __reduce__(self):
+            return (_get_singleton, (cls.__name__,))
+
     S.__name__ = cls.__name__
     S.__instance = s = S()
+    _singletons[S.__name__] = s
 
     return s
+
+
 
 
 def prod(sequence, neutral=1):
