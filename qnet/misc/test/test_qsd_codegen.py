@@ -341,6 +341,11 @@ def test_define_atomic_kets(slh_Sec6):
     State phi_l4(10,1,FIELD) // HS 1
     State phi_t0(3, {(phi_l0 + phi_l3), (phi_l1 + phi_l4), phi_l2}) // HS 0 * HS 1 * HS 2
     ''').strip()
+    for phi in (
+          list(find_kets(psi, cls=LocalKet))
+        + list(find_kets(psi, cls=TensorKet))
+    ):
+        assert phi in codegen._qsd_states
 
     alpha = symbols('alpha')
     psi = CoherentStateKet(0, alpha) * psi_cav2(0) * psi_spin(0)
@@ -356,6 +361,11 @@ def test_define_atomic_kets(slh_Sec6):
     State phi_l2(10,alpha,FIELD) // HS 0
     State phi_t0(3, {phi_l2, phi_l0, phi_l1}) // HS 0 * HS 1 * HS 2
     ''').strip()
+    for phi in (
+          list(find_kets(psi, cls=LocalKet))
+        + list(find_kets(psi, cls=TensorKet))
+    ):
+        assert phi in codegen._qsd_states
 
     psi = CoherentStateKet(0, 1j) * psi_cav2(0) * psi_spin(0)
     lines = codegen._define_atomic_kets(psi)
@@ -367,6 +377,11 @@ def test_define_atomic_kets(slh_Sec6):
     State phi_l2(10,phi_l2_alpha,FIELD) // HS 0
     State phi_t0(3, {phi_l2, phi_l0, phi_l1}) // HS 0 * HS 1 * HS 2
     ''').strip()
+    for phi in (
+          list(find_kets(psi, cls=LocalKet))
+        + list(find_kets(psi, cls=TensorKet))
+    ):
+        assert phi in codegen._qsd_states
 
     psi = psi_tot(1,0,0) + psi_tot(0,1,0) + psi_tot(0,0,1)
     lines = codegen._define_atomic_kets(psi)
@@ -382,6 +397,11 @@ def test_define_atomic_kets(slh_Sec6):
     State phi_t1(3, {phi_l0, phi_l4, phi_l2}) // HS 0 * HS 1 * HS 2
     State phi_t2(3, {phi_l3, phi_l1, phi_l2}) // HS 0 * HS 1 * HS 2
     ''').strip()
+    for phi in (
+          list(find_kets(psi, cls=LocalKet))
+        + list(find_kets(psi, cls=TensorKet))
+    ):
+        assert phi in codegen._qsd_states
 
 
 def test_qsd_codegen_traj(slh_Sec6):
