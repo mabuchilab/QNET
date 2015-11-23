@@ -220,11 +220,6 @@ class QSDCodeGen(object):
 
     // Initial state
     {INITIAL_STATE}
-      /*State phi1(50,FIELD);       // see paper Section 4.2*/
-      /*State phi2(50,FIELD);*/
-      /*State phi3(2,SPIN);*/
-      /*State stateList[3] = {{phi1,phi2,phi3}};*/
-      /*State psiIni(3,stateList);*/
 
     // Trajectory
     {TRAJECTORY}

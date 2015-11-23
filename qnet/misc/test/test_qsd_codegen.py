@@ -1,4 +1,5 @@
 import sympy
+from distutils import dir_util
 from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
     QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT)
 from qnet.algebra.circuit_algebra import (
@@ -9,10 +10,28 @@ from qnet.algebra.circuit_algebra import (
 from qnet.algebra.state_algebra import (
     BasisKet, LocalKet, TensorKet, CoherentStateKet
 )
+from qnet.algebra.hilbert_space_algebra import BasisRegistry
+import os
 import re
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
 import pytest
+
+
+@pytest.fixture
+def datadir(tmpdir, request):
+    '''Fixture responsible for searching a folder with the same name of test
+    module and, if available, moving all contents to a temporary directory so
+    tests can use them freely.'''
+    # http://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
+    filename = request.module.__file__
+    test_dir, _ = os.path.splitext(filename)
+
+    if os.path.isdir(test_dir):
+        dir_util.copy_tree(test_dir, str(tmpdir))
+
+    return str(tmpdir)
+
 
 def test_local_ops():
     psa = PseudoNAND()
@@ -237,6 +256,28 @@ def slh_Sec6_vals():
         symbols("gamma2", positive=True): 1.0,
         symbols("kamma", positive=True):  0.1
     }
+
+
+@pytest.fixture
+def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
+    codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
+    A2 = Destroy(1)
+    Sp = LocalSigma(2, 1, 0)
+    Sm = Sp.dag()
+    codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
+    codegen.add_observable(Sm*Sp*A2*Sm, "X2.out")
+    codegen.add_observable(A2, "A2.out")
+    psi0 = BasisKet(0, 0)
+    psi1 = BasisKet(1, 0)
+    psi2 = BasisKet(2, 0)
+    BasisRegistry.set_basis(psi0.space, range(50))
+    BasisRegistry.set_basis(psi1.space, range(50))
+    BasisRegistry.set_basis(psi2.space, range(2))
+    codegen.set_trajectories(psi_initial=psi0*psi1*psi2,
+            stepper='AdaptiveStep', dt=0.01,
+            nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
+            add_to_existing_traj=True, traj_save=10, rnd_seed=38388389)
+    return codegen
 
 
 def test_qsd_codegen_lindblads(slh_Sec6):
@@ -556,3 +597,10 @@ def test_qsd_codegen_traj(slh_Sec6):
                 nTrajectory, nTrajSave, ReadFile, move,
                 delta, width, moveEps);
     ''').strip()
+
+
+def test_generate_code(datadir, Sec6_codegen):
+    scode = Sec6_codegen.generate_code()
+    with open(os.path.join(datadir, 'Sec6.cc')) as in_fh:
+        scode_expected = in_fh.read()
+    assert scode  == scode_expected
