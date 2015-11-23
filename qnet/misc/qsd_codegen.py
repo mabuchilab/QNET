@@ -199,6 +199,7 @@ class QSDCodeGen(object):
     #include "State.h"
     #include "Operator.h"
     #include "FieldOp.h"
+    #include "AtomOp.h"
     #include "SpinOp.h"
     #include "Traject.h"
 
@@ -471,8 +472,8 @@ class QSDCodeGen(object):
         if reset:
             self._qsd_states = {}
         for (prfx, kets) in [
-            ('phi_l', find_kets(state, cls=LocalKet)),
-            ('phi_t', find_kets(state, cls=TensorKet))
+            ('phiL', find_kets(state, cls=LocalKet)),
+            ('phiT', find_kets(state, cls=TensorKet))
         ]:
             for k, ket in enumerate(sorted(kets, key=str)):
                 # We go through the states in an arbitrary, but well-defined
@@ -514,16 +515,19 @@ class QSDCodeGen(object):
                 elif isinstance(ket, TensorKet):
                     operands = [self._ket_str(operand) for operand
                                 in self._ordered_tensor_operands(ket)]
-                    instantiation = '({n}, {{{ketlist}}})'.format(
-                                     n=len(operands),
-                                     ketlist = ", ".join(operands))
+                    lines.append("State {name}List[{n}] = {{{ketlist}}};"
+                                 .format(name=name, n=len(operands),
+                                         ketlist = ", ".join(operands))
+                                )
+                    instantiation = '({n}, {name}List)'.format(
+                                     n=len(operands), name=name)
                     comment = ' // ' + " * ".join(
                                 ["HS %d"%self._hilbert_space_index[o.space]
                                 for o in self._ordered_tensor_operands(ket)])
                 else:
                     raise TypeError("Cannot instantiate QSD state for type %s"
                                     %str(type(ket)))
-                lines.append('State '+name+instantiation+comment)
+                lines.append('State '+name+instantiation+';'+comment)
         return lines
 
 
@@ -532,7 +536,7 @@ class QSDCodeGen(object):
             raise TypeError("Initial state must be a Ket instance")
         lines = self._define_atomic_kets(self._psi_initial)
         lines.append('')
-        lines.append('psiIni = '+self._ket_str(self._psi_initial))
+        lines.append('State psiIni = '+self._ket_str(self._psi_initial)+';')
         lines.append('psiIni.normalize();')
         return "\n".join(lines)
 
@@ -571,7 +575,7 @@ class QSDCodeGen(object):
                 'int move = {move_dofs};',
                 'double delta = {delta};',
                 'int width = {width};',
-                'int moveEps = {move_eps}',
+                'int moveEps = {move_eps};',
                 '',
                 'traj.sumExp(nOfOut, outlist, flist , dtsperStep, nOfSteps,',
                 '            nTrajectory, nTrajSave, ReadFile, move,',
@@ -653,7 +657,7 @@ class QSDCodeGen(object):
         observables"""
         lines = []
         n_of_out = len(self._observables)
-        lines.append('const int nOfOut = %d' % n_of_out)
+        lines.append('const int nOfOut = %d;' % n_of_out)
         outlist_lines = []
         if len(self._observables) < 1:
             raise QSDCodeGenError("Must register at least one observable")

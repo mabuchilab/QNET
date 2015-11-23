@@ -306,7 +306,7 @@ def test_qsd_codegen_observables(slh_Sec6, slh_Sec6_vals):
     codegen.add_observable(A2, "A2.out")
     scode = codegen._observables_lines()
     assert dedent(scode).strip() == dedent(r'''
-    const int nOfOut = 3
+    const int nOfOut = 3;
     Operator outlist[nOfOut] = {
       (A1 * S2_1_0),
       (A1 * S2_0_1),
@@ -363,10 +363,11 @@ def test_define_atomic_kets(slh_Sec6):
     lines = codegen._define_atomic_kets(psi_tot(0,0,0))
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phi_l0(10,0,FIELD) // HS 0
-    State phi_l1(10,0,FIELD) // HS 1
-    State phi_l2(2,0,FIELD) // HS 2
-    State phi_t0(3, {phi_l0, phi_l1, phi_l2}) // HS 0 * HS 1 * HS 2
+    State phiL0(10,0,FIELD); // HS 0
+    State phiL1(10,0,FIELD); // HS 1
+    State phiL2(2,0,FIELD); // HS 2
+    State phiT0List[3] = {phiL0, phiL1, phiL2};
+    State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
     ''').strip()
 
     psi = ( ((psi_cav1(0) + psi_cav1(1)) / sympy.sqrt(2))
@@ -375,12 +376,13 @@ def test_define_atomic_kets(slh_Sec6):
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phi_l0(10,0,FIELD) // HS 0
-    State phi_l1(10,0,FIELD) // HS 1
-    State phi_l2(2,0,FIELD) // HS 2
-    State phi_l3(10,1,FIELD) // HS 0
-    State phi_l4(10,1,FIELD) // HS 1
-    State phi_t0(3, {(phi_l0 + phi_l3), (phi_l1 + phi_l4), phi_l2}) // HS 0 * HS 1 * HS 2
+    State phiL0(10,0,FIELD); // HS 0
+    State phiL1(10,0,FIELD); // HS 1
+    State phiL2(2,0,FIELD); // HS 2
+    State phiL3(10,1,FIELD); // HS 0
+    State phiL4(10,1,FIELD); // HS 1
+    State phiT0List[3] = {(phiL0 + phiL3), (phiL1 + phiL4), phiL2};
+    State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
     ''').strip()
     for phi in (
           list(find_kets(psi, cls=LocalKet))
@@ -397,10 +399,11 @@ def test_define_atomic_kets(slh_Sec6):
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phi_l0(10,0,FIELD) // HS 1
-    State phi_l1(2,0,FIELD) // HS 2
-    State phi_l2(10,alpha,FIELD) // HS 0
-    State phi_t0(3, {phi_l2, phi_l0, phi_l1}) // HS 0 * HS 1 * HS 2
+    State phiL0(10,0,FIELD); // HS 1
+    State phiL1(2,0,FIELD); // HS 2
+    State phiL2(10,alpha,FIELD); // HS 0
+    State phiT0List[3] = {phiL2, phiL0, phiL1};
+    State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
     ''').strip()
     for phi in (
           list(find_kets(psi, cls=LocalKet))
@@ -412,11 +415,12 @@ def test_define_atomic_kets(slh_Sec6):
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phi_l0(10,0,FIELD) // HS 1
-    State phi_l1(2,0,FIELD) // HS 2
-    Complex phi_l2_alpha(0,1);
-    State phi_l2(10,phi_l2_alpha,FIELD) // HS 0
-    State phi_t0(3, {phi_l2, phi_l0, phi_l1}) // HS 0 * HS 1 * HS 2
+    State phiL0(10,0,FIELD); // HS 1
+    State phiL1(2,0,FIELD); // HS 2
+    Complex phiL2_alpha(0,1);
+    State phiL2(10,phiL2_alpha,FIELD); // HS 0
+    State phiT0List[3] = {phiL2, phiL0, phiL1};
+    State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
     ''').strip()
     for phi in (
           list(find_kets(psi, cls=LocalKet))
@@ -428,15 +432,18 @@ def test_define_atomic_kets(slh_Sec6):
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phi_l0(10,0,FIELD) // HS 0
-    State phi_l1(10,0,FIELD) // HS 1
-    State phi_l2(2,0,FIELD) // HS 2
-    State phi_l3(10,1,FIELD) // HS 0
-    State phi_l4(10,1,FIELD) // HS 1
-    State phi_l5(2,1,FIELD) // HS 2
-    State phi_t0(3, {phi_l0, phi_l1, phi_l5}) // HS 0 * HS 1 * HS 2
-    State phi_t1(3, {phi_l0, phi_l4, phi_l2}) // HS 0 * HS 1 * HS 2
-    State phi_t2(3, {phi_l3, phi_l1, phi_l2}) // HS 0 * HS 1 * HS 2
+    State phiL0(10,0,FIELD); // HS 0
+    State phiL1(10,0,FIELD); // HS 1
+    State phiL2(2,0,FIELD); // HS 2
+    State phiL3(10,1,FIELD); // HS 0
+    State phiL4(10,1,FIELD); // HS 1
+    State phiL5(2,1,FIELD); // HS 2
+    State phiT0List[3] = {phiL0, phiL1, phiL5};
+    State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
+    State phiT1List[3] = {phiL0, phiL4, phiL2};
+    State phiT1(3, phiT1List); // HS 0 * HS 1 * HS 2
+    State phiT2List[3] = {phiL3, phiL1, phiL2};
+    State phiT2(3, phiT2List); // HS 0 * HS 1 * HS 2
     ''').strip()
     for phi in (
           list(find_kets(psi, cls=LocalKet))
@@ -473,14 +480,15 @@ def test_qsd_codegen_initial_state(slh_Sec6):
 
     scode = codegen._initial_state_lines()
     assert scode == dedent(r'''
-    State phi_l0(10,0,FIELD) // HS 0
-    State phi_l1(10,0,FIELD) // HS 1
-    State phi_l2(2,0,FIELD) // HS 2
-    State phi_l3(10,1,FIELD) // HS 0
-    State phi_l4(10,1,FIELD) // HS 1
-    State phi_t0(3, {(phi_l0 + phi_l3), (phi_l1 + phi_l4), phi_l2}) // HS 0 * HS 1 * HS 2
+    State phiL0(10,0,FIELD); // HS 0
+    State phiL1(10,0,FIELD); // HS 1
+    State phiL2(2,0,FIELD); // HS 2
+    State phiL3(10,1,FIELD); // HS 0
+    State phiL4(10,1,FIELD); // HS 1
+    State phiT0List[3] = {(phiL0 + phiL3), (phiL1 + phiL4), phiL2};
+    State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
 
-    psiIni = (1/2) * (phi_t0)
+    State psiIni = (1/2) * (phiT0);
     psiIni.normalize();
     ''').strip()
     # TODO: Fix 1/2 => 1.0/2.0
@@ -492,12 +500,13 @@ def test_qsd_codegen_initial_state(slh_Sec6):
             add_to_existing_traj=True, traj_save=10, rnd_seed=None)
     scode = codegen._initial_state_lines()
     assert scode == dedent(r'''
-    State phi_l0(10,0,FIELD) // HS 1
-    State phi_l1(2,0,FIELD) // HS 2
-    State phi_l2(10,alpha,FIELD) // HS 0
-    State phi_t0(3, {phi_l2, phi_l0, phi_l1}) // HS 0 * HS 1 * HS 2
+    State phiL0(10,0,FIELD); // HS 1
+    State phiL1(2,0,FIELD); // HS 2
+    State phiL2(10,alpha,FIELD); // HS 0
+    State phiT0List[3] = {phiL2, phiL0, phiL1};
+    State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
 
-    psiIni = phi_t0
+    State psiIni = phiT0;
     psiIni.normalize();
     ''').strip()
 
@@ -507,15 +516,17 @@ def test_qsd_codegen_initial_state(slh_Sec6):
             add_to_existing_traj=True, traj_save=10, rnd_seed=None)
     scode = codegen._initial_state_lines()
     assert scode == dedent(r'''
-    State phi_l0(10,0,FIELD) // HS 0
-    State phi_l1(10,0,FIELD) // HS 1
-    State phi_l2(2,0,FIELD) // HS 2
-    State phi_l3(10,1,FIELD) // HS 0
-    State phi_l4(10,1,FIELD) // HS 1
-    State phi_t0(3, {phi_l0, phi_l4, phi_l2}) // HS 0 * HS 1 * HS 2
-    State phi_t1(3, {phi_l3, phi_l1, phi_l2}) // HS 0 * HS 1 * HS 2
+    State phiL0(10,0,FIELD); // HS 0
+    State phiL1(10,0,FIELD); // HS 1
+    State phiL2(2,0,FIELD); // HS 2
+    State phiL3(10,1,FIELD); // HS 0
+    State phiL4(10,1,FIELD); // HS 1
+    State phiT0List[3] = {phiL0, phiL4, phiL2};
+    State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
+    State phiT1List[3] = {phiL3, phiL1, phiL2};
+    State phiT1(3, phiT1List); // HS 0 * HS 1 * HS 2
 
-    psiIni = (sqrt(2)/2) * ((phi_t0 + phi_t1))
+    State psiIni = (sqrt(2)/2) * ((phiT0 + phiT1));
     psiIni.normalize();
     ''').strip()
 
@@ -591,7 +602,7 @@ def test_qsd_codegen_traj(slh_Sec6):
     int move = 2;
     double delta = 0.01;
     int width = 2;
-    int moveEps = 0.01
+    int moveEps = 0.01;
 
     traj.sumExp(nOfOut, outlist, flist , dtsperStep, nOfSteps,
                 nTrajectory, nTrajSave, ReadFile, move,
@@ -601,6 +612,8 @@ def test_qsd_codegen_traj(slh_Sec6):
 
 def test_generate_code(datadir, Sec6_codegen):
     scode = Sec6_codegen.generate_code()
+    #with(open("scode.out", 'w')) as out_fh:
+        #out_fh.write(scode)
     with open(os.path.join(datadir, 'Sec6.cc')) as in_fh:
         scode_expected = in_fh.read()
     assert scode  == scode_expected

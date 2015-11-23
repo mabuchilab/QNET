@@ -4,6 +4,7 @@
 #include "State.h"
 #include "Operator.h"
 #include "FieldOp.h"
+#include "AtomOp.h"
 #include "SpinOp.h"
 #include "Traject.h"
 
@@ -43,7 +44,7 @@ Operator L[nL]={
 };
 
 // Observables
-const int nOfOut = 3
+const int nOfOut = 3;
 Operator outlist[nOfOut] = {
   (A1 * S2_1_0),
   (A1 * S2_0_1),
@@ -53,12 +54,13 @@ char *flist[nOfOut] = {"X1.out", "X2.out", "A2.out"};
 int pipe[4] = {1,2,3,4};
 
 // Initial state
-State phi_l0(50,0,FIELD) // HS 0
-State phi_l1(50,0,FIELD) // HS 1
-State phi_l2(2,0,FIELD) // HS 2
-State phi_t0(3, {phi_l0, phi_l1, phi_l2}) // HS 0 * HS 1 * HS 2
+State phiL0(50,0,FIELD); // HS 0
+State phiL1(50,0,FIELD); // HS 1
+State phiL2(2,0,FIELD); // HS 2
+State phiT0List[3] = {phiL0, phiL1, phiL2};
+State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
 
-psiIni = phi_t0
+State psiIni = phiT0;
 psiIni.normalize();
 
 // Trajectory
