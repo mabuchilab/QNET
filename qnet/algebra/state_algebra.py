@@ -465,7 +465,7 @@ class KetPlus(Ket, Operation):
         ret = self.operands[0].tex()
 
         for o in self.operands[1:]:
-            if isinstance(o, ScalarTimesKet) and ScalarTimesKet.has_minus_prefactor(o.coeff):
+            if isinstance(o, ScalarTimesKet) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
                 if bra:
                     ret += " - " + (-o)._tex_bra()
                 else:
@@ -487,7 +487,7 @@ class KetPlus(Ket, Operation):
         ret = str(self.operands[0])
 
         for o in self.operands[1:]:
-            if isinstance(o, ScalarTimesKet) and ScalarTimesKet.has_minus_prefactor(o.coeff):
+            if isinstance(o, ScalarTimesKet) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
                 if bra:
                     ret += " - " + (-o)._str_bra()
                 else:
