@@ -1,3 +1,4 @@
+import sympy
 from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
     QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT)
 from qnet.algebra.circuit_algebra import (
@@ -5,7 +6,9 @@ from qnet.algebra.circuit_algebra import (
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
     LocalSigma, identity_matrix, I
 )
-from qnet.algebra.state_algebra import BasisKet, LocalKet, TensorKet
+from qnet.algebra.state_algebra import (
+    BasisKet, LocalKet, TensorKet, CoherentStateKet
+)
 import re
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
@@ -296,6 +299,89 @@ def test_ordered_tensor_operands(slh_Sec6):
     psi = TensorKet(BasisKet(1, 0), BasisKet(0, 0))
     assert (list(reversed(psi.operands))
             == list(codegen._ordered_tensor_operands(psi)))
+
+
+def test_define_atomic_kets(slh_Sec6):
+    codegen = QSDCodeGen(circuit=slh_Sec6)
+    psi_cav1 = lambda n:  BasisKet(0, n)
+    psi_cav2 = lambda n:  BasisKet(1, n)
+    psi_spin = lambda n:  BasisKet(2, n)
+    psi_tot = lambda n, m, l: psi_cav1(n) * psi_cav2(m) * psi_spin(l)
+
+    with pytest.raises(QSDCodeGenError) as excinfo:
+        lines = codegen._define_atomic_kets(psi_cav1(0))
+    assert "not in the Hilbert space of the Hamiltonian" in str(excinfo.value)
+    with pytest.raises(QSDCodeGenError) as excinfo:
+        lines = codegen._define_atomic_kets(psi_tot(0,0,0))
+    assert "Unknown dimension for Hilbert space" in str(excinfo.value)
+
+    psi_cav1(0).space.dimension = 10
+    psi_cav2(0).space.dimension = 10
+    psi_spin(0).space.dimension = 2
+
+    lines = codegen._define_atomic_kets(psi_tot(0,0,0))
+    scode = "\n".join(lines)
+    assert scode == dedent(r'''
+    State phi_l0(10,0,FIELD) // HS 0
+    State phi_l1(10,0,FIELD) // HS 1
+    State phi_l2(2,0,FIELD) // HS 2
+    State phi_t0(3, {phi_l0, phi_l1, phi_l2}) // HS 0 * HS 1 * HS 2
+    ''').strip()
+
+    psi = ( ((psi_cav1(0) + psi_cav1(1)) / sympy.sqrt(2))
+          * ((psi_cav2(0) + psi_cav2(1)) / sympy.sqrt(2))
+          * psi_spin(0) )
+    lines = codegen._define_atomic_kets(psi)
+    scode = "\n".join(lines)
+    assert scode == dedent(r'''
+    State phi_l0(10,0,FIELD) // HS 0
+    State phi_l1(10,0,FIELD) // HS 1
+    State phi_l2(2,0,FIELD) // HS 2
+    State phi_l3(10,1,FIELD) // HS 0
+    State phi_l4(10,1,FIELD) // HS 1
+    State phi_t0(3, {(phi_l0 + phi_l3), (phi_l1 + phi_l4), phi_l2}) // HS 0 * HS 1 * HS 2
+    ''').strip()
+
+    alpha = symbols('alpha')
+    psi = CoherentStateKet(0, alpha) * psi_cav2(0) * psi_spin(0)
+    with pytest.raises(TypeError) as excinfo:
+        lines = codegen._define_atomic_kets(psi)
+    assert "neither a known symbol nor a complex number" in str(excinfo.value)
+    codegen.syms.add(alpha)
+    lines = codegen._define_atomic_kets(psi)
+    scode = "\n".join(lines)
+    assert scode == dedent(r'''
+    State phi_l0(10,0,FIELD) // HS 1
+    State phi_l1(2,0,FIELD) // HS 2
+    State phi_l2(10,alpha,FIELD) // HS 0
+    State phi_t0(3, {phi_l2, phi_l0, phi_l1}) // HS 0 * HS 1 * HS 2
+    ''').strip()
+
+    psi = CoherentStateKet(0, 1j) * psi_cav2(0) * psi_spin(0)
+    lines = codegen._define_atomic_kets(psi)
+    scode = "\n".join(lines)
+    assert scode == dedent(r'''
+    State phi_l0(10,0,FIELD) // HS 1
+    State phi_l1(2,0,FIELD) // HS 2
+    Complex phi_l2_alpha(0,1);
+    State phi_l2(10,phi_l2_alpha,FIELD) // HS 0
+    State phi_t0(3, {phi_l2, phi_l0, phi_l1}) // HS 0 * HS 1 * HS 2
+    ''').strip()
+
+    psi = psi_tot(1,0,0) + psi_tot(0,1,0) + psi_tot(0,0,1)
+    lines = codegen._define_atomic_kets(psi)
+    scode = "\n".join(lines)
+    assert scode == dedent(r'''
+    State phi_l0(10,0,FIELD) // HS 0
+    State phi_l1(10,0,FIELD) // HS 1
+    State phi_l2(2,0,FIELD) // HS 2
+    State phi_l3(10,1,FIELD) // HS 0
+    State phi_l4(10,1,FIELD) // HS 1
+    State phi_l5(2,1,FIELD) // HS 2
+    State phi_t0(3, {phi_l0, phi_l1, phi_l5}) // HS 0 * HS 1 * HS 2
+    State phi_t1(3, {phi_l0, phi_l4, phi_l2}) // HS 0 * HS 1 * HS 2
+    State phi_t2(3, {phi_l3, phi_l1, phi_l2}) // HS 0 * HS 1 * HS 2
+    ''').strip()
 
 
 def test_qsd_codegen_traj(slh_Sec6):

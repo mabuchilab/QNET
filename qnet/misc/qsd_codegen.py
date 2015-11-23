@@ -16,7 +16,8 @@ from qnet.algebra.circuit_algebra import (
     ScalarTimesOperator, OperatorPlus, OperatorTimes
 )
 from qnet.algebra.state_algebra import (
-    Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet
+    Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet, ScalarTimesOperator,
+    ScalarTimesKet, KetPlus
 )
 import sympy
 
@@ -232,16 +233,19 @@ class QSDCodeGen(object):
     def __init__(self, circuit, num_vals=None):
         self.circuit = circuit.toSLH()
         self.num_vals = {}
-        self.syms = set(circuit.all_symbols())
         self._psi_initial = None
         self._traj_params = {}
         self._moving_params = {}
         self._rnd_seed = None
 
+        # Set of sympy.core.symbol.Symbol instances
+        self.syms = set(circuit.all_symbols())
+
         # Set of qnet.algebra.operator_algebra.Operator, all "atomic"
         # operators required in the code generation
         self._local_ops = local_ops(self.circuit)
-        # The add_observable method may later extend this set
+        # The add_observable and set_trajectories methods may later extend this
+        # set
 
         self._full_space = self.circuit.space
         self._local_spaces = self._full_space.local_factors()
@@ -261,7 +265,13 @@ class QSDCodeGen(object):
         # operator
         self._qsd_ops = OrderedDict()
         self._update_qsd_ops(self._local_ops)
-        # The add_observable method may later extend this mapping
+        # The add_observable and set_trajectories methods may later extend this
+        # mapping
+
+        # Mapping QNET Ket => QSD state name (str) for "atomic" states
+        # (instances of LocalKet and TensorKet)
+        self._qsd_states = {}
+        # This is set in the _define_atomic_kets method
 
         if num_vals is not None:
             self.num_vals.update(num_vals)
@@ -416,6 +426,12 @@ class QSDCodeGen(object):
         :type rnd_seed: int, None
         """
         self._psi_initial = psi_initial
+        if isinstance(psi_initial, Operation):
+            # all non-atomic instances of Ket are also instances of Operation
+            psi_local_ops = local_ops(psi_initial)
+            self._local_ops.update(psi_local_ops)
+            self._update_qsd_ops(psi_local_ops)
+            self.syms.update(psi_initial.all_symbols())
         if not stepper in self._known_steppers:
             raise ValueError("stepper '%s' must be one of %s"
                               % (value, self._known_steppers))
@@ -443,6 +459,78 @@ class QSDCodeGen(object):
         def sort_key(ket):
             return self._hilbert_space_index[ket.space]
         return sorted(state.operands, key=sort_key)
+
+    def _define_atomic_kets(self, state, reset=True):
+        """Find all "atomic" kets in the given state and register them in
+        self._qsd_states. Return an array of lines of C++ code that defines
+        the state in a QSD program. If reset is True, any existing entries in
+        self._qsd_states are discared
+
+        The "atomic" kets are instances of LocalKet or TensorKet, both of which
+        require to be defined with their own name in QSD code
+        """
+        if not state.space == self._full_space:
+            raise QSDCodeGenError(("State %s is not in the Hilbert "
+                                    "space of the Hamiltonian") % state)
+        lines = []
+        if reset:
+            self._qsd_states = {}
+        for (prfx, kets) in [
+            ('phi_l', find_kets(state, cls=LocalKet)),
+            ('phi_t', find_kets(state, cls=TensorKet))
+        ]:
+            for k, ket in enumerate(sorted(kets, key=str)):
+                # We go through the states in an arbitrary, but well-defined
+                # order by sorting them according to str
+                name = prfx + str(k)
+                self._qsd_states[ket] = name
+                try:
+                    N = ket.space.dimension
+                except BasisNotSetError:
+                    raise QSDCodeGenError(("Unknown dimension for Hilbert "
+                    "space '%s'. Please set the Hilbert space's dimension "
+                    "property. Alternatively, set a basis using "
+                    "qnet.algebra.HilbertSpaceAlgebra.BasisRegistry.set_basis")
+                    % str(ket.space))
+                if isinstance(ket, BasisKet):
+                    n = ket.space.basis.index(ket.operands[1])
+                    instantiation = '({N:d},{n:d},FIELD)'.format(N=N, n=n)
+                    comment = ' // HS %d' \
+                              % self._hilbert_space_index[ket.space]
+                elif isinstance(ket, CoherentStateKet):
+                    alpha = ket.operands[1]
+                    if alpha in self.syms:
+                        alpha_name = str(alpha)
+                    else:
+                        try:
+                            alpha = complex(ket.operands[1])
+                        except TypeError:
+                            raise TypeError(("CoherentStateKet amplitude %s "
+                            "is neither a known symbol nor a complex number")
+                            % alpha)
+                        alpha_name = name + '_alpha'
+                        lines.append('Complex {alpha}({re:g},{im:g});'.format(
+                                    alpha=alpha_name, re=alpha.real,
+                                    im=alpha.imag))
+                    instantiation = '({N:d},{alpha},FIELD)'.format(
+                                     N=N, alpha=alpha_name)
+                    comment = ' // HS %d' \
+                              % self._hilbert_space_index[ket.space]
+                elif isinstance(ket, TensorKet):
+                    operands = [self._ket_str(operand) for operand
+                                in self._ordered_tensor_operands(ket)]
+                    instantiation = '({n}, {{{ketlist}}})'.format(
+                                     n=len(operands),
+                                     ketlist = ", ".join(operands))
+                    comment = ' // ' + " * ".join(
+                                ["HS %d"%self._hilbert_space_index[o.space]
+                                for o in self._ordered_tensor_operands(ket)])
+                else:
+                    raise TypeError("Cannot instantiate QSD state for type %s"
+                                    %str(type(ket)))
+                lines.append('State '+name+instantiation+comment)
+        return lines
+
 
     def _initial_state_lines(self):
         raise NotImplementedError()
@@ -600,6 +688,23 @@ class QSDCodeGen(object):
             return str(self._qsd_ops[op])
         else:
             raise TypeError(str(op))
+
+    def _ket_str(self, ket):
+        """For a given instance of ``qnet.algebra.state_algebra.Ket``,
+        recursively generate the C++ expression that will instantiate the
+        state.
+        """
+        if isinstance(ket, (LocalKet, TensorKet)):
+            return str(self._qsd_states[ket])
+        elif isinstance(ket, ScalarTimesKet):
+            return "({}) * ({})".format(self._scalar_str(ket.coeff),
+                    self._ket_str(ket.term))
+        elif isinstance(ket, KetPlus):
+            return "({})".format(" + ".join([self._ket_str(o)
+                for o in ket.operands]))
+        else:
+            raise TypeError(str(ket))
+
 
     def _scalar_str(self, sc):
         if isinstance(sc, sympy.Basic):
