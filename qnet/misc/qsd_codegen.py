@@ -533,7 +533,13 @@ class QSDCodeGen(object):
 
 
     def _initial_state_lines(self):
-        raise NotImplementedError()
+        if not isinstance(self._psi_initial, Ket):
+            raise TypeError("Initial state must be a Ket instance")
+        lines = self._define_atomic_kets(self._psi_initial)
+        lines.append('')
+        lines.append('psiIni = '+self._ket_str(self._psi_initial))
+        lines.append('psiIni.normalize();')
+        return "\n".join(lines)
 
     def _trajectory_lines(self):
         logger = logging.getLogger(__name__)
@@ -599,8 +605,8 @@ class QSDCodeGen(object):
                 HAMILTONIAN=self._hamiltonian_lines(),
                 LINDBLADS=self._lindblads_lines(),
                 OBSERVABLES=self._observables_lines(),
-                INITIAL_STATE ='',
-                TRAJECTORY =self._trajectory_lines(),
+                INITIAL_STATE=self._initial_state_lines(),
+                TRAJECTORY=self._trajectory_lines(),
                 )
 
     def write(self, outfile):

@@ -404,6 +404,81 @@ def test_define_atomic_kets(slh_Sec6):
         assert phi in codegen._qsd_states
 
 
+def test_qsd_codegen_initial_state(slh_Sec6):
+
+    A2 = Destroy(1)
+    Sp = LocalSigma(2, 1, 0)
+    Sm = Sp.dag()
+    psi_cav1 = lambda n:  BasisKet(0, n)
+    psi_cav2 = lambda n:  BasisKet(1, n)
+    psi_spin = lambda n:  BasisKet(2, n)
+    psi_tot = lambda n, m, l: psi_cav1(n) * psi_cav2(m) * psi_spin(l)
+
+    psi_cav1(0).space.dimension = 10
+    psi_cav2(0).space.dimension = 10
+    psi_spin(0).space.dimension = 2
+
+    codegen = QSDCodeGen(circuit=slh_Sec6)
+    codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
+    codegen.add_observable(Sm*Sp*A2*Sm, "X2.out")
+    codegen.add_observable(A2, "A2.out")
+
+    psi = ( ((psi_cav1(0) + psi_cav1(1)) / sympy.sqrt(2))
+          * ((psi_cav2(0) + psi_cav2(1)) / sympy.sqrt(2))
+          * psi_spin(0) )
+    codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
+            nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
+            add_to_existing_traj=True, traj_save=10, rnd_seed=None)
+
+    scode = codegen._initial_state_lines()
+    assert scode == dedent(r'''
+    State phi_l0(10,0,FIELD) // HS 0
+    State phi_l1(10,0,FIELD) // HS 1
+    State phi_l2(2,0,FIELD) // HS 2
+    State phi_l3(10,1,FIELD) // HS 0
+    State phi_l4(10,1,FIELD) // HS 1
+    State phi_t0(3, {(phi_l0 + phi_l3), (phi_l1 + phi_l4), phi_l2}) // HS 0 * HS 1 * HS 2
+
+    psiIni = (1/2) * (phi_t0)
+    psiIni.normalize();
+    ''').strip()
+    # TODO: Fix 1/2 => 1.0/2.0
+
+    alpha = symbols('alpha')
+    psi = CoherentStateKet(0, alpha) * psi_cav2(0) * psi_spin(0)
+    codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
+            nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
+            add_to_existing_traj=True, traj_save=10, rnd_seed=None)
+    scode = codegen._initial_state_lines()
+    assert scode == dedent(r'''
+    State phi_l0(10,0,FIELD) // HS 1
+    State phi_l1(2,0,FIELD) // HS 2
+    State phi_l2(10,alpha,FIELD) // HS 0
+    State phi_t0(3, {phi_l2, phi_l0, phi_l1}) // HS 0 * HS 1 * HS 2
+
+    psiIni = phi_t0
+    psiIni.normalize();
+    ''').strip()
+
+    psi = (psi_tot(1,0,0) + psi_tot(0,1,0)) / sympy.sqrt(2)
+    codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
+            nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
+            add_to_existing_traj=True, traj_save=10, rnd_seed=None)
+    scode = codegen._initial_state_lines()
+    assert scode == dedent(r'''
+    State phi_l0(10,0,FIELD) // HS 0
+    State phi_l1(10,0,FIELD) // HS 1
+    State phi_l2(2,0,FIELD) // HS 2
+    State phi_l3(10,1,FIELD) // HS 0
+    State phi_l4(10,1,FIELD) // HS 1
+    State phi_t0(3, {phi_l0, phi_l4, phi_l2}) // HS 0 * HS 1 * HS 2
+    State phi_t1(3, {phi_l3, phi_l1, phi_l2}) // HS 0 * HS 1 * HS 2
+
+    psiIni = (sqrt(2)/2) * ((phi_t0 + phi_t1))
+    psiIni.normalize();
+    ''').strip()
+
+
 def test_qsd_codegen_traj(slh_Sec6):
     A2 = Destroy(1)
     Sp = LocalSigma(2, 1, 0)
