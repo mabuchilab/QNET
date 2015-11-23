@@ -444,12 +444,14 @@ class KetPlus(Ket, Operation):
     neutral_element = ZeroKet
     _binary_rules = []
 
-
     @classmethod
     def order_key(cls, a):
         if isinstance(a, ScalarTimesKet):
-            return Operation.order_key(a.term), a.coeff
-        return Operation.order_key(a), 1
+            c = a.coeff
+            if isinstance(c, SympyBasic):
+                c = inf
+            return KeyTuple((Operation.order_key(a.term), c))
+        return KeyTuple((Operation.order_key(a), 1))
 
     def _to_qutip(self):
         return sum((op.to_qutip() for op in self.operands), 0)
