@@ -77,7 +77,7 @@ class QSDOperator(object):
 
     """
 
-    _known_types = ['AnnihilationOperator', 'TransitionOperator',
+    _known_types = ['AnnihilationOperator', 'FieldTransitionOperator',
                     'IdentityOperator', 'Operator']
 
     def __init__(self, qsd_type, name, instantiator):
@@ -205,8 +205,6 @@ class QSDCodeGen(object):
     #include "State.h"
     #include "Operator.h"
     #include "FieldOp.h"
-    #include "AtomOp.h"
-    #include "SpinOp.h"
     #include "Traject.h"
 
     int main()
@@ -326,7 +324,7 @@ class QSDCodeGen(object):
                 k = self._hilbert_space_index[op.space]
                 i, j = op.operands[1:]
                 self._qsd_ops[op] = QSDOperator(
-                    qsd_type='TransitionOperator',
+                    qsd_type='FieldTransitionOperator',
                     name="S{k}_{i}_{j}".format(k=k,i=i,j=j),
                     instantiator='({kij})'.format(
                                  kij=','.join([str(n) for n in (k, i, j)])))

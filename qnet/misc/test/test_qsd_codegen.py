@@ -89,8 +89,8 @@ def test_qsd_codegen_operator_basis():
     IdentityOperator Id0(0);
     IdentityOperator Id1(1);
     AnnihilationOperator A0(0);
-    TransitionOperator S1_0_1(1,0,1);
-    TransitionOperator S1_1_0(1,1,0);
+    FieldTransitionOperator S1_0_1(1,0,1);
+    FieldTransitionOperator S1_1_0(1,1,0);
     Operator Id = Id0*Id1;
     Operator Ad0 = A0.hc();
     """).strip()
@@ -170,8 +170,8 @@ def test_QSDOperator():
     Id0 = QSDOperator('IdentityOperator', 'Id0', '(0)')
     assert Id0.instantiation == 'IdentityOperator Id0(0);'
 
-    S = QSDOperator('TransitionOperator', 'S1_0_1', '(1,0,1)')
-    assert S.instantiation == 'TransitionOperator S1_0_1(1,0,1);'
+    S = QSDOperator('FieldTransitionOperator', 'S1_0_1', '(1,0,1)')
+    assert S.instantiation == 'FieldTransitionOperator S1_0_1(1,0,1);'
 
     Ad0 = QSDOperator('Operator', 'Ad0', '= A0.hc()')
     assert Ad0.instantiator == '= A0.hc()'

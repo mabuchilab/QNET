@@ -4,8 +4,6 @@
 #include "State.h"
 #include "Operator.h"
 #include "FieldOp.h"
-#include "AtomOp.h"
-#include "SpinOp.h"
 #include "Traject.h"
 
 int main()
@@ -16,9 +14,9 @@ IdentityOperator Id1(1);
 IdentityOperator Id2(2);
 AnnihilationOperator A0(0);
 AnnihilationOperator A1(1);
-TransitionOperator S2_1_1(2,1,1);
-TransitionOperator S2_0_1(2,0,1);
-TransitionOperator S2_1_0(2,1,0);
+FieldTransitionOperator S2_1_1(2,1,1);
+FieldTransitionOperator S2_0_1(2,0,1);
+FieldTransitionOperator S2_1_0(2,1,0);
 Operator Id = Id0*Id1*Id2;
 Operator Ad0 = A0.hc();
 Operator Ad1 = A1.hc();
