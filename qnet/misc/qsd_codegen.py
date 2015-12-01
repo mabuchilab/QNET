@@ -353,7 +353,7 @@ class QSDCodeGen(object):
         """Activate the use of the the moving basis, see Section 6 of the QSD
         Paper.
 
-        :param move_dofs: degrees of freedome for which to use a moving basis
+        :param move_dofs: degrees of freedom for which to use a moving basis
             (the first 'move_dofs' freedoms are recentered, and their cutoffs
             adjusted.)
         :type move_dofs: int
@@ -364,12 +364,31 @@ class QSDCodeGen(object):
         :param move_eps: numerical accuracy with which to make the shift. Cf.
             ``shiftAccuracy`` in QSD ``State::recenter`` method
         :type move_eps: float
+
+        :raises ValueError: if move_dofs is invalide
+        :raises QSDCodeGenError: if requesting a moving basis for a degree of
+            freedom for which any operator is defined that cannot be applied in
+            the moving basis
         """
         if move_dofs <= 0:
             raise ValueError("move_dofs must be an integer >0")
-        if move_dofs > len(self._local_spaces):
+        elif move_dofs > len(self._local_spaces):
             raise ValueError("move_dofs must not be larger than the number "
                              "of local Hilbert spaces")
+        else:
+            # Ensure that there are no LocalSigma operators for any of the
+            # degrees of freedom that are part of the moving basis (LocalSigma
+            # is mapped to FieldTransitionOperator in QSD, which is
+            # incompatible with a moving basis)
+            for op in self._local_ops:
+                if isinstance(op, LocalSigma):
+                    k = self._hilbert_space_index[op.space]
+                    if k < move_dofs:
+                        # '<', not '<=', because k counts from 0
+                        raise QSDCodeGenError(("A moving basis cannot be used "
+                        "for a degree of freedom that has local transition "
+                        "operators. Conflicting operator %s acts on Hilbert "
+                        "space %d<%d") % (op, k, move_dofs))
         self._moving_params['move_dofs'] = move_dofs
         self._moving_params['delta'] = delta
         if move_dofs <= 0:

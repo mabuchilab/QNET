@@ -582,6 +582,10 @@ def test_qsd_codegen_traj(slh_Sec6):
         codegen.set_moving_basis(move_dofs=4, delta=0.01, width=2,
                                  move_eps=0.01)
     assert "move_dofs must not be larger" in str(excinfo.value)
+    with pytest.raises(QSDCodeGenError) as excinfo:
+        codegen.set_moving_basis(move_dofs=3, delta=0.01, width=2,
+                                 move_eps=0.01)
+    assert "A moving basis cannot be used" in str(excinfo.value)
     codegen.set_moving_basis(move_dofs=2, delta=0.01, width=2, move_eps=0.01)
     scode = codegen._trajectory_lines()
     assert dedent(scode).strip() == dedent(r'''
