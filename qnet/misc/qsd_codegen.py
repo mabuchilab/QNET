@@ -4,9 +4,15 @@ import sys
 import os
 import logging
 import struct
+import shlex
 from textwrap import dedent
 from collections import OrderedDict
 from functools import partial
+import subprocess as sp
+try:
+    from shlex import quote as cmd_quote # Python 3
+except ImportError:
+    from pipes import quote as cmd_quote # Python 2
 
 from qnet.algebra.abstract_algebra import prod
 from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
@@ -268,6 +274,9 @@ class QSDCodeGen(object):
         # (instances of LocalKet and TensorKet)
         self._qsd_states = {}
         # This is set in the _define_atomic_kets method
+
+        self._executable = None # set by compile method
+        self._compile_cmd = None # set by compile method (for debugging)
 
         if num_vals is not None:
             self.num_vals.update(num_vals)
@@ -612,6 +621,100 @@ class QSDCodeGen(object):
         """Write C++ program that corresponds to the circuit"""
         with open(outfile, 'w') as out_fh:
             out_fh.write(self.generate_code())
+
+    def compile(self, executable, qsd_lib, qsd_headers, compiler='g++',
+            compile_options='-O2', write_cc=True, keep_cc=False):
+        """Compile into an executable
+
+        :param executable: name (including full path) of executable to which
+            the QSD program should be compiled
+        :type executable: str
+        :param qsd_lib: full path to the file libqsd.a containing the
+            statically compiled QSD library
+        :type qsd_lib: str
+        :param qsd_headers: path to the folder containing the QSD header files
+        :type qsd_header: str
+        :param compiler: compiler executable
+        :type compiler: str
+        :param compile_options: options to pass to the compiler
+        :type compile_options: str
+        :param write_cc: If False, skip writing out the C++ code. Instead,
+            simply re-compile an existing file {executable}.cc
+        :type write_cc: boolean
+        :param keep_cc: If True, keep the C++ code from which the executable
+            wqas compiled. It will have the same name as the executable, with
+            an added '.cc' file extension
+        :type keep_cc: boolean
+
+        :raises OSError: if required files or folders are not found or have
+        invalid names
+        :raises subprocess.CalledProcessError: if compilation fails
+        """
+        logger = logging.getLogger(__name__)
+        cc_file = executable + '.cc'
+        if write_cc:
+            self.write(cc_file)
+        else:
+            if not os.path.isfile(cc_file):
+                raise FileNotFoundError(("{file} does not exist. You must "
+                                         "pass write_cc=True")
+                                        .format(file=cc_file))
+        link_dir, libqsd_a = os.path.split(qsd_lib)
+        if not os.path.isdir(qsd_headers):
+            raise FileNotFoundError("Header directory {dir} does not exist"
+                                    .format(dir=qsd_headers))
+        if not libqsd_a == "libqsd.a":
+            raise OSError(("qsd_lib {qsd_lib} does not point to a file of the "
+                          "name libqsd.a)").format(qsd_lib=qsd_lib))
+        if not os.path.isfile(qsd_lib):
+            raise FileNotFoundError("File {qsd_lib} does not exist"
+                                    .format(qsd_lib=qsd_lib))
+        cmd = ([compiler, ] + shlex.split(compile_options)
+               + ['-I%s'%qsd_headers, '-o', executable, cc_file,
+                   '-L%s'%link_dir, '-lqsd'])
+        self._compile_cmd = " ".join([cmd_quote(part) for part in cmd])
+        try:
+            output = sp.check_output(cmd, stderr=sp.STDOUT)
+        except sp.CalledProcessError as exc_info:
+            logger.error("command '{cmd:s}' failed with code {code:d}".format(
+                cmd=self._compile_cmd, code=int(exc_info.returncode)))
+            raise
+        finally:
+            if not keep_cc:
+                try:
+                    os.unlink(cc_file)
+                except FileNotFoundError as exc_info:
+                    logger.warn("Error while deleting {file}: {error:s}"
+                                .format( file=cc_file, error=str(exc_info)))
+        if os.path.isfile(executable) and os.access(executable, os.X_OK):
+            self._executable = executable
+        else:
+            raise OSError("No executable {x}".format(x=executable))
+
+    def run(self):
+        """Run the previously compiled QSD program (see compile method)
+
+        :raises QSDCodeGenError: if compile method was not called
+        :raises OSError: if previously compiled executable does not exist or is
+            not executable
+        :raises subprocess.CalledProcessError: if executable returns with
+            non-zero exit code
+        """
+        try:
+            exe = os.path.abspath(self._executable)
+            if not os.path.isfile(exe):
+                self._executable = None
+                raise FileNotFoundError("Executable {file} does not exist"
+                                        .format(file=exe))
+            if not os.access(exe, os.X_OK):
+                self._executable = None
+                raise OSError("File {file} is not executable".format(file=exe))
+        except TypeError:
+            self._executable = None
+            raise QSDCodeGenError("No compiled program available. Call "
+                                  "compile method first")
+        cmd = [exe, ]
+        return sp.check_output(cmd, stderr=sp.STDOUT)
 
     def __str__(self):
         return self.generate_code()
