@@ -616,8 +616,8 @@ def test_qsd_codegen_traj(slh_Sec6):
 
 def test_generate_code(datadir, Sec6_codegen):
     scode = Sec6_codegen.generate_code()
-    with(open("scode.out", 'w')) as out_fh:
-        out_fh.write(scode)
+    #with(open("scode.out", 'w')) as out_fh:
+        #out_fh.write(scode)
     with open(os.path.join(datadir, 'Sec6.cc')) as in_fh:
         scode_expected = in_fh.read()
     assert scode  == scode_expected
