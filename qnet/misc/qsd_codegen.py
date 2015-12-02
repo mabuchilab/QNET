@@ -326,8 +326,8 @@ class QSDCodeGen(object):
                 self._qsd_ops[op] = QSDOperator(
                     qsd_type='FieldTransitionOperator',
                     name="S{k}_{i}_{j}".format(k=k,i=i,j=j),
-                    instantiator='({kij})'.format(
-                                 kij=','.join([str(n) for n in (k, i, j)])))
+                    instantiator='({ijk})'.format(
+                                 ijk=','.join([str(n) for n in (i, j, k)])))
             else:
                 raise TypeError(str(op))
 
