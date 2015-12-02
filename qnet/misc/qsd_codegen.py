@@ -601,7 +601,7 @@ class QSDCodeGen(object):
                 'int move = {move_dofs};',
                 'double delta = {delta};',
                 'int width = {width};',
-                'int moveEps = {move_eps};',
+                'double moveEps = {move_eps};',
                 '',
                 'traj.sumExp(nOfOut, outlist, flist , dtsperStep, nOfSteps,',
                 '            nTrajectory, nTrajSave, ReadFile, move,',
