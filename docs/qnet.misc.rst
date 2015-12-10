@@ -35,9 +35,17 @@ misc Package
 
 
 :mod:`qsd_codegen` Module
---------------------
+-------------------------
 
 .. automodule:: qnet.misc.qsd_codegen
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`trajectory_data` Module
+-----------------------------
+
+.. automodule:: qnet.misc.trajectory_data
     :members:
     :undoc-members:
     :show-inheritance:
