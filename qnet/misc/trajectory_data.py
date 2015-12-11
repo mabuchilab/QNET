@@ -1,6 +1,7 @@
 import hashlib
 import uuid
 import re
+import json
 from collections import OrderedDict
 
 import numpy as np
@@ -30,12 +31,18 @@ class TrajectoryData(object):
     :attribute record: A complete record of how the averaged expectation values
         for all operators were obtained.
     :type record: dict(str) => tuple(int, int, list)
+    :attribute col_width: width of the data columns when writing out data.
+        Defaults to 25 (allowing to full double precision). Note that
+        operator names may be at most of length `col_width-10`
+    :type col_width: int
 
     All attributes should be considered read-only (i.e., after instantiation,
     they must only be updated by the  `extend` method)
     """
     _uuid_namespace = uuid.UUID('c84069eb-cf80-48a6-9584-74b7f2c742c1')
     _prec_dt = 1.0e-6 # how close dt's have to be to be equal
+    col_width = 25 # width of columns when writing
+    _rx_op_name = re.compile(r'^[\x20-\x7E]+$') # ascii w/o control chars
 
     def __init__(self, ID, dt, seed, n_trajectories, data):
         """Initialize a new TrajectoryData instance
@@ -57,7 +64,8 @@ class TrajectoryData(object):
             data. The value of `data[operator_name]` must be a tuple of four
             numpy arrays (real part of expectation value, imaginary part of
             expectation value, real part of standard deviation, imaginary part
-            of standard deviation)
+            of standard deviation). The operator names must contain only ASCII
+            characters and must be shorter than `col_width - 10`.
         :type data: dict(str) => tuple of arrays
 
         :raises ValueError: if `ID` is not RFC 4122 compliant, `dt` is an
@@ -72,10 +80,13 @@ class TrajectoryData(object):
         self.operators = []
         for op, (re_exp, im_exp, re_var, im_var) in data.items():
             op = str(op)
-            if op in self.operators:
-                raise ValueError("All operators must have unique names")
-            else:
-                self.operators.append(op)
+            if len(op) > (self.col_width - 10):
+                raise ValueError(("Operator name '%s' supersedes maximum "
+                                 "length of %d") % (op, self.col_width-10))
+            if not self._rx_op_name.match(op):
+                raise ValueError(("Operator name '%s' contains invalid "
+                                  "characters") % op)
+            self.operators.append(op)
             self.nt = len(re_exp) # assumed valid for all (check below)
             self.table['Re[<'+op+'>]']    = np.array(re_exp, dtype=np.float64)
             self.table['Im[<'+op+'>]']    = np.array(im_exp, dtype=np.float64)
@@ -176,20 +187,78 @@ class TrajectoryData(object):
         return set(self.record.keys())
 
     @property
+    def shape(self):
+        """"Tuple (n_row, n_cols) for the data in self.table. The time grid is
+        included in the column count"""
+        return (self.nt, len(self.table.keys())+1)
+
+    @property
     def record_seeds(self):
         """Set of all random number generator seeds in the record"""
         return set([seed for (seed, ntraj, op) in self.record.values()])
+
+    @property
+    def tgrid(self):
+        """Time grid, as numpy array"""
+        return np.array(range(self.nt)) * self.dt
 
     def operator_record(self, operator_name):
         """Returns a list of tuples (seed, n_trajectories) that specify how the
         current expectation values for the given operator where obtained"""
         raise NotImplementedError()
 
+    def __str__(self):
+        return self.to_str(show_rows=6)
+
+    def __repr__(self):
+        return "TrajectoryData(ID=%s)" % self.ID
+
+    def _data_line(self, index, fmt):
+        line = fmt % (self.dt*index)
+        for col in self.table.keys():
+            line += fmt % self.table[col][index]
+        return line
+
+    def to_str(self, show_rows=-1):
+        """Generate full string represenation of TrajectoryData"""
+        lines = []
+        w = self.col_width
+        prec = self.col_width - 9
+        fmt = "%{width:d}.{prec:d}e".format(width=w, prec=prec)
+        ellipsis = "...".center(w)
+        lines.append("# QNET Trajectory Data ID %s" % self.ID)
+        for (ID, (seed, n_traj, ops)) in self.record.items():
+            if set(ops) == set(self.operators):
+                lines.append("# Record %s (seed %d): %d" % (ID, seed, n_traj))
+            else:
+                lines.append("# Record %s (seed %d): %d %s"
+                             % (ID, seed, n_traj, json.dumps(ops)))
+        header = ("#%{width:d}s".format(width=w-1)) % 't'
+        for col in self.table.keys():
+            header += ("%{width:d}s".format(width=w)) % col
+        lines.append(header)
+        nt = self.nt
+        if (show_rows < 0) or (show_rows >= nt):
+            show_row_indices_1 = range(nt)
+            show_row_indices_2 = []
+        else:
+            show_row_indices_1 = range(show_rows//2)
+            show_row_indices_2 = range(nt - ((show_rows//2)+(show_rows%2)), nt)
+            # if show_rows is odd, we show the first show_rows//2 rows, and the
+            # last (show_rows//2)+1 rows.
+        for i in show_row_indices_1:
+            lines.append(self._data_line(i, fmt))
+        if len(show_row_indices_2) > 0:
+            lines.append((ellipsis * int(len(self.table)+1)).rstrip())
+            for i in show_row_indices_2:
+                lines.append(self._data_line(i, fmt))
+        return "\n".join(lines)
+
     def write(self, filename):
-        """Write data to a text file, for plotting with an external program.
-        The TrajectoryData may later be restored by the `read` class method
-        from the file"""
-        raise NotImplementedError()
+        """Write data to a text file. The TrajectoryData may later be restored
+        by the `read` class method from the same file"""
+        with open(filename, 'w') as out_fh:
+            out_fh.write(self.to_str())
 
     def n_trajectories(self, operator):
         "Return the total number of trajectories for the given operator"
