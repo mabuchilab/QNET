@@ -137,6 +137,9 @@ class TrajectoryData(object):
         data = OrderedDict();
         n_trajectories = None
         dt = None
+        if len(operators) == 0:
+            raise ValueError("Must give at least one mapping "
+                             "operator_name => file in operators dic")
         for (operator_name, file_name) in operators.items():
             md5 += hashlib.md5(open(file_name,'rb').read()).hexdigest()
             with open(file_name) as in_fh:
@@ -151,6 +154,9 @@ class TrajectoryData(object):
             = np.genfromtxt(file_name, dtype=np.float64, skip_header=1,
                             unpack=True)
             data[operator_name] = (re_exp, im_exp, re_var, im_var)
+            if len(tgrid) < 2:
+                raise ValueError(("File %s does not contain sufficient "
+                                  "data (at least two rows)") % file_name)
             file_dt = tgrid[1] - tgrid[0]
             if dt is None:
                 dt = file_dt

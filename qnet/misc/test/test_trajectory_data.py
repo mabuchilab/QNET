@@ -34,6 +34,7 @@ def qsd_traj(folder, seed):
     def fixture(datadir):
         operators = OrderedDict()
         datafiles = sorted(glob(join(datadir, folder, '*.out')))
+        assert len(datafiles) >0, "No files *.out in %s"%folder
         for file in datafiles:
             op_name = os.path.splitext(os.path.split(file)[1])[0]
             operators[op_name] = file
