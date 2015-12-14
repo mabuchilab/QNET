@@ -176,7 +176,7 @@ class TrajectoryData(object):
         originating from the same seed. To this end, in the `from_qsd_data`
         method, the ID of the instantiated object will depend uniquely on the
         collective data read from the QSD output files."""
-        md5 = '' # accumulated MD5 hash of all files (in order to generate ID)
+        md5s = [] # MD5 hash of all files (in order to generate ID)
         data = OrderedDict();
         n_trajectories = None
         dt = None
@@ -184,7 +184,7 @@ class TrajectoryData(object):
             raise ValueError("Must give at least one mapping "
                              "operator_name => file in operators dic")
         for (operator_name, file_name) in operators.items():
-            md5 += hashlib.md5(open(file_name,'rb').read()).hexdigest()
+            md5s.append(hashlib.md5(open(file_name,'rb').read()).hexdigest())
             with open(file_name) as in_fh:
                 header = in_fh.readline()
                 m = re.match(r'Number_of_Trajectories\s*(\d+)', header)
@@ -214,7 +214,7 @@ class TrajectoryData(object):
                     raise ValueError(("number of trajectories in file %s "
                                       "does not match number of trajectories "
                                       "in other files")%file_name)
-        ID = cls.new_id(name=md5)
+        ID = cls.new_id(name="".join(sorted(md5s)))
         return cls(ID, dt, seed, n_trajectories, data)
 
     @classmethod

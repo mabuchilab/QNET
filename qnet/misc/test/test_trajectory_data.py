@@ -63,11 +63,17 @@ def test_new_id():
 
 
 def test_from_qsd_data(traj1, datadir):
-    traj = traj1
-    md5sum = lambda f: hashlib.md5(open(f,'rb').read()).hexdigest()
     X1_file = join(datadir, 'traj1', 'X1.out')
     X2_file = join(datadir, 'traj1', 'X2.out')
-    md5 = md5sum(X1_file) + md5sum(X2_file)
+    traj2 = TrajectoryData.from_qsd_data(
+                OrderedDict([('X2', X2_file), ('X1', X1_file)]), TRAJ1_SEED)
+    # traj1 and traj2 are the same except that the order of the operators is
+    # reversed => files are read in a differnt order
+    assert traj1.ID == traj2.ID
+
+    traj = traj1
+    md5sum = lambda f: hashlib.md5(open(f,'rb').read()).hexdigest()
+    md5 = "".join(sorted([md5sum(X1_file), md5sum(X2_file)]))
     assert traj.ID == str(uuid.uuid3(TrajectoryData._uuid_namespace, md5))
     assert traj.dt == 0.1
     assert traj.nt == 51
@@ -100,8 +106,8 @@ def test_data_line(traj1):
 
 def test_to_str(traj1, traj1_coarse):
     assert traj1_coarse.to_str().strip() == dedent('''
-    # QNET Trajectory Data ID 8d102e4b-4a30-3460-9746-dc642f740cfb
-    # Record 8d102e4b-4a30-3460-9746-dc642f740cfb (seed 103212): 1
+    # QNET Trajectory Data ID f90b9290-35ff-3d94-a215-328fe2cc139c
+    # Record f90b9290-35ff-3d94-a215-328fe2cc139c (seed 103212): 1
     #                       t                 Re[<X1>]                 Im[<X1>]              Re[var(X1)]              Im[var(X1)]                 Re[<X2>]                 Im[<X2>]              Re[var(X2)]              Im[var(X2)]
        0.0000000000000000e+00   0.0000000000000000e+00   0.0000000000000000e+00   0.0000000000000000e+00   0.0000000000000000e+00   0.0000000000000000e+00   0.0000000000000000e+00   0.0000000000000000e+00   0.0000000000000000e+00
        1.0000000000000000e+00   1.2617600000000000e-02  -2.5277300000000002e-03  -1.5281299999999999e-04   6.3787600000000006e-05   1.2773600000000000e-02   1.0170900000000000e-03  -1.6212900000000001e-04  -2.5983600000000000e-05
@@ -150,8 +156,8 @@ def test_to_str(traj1, traj1_coarse):
     ''').strip()
     traj1_coarse.col_width = 12
     assert traj1_coarse.to_str().strip() == dedent('''
-    # QNET Trajectory Data ID 8d102e4b-4a30-3460-9746-dc642f740cfb
-    # Record 8d102e4b-4a30-3460-9746-dc642f740cfb (seed 103212): 1
+    # QNET Trajectory Data ID f90b9290-35ff-3d94-a215-328fe2cc139c
+    # Record f90b9290-35ff-3d94-a215-328fe2cc139c (seed 103212): 1
     #          t    Re[<X1>]    Im[<X1>] Re[var(X1)] Im[var(X1)]    Re[<X2>]    Im[<X2>] Re[var(X2)] Im[var(X2)]
        0.000e+00   0.000e+00   0.000e+00   0.000e+00   0.000e+00   0.000e+00   0.000e+00   0.000e+00   0.000e+00
        1.000e+00   1.262e-02  -2.528e-03  -1.528e-04   6.379e-05   1.277e-02   1.017e-03  -1.621e-04  -2.598e-05
@@ -208,7 +214,7 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
     assert traj2_10.ID in traj1.record
     header_lines = traj1.to_str(show_rows=0).splitlines()
     assert header_lines[1] == '# Record d9831647-f2e7-3793-8b24-7c49c5c101a7 (seed 103212): 1 ["X1", "X2"]'
-    assert header_lines[2] == '# Record 51b7cf90-cb94-3bf3-a6a0-da41d47c3257 (seed 18322321): 9'
+    assert header_lines[2] == '# Record fd7fadea-34a4-3225-a2d1-fe7ba8863942 (seed 18322321): 9'
     for col in (traj1._operator_cols('X1') + traj1._operator_cols('X2')):
         diff = (traj1.table[col]
                 - (traj1_copy.table[col] + 9.0 * traj2_10.table[col])/10.0)
@@ -218,7 +224,7 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
 
     traj1.extend(traj11_20)
     header_lines = traj1.to_str(show_rows=0).splitlines()
-    assert header_lines[3] == '# Record 3eb2e019-1d3b-3b8f-8a62-8c465c4ebc85 (seed 38324389): 10'
+    assert header_lines[3] == '# Record 77c14243-9a40-3bdd-9efd-7698099078ee (seed 38324389): 10'
     assert traj1.n_trajectories('X1') == 20
     assert traj1.n_trajectories('X2') == 20
     assert traj1.n_trajectories('A2') == 19
