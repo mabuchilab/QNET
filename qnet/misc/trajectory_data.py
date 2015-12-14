@@ -8,45 +8,45 @@ import numpy as np
 
 
 class TrajectoryData(object):
-    """Tabular data of expectation values for one or more trajectories
+    """Tabular data of expectation values for one or more trajectories.
+    Multiple TrajectoryData objects can be combined with the `extend` method,
+    in order to accumulate averages over an arbitrary number o trajectories. As
+    much as possible, it is checked that all trajectories are statistically
+    independent. A record is kept to ensure exact reproducability.
 
-    :attribute ID: A unique ID for the current state of the TrajectoryData.
-        Changes when the `extend` method is called. Two instances of
-        TrajectoryData with the same ID are assummed to be identical
+    :attribute ID: A unique ID for the current state of the TrajectoryData
+        (read-only). See property documentation below
     :type ID: str
     :attribute table: A table (OrderedDict of column names to numpy arrays)
         that contains four column for every known operator (real/imaginary
         part of the expectation value, real/imaginary part of the variance).
         Note that the `table` attribute can easily be converted to a pandas
-        DataFrame (``DataFrame(data=traj.table)``)
+        DataFrame (``DataFrame(data=traj.table)``). The `table` attribute
+        should be considered read-only.
     :type table: OrderedDict(str) => numpy array
     :attribute dt: Time step between data points
     :type dt: float
     :attribute nt: Number of time steps / data points
     :type nt: int
-    :attribute operators: A list of operator names. The column names in the
-        `table` attribute derive from these. Assuming "X" is one of the
+    :attribute operators: An iterator of the operator names. The column names
+        in the `table` attribute derive from these. Assuming "X" is one of the
         operator names, there will be four keys in `table`:
        "Re[<X>]", "Im[<X>]", "Re[var(X)]", "Im[var(X)]"
     :type operators: list of str
-    :attribute record: A complete record of how the averaged expectation values
-        for all operators were obtained. Maps ID to a tuple
-        ``(seed, n_trajectories, ops)``, where ``seed`` is the seed to the
-        random number generator that was used to calculate a specific set of
-        trajectories (sequentially), ``n_trajectories`` are the number of
-        trajectories in that dataset, and ``ops`` is a list of operator names
-        for which expectation values were calculated. This may be the complete
-        list of operators in the `operators` attribute, or a subset of those
-        operators (Not all trajectories have to include data for all operators)
+    :attribute record: A copy of the complete record of how the averaged
+        expectation values for all operators were obtained. See indepth
+        discussion in the property documentation below.
     :type record: OrderedDic(str) => tuple(int, int, list)
     :attribute col_width: width of the data columns when writing out data.
         Defaults to 25 (allowing to full double precision). Note that
         operator names may be at most of length `col_width-10`
     :type col_width: int
-
-    All attributes should be considered read-only (i.e., after instantiation,
-    they must only be updated by the  `extend` method)
     """
+    # When instantiating with the from_qsd_data class method, we want the
+    # ID to depend uniquely on the read data files (via their md5 hash).
+    # RFC4122 accounts for a situation like this with a "UUID3" that requires
+    # the combination of a namespace and a name. We define a completely
+    # arbitrary namespace UUID here for this purpose.
     _uuid_namespace = uuid.UUID('c84069eb-cf80-48a6-9584-74b7f2c742c1')
     _prec_dt = 1.0e-6 # how close dt's have to be to be equal
     col_width = 25 # width of columns when writing
@@ -80,9 +80,9 @@ class TrajectoryData(object):
             invalid or non-positive float, data does not follow the correct
             structure
         """
-        self.ID = str(uuid.UUID(ID)) # self.ID = ID, with validation
+        self._ID = str(uuid.UUID(ID)) # self.ID = ID, with validation
         self.table = OrderedDict()
-        self.dt = float(dt)
+        self._dt = float(dt)
         if self.dt <= 0.0:
             raise ValueError("dt must be a value >0")
         self._operators = []
@@ -95,7 +95,7 @@ class TrajectoryData(object):
                 raise ValueError(("Operator name '%s' contains invalid "
                                   "characters") % op)
             self._operators.append(op)
-            self.nt = len(re_exp) # assumed valid for all (check below)
+            self._nt = len(re_exp) # assumed valid for all (check below)
             re_exp_lb, im_exp_lb, re_var_lb, im_var_lb \
             = self._operator_cols(op)
             self.table[re_exp_lb] = np.array(re_exp, dtype=np.float64)
@@ -106,9 +106,9 @@ class TrajectoryData(object):
             if len(self.table[col]) != self.nt:
                 raise ValueError("All columns must be of length nt")
         record_ops = self._operators.copy()
-        self.record = OrderedDict([
-                        (self.ID, (seed, n_trajectories, record_ops)),
-                      ])
+        self._record = OrderedDict([
+                         (self.ID, (seed, n_trajectories, record_ops)),
+                       ])
 
     def __eq__(self, other):
         return self.ID == other.ID
@@ -124,7 +124,7 @@ class TrajectoryData(object):
             data[op] = tuple([self.table[col] for col in cols])
         new = self.__class__(ID=self.ID, dt=self.dt, seed=None,
                              n_trajectories=None, data=data)
-        new.record = self.record.copy()
+        new._record = self._record.copy()
         return new
 
     @staticmethod
@@ -168,7 +168,14 @@ class TrajectoryData(object):
 
         :raises ValueError: if any of the datafiles do not have the correct
             format or are inconsistent
-        """
+
+        Note: Remember that is is vitally important that all
+        quantum trajectories that go into an average are statistically
+        independent. The TrajectoryData class tries as much as possible to
+        ensure this, by refusing to combine indentical IDs, or trajectories
+        originating from the same seed. To this end, in the `from_qsd_data`
+        method, the ID of the instantiated object will depend uniquely on the
+        collective data read from the QSD output files."""
         md5 = '' # accumulated MD5 hash of all files (in order to generate ID)
         data = OrderedDict();
         n_trajectories = None
@@ -224,6 +231,68 @@ class TrajectoryData(object):
             return str(uuid.uuid3(cls._uuid_namespace, name))
 
     @property
+    def ID(self):
+        """A unique RFC 4122 complient identifier. The identifier changes
+        whenever the class data is modified (via the `extend` method). Two
+        instances of TrajectoryData with the same ID are assumed to be
+        identical
+        """
+        return self._ID
+
+    @property
+    def record(self):
+        """A copy of the full trajectory record, i.e. a history of calls to the
+        `extend` method. Its purpose is to ensure that the data is completely
+        reproducible. This entails storing the seed to the random number
+        generator for all sets of trajectories.
+
+        The record is an OrderedDict that maps the original ID of any
+        TrajectoryData instance combined via `extend` to a tuple ``(seed,
+        n_trajectories, ops)``, where ``seed`` is the seed to the random number
+        generator that was used to calculate a specific set of trajectories
+        (sequentially), ``n_trajectories`` are the number of trajectories in
+        that dataset, and ``ops`` is a list of operator names for which
+        expectation values were calculated. This may be the complete list of
+        operators in the `operators` attribute, or a subset of those operators
+        (Not all trajectories have to include data for all operators).
+
+        For example, let's assume we have used the ``QSDCodeGen`` class to
+        set up a QSD propagation. Two observables 'X1', 'X2', have been set up
+        to be written to file 'X1.out', and 'X2.out'. The
+        `QSDCodeGen.set_trajectories` method has been called with
+        `n_trajectories=10`, after which a call to `QSDCodeGen.run` with
+        argument `seed=SEED1`, performed a sequential propagation of 10
+        trajectories, with the averaged expectation values written to the
+        output files.
+
+        This data may now be read into a new `TrajectoryData` instance `traj`
+        via the `from_qsd_data` class method (with `seed=SEED1`). The newly
+        created instance (with, let's say, ``ID='8d102e4b-...'``) will have one
+        entry in its record:
+
+            '8d102e4b-...': (SEED1, 10, ['X1', 'X2'])
+
+        Now, let's say we add a new observable 'A2' (output file 'A2.out') for
+        the `QSDCodeGen` (in addition to the existing observables X1, X2), and
+        run the `QSDCodeGen.run` method again, with a new seed `SEED2`.
+        We then update `traj` with a call such as
+
+            traj.extend(TrajectoryData.from_qsd_data(
+                {'X1':'X1.out', 'X2':'X2.out', 'A2':'A2.out'}, SEED2)
+
+        The record will now have an additional entry, e.g.
+
+            'd9831647-...': (SEED2, 10, ['X1', 'X2', 'A2'])
+
+        `traj.table` will contain the averaged expectation values (average over
+        20 trajectories for 'X1', 'X2', and 10 trajectories for 'A2'). The
+        record tells use that to reproduce this table, 10 sequential
+        trajectories starting from SEED1 must be performed for X1, X2, followed
+        by another 10 trajectories for X1, X2, A2 starting from SEED2.
+        """
+        return self._record.copy()
+
+    @property
     def operators(self):
         """Iterator over all operators"""
         return iter(self._operators)
@@ -231,7 +300,17 @@ class TrajectoryData(object):
     @property
     def record_IDs(self):
         """Set of all IDs in the record"""
-        return set(self.record.keys())
+        return set(self._record.keys())
+
+    @property
+    def dt(self):
+        """Time step between data points"""
+        return self._dt
+
+    @property
+    def nt(self):
+        """Number of time steps / data points"""
+        return self._nt
 
     @property
     def shape(self):
@@ -242,12 +321,12 @@ class TrajectoryData(object):
     @property
     def record_seeds(self):
         """Set of all random number generator seeds in the record"""
-        return set([seed for (seed, ntraj, op) in self.record.values()])
+        return set([seed for (seed, ntraj, op) in self._record.values()])
 
     @property
     def tgrid(self):
         """Time grid, as numpy array"""
-        return np.array(range(self.nt)) * self.dt
+        return np.array(range(self.nt)) * self._dt
 
     def operator_record(self, operator_name):
         """Returns a list of tuples (seed, n_trajectories) that specify how the
@@ -261,7 +340,7 @@ class TrajectoryData(object):
         return "TrajectoryData(ID=%s)" % self.ID
 
     def _data_line(self, index, fmt):
-        line = fmt % (self.dt*index)
+        line = fmt % (self._dt*index)
         for col in self.table.keys():
             line += fmt % self.table[col][index]
         return line
@@ -274,7 +353,7 @@ class TrajectoryData(object):
         fmt = "%{width:d}.{prec:d}e".format(width=w, prec=prec)
         ellipsis = "...".center(w)
         lines.append("# QNET Trajectory Data ID %s" % self.ID)
-        for (ID, (seed, n_traj, ops)) in self.record.items():
+        for (ID, (seed, n_traj, ops)) in self._record.items():
             if set(ops) == set(self._operators):
                 lines.append("# Record %s (seed %d): %d" % (ID, seed, n_traj))
             else:
@@ -310,7 +389,7 @@ class TrajectoryData(object):
     def n_trajectories(self, operator):
         "Return the total number of trajectories for the given operator"
         n_total = 0
-        for ID, (seed, n_traj, ops) in self.record.items():
+        for ID, (seed, n_traj, ops) in self._record.items():
             if operator in ops:
                 n_total += n_traj
         return n_total
@@ -342,7 +421,7 @@ class TrajectoryData(object):
                 self._operators.append(op)
                 for col in self._operator_cols(op):
                     self.table[col] = other.table[col].copy()
-        self.record.update(other.record)
-        self.ID = self.new_id()
+        self._record.update(other._record)
+        self._ID = self.new_id()
 
 
