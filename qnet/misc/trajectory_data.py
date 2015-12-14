@@ -422,6 +422,6 @@ class TrajectoryData(object):
                 for col in self._operator_cols(op):
                     self.table[col] = other.table[col].copy()
         self._record.update(other._record)
-        self._ID = self.new_id()
+        self._ID = self.new_id(name="".join(sorted([self.ID, other.ID])))
 
 

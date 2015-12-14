@@ -174,15 +174,19 @@ def test_write(tmpdir, traj1_coarse):
     assert p.read() == traj1_coarse.to_str()
 
 
-def test_copy(traj1):
-    traj2 = traj1.copy()
-    for col in traj1.table:
-        assert np.all(traj1.table[col] == traj2.table[col])
-        assert not (traj1.table[col] is traj2.table[col])
-    for attr in traj1.__dict__:
+def deep_eq(t1, t2):
+    for col in t1.table:
+        assert np.all(t1.table[col] == t2.table[col])
+        assert not (t1.table[col] is t2.table[col])
+    for attr in t1.__dict__:
         if attr == 'table':
             continue # handled above
-        assert traj1.__dict__[attr] == traj2.__dict__[attr]
+        assert t1.__dict__[attr] == t2.__dict__[attr]
+
+
+def test_copy(traj1):
+    traj2 = traj1.copy()
+    deep_eq(traj1, traj2)
 
 
 def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
