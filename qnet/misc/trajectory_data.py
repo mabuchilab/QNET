@@ -11,7 +11,8 @@ class TrajectoryData(object):
     """Tabular data of expectation values for one or more trajectories
 
     :attribute ID: A unique ID for the current state of the TrajectoryData.
-        Changes when the `extend` method is called
+        Changes when the `extend` method is called. Two instances of
+        TrajectoryData with the same ID are assummed to be identical
     :type ID: str
     :attribute table: A table (OrderedDict of column names to numpy arrays)
         that contains four column for every known operator (real/imaginary
@@ -29,8 +30,15 @@ class TrajectoryData(object):
        "Re[<X>]", "Im[<X>]", "Re[var(X)]", "Im[var(X)]"
     :type operators: list of str
     :attribute record: A complete record of how the averaged expectation values
-        for all operators were obtained.
-    :type record: dict(str) => tuple(int, int, list)
+        for all operators were obtained. Maps ID to a tuple
+        ``(seed, n_trajectories, ops)``, where ``seed`` is the seed to the
+        random number generator that was used to calculate a specific set of
+        trajectories (sequentially), ``n_trajectories`` are the number of
+        trajectories in that dataset, and ``ops`` is a list of operator names
+        for which expectation values were calculated. This may be the complete
+        list of operators in the `operators` attribute, or a subset of those
+        operators (Not all trajectories have to include data for all operators)
+    :type record: OrderedDic(str) => tuple(int, int, list)
     :attribute col_width: width of the data columns when writing out data.
         Defaults to 25 (allowing to full double precision). Note that
         operator names may be at most of length `col_width-10`
@@ -88,15 +96,42 @@ class TrajectoryData(object):
                                   "characters") % op)
             self.operators.append(op)
             self.nt = len(re_exp) # assumed valid for all (check below)
-            self.table['Re[<'+op+'>]']    = np.array(re_exp, dtype=np.float64)
-            self.table['Im[<'+op+'>]']    = np.array(im_exp, dtype=np.float64)
-            self.table['Re[var('+op+')]'] = np.array(re_var, dtype=np.float64)
-            self.table['Im[var('+op+')]'] = np.array(im_var, dtype=np.float64)
+            re_exp_lb, im_exp_lb, re_var_lb, im_var_lb \
+            = self._operator_cols(op)
+            self.table[re_exp_lb] = np.array(re_exp, dtype=np.float64)
+            self.table[im_exp_lb] = np.array(im_exp, dtype=np.float64)
+            self.table[re_var_lb] = np.array(re_var, dtype=np.float64)
+            self.table[im_var_lb] = np.array(im_var, dtype=np.float64)
         for col in self.table:
             if len(self.table[col]) != self.nt:
                 raise ValueError("All columns must be of length nt")
-        self.record = {}
-        self.record = {self.ID: (seed, n_trajectories, self.operators)}
+        self.record = OrderedDict([
+                      (self.ID, (seed, n_trajectories, self.operators.copy())),
+                      ])
+
+    def __eq__(self, other):
+        return self.ID == other.ID
+
+    def __hash__(self):
+        return hash(self.ID)
+
+    def copy(self):
+        """Return a (deep) copy of the current object"""
+        data = OrderedDict()
+        for op in self.operators:
+            cols = self._operator_cols(op)
+            data[op] = tuple([self.table[col] for col in cols])
+        new = self.__class__(ID=self.ID, dt=self.dt, seed=None,
+                             n_trajectories=None, data=data)
+        new.record = self.record.copy()
+        return new
+
+    @staticmethod
+    def _operator_cols(op):
+        """Return the four column names holding the data for the given
+        operator"""
+        return ['Re[<'+op+'>]', 'Im[<'+op+'>]',
+                'Re[var('+op+')]', 'Im[var('+op+')]']
 
     @classmethod
     def read(cls, filename):

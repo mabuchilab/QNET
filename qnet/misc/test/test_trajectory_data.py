@@ -162,3 +162,14 @@ def test_write(tmpdir, traj1_coarse):
     p = tmpdir.join("traj.dat")
     traj1_coarse.write(filename=str(p))
     assert p.read() == traj1_coarse.to_str()
+
+
+def test_copy(traj1):
+    traj2 = traj1.copy()
+    for col in traj1.table:
+        assert np.all(traj1.table[col] == traj2.table[col])
+        assert not (traj1.table[col] is traj2.table[col])
+    for attr in traj1.__dict__:
+        if attr == 'table':
+            continue # handled above
+        assert traj1.__dict__[attr] == traj2.__dict__[attr]
