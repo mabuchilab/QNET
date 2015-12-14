@@ -303,7 +303,11 @@ class TrajectoryData(object):
 
     def n_trajectories(self, operator):
         "Return the total number of trajectories for the given operator"
-        raise NotImplementedError()
+        n_total = 0
+        for ID, (seed, n_traj, ops) in self.record.items():
+            if operator in ops:
+                n_total += n_traj
+        return n_total
 
     def extend(self, other):
         """Extend data with another Trajectory data set
@@ -318,8 +322,20 @@ class TrajectoryData(object):
             raise ValueError("%s: Repeated seed"%err_msg)
         if not abs(self.dt - other.dt) < self._prec_dt:
             raise ValueError("Extending TrajectoryData does not match dt")
-        # TODO: average data
-        raise NotImplementedError()
+        for op in self.operators:
+            if op in other.operators:
+                n_self = self.n_trajectories(op)
+                n_other = other.n_trajectories(op)
+                for col in self._operator_cols(op):
+                    self.table[col] *= n_self
+                    self.table[col] += n_other * other.table[col]
+                    self.table[col] /= float(n_self + n_other)
+        # we may also have to account for other containing new operators
+        for op in other.operators:
+            if op not in self.operators:
+                self.operators.append(op)
+                for col in self._operator_cols(op):
+                    self.table[col] = other.table[col].copy()
         self.record.update(other.record)
         self.ID = self.new_id()
 

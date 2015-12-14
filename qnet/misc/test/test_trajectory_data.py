@@ -42,8 +42,12 @@ def qsd_traj(folder, seed):
     return pytest.fixture(fixture)
 
 
-traj1        = qsd_traj('traj1', TRAJ1_SEED)
-traj1_coarse = qsd_traj('traj1_coarse', TRAJ1_SEED)
+traj1               = qsd_traj('traj1', TRAJ1_SEED)
+traj1_coarse        = qsd_traj('traj1_coarse', TRAJ1_SEED)
+traj2_10            = qsd_traj('traj2_10', 18322321)
+traj2_10_traj1_seed = qsd_traj('traj2_10', TRAJ1_SEED)
+traj11_20           = qsd_traj('traj11_20', 38324389)
+traj2_coarse        = qsd_traj('traj2_coarse', 28324389)
 
 
 def test_new_id():
@@ -173,3 +177,48 @@ def test_copy(traj1):
         if attr == 'table':
             continue # handled above
         assert traj1.__dict__[attr] == traj2.__dict__[attr]
+
+
+def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
+        traj2_10_traj1_seed):
+    assert traj1.operators == ['X1', 'X2']
+    assert traj2_10.operators == ['A2', 'X1', 'X2']
+    traj1_ID = traj1.ID
+
+    with pytest.raises(ValueError) as excinfo:
+        traj1.extend(traj1)
+    assert "Repeated ID" in str(excinfo.value)
+
+    with pytest.raises(ValueError) as excinfo:
+        traj1.extend(traj2_coarse)
+    assert "Extending TrajectoryData does not match dt" in str(excinfo.value)
+
+    with pytest.raises(ValueError) as excinfo:
+        traj1.extend(traj2_10_traj1_seed)
+    assert "Repeated seed" in str(excinfo.value)
+
+    traj1_copy = traj1.copy()
+    traj1.extend(traj2_10)
+    assert traj1.operators == ['X1', 'X2', 'A2']
+    assert traj1.n_trajectories('X1') == 10
+    assert traj1.n_trajectories('X2') == 10
+    assert traj1.n_trajectories('A2') == 9
+    assert traj1_ID != traj1.ID
+    assert traj1_ID in traj1.record
+    assert traj2_10.ID in traj1.record
+    header_lines = traj1.to_str(show_rows=0).splitlines()
+    assert header_lines[1] == '# Record d9831647-f2e7-3793-8b24-7c49c5c101a7 (seed 103212): 1 ["X1", "X2"]'
+    assert header_lines[2] == '# Record 51b7cf90-cb94-3bf3-a6a0-da41d47c3257 (seed 18322321): 9'
+    for col in (traj1._operator_cols('X1') + traj1._operator_cols('X2')):
+        diff = (traj1.table[col]
+                - (traj1_copy.table[col] + 9.0 * traj2_10.table[col])/10.0)
+        assert np.max(np.abs(diff)) <= 1.0e-14
+    for col in traj1._operator_cols('A2'):
+        assert np.all(traj1.table[col] == traj2_10.table[col])
+
+    traj1.extend(traj11_20)
+    header_lines = traj1.to_str(show_rows=0).splitlines()
+    assert header_lines[3] == '# Record 3eb2e019-1d3b-3b8f-8a62-8c465c4ebc85 (seed 38324389): 10'
+    assert traj1.n_trajectories('X1') == 20
+    assert traj1.n_trajectories('X2') == 20
+    assert traj1.n_trajectories('A2') == 19
