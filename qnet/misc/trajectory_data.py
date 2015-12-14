@@ -85,7 +85,7 @@ class TrajectoryData(object):
         self.dt = float(dt)
         if self.dt <= 0.0:
             raise ValueError("dt must be a value >0")
-        self.operators = []
+        self._operators = []
         for op, (re_exp, im_exp, re_var, im_var) in data.items():
             op = str(op)
             if len(op) > (self.col_width - 10):
@@ -94,7 +94,7 @@ class TrajectoryData(object):
             if not self._rx_op_name.match(op):
                 raise ValueError(("Operator name '%s' contains invalid "
                                   "characters") % op)
-            self.operators.append(op)
+            self._operators.append(op)
             self.nt = len(re_exp) # assumed valid for all (check below)
             re_exp_lb, im_exp_lb, re_var_lb, im_var_lb \
             = self._operator_cols(op)
@@ -105,8 +105,9 @@ class TrajectoryData(object):
         for col in self.table:
             if len(self.table[col]) != self.nt:
                 raise ValueError("All columns must be of length nt")
+        record_ops = self._operators.copy()
         self.record = OrderedDict([
-                      (self.ID, (seed, n_trajectories, self.operators.copy())),
+                        (self.ID, (seed, n_trajectories, record_ops)),
                       ])
 
     def __eq__(self, other):
@@ -118,7 +119,7 @@ class TrajectoryData(object):
     def copy(self):
         """Return a (deep) copy of the current object"""
         data = OrderedDict()
-        for op in self.operators:
+        for op in self._operators:
             cols = self._operator_cols(op)
             data[op] = tuple([self.table[col] for col in cols])
         new = self.__class__(ID=self.ID, dt=self.dt, seed=None,
@@ -168,7 +169,7 @@ class TrajectoryData(object):
         :raises ValueError: if any of the datafiles do not have the correct
             format or are inconsistent
         """
-        md5 = '' # accumulated MD5 hash of all read files
+        md5 = '' # accumulated MD5 hash of all files (in order to generate ID)
         data = OrderedDict();
         n_trajectories = None
         dt = None
@@ -223,6 +224,11 @@ class TrajectoryData(object):
             return str(uuid.uuid3(cls._uuid_namespace, name))
 
     @property
+    def operators(self):
+        """Iterator over all operators"""
+        return iter(self._operators)
+
+    @property
     def record_IDs(self):
         """Set of all IDs in the record"""
         return set(self.record.keys())
@@ -269,7 +275,7 @@ class TrajectoryData(object):
         ellipsis = "...".center(w)
         lines.append("# QNET Trajectory Data ID %s" % self.ID)
         for (ID, (seed, n_traj, ops)) in self.record.items():
-            if set(ops) == set(self.operators):
+            if set(ops) == set(self._operators):
                 lines.append("# Record %s (seed %d): %d" % (ID, seed, n_traj))
             else:
                 lines.append("# Record %s (seed %d): %d %s"
@@ -322,8 +328,8 @@ class TrajectoryData(object):
             raise ValueError("%s: Repeated seed"%err_msg)
         if not abs(self.dt - other.dt) < self._prec_dt:
             raise ValueError("Extending TrajectoryData does not match dt")
-        for op in self.operators:
-            if op in other.operators:
+        for op in self._operators:
+            if op in other._operators:
                 n_self = self.n_trajectories(op)
                 n_other = other.n_trajectories(op)
                 for col in self._operator_cols(op):
@@ -331,9 +337,9 @@ class TrajectoryData(object):
                     self.table[col] += n_other * other.table[col]
                     self.table[col] /= float(n_self + n_other)
         # we may also have to account for other containing new operators
-        for op in other.operators:
-            if op not in self.operators:
-                self.operators.append(op)
+        for op in other._operators:
+            if op not in self._operators:
+                self._operators.append(op)
                 for col in self._operator_cols(op):
                     self.table[col] = other.table[col].copy()
         self.record.update(other.record)

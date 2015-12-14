@@ -73,7 +73,7 @@ def test_from_qsd_data(traj1, datadir):
     assert traj.nt == 51
     assert traj.shape == (51, 9)
     assert len(traj.record) == 1
-    assert traj.operators == ['X1', 'X2']
+    assert list(traj.operators) == ['X1', 'X2']
     for (id, (seed, n_traj, op_list)) in traj.record.items():
         assert seed == TRAJ1_SEED
         assert n_traj == 1
@@ -181,8 +181,8 @@ def test_copy(traj1):
 
 def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
         traj2_10_traj1_seed):
-    assert traj1.operators == ['X1', 'X2']
-    assert traj2_10.operators == ['A2', 'X1', 'X2']
+    assert list(traj1.operators) == ['X1', 'X2']
+    assert list(traj2_10.operators) == ['A2', 'X1', 'X2']
     traj1_ID = traj1.ID
 
     with pytest.raises(ValueError) as excinfo:
@@ -199,7 +199,7 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
 
     traj1_copy = traj1.copy()
     traj1.extend(traj2_10)
-    assert traj1.operators == ['X1', 'X2', 'A2']
+    assert list(traj1.operators) == ['X1', 'X2', 'A2']
     assert traj1.n_trajectories('X1') == 10
     assert traj1.n_trajectories('X2') == 10
     assert traj1.n_trajectories('A2') == 9
