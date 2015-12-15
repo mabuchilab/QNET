@@ -498,11 +498,6 @@ class TrajectoryData(object):
         """Time grid, as numpy array"""
         return np.array(range(self.nt)) * self._dt
 
-    def operator_record(self, operator_name):
-        """Returns a list of tuples (seed, n_trajectories) that specify how the
-        current expectation values for the given operator where obtained"""
-        raise NotImplementedError()
-
     def __str__(self):
         return self.to_str(show_rows=6)
 
