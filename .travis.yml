@@ -5,6 +5,8 @@ python:
   - "3.3"
   - "3.4"
 install:
+  - sudo add-apt-repository ppa:texlive-backports/ppa
+  - sudo apt-get update
   - sudo apt-get install texlive
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
