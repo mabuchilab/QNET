@@ -50,6 +50,7 @@ class TrajectoryData(object):
     _uuid_namespace = uuid.UUID('c84069eb-cf80-48a6-9584-74b7f2c742c1')
     _prec_dt = 1.0e-6 # how close dt's have to be to be equal
     col_width = 25 # width of columns when writing
+    _col_padding = 10 # space needed in col header besides operator name
     _rx = {
         'op_name': re.compile(r'^[\x20-\x7E]+$'), # ascii w/o control chars
         'head_ID': re.compile(r'# QNET Trajectory Data ID\s+'
@@ -57,7 +58,7 @@ class TrajectoryData(object):
         'record':  re.compile(r'# Record\s+(?P<ID>[a-d\d-]+)\s*'
                               r'\(seed (?P<seed>\d+)^\):\s*(?P<n_traj>\d+)'
                               r'(\s*(?P<ops>\[.*\]))?$'),
-        'header': re.compile(r'#\s+t\s+')
+        'header': re.compile(r'#\s+t')
     }
 
     def __init__(self, ID, dt, seed, n_trajectories, data):
@@ -101,6 +102,8 @@ class TrajectoryData(object):
         self._operators = []
         for op, (re_exp, im_exp, re_var, im_var) in data.items():
             op = str(op).strip()
+            if len(op) > self.col_width-self._col_padding:
+                self.col_width = len(op) + self._col_padding
             self._check_op_name(op)
             self._operators.append(op)
             self._nt = len(re_exp) # assumed valid for all (check below)
@@ -118,12 +121,11 @@ class TrajectoryData(object):
                          (self.ID, (seed, n_trajectories, record_ops)),
                        ])
 
-    def _check_op_name(self, op):
-        """Raise a ValueError if op is not a valid operator name"""
-        if len(op) > (self.col_width - 10):
-            raise ValueError(("Operator name '%s' supersedes maximum "
-                                "length of %d") % (op, self.col_width-10))
-        if not self._rx['op_name'].match(op):
+    @classmethod
+    def _check_op_name(cls, op):
+        """Raise a ValueError if op is not a valid operator name (with at most
+        `max_len` characters if `max_len > 0`)"""
+        if not cls._rx['op_name'].match(op):
             raise ValueError(("Operator name '%s' contains invalid "
                                 "characters") % op)
         brackets = 0
@@ -153,10 +155,14 @@ class TrajectoryData(object):
         new._record = self._record.copy()
         return new
 
-    @staticmethod
-    def _operator_cols(op):
+    @classmethod
+    def _operator_cols(cls, op):
         """Return the four column names holding the data for the given
-        operator"""
+        operator name
+
+        :raises ValueError: if invalid operator name is given
+        """
+        cls._check_op_name(op)
         return ['Re[<'+op+'>]', 'Im[<'+op+'>]',
                 'Re[var('+op+')]', 'Im[var('+op+')]']
 
@@ -372,10 +378,19 @@ class TrajectoryData(object):
         return line
 
     def to_str(self, show_rows=-1):
-        """Generate full string represenation of TrajectoryData"""
+        """Generate full string represenation of TrajectoryData
+
+        :param show_rows: If given > 0, maximum number of data rows to show. If
+            there are more rows, they will be indicated by an ellipsis ('...')
+        :type show_rows: int
+
+        :raises ValueError: if any operator name is too long to generate a
+            label that fits in the limit given by the `col_width` class
+            attribute
+        """
         lines = []
         w = self.col_width
-        prec = self.col_width - 9
+        prec = min(self.col_width - 9, 16) # 16 = max. double precision
         fmt = "%{width:d}.{prec:d}e".format(width=w, prec=prec)
         ellipsis = "...".center(w)
         lines.append("# QNET Trajectory Data ID %s" % self.ID)
@@ -387,6 +402,9 @@ class TrajectoryData(object):
                              % (ID, seed, n_traj, json.dumps(ops)))
         header = ("#%{width:d}s".format(width=w-1)) % 't'
         for col in self.table.keys():
+            if len(col) >= self.col_width:
+                raise ValueError(("Column name '%s' must be shorter than max "
+                        "column width %d") % (col, self.col_width))
             header += ("%{width:d}s".format(width=w)) % col
         lines.append(header)
         nt = self.nt

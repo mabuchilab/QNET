@@ -103,11 +103,10 @@ def test_init_validation():
                     data=data)
     assert 'could not convert string to float' in str(excinfo.value)
     assert TrajectoryData.col_width == 25
-    with pytest.raises(ValueError) as excinfo:
-        data = OrderedDict([('Y'*20, data_ok['X']),])
-        TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
-                    data=data)
-    assert 'supersedes maximum length' in str(excinfo.value)
+    data = OrderedDict([('Y'*20, data_ok['X']),])
+    traj = TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                          data=data)
+    assert traj.col_width == 20 + TrajectoryData._col_padding
     with pytest.raises(ValueError) as excinfo:
         data = OrderedDict([('a\tb', data_ok['X']),])
         TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
@@ -228,6 +227,23 @@ def test_to_str(traj1, traj1_coarse):
        3.000e+00   6.195e-02  -4.246e-02  -2.035e-03   5.261e-03   5.748e-02   4.816e-02  -9.844e-04  -5.536e-03
        4.000e+00   6.741e-02  -6.921e-02   2.448e-04   9.331e-03   2.629e-02   9.285e-02   7.930e-03  -4.883e-03
        5.000e+00  -4.060e-03  -9.878e-02   9.742e-03  -8.022e-04   3.130e-02   9.370e-02   7.800e-03  -5.866e-03
+    ''').strip()
+    with pytest.raises(ValueError) as excinfo:
+        traj1_coarse.col_width = 11
+        traj1_coarse.to_str()
+    assert "must be shorter than max column width" in str(excinfo.value)
+
+    traj1_coarse.col_width = 30
+    assert traj1_coarse.to_str().strip() == dedent('''
+    # QNET Trajectory Data ID f90b9290-35ff-3d94-a215-328fe2cc139c
+    # Record f90b9290-35ff-3d94-a215-328fe2cc139c (seed 103212): 1
+    #                            t                      Re[<X1>]                      Im[<X1>]                   Re[var(X1)]                   Im[var(X1)]                      Re[<X2>]                      Im[<X2>]                   Re[var(X2)]                   Im[var(X2)]
+            0.0000000000000000e+00        0.0000000000000000e+00        0.0000000000000000e+00        0.0000000000000000e+00        0.0000000000000000e+00        0.0000000000000000e+00        0.0000000000000000e+00        0.0000000000000000e+00        0.0000000000000000e+00
+            1.0000000000000000e+00        1.2617600000000000e-02       -2.5277300000000002e-03       -1.5281299999999999e-04        6.3787600000000006e-05        1.2773600000000000e-02        1.0170900000000000e-03       -1.6212900000000001e-04       -2.5983600000000000e-05
+            2.0000000000000000e+00        4.2612299999999999e-02       -2.0798400000000002e-02       -1.3832300000000000e-03        1.7725400000000000e-03        4.7045200000000002e-02        4.4810300000000004e-03       -2.1931699999999999e-03       -4.2162200000000002e-04
+            3.0000000000000000e+00        6.1951199999999998e-02       -4.2463000000000001e-02       -2.0348499999999999e-03        5.2612700000000002e-03        5.7477100000000003e-02        4.8158100000000002e-02       -9.8441599999999989e-04       -5.5359700000000003e-03
+            4.0000000000000000e+00        6.7414600000000005e-02       -6.9206400000000001e-02        2.4479599999999998e-04        9.3310400000000005e-03        2.6293199999999999e-02        9.2851000000000003e-02        7.9299799999999997e-03       -4.8827000000000002e-03
+            5.0000000000000000e+00       -4.0601099999999996e-03       -9.8784499999999997e-02        9.7418899999999996e-03       -8.0215199999999999e-04        3.1303499999999998e-02        9.3702499999999994e-02        7.8002499999999999e-03       -5.8664399999999997e-03
     ''').strip()
 
 
