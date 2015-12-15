@@ -2,7 +2,7 @@ import os
 from os.path import join
 from glob import glob
 from textwrap import dedent
-from qnet.misc.trajectory_data import TrajectoryData
+from qnet.misc.trajectory_data import TrajectoryData, TrajectoryParserError
 from distutils import dir_util
 from collections import OrderedDict
 import uuid
@@ -80,6 +80,8 @@ def test_rx():
 
     line = '#          t    Re[<X1>]    Im[<X1>] Re[var(X1)] Im[var(X1)]    Re[<X2>]    Im[<X2>] Re[var(X2)] Im[var(X2)]'
     assert TrajectoryData._rx['header'].match(line)
+    # It must be possible to extract the col_width from the extent of the match
+    assert TrajectoryData._rx['header'].match(line).end() == 12
 
 
 def test_init_validation():
@@ -340,3 +342,131 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
     # test the syntactic sugar
     traj_combined = traj1_copy + traj11_20
     deep_eq(traj_combined, traj1)
+
+
+def test_parse_header_line():
+    line = '#          t    Re[<X1>]    Im[<X1>] Re[var(X1)] Im[var(X1)]    Re[<X2>]    Im[<X2>] Re[var(X2)] Im[var(X2)]'
+    fields = TrajectoryData._parse_header_line(line)
+    assert fields == ['#          t', '    Re[<X1>]', '    Im[<X1>]',
+                      ' Re[var(X1)]', ' Im[var(X1)]', '    Re[<X2>]',
+                      '    Im[<X2>]', ' Re[var(X2)]', ' Im[var(X2)]']
+    fields = TrajectoryData._parse_header_line(line, strip=True)
+    assert fields == ['#          t', 'Re[<X1>]', 'Im[<X1>]',
+                      'Re[var(X1)]', 'Im[var(X1)]', 'Re[<X2>]',
+                      'Im[<X2>]', 'Re[var(X2)]', 'Im[var(X2)]']
+    line = '#tRe[<X1>]Im[<X1>]'
+    fields = TrajectoryData._parse_header_line(line)
+    assert fields == ['#t', 'Re[<X1>]', 'Im[<X1>]']
+    line = '# t Re[<A[1]>] Im[<A[1]>]'
+    fields = TrajectoryData._parse_header_line(line, strip=True)
+    assert fields == ['# t', 'Re[<A[1]>]', 'Im[<A[1]>]']
+    with pytest.raises(TrajectoryParserError) as excinfo:
+        line = '# t Re[<A]>] Im[<A]>]'
+        fields = TrajectoryData._parse_header_line(line, strip=True)
+    assert "unbalanced brackets" in str(excinfo.value)
+    with pytest.raises(TrajectoryParserError) as excinfo:
+        line = '# t Re[<A[1]>] Im[<A[1]>] X1 X2'
+        fields = TrajectoryData._parse_header_line(line, strip=True)
+    assert "trailing characters" in str(excinfo.value)
+
+
+def test_get_op_names_from_header_line(traj1):
+    # use of traj1 is arbitrary, we just need some instance
+    line = '#          t    Re[<X1>]    Im[<X1>] Re[var(X1)] Im[var(X1)]    Re[<X2>]    Im[<X2>] Re[var(X2)] Im[var(X2)]'
+    ops = traj1._get_op_names_from_header_line(line)
+    assert ops == ['X1', 'X2']
+
+    op = 'X'*20
+    line = '#  t '+" ".join(TrajectoryData._operator_cols(op))
+    ops = traj1._get_op_names_from_header_line(line)
+    assert ops == [op, ]
+
+    with pytest.raises(TrajectoryParserError) as excinfo:
+        line = '#          t    Re[<X1>]    Im[<X1>] Re[var(X1)]'
+        ops = traj1._get_op_names_from_header_line(line)
+    assert "Unexpected number of columns" in str(excinfo.value)
+    with pytest.raises(TrajectoryParserError) as excinfo:
+        line = '#  t    Re[<X\t2>]'
+        ops = traj1._get_op_names_from_header_line(line)
+    assert "contains invalid characters" in str(excinfo.value)
+
+
+def test_read(datadir, tmpdir, traj1, traj2_10, traj11_20):
+    filename = join(datadir, 'read_input_files', 'good.dat')
+    traj = TrajectoryData.read(filename)
+    file_str = open(filename).read()
+    assert str(traj) == file_str.rstrip()
+
+    filename = str(tmpdir.join("traj1.dat"))
+    traj1.write(filename)
+    traj_r = TrajectoryData.read(filename)
+    assert str(traj_r) == str(traj1)
+
+    filename = str(tmpdir.join("traj1-20.dat"))
+    traj = traj11_20 + traj2_10 + traj1
+    traj.col_width = 12
+    traj.write(filename)
+    traj_r = TrajectoryData.read(filename)
+    assert str(traj_r) == str(traj)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'no_header.dat')
+        traj = TrajectoryData.read(filename)
+    assert "does not define an ID" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'no_record.dat')
+        traj = TrajectoryData.read(filename)
+    assert "does not contain a record" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'no_col_labels.dat')
+        traj = TrajectoryData.read(filename)
+    assert "does not contain a header" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'no_data.dat')
+        traj = TrajectoryData.read(filename)
+    assert "contains no data" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'empty.dat')
+        traj = TrajectoryData.read(filename)
+    assert "does not define an ID" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'wrong_col_labels.dat')
+        traj = TrajectoryData.read(filename)
+    assert "Malformed header" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'wrong_col_labels2.dat')
+        traj = TrajectoryData.read(filename)
+    assert "Invalid header line" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'no_tgrid.dat')
+        traj = TrajectoryData.read(filename)
+    assert "missing time grid" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'missing_im.dat')
+        traj = TrajectoryData.read(filename)
+    assert "Unexpected number of columns" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'header_data_mismatch.dat')
+        traj = TrajectoryData.read(filename)
+    assert "number of data columns differs from the number indicated in "\
+           "the header" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'single_row.dat')
+        traj = TrajectoryData.read(filename)
+    assert "Too few rows" in str(exc_info.value)
+
+    with pytest.raises(TrajectoryParserError) as exc_info:
+        filename = join(datadir, 'read_input_files', 'truncated.dat')
+        traj = TrajectoryData.read(filename)
+    assert "Wrong number of columns at line 3" in str(exc_info.value)
+
