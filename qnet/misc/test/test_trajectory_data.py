@@ -225,6 +225,12 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
         assert np.max(np.abs(diff)) <= 1.0e-14
     for col in traj1._operator_cols('A2'):
         assert np.all(traj1.table[col] == traj2_10.table[col])
+    # test the syntactic sugar
+    traj1_copy += traj2_10
+    deep_eq(traj1_copy, traj1)
+    with pytest.raises(TypeError) as excinfo:
+        traj1_copy -= traj2_10
+    assert "unsupported operand" in str(excinfo.value)
 
     traj1.extend(traj11_20)
     header_lines = traj1.to_str(show_rows=0).splitlines()
@@ -232,3 +238,6 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
     assert traj1.n_trajectories('X1') == 20
     assert traj1.n_trajectories('X2') == 20
     assert traj1.n_trajectories('A2') == 19
+    # test the syntactic sugar
+    traj_combined = traj1_copy + traj11_20
+    deep_eq(traj_combined, traj1)

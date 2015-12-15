@@ -395,7 +395,9 @@ class TrajectoryData(object):
         return n_total
 
     def extend(self, other):
-        """Extend data with another Trajectory data set
+        """Extend data with another Trajectory data set, averaging the
+        expectation values. Equivalently to ``traj1.extend(traj2)``, the syntax
+        ``traj1 += traj2`` may be used.
 
         :raises ValueError: if data in self and other are incompatible
         """
@@ -423,5 +425,14 @@ class TrajectoryData(object):
                     self.table[col] = other.table[col].copy()
         self._record.update(other._record)
         self._ID = self.new_id(name="".join(sorted([self.ID, other.ID])))
+
+    def __add__(self, other):
+        combined = self.copy()
+        combined.extend(other)
+        return combined
+
+    def __iadd__(self, other):
+        self.extend(other)
+        return self
 
 
