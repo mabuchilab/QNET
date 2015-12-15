@@ -62,6 +62,69 @@ def test_new_id():
     assert(id5 != id4)
 
 
+def test_init_validation():
+    dt_ok = 0.1
+    ID_ok = 'd9831647-f2e7-3793-8b24-7c49c5c101a7'
+    data_ok = OrderedDict([
+                ('X', (np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3))),
+                ('Y', (np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3)))])
+    TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                   data=data_ok)
+    with pytest.raises(ValueError) as excinfo:
+        TrajectoryData(ID='1232', dt=dt_ok, seed=None, n_trajectories=None,
+                    data=data_ok)
+    assert 'badly formed hexadecimal UUID string' in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        TrajectoryData(ID=ID_ok, dt=0.0, seed=None, n_trajectories=None,
+                    data=data_ok)
+    assert 'dt must be a value >0' in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        TrajectoryData(ID=ID_ok, dt="bla", seed=None, n_trajectories=None,
+                    data=data_ok)
+    assert 'could not convert string' in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        TrajectoryData(ID=ID_ok, dt=None, seed=None, n_trajectories=None,
+                    data=data_ok)
+    assert 'dt must be a float with value >0' in str(excinfo.value)
+    with pytest.raises(AttributeError) as excinfo:
+        TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                    data=None)
+    with pytest.raises(ValueError) as excinfo:
+        data = OrderedDict([
+                    ('X', (np.zeros(3), np.zeros(3), np.zeros(3))),
+                    ('Y', (np.zeros(3), np.zeros(3), np.zeros(3)))])
+        TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                    data=data)
+    assert 'need more than 3 values to unpack' in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        data = OrderedDict([ ('X', ("a", "b", "c", "d")),
+                             ('Y', ("a", "b", "c", "d"))])
+        TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                    data=data)
+    assert 'could not convert string to float' in str(excinfo.value)
+    assert TrajectoryData.col_width == 25
+    with pytest.raises(ValueError) as excinfo:
+        data = OrderedDict([('Y'*20, data_ok['X']),])
+        TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                    data=data)
+    assert 'supersedes maximum length' in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        data = OrderedDict([('a\tb', data_ok['X']),])
+        TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                    data=data)
+    assert 'contains invalid characters' in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        data = OrderedDict([('A[[2]', data_ok['X']),])
+        TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                    data=data)
+    assert 'contains unbalanced brackets' in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        data = OrderedDict([('A]', data_ok['X']),])
+        TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
+                    data=data)
+    assert 'contains unbalanced brackets' in str(excinfo.value)
+
+
 def test_from_qsd_data(traj1, datadir):
     X1_file = join(datadir, 'traj1', 'X1.out')
     X2_file = join(datadir, 'traj1', 'X2.out')

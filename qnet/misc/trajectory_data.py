@@ -80,20 +80,20 @@ class TrajectoryData(object):
             invalid or non-positive float, data does not follow the correct
             structure
         """
+        #  seed and n_trajectories may be passed None without raising an error,
+        #  assuming the _record is manually set immediately after instantiation
         self._ID = str(uuid.UUID(ID)) # self.ID = ID, with validation
         self.table = OrderedDict()
-        self._dt = float(dt)
+        try:
+            self._dt = float(dt)
+        except TypeError:
+            raise ValueError("dt must be a float with value >0")
         if self.dt <= 0.0:
             raise ValueError("dt must be a value >0")
         self._operators = []
         for op, (re_exp, im_exp, re_var, im_var) in data.items():
-            op = str(op)
-            if len(op) > (self.col_width - 10):
-                raise ValueError(("Operator name '%s' supersedes maximum "
-                                 "length of %d") % (op, self.col_width-10))
-            if not self._rx_op_name.match(op):
-                raise ValueError(("Operator name '%s' contains invalid "
-                                  "characters") % op)
+            op = str(op).strip()
+            self._check_op_name(op)
             self._operators.append(op)
             self._nt = len(re_exp) # assumed valid for all (check below)
             re_exp_lb, im_exp_lb, re_var_lb, im_var_lb \
@@ -109,6 +109,24 @@ class TrajectoryData(object):
         self._record = OrderedDict([
                          (self.ID, (seed, n_trajectories, record_ops)),
                        ])
+
+    def _check_op_name(self, op):
+        """Raise a ValueError if op is not a valid operator name"""
+        if len(op) > (self.col_width - 10):
+            raise ValueError(("Operator name '%s' supersedes maximum "
+                                "length of %d") % (op, self.col_width-10))
+        if not self._rx['op_name'].match(op):
+            raise ValueError(("Operator name '%s' contains invalid "
+                                "characters") % op)
+        brackets = 0
+        for letter in op:
+            if letter == '[':
+                brackets += 1
+            if letter == ']':
+                brackets -= 1
+        if brackets != 0:
+            raise ValueError(("Operator name '%s' contains unbalanced "
+                                "brackets") % op)
 
     def __eq__(self, other):
         return self.ID == other.ID
