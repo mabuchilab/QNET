@@ -105,7 +105,7 @@ class TrajectoryData(object):
         for col in self.table:
             if len(self.table[col]) != self.nt:
                 raise ValueError("All columns must be of length nt")
-        record_ops = self._operators.copy()
+        record_ops = list(self._operators)
         self._record = OrderedDict([
                          (self.ID, (seed, n_trajectories, record_ops)),
                        ])
