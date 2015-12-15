@@ -62,6 +62,26 @@ def test_new_id():
     assert(id5 != id4)
 
 
+def test_rx():
+    for op_name in ['X', r'\sqrt{A}', 'A_2^(1)', 'a^{\dagger} a']:
+        assert TrajectoryData._rx['op_name'].match(op_name)
+
+    line = '# QNET Trajectory Data ID f90b9290-35ff-3d94-a215-328fe2cc139c'
+    assert TrajectoryData._rx['head_ID'].match(line)
+    line = '# QNET ID f90b9290-35ff-3d94-a215-328fe2cc139c'
+    assert TrajectoryData._rx['head_ID'].match(line) is None
+    line = '# QNET Trajectory Data ID f90b9290-35ff-3d94-a215-328fe2cc13'
+    assert TrajectoryData._rx['head_ID'].match(line) is None
+
+    line = '# Record d9831647-f2e7-3793-8b24-7c49c5c101a7 (seed 103212): 1'
+    assert TrajectoryData._rx['record'].match(line)
+    line = '# Record d9831647-f2e7-3793-8b24-7c49c5c101a7 (seed 103212): 1 ["X1", "X2"]'
+    assert TrajectoryData._rx['record'].match(line)
+
+    line = '#          t    Re[<X1>]    Im[<X1>] Re[var(X1)] Im[var(X1)]    Re[<X2>]    Im[<X2>] Re[var(X2)] Im[var(X2)]'
+    assert TrajectoryData._rx['header'].match(line)
+
+
 def test_init_validation():
     dt_ok = 0.1
     ID_ok = 'd9831647-f2e7-3793-8b24-7c49c5c101a7'

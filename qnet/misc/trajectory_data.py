@@ -54,9 +54,10 @@ class TrajectoryData(object):
     _rx = {
         'op_name': re.compile(r'^[\x20-\x7E]+$'), # ascii w/o control chars
         'head_ID': re.compile(r'# QNET Trajectory Data ID\s+'
-                              r'(?P<ID>[a-d\d-]+)'),
-        'record':  re.compile(r'# Record\s+(?P<ID>[a-d\d-]+)\s*'
-                              r'\(seed (?P<seed>\d+)^\):\s*(?P<n_traj>\d+)'
+                              r'(?P<ID>[a-f\d-]{36})'),
+        'record':  re.compile(r'# Record\s+(?P<ID>[a-f\d-]{36})\s*'
+                              r'\(seed (?P<seed>\d+)\):'
+                              r'\s*(?P<n_traj>\d+)'
                               r'(\s*(?P<ops>\[.*\]))?$'),
         'header': re.compile(r'#\s+t')
     }
