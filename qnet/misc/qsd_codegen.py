@@ -708,7 +708,7 @@ class QSDCodeGen(object):
         else:
             raise OSError("No executable {x}".format(x=executable))
 
-    def run(self):
+    def run(self, seed=None):
         """Run the previously compiled QSD program (see compile method)
 
         :raises QSDCodeGenError: if compile method was not called
@@ -717,6 +717,8 @@ class QSDCodeGen(object):
         :raises subprocess.CalledProcessError: if executable returns with
             non-zero exit code
         """
+        if seed is not None:
+            raise NotImplementedError("seed parameter not implemented")
         try:
             exe = os.path.abspath(self._executable)
             if not os.path.isfile(exe):
