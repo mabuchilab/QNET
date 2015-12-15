@@ -50,7 +50,15 @@ class TrajectoryData(object):
     _uuid_namespace = uuid.UUID('c84069eb-cf80-48a6-9584-74b7f2c742c1')
     _prec_dt = 1.0e-6 # how close dt's have to be to be equal
     col_width = 25 # width of columns when writing
-    _rx_op_name = re.compile(r'^[\x20-\x7E]+$') # ascii w/o control chars
+    _rx = {
+        'op_name': re.compile(r'^[\x20-\x7E]+$'), # ascii w/o control chars
+        'head_ID': re.compile(r'# QNET Trajectory Data ID\s+'
+                              r'(?P<ID>[a-d\d-]+)'),
+        'record':  re.compile(r'# Record\s+(?P<ID>[a-d\d-]+)\s*'
+                              r'\(seed (?P<seed>\d+)^\):\s*(?P<n_traj>\d+)'
+                              r'(\s*(?P<ops>\[.*\]))?$'),
+        'header': re.compile(r'#\s+t\s+')
+    }
 
     def __init__(self, ID, dt, seed, n_trajectories, data):
         """Initialize a new TrajectoryData instance
