@@ -276,7 +276,7 @@ def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
     codegen.set_trajectories(psi_initial=psi0*psi1*psi2,
             stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
-            add_to_existing_traj=True, traj_save=10, rnd_seed=38388389)
+            traj_save=10, rnd_seed=38388389)
     return codegen
 
 
@@ -476,7 +476,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
           * psi_spin(0) )
     codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
-            add_to_existing_traj=True, traj_save=10, rnd_seed=None)
+            traj_save=10, rnd_seed=None)
 
     scode = codegen._initial_state_lines()
     assert scode == dedent(r'''
@@ -497,7 +497,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     psi = CoherentStateKet(0, alpha) * psi_cav2(0) * psi_spin(0)
     codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
-            add_to_existing_traj=True, traj_save=10, rnd_seed=None)
+            traj_save=10, rnd_seed=None)
     scode = codegen._initial_state_lines()
     assert scode == dedent(r'''
     State phiL0(10,0,FIELD); // HS 1
@@ -513,7 +513,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     psi = (psi_tot(1,0,0) + psi_tot(0,1,0)) / sympy.sqrt(2)
     codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
-            add_to_existing_traj=True, traj_save=10, rnd_seed=None)
+            traj_save=10, rnd_seed=None)
     scode = codegen._initial_state_lines()
     assert scode == dedent(r'''
     State phiL0(10,0,FIELD); // HS 0
@@ -546,14 +546,14 @@ def test_qsd_codegen_traj(slh_Sec6):
 
     codegen.set_trajectories(psi_initial=None, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
-            add_to_existing_traj=True, traj_save=10, rnd_seed=None)
+            traj_save=10, rnd_seed=None)
     scode = codegen._trajectory_lines()
     m = re.search(r'int rndSeed = (\d+);', scode)
     assert int(m.group(1)) <= UNSIGNED_MAXINT
 
     codegen.set_trajectories(psi_initial=None, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
-            add_to_existing_traj=True, traj_save=10, rnd_seed=0)
+            traj_save=10, rnd_seed=0)
     scode = codegen._trajectory_lines()
     assert dedent(scode).strip() == dedent(r'''
     int rndSeed = 0;

@@ -397,8 +397,7 @@ class QSDCodeGen(object):
         self._moving_params['move_eps'] = move_eps
 
     def set_trajectories(self, psi_initial, stepper, dt, nt_plot_step,
-            n_plot_steps, n_trajectories, add_to_existing_traj=True,
-            traj_save=10, rnd_seed=None):
+            n_plot_steps, n_trajectories, traj_save=10, rnd_seed=None):
         """Set the parameters that control the trajectories from which a plot
         of expectation values for the registered observables will be generated.
 
@@ -424,15 +423,6 @@ class QSDCodeGen(object):
         :param n_trajectories: The number of trajectories over which to average
             for getting the expectation values of the observables
         :type n_trajectories: int
-        :param add_to_existing_traj: If True, and if the output file for every
-            observable already exists and contains data for a matching
-            trajectory, include the existing data when calculating the averaged
-            expectation values. In this case, the average will be determined
-            from the existing trajectories and ``n_trajectories`` new
-            trajectories. Note that when adding to existing trajectories, it is
-            essential that the random number generator starts from a different
-            seed.
-        :type add_to_existing_traj: boolean
         :param traj_save: Number of trajectories to propagate before writing
             the averaged expectation values of all oberservables to file. This
             ensures that if the program is terminated before the calculation of
@@ -464,10 +454,6 @@ class QSDCodeGen(object):
         self._traj_params['n_trajectories'] = n_trajectories
         self._traj_params['traj_save'] = traj_save
         self._rnd_seed = rnd_seed
-        if add_to_existing_traj:
-            self._traj_params['read_files'] = 1
-        else:
-            self._traj_params['read_files'] = 0
 
     def _ordered_tensor_operands(self, state):
         """Return the operands of the given TensorKet instance ordered by their
@@ -569,17 +555,10 @@ class QSDCodeGen(object):
     def _trajectory_lines(self):
         logger = logging.getLogger(__name__)
         try:
-            read_files = self._traj_params['read_files']
+            read_files = self._traj_params['stepper']
         except KeyError:
             raise QSDCodeGenError("No trajectories set up. Ensure that "
                                   "'set_trajectories' method has been called")
-        if read_files == 1:
-            for filename in self._outfiles:
-                if not os.path.isfile(filename):
-                    logger.info("Not all output files exist. "
-                                "Disabling 'add_to_existing_traj'")
-                    self._traj_params['read_files'] = 0
-
         lines = [
         'int rndSeed = {rnd_seed};',
         'ACG gen(rndSeed); // random number generator',
@@ -590,7 +569,7 @@ class QSDCodeGen(object):
         'int nOfSteps = {n_plot_steps};',
         'int nTrajSave = {traj_save};',
         'int nTrajectory = {n_trajectories};',
-        'int ReadFile = {read_files};',
+        'int ReadFile = 0;',
         '',
         '{stepper} stepper(psiIni, H, nL, L);',
         'Trajectory traj(psiIni, dt, stepper, &rndm);',
