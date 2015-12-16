@@ -6,8 +6,22 @@
 #include "FieldOp.h"
 #include "Traject.h"
 
-int main()
+int main(int argc, char* argv[])
 {
+
+  unsigned int rndSeed;
+  if (argc != 2){
+    std::cout << "Usage: " << argv[0] << " SEED" << std::endl;
+    std::exit(1);
+  } else {
+    if(sscanf(argv[1], "%u", &rndSeed) != 1){
+      std::cout << "ERROR: Could not read SEED" << std::endl;
+      std::exit(1);
+    } else {
+      std::cout << "Using rnd seed: " << rndSeed << std::endl;
+    }
+  }
+
 // Primary Operators
 IdentityOperator Id0(0);
 IdentityOperator Id1(1);
@@ -62,7 +76,6 @@ State psiIni = phiT0;
 psiIni.normalize();
 
 // Trajectory
-int rndSeed = 38388389;
 ACG gen(rndSeed); // random number generator
 ComplexNormal rndm(&gen); // Complex Gaussian random numbers
 

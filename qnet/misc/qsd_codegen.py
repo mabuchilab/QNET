@@ -207,8 +207,22 @@ class QSDCodeGen(object):
     #include "FieldOp.h"
     #include "Traject.h"
 
-    int main()
+    int main(int argc, char* argv[])
     {{
+
+      unsigned int rndSeed;
+      if (argc != 2){{
+        std::cout << "Usage: " << argv[0] << " SEED" << std::endl;
+        std::exit(1);
+      }} else {{
+        if(sscanf(argv[1], "%u", &rndSeed) != 1){{
+          std::cout << "ERROR: Could not read SEED" << std::endl;
+          std::exit(1);
+        }} else {{
+          std::cout << "Using rnd seed: " << rndSeed << std::endl;
+        }}
+      }}
+
     // Primary Operators
     {OPERATORBASIS}
 
@@ -236,7 +250,6 @@ class QSDCodeGen(object):
         self._psi_initial = None
         self._traj_params = {}
         self._moving_params = {}
-        self._rnd_seed = None
 
         # Set of sympy.core.symbol.Symbol instances
         self.syms = set(circuit.all_symbols())
@@ -397,7 +410,7 @@ class QSDCodeGen(object):
         self._moving_params['move_eps'] = move_eps
 
     def set_trajectories(self, psi_initial, stepper, dt, nt_plot_step,
-            n_plot_steps, n_trajectories, traj_save=10, rnd_seed=None):
+            n_plot_steps, n_trajectories, traj_save=10):
         """Set the parameters that control the trajectories from which a plot
         of expectation values for the registered observables will be generated.
 
@@ -431,11 +444,6 @@ class QSDCodeGen(object):
             indictates that the values are to be written out only after
             completing all trajectories.
         :type traj_save: int
-        :rnd_seed: Seed for the QSD random number generator. If None, a new
-            random number will be used anytime the QSD program is generated. To
-            ensure exact reproducibility, the seed may be set manually. If not
-            None, must be in the range of C unsigned integers.
-        :type rnd_seed: int, None
         """
         self._psi_initial = psi_initial
         if isinstance(psi_initial, Operation):
@@ -453,7 +461,6 @@ class QSDCodeGen(object):
         self._traj_params['n_plot_steps'] = n_plot_steps
         self._traj_params['n_trajectories'] = n_trajectories
         self._traj_params['traj_save'] = traj_save
-        self._rnd_seed = rnd_seed
 
     def _ordered_tensor_operands(self, state):
         """Return the operands of the given TensorKet instance ordered by their
@@ -560,7 +567,6 @@ class QSDCodeGen(object):
             raise QSDCodeGenError("No trajectories set up. Ensure that "
                                   "'set_trajectories' method has been called")
         lines = [
-        'int rndSeed = {rnd_seed};',
         'ACG gen(rndSeed); // random number generator',
         'ComplexNormal rndm(&gen); // Complex Gaussian random numbers',
         '',
@@ -593,10 +599,6 @@ class QSDCodeGen(object):
             ])
         fmt_mapping = self._traj_params.copy()
         fmt_mapping.update(self._moving_params)
-        rnd_seed = self._rnd_seed
-        if rnd_seed is None:
-            rnd_seed = random.randint(0, UNSIGNED_MAXINT)
-        fmt_mapping['rnd_seed'] = rnd_seed
         return "\n".join([line.format(**fmt_mapping) for line in lines])
 
 
@@ -696,8 +698,8 @@ class QSDCodeGen(object):
         :raises subprocess.CalledProcessError: if executable returns with
             non-zero exit code
         """
-        if seed is not None:
-            raise NotImplementedError("seed parameter not implemented")
+        if seed is None:
+            seed = random.randint(0, UNSIGNED_MAXINT)
         try:
             exe = os.path.abspath(self._executable)
             if not os.path.isfile(exe):
@@ -711,7 +713,7 @@ class QSDCodeGen(object):
             self._executable = None
             raise QSDCodeGenError("No compiled program available. Call "
                                   "compile method first")
-        cmd = [exe, ]
+        cmd = [exe, str(seed)]
         return sp.check_output(cmd, stderr=sp.STDOUT)
 
     def __str__(self):
