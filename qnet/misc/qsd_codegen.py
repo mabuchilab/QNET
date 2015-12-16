@@ -25,6 +25,7 @@ from qnet.algebra.state_algebra import (
     Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet, ScalarTimesOperator,
     ScalarTimesKet, KetPlus
 )
+from qnet.misc.trajectory_data import TrajectoryData
 import sympy
 
 # max unsigned int in C/C++ when compiled the same way as python
@@ -244,6 +245,8 @@ class QSDCodeGen(object):
     {TRAJECTORY}
     }}''').strip()
 
+    _max_op_name_length = 16
+
     def __init__(self, circuit, num_vals=None):
         self.circuit = circuit.toSLH()
         self.num_vals = {}
@@ -266,11 +269,9 @@ class QSDCodeGen(object):
                                     for (index, space)
                                     in enumerate(self._local_spaces)}
 
-        # List of qnet.algebra.operator_algebra.Operator instances
-        self._observables = []
-        # ... and the output file for each observable
-        self._outfiles = []
-        # Both of these attributes are managed via the add_observable method
+        # Dict name => tuple(qnet.algebra.operator_algebra.Operator, outfile)
+        self._observables = OrderedDict()
+        # Managed via the add_observable method
 
         # Mapping QNET Operator => QSDOperator for every operator in
         # self._local_ops. This is kept as an ordered dictionary, such that the
@@ -291,6 +292,22 @@ class QSDCodeGen(object):
 
         if num_vals is not None:
             self.num_vals.update(num_vals)
+
+    @property
+    def observables(self):
+        """Iterator over all defined observables
+        (instances of qnet.algebra.operator_algebra.Operator)"""
+        return iter([op for (op, fn) in self._observables.values()])
+
+    @property
+    def observable_names(self):
+        """Iterator of all defined observable names"""
+        return iter(self._observables.keys())
+
+    def get_observable(self, name):
+        """Return the observable for the given name
+        (instances of qnet.algebra.operator_algebra.Operator)"""
+        return self._observables[name][0]
 
     def _update_qsd_ops(self, operators):
         """Update self._qsd_ops to that every operator in operators is mapped
@@ -344,23 +361,54 @@ class QSDCodeGen(object):
             else:
                 raise TypeError(str(op))
 
-    def add_observable(self, op, filename):
-        """Register an operators as an observable, together with a filename
-        in which the expectation values and standard deviations of the operator
-        will be written.
+    def add_observable(self, op, name=None):
+        """Register an operators as an observable, together with a name that
+        will be used in the header of the table of expectation values, and on
+        which the name of the QSD output files will be based.
 
-        :param op: Observable
+        :param op: Observable (does not need to be Hermitian)
         :type op: qnet.algebra.operator_algebra.Operator
-        :param filename: Name of file to which to write the "plot" of
-            (averaged) expectation values for the observable.
-        :type filename: str
+        :param name: Name of of the operator, to be used in the header of the
+            output table. If not given, ``str(op)`` is used.
+        :type name: str or None
+
+        :raises ValueError: If name is invalid or too long, or no unique
+        filename can be generated from the name
         """
+        logger = logging.getLogger(__name__)
+        if name is None:
+            name = str(op).strip()
+        if not TrajectoryData._rx['op_name'].match(name):
+            raise ValueError(("Operator name '%s' contains invalid "
+                              "characters") % name)
+        if len(name) > self._max_op_name_length:
+            raise ValueError("Operator name '%s' is longer than limit %d"
+                             % (name, self._max_op_name_length))
+        if name in self._observables:
+            logger.warn("Overwriting existing operator '%s'", name)
+            # It is necessary to delete the observable, otherwise the check for
+            # unique filenames would be tripped
+            del self._observables[name]
+        replacements = {'^':'_', '+':'_', '*':'_', ' ':'_'}
+        allowed_letters = re.compile(r'[.a-zA-Z0-9_-]')
+        filename = ''
+        for letter in name:
+            if letter in replacements:
+                letter = replacements[letter]
+            if allowed_letters.match(letter):
+                filename += letter
+        if (len(filename) == 0):
+            raise ValueError("Cannot generate filename for operator "
+                             "%s. You must use a different name" % name)
+        filename = filename + '.out'
+        if filename in [fn for (op, fn) in self._observables.values()]:
+            raise ValueError("Cannot generate unique filename for operator "
+                             "%s. You must use a different name" % name)
         op_local_ops = local_ops(op)
         self._local_ops.update(op_local_ops)
         self._update_qsd_ops(op_local_ops)
         self.syms.update(op.all_symbols())
-        self._observables.append(op)
-        self._outfiles.append(filename)
+        self._observables[name] = (op, filename)
 
     def set_moving_basis(self, move_dofs, delta=1e-4, width=2, move_eps=1e-4):
         """Activate the use of the the moving basis, see Section 6 of the QSD
@@ -640,7 +688,7 @@ class QSDCodeGen(object):
             simply re-compile an existing file {executable}.cc
         :type write_cc: boolean
         :param keep_cc: If True, keep the C++ code from which the executable
-            wqas compiled. It will have the same name as the executable, with
+            was compiled. It will have the same name as the executable, with
             an added '.cc' file extension
         :type keep_cc: boolean
 
@@ -770,15 +818,17 @@ class QSDCodeGen(object):
         n_of_out = len(self._observables)
         lines.append('const int nOfOut = %d;' % n_of_out)
         outlist_lines = []
+        outfiles = []
         if len(self._observables) < 1:
             raise QSDCodeGenError("Must register at least one observable")
-        for observable in self._observables:
+        for (observable, outfile) in self._observables.values():
             outlist_lines.append(self._operator_str(observable))
+            outfiles.append(outfile)
         lines.append("Operator outlist[nOfOut] = {\n  "
                      + ",\n  ".join(outlist_lines) + "\n};")
         lines.append('char *flist[nOfOut] = {{{filenames}}};'
                      .format(filenames=", ".join(
-                         [('"'+fn+'"') for fn in self._outfiles]
+                         [('"'+fn+'"') for fn in outfiles]
                      )))
         lines.append(r'int pipe[4] = {1,2,3,4};')
         return "\n".join(lines)

@@ -16,6 +16,8 @@ import re
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
 import pytest
+# built-in fixtures: tmpdir, request
+# pytest-capturelog fixtures: caplog
 
 
 @pytest.fixture
@@ -264,9 +266,9 @@ def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
     A2 = Destroy(1)
     Sp = LocalSigma(2, 1, 0)
     Sm = Sp.dag()
-    codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
-    codegen.add_observable(Sm*Sp*A2*Sm, "X2.out")
-    codegen.add_observable(A2, "A2.out")
+    codegen.add_observable(Sp*A2*Sm*Sp, name="X1")
+    codegen.add_observable(Sm*Sp*A2*Sm, name="X2")
+    codegen.add_observable(A2, name="A2")
     psi0 = BasisKet(0, 0)
     psi1 = BasisKet(1, 0)
     psi2 = BasisKet(2, 0)
@@ -293,17 +295,52 @@ def test_qsd_codegen_lindblads(slh_Sec6):
     ''').strip()
 
 
-def test_qsd_codegen_observables(slh_Sec6, slh_Sec6_vals):
+def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
     A2 = Destroy(1)
     Sp = LocalSigma(2, 1, 0)
     Sm = Sp.dag()
     codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
+
     with pytest.raises(QSDCodeGenError) as excinfo:
         scode = codegen._observables_lines()
     assert "Must register at least one observable" in str(excinfo.value)
-    codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
-    codegen.add_observable(Sm*Sp*A2*Sm, "X2.out")
-    codegen.add_observable(A2, "A2.out")
+
+    codegen.add_observable(Sp*A2*Sm*Sp)
+    name = 'a_1 sigma_10^[2]'
+    filename = codegen._observables[name][1]
+    assert filename == 'a_1_sigma_10_2.out'
+    codegen.add_observable(Sp*A2*Sm*Sp)
+    assert 'Overwriting existing operator' in caplog.text()
+
+    with pytest.raises(ValueError) as exc_info:
+        codegen.add_observable(Sp*A2*A2*Sm*Sp)
+    assert "longer than limit" in str(exc_info.value)
+    name = 'A2^2'
+    codegen.add_observable(Sp*A2*A2*Sm*Sp, name=name)
+    assert name in codegen._observables
+    filename = codegen._observables[name][1]
+    assert filename == 'A2_2.out'
+
+    with pytest.raises(ValueError) as exc_info:
+        codegen.add_observable(A2, name='A2_2')
+    assert "Cannot generate unique filename" in str(exc_info.value)
+
+    with pytest.raises(ValueError) as exc_info:
+        codegen.add_observable(A2, name="A2\t2")
+    assert "invalid characters" in str(exc_info.value)
+
+    with pytest.raises(ValueError) as exc_info:
+        codegen.add_observable(A2, name="A"*100)
+    assert "longer than limit" in str(exc_info.value)
+
+    with pytest.raises(ValueError) as exc_info:
+        codegen.add_observable(A2, name="()")
+    assert "Cannot generate filename" in str(exc_info.value)
+
+    codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
+    codegen.add_observable(Sp*A2*Sm*Sp, name="X1")
+    codegen.add_observable(Sm*Sp*A2*Sm, name="X2")
+    codegen.add_observable(A2, name="A2")
     scode = codegen._observables_lines()
     assert dedent(scode).strip() == dedent(r'''
     const int nOfOut = 3;
@@ -324,13 +361,18 @@ def test_qsd_codegen_observables(slh_Sec6, slh_Sec6_vals):
     # extend the existing ones
     P1 = LocalSigma(2, 1, 1)
     zeta = symbols("zeta", real=True)
-    codegen.add_observable(zeta*P1, "P1.out")
+    codegen.add_observable(zeta*P1, name="P1")
     assert P1 in codegen._local_ops
     assert str(codegen._qsd_ops[P1]) == 'S2_1_1'
     assert zeta in codegen.syms
     codegen.num_vals.update({zeta: 1.0})
     assert 'zeta' in codegen._parameters_lines()
     assert str(codegen._qsd_ops[P1]) in codegen._operator_basis_lines()
+    assert Sp*A2 in set(codegen.observables)
+    assert Sm*A2 in set(codegen.observables)
+    assert zeta*P1 in set(codegen.observables)
+    assert list(codegen.observable_names) == ['X1', 'X2', 'A2', 'P1']
+    assert codegen.get_observable('X1') == Sp*A2*Sm*Sp
 
 
 def test_ordered_tensor_operands(slh_Sec6):
@@ -536,9 +578,9 @@ def test_qsd_codegen_traj(slh_Sec6):
     Sp = LocalSigma(2, 1, 0)
     Sm = Sp.dag()
     codegen = QSDCodeGen(circuit=slh_Sec6)
-    codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
-    codegen.add_observable(Sm*Sp*A2*Sm, "X2.out")
-    codegen.add_observable(A2, "A2.out")
+    codegen.add_observable(Sp*A2*Sm*Sp, name="X1")
+    codegen.add_observable(Sm*Sp*A2*Sm, name="X2")
+    codegen.add_observable(A2, name="A2")
 
     with pytest.raises(QSDCodeGenError) as excinfo:
         scode = codegen._trajectory_lines()
