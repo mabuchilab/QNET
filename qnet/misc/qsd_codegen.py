@@ -668,18 +668,19 @@ class QSDCodeGen(object):
         with open(outfile, 'w') as out_fh:
             out_fh.write(self.generate_code())
 
-    def compile(self, executable, qsd_lib, qsd_headers, compiler='g++',
-            compile_options='-O2', write_cc=True, keep_cc=False):
+    def compile(self, qsd_lib, qsd_headers, executable='qsd_run',
+            compiler='g++', compile_options='-O2', write_cc=True,
+            keep_cc=False):
         """Compile into an executable
 
-        :param executable: name (including full path) of executable to which
-            the QSD program should be compiled
-        :type executable: str
         :param qsd_lib: full path to the file libqsd.a containing the
             statically compiled QSD library
         :type qsd_lib: str
         :param qsd_headers: path to the folder containing the QSD header files
-        :type qsd_header: str
+        :type qsd_headers: str
+        :param executable: name of executable to which the QSD program should
+            be compiled. Must consist only of letters, numbers, and underscores
+        :type executable: str
         :param compiler: compiler executable
         :type compiler: str
         :param compile_options: options to pass to the compiler
@@ -697,7 +698,13 @@ class QSDCodeGen(object):
         :raises subprocess.CalledProcessError: if compilation fails
         """
         logger = logging.getLogger(__name__)
-        cc_file = executable + '.cc'
+        executable = str(executable)
+        if not re.match(r'^\w{1,128}$', executable):
+            if len(executable) > 218:
+                raise ValueError("Executable name too long")
+            else:
+                raise ValueError("Invalid executable name '%s'" % executable)
+        cc_file = str(executable) + '.cc'
         if write_cc:
             self.write(cc_file)
         else:
