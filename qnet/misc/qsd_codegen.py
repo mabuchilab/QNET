@@ -732,7 +732,7 @@ class QSDCodeGen(object):
         self._keep_cc = keep_cc
         cc_file = executable + '.cc'
         if not re.match(r'^[\w-]{1,128}$', executable):
-            if len(executable) > 218:
+            if len(executable) > 128:
                 raise ValueError("Executable name too long")
             else:
                 raise ValueError("Invalid executable name '%s'" % executable)
