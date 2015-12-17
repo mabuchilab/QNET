@@ -27,6 +27,11 @@ from qnet.algebra.state_algebra import (
 )
 from qnet.misc.trajectory_data import TrajectoryData
 import sympy
+try:
+    issubclass(FileNotFoundError, OSError)
+except NameError: # indicates Python 2
+    class FileNotFoundError(OSError):
+        pass
 
 # max unsigned int in C/C++ when compiled the same way as python
 UNSIGNED_MAXINT = 2 ** (struct.Struct('I').size * 8 - 1) - 1
@@ -287,8 +292,17 @@ class QSDCodeGen(object):
         self._qsd_states = {}
         # This is set in the _define_atomic_kets method
 
-        self._executable = None # set by compile method
-        self._compile_cmd = None # set by compile method (for debugging)
+        # The following are set by the compile method to allow for delayed (or
+        # remote) compilation. These are stored in "unexpanded" form, i.e.
+        # possibly including environment variables. These will only be expanded
+        # by the compilation_worker, possibly on a remote system
+        self._executable  = None # name of the executable
+        self._path        = None # folder for executable (unexpanded)
+        self._compile_cmd = None # list of command arguments (unexpanded)
+        self._keep_cc     = None # delete C++ file after compilation?
+        # _executable will remain None until the compile method has finished
+        # without error. Thus, only _executable should be used to check whether
+        # the compile method has been called.
 
         if num_vals is not None:
             self.num_vals.update(num_vals)
@@ -303,6 +317,15 @@ class QSDCodeGen(object):
     def observable_names(self):
         """Iterator of all defined observable names"""
         return iter(self._observables.keys())
+
+    @property
+    def compile_cmd(self):
+        """Command to be used for compilation (after compile method has been
+        called)"""
+        if self._executable is None:
+            return ''
+        else:
+            return " ".join([cmd_quote(part) for part in self._compile_cmd])
 
     def get_observable(self, name):
         """Return the observable for the given name
@@ -667,108 +690,112 @@ class QSDCodeGen(object):
         """Write C++ program that corresponds to the circuit"""
         with open(outfile, 'w') as out_fh:
             out_fh.write(self.generate_code())
+            out_fh.write("\n")
 
     def compile(self, qsd_lib, qsd_headers, executable='qsd_run',
-            compiler='g++', compile_options='-O2', write_cc=True,
+            path='.', compiler='g++', compile_options='-O2', delay=True,
             keep_cc=False):
         """Compile into an executable
 
         :param qsd_lib: full path to the file libqsd.a containing the
-            statically compiled QSD library
+            statically compiled QSD library.  May reference environment
+            variables the home directory ('~')
         :type qsd_lib: str
-        :param qsd_headers: path to the folder containing the QSD header files
+        :param qsd_headers: path to the folder containing the QSD header files.
+            May reference environment variables the home directory ('~')
         :type qsd_headers: str
         :param executable: name of executable to which the QSD program should
-            be compiled. Must consist only of letters, numbers, and underscores
+            be compiled. Must consist only of letters, numbers, dashes, and
+            underscores only
         :type executable: str
+        :param path: The path to the folder where executable will be generated.
+            May reference environment variables the home directory ('~')
+        :type path: str
         :param compiler: compiler executable
         :type compiler: str
         :param compile_options: options to pass to the compiler
         :type compile_options: str
-        :param write_cc: If False, skip writing out the C++ code. Instead,
-            simply re-compile an existing file {executable}.cc
-        :type write_cc: boolean
+        :param delay: If True, delay compilation to a later point in time.
+        :type delay: boolean
         :param keep_cc: If True, keep the C++ code from which the executable
             was compiled. It will have the same name as the executable, with
-            an added '.cc' file extension
+            an added '.cc' file extension.
         :type keep_cc: boolean
 
         :raises OSError: if required files or folders are not found or have
-        invalid names
+            invalid names
         :raises subprocess.CalledProcessError: if compilation fails
         """
         logger = logging.getLogger(__name__)
         executable = str(executable)
-        if not re.match(r'^\w{1,128}$', executable):
+        self._path = str(path)
+        self._keep_cc = keep_cc
+        cc_file = executable + '.cc'
+        if not re.match(r'^[\w-]{1,128}$', executable):
             if len(executable) > 218:
                 raise ValueError("Executable name too long")
             else:
                 raise ValueError("Invalid executable name '%s'" % executable)
-        cc_file = str(executable) + '.cc'
-        if write_cc:
-            self.write(cc_file)
-        else:
-            if not os.path.isfile(cc_file):
-                raise FileNotFoundError(("{file} does not exist. You must "
-                                         "pass write_cc=True")
-                                        .format(file=cc_file))
         link_dir, libqsd_a = os.path.split(qsd_lib)
-        if not os.path.isdir(qsd_headers):
-            raise FileNotFoundError("Header directory {dir} does not exist"
-                                    .format(dir=qsd_headers))
         if not libqsd_a == "libqsd.a":
-            raise OSError(("qsd_lib {qsd_lib} does not point to a file of the "
-                          "name libqsd.a)").format(qsd_lib=qsd_lib))
-        if not os.path.isfile(qsd_lib):
-            raise FileNotFoundError("File {qsd_lib} does not exist"
-                                    .format(qsd_lib=qsd_lib))
-        cmd = ([compiler, ] + shlex.split(compile_options)
-               + ['-I%s'%qsd_headers, '-o', executable, cc_file,
-                   '-L%s'%link_dir, '-lqsd'])
-        self._compile_cmd = " ".join([cmd_quote(part) for part in cmd])
-        try:
-            output = sp.check_output(cmd, stderr=sp.STDOUT)
-        except sp.CalledProcessError as exc_info:
-            logger.error("command '{cmd:s}' failed with code {code:d}".format(
-                cmd=self._compile_cmd, code=int(exc_info.returncode)))
-            raise
-        finally:
-            if not keep_cc:
-                try:
-                    os.unlink(cc_file)
-                except FileNotFoundError as exc_info:
-                    logger.warn("Error while deleting {file}: {error:s}"
-                                .format( file=cc_file, error=str(exc_info)))
-        if os.path.isfile(executable) and os.access(executable, os.X_OK):
-            self._executable = executable
-        else:
-            raise OSError("No executable {x}".format(x=executable))
+            raise FileNotFoundError("qsd_lib "+qsd_lib+" does not point to a "
+                                    "file of the name libqsd.a")
+        if not delay:
+            if not os.path.isdir(_full_expand(qsd_headers)):
+                raise FileNotFoundError("Header directory "+qsd_headers
+                                        +" does not exist")
+            if not os.path.isfile(_full_expand(qsd_lib)):
+                raise FileNotFoundError("File "+qsd_lib+" does not exist")
+        self._compile_cmd = ([compiler, ] + shlex.split(compile_options)
+                           + ['-I%s'%qsd_headers, '-o', executable, cc_file]
+                           + ['-L%s'%link_dir, '-lqsd'])
+        if not delay:
+            kwargs = {'executable': executable, 'path': self._path,
+                      'cc_code': self.generate_code(),
+                      'keep_cc': self._keep_cc, 'cmd': self._compile_cmd}
+            try:
+                executable_abs = compilation_worker(kwargs)
+            except sp.CalledProcessError as exc_info:
+                logger.error("command '{cmd:s}' failed with code {code:d}"
+                             .format(cmd=self._compile_cmd,
+                                     code=int(exc_info.returncode)))
+                raise
+            is_exe = lambda f: os.path.isfile(f) and os.access(f, os.X_OK)
+            if not is_exe(executable_abs):
+                raise FileNotFoundError("No executable "+executable_abs)
+        # We set the executable only at the very end so that we can use it as
+        # an indicator whether the compile method is complete
+        self._executable = executable
 
     def run(self, seed=None):
-        """Run the previously compiled QSD program (see compile method)
+        """Run the QSD program. The `compile` method must have been called
+        before `run`. If `compile` was called with ``delay=True``, compile at
+        this point and run the resulting program. Otherwise, just run the
+        existing program from the earlier compilation
+
+        :param seed: Random number generator seed (unsigned integer), will be
+            passed to the executable as the only argument.
+        :type seed: int
 
         :raises QSDCodeGenError: if compile method was not called
-        :raises OSError: if previously compiled executable does not exist or is
-            not executable
-        :raises subprocess.CalledProcessError: if executable returns with
-            non-zero exit code
+        :raises OSError: if creating/removing files/folders fails
+        :raises subprocess.CalledProcessError: if delayed compilation fails or
+            executable returns with non-zero exit code
         """
+        if self._executable is None:
+            raise QSDCodeGenError("Call compile method first")
+        local_executable = os.path.join(self._path, self._executable)
+        local_executable = _full_expand(local_executable)
+        is_exe = lambda f: os.path.isfile(f) and os.access(f, os.X_OK)
+        if not is_exe(local_executable):
+            # compilation was delayed, do it now
+            kwargs = {'executable': self._executable, 'path': self._path,
+                      'cc_code': self.generate_code(),
+                      'keep_cc': self._keep_cc, 'cmd': self._compile_cmd}
+            local_executable = compilation_worker(kwargs)
         if seed is None:
             seed = random.randint(0, UNSIGNED_MAXINT)
-        try:
-            exe = os.path.abspath(self._executable)
-            if not os.path.isfile(exe):
-                self._executable = None
-                raise FileNotFoundError("Executable {file} does not exist"
-                                        .format(file=exe))
-            if not os.access(exe, os.X_OK):
-                self._executable = None
-                raise OSError("File {file} is not executable".format(file=exe))
-        except TypeError:
-            self._executable = None
-            raise QSDCodeGenError("No compiled program available. Call "
-                                  "compile method first")
-        cmd = [exe, str(seed)]
+        cmd = [local_executable, str(seed)]
         return sp.check_output(cmd, stderr=sp.STDOUT)
 
     def __str__(self):
@@ -899,3 +926,79 @@ class QSDCodeGen(object):
         return "\n".join(lines)
 
 
+def _full_expand(s):
+    return os.path.expanduser(os.path.expandvars(s))
+
+
+def expand_cmd(cmd):
+    """Return a copy of the array `cmd`, where for each element of the `cmd`
+    array, environment variables and '~' are expanded"""
+    if isinstance(cmd, str):
+        raise TypeError("cmd must be a list")
+    cmd_expanded = []
+    for part in cmd:
+        cmd_expanded.append(_full_expand(part))
+    return cmd_expanded
+
+
+def compilation_worker(kwargs, _runner=None):
+    """"Worker to perform compilation, suitable e.g. for being run on an
+    IPython cluster. All arguments are in the kwargs dictionary.
+
+    kwargs['executable']: str
+        Name of the executable to be created
+    kwargs['path']: str
+        Path where the executable should be created, relative to the current
+        working directory. Environment variables and '~' will be expanded.
+    kwargs['cc_code']: str
+        Multiline string that contains the entire C++ program to be compiled
+    kwargs['keep_cc']: boolean
+        Keep C++ file after compilation? It will have the same name as the
+        executable, with an added '.cc' file extension.
+    kargs['cmd'] list of str
+        Command line arguments (see `args` in ``subprocess.check_output``).
+        In each argument, environment variables are expanded, and '~' is
+        expanded to $HOME. It must meet the following requirements:
+        * the compiler (first argument) must be in the $PATH
+        * Invocation of the command must compile a C++ file with the name
+        `executable`.cc in the current working directory to `exectuable`, also
+        in the current working directoy. It must *not* take into account
+        `path`. This is because the working directory for the subprocess
+        handling the command invocation will be set to `path`. Thus, the
+        executable will be created in `path`.
+
+    :returns: Absolute path of the compiled executable
+
+    :raises subprocess.CalledProcessError: if compilation fails
+    :raises OSError: if creating/removing files/folder fails
+    """
+    # we import subprocess locally, to make the routine completely
+    # self-contained. This is a requirement e.g. to be a worker on an IPython
+    # cluster. To still allow testing, we have the undocumented _runner
+    # parameter
+    import subprocess as sp
+    import os
+    if _runner is None:
+        _runner = sp.check_output
+    executable = str(kwargs['executable'])
+    path = _full_expand(str(kwargs['path']))
+    cc_code = str(kwargs['cc_code'])
+    keep_cc = kwargs['keep_cc']
+    cmd = expand_cmd(kwargs['cmd'])
+    cc_file = executable + '.cc'
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    with open(os.path.join(path, cc_file), 'w') as out_fh:
+        out_fh.write(cc_code)
+        out_fh.write("\n")
+    executable_abs = os.path.abspath(os.path.join(path, executable))
+    try:
+        output = _runner(cmd, stderr=sp.STDOUT, cwd=path)
+    finally:
+        if not keep_cc:
+            os.unlink(cc_file)
+    if os.path.isfile(executable_abs) and os.access(executable_abs, os.X_OK):
+        return executable_abs
+    else:
+        raise sp.CalledProcessError("Compilation did not create executable %s"
+                                    % executable_abs)

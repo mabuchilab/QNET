@@ -1,7 +1,8 @@
 import sympy
 from distutils import dir_util
 from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
-    QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT)
+    QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT, expand_cmd,
+    compilation_worker)
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
@@ -12,11 +13,12 @@ from qnet.algebra.state_algebra import (
 )
 from qnet.algebra.hilbert_space_algebra import BasisRegistry
 import os
+import stat
 import re
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
 import pytest
-# built-in fixtures: tmpdir, request
+# built-in fixtures: tmpdir, request, monkeypatch
 # pytest-capturelog fixtures: caplog
 
 
@@ -654,3 +656,43 @@ def test_generate_code(datadir, Sec6_codegen):
     with open(os.path.join(datadir, 'Sec6.cc')) as in_fh:
         scode_expected = in_fh.read()
     assert scode  == scode_expected
+
+
+def test_expand_cmd(monkeypatch):
+    monkeypatch.setenv('HOME', '/home/qnet')
+    monkeypatch.setenv('PREFIX', '/home/qnet/local')
+    with pytest.raises(TypeError) as exc_info:
+        expand_cmd("$CC -O2 -I$PREFIX/include/qsd -o qsd-example $HOME/qsd-example.cc -L$PREFIX/lib -lqsd")
+    assert "cmd must be a list" in str(exc_info.value)
+    cmd = ["$CC", "-O2", "-I$PREFIX/include/qsd", "-o qsd-example",
+           "$HOME/qsd-example.cc", "-L$PREFIX/lib", "-lqsd"]
+    assert " ".join(expand_cmd(cmd)) == '$CC -O2 -I/home/qnet/local/include/qsd -o qsd-example /home/qnet/qsd-example.cc -L/home/qnet/local/lib -lqsd'
+
+
+def test_compilation_worker(tmpdir, monkeypatch, Sec6_codegen):
+    HOME = str(tmpdir)
+    PREFIX = os.path.join(HOME, 'local')
+    monkeypatch.setenv('HOME', HOME)
+    monkeypatch.setenv('PREFIX', PREFIX)
+    scode = Sec6_codegen.generate_code()
+
+    cmd = ["CC", "-O2", "-I$PREFIX/include/qsd", "-o run_qsd1",
+           "run_qsd1.cc", "-L$PREFIX/lib", "-lqsd"]
+    kwargs = {'executable': 'run_qsd1', 'path': '~/tmp', 'cc_code': scode,
+            'keep_cc': True, 'cmd': cmd}
+    def runner1(cmd, stderr, cwd):
+        """simulate invocation of the compiler"""
+        assert " ".join(expand_cmd(cmd)) == 'CC -O2 -I'+PREFIX+'/include/qsd -o run_qsd1 run_qsd1.cc -L'+PREFIX+'/lib -lqsd'
+        assert cwd == os.path.join(HOME, 'tmp')
+        executable = os.path.join(HOME, 'tmp', 'run_qsd1')
+        with open(executable, 'w') as out_fh:
+            out_fh.write("#!/bin/bash\n")
+            out_fh.write("echo 'Hello World'\n")
+        st = os.stat(executable)
+        os.chmod(executable, st.st_mode | stat.S_IEXEC)
+    executable = compilation_worker(kwargs, _runner=runner1)
+    assert os.path.isfile(os.path.join(HOME, 'tmp', 'run_qsd1.cc'))
+    assert executable == os.path.join(HOME, 'tmp', 'run_qsd1')
+    assert os.path.isfile(executable)
+
+# TODO: test_compile
