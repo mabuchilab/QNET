@@ -583,7 +583,8 @@ class TrajectoryData(object):
         if not self.record_IDs.isdisjoint(other.record_IDs):
             raise ValueError("%s: Repeated ID"%err_msg)
         if not self.record_seeds.isdisjoint(other.record_seeds):
-            raise ValueError("%s: Repeated seed"%err_msg)
+            if not set(self.operators).isdisjoint(set(other.operators)):
+                raise ValueError("%s: Repeated seed"%err_msg)
         if not abs(self.dt - other.dt) < self._prec_dt:
             raise ValueError("Extending TrajectoryData does not match dt")
         for op in self._operators:
