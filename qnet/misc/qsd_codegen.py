@@ -9,10 +9,6 @@ from textwrap import dedent
 from collections import OrderedDict
 from functools import partial
 import subprocess as sp
-try:
-    from shlex import quote as cmd_quote # Python 3
-except ImportError:
-    from pipes import quote as cmd_quote # Python 2
 
 from qnet.algebra.abstract_algebra import prod
 from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
@@ -344,11 +340,18 @@ class QSDCodeGen(object):
     @property
     def compile_cmd(self):
         """Command to be used for compilation (after compile method has been
-        called)"""
+        called). Environment variables and '~' are not expanded"""
         if self._executable is None:
             return ''
         else:
-            return " ".join([cmd_quote(part) for part in self._compile_cmd])
+            result = ''
+            for part in self._compile_cmd:
+                part = part.replace('"', '\\"')
+                if " " in part:
+                    result += ' "%s"' % part
+                else:
+                    result += ' %s' % part
+            return result.strip()
 
     def get_observable(self, name):
         """Return the observable for the given name
