@@ -199,7 +199,25 @@ class QSDCodeGenError(Exception):
 
 
 class QSDCodeGen(object):
-    """Object that allows to generate QSD programs for QNET expressions"""
+    """Class that allows to generate a QSD program for QNET expressions, and
+    to run the program to (accumulative) collect expecatation values for
+    obervables
+
+    An instance has the following attributes:
+
+    :param circuit: The SLH object to be simulated via QSD
+    :type circuit: qnet.algebra.circuit_algebra.SLH
+    :param syms: The set of symbols used either in the circuit, any of the
+        observables, or the initial state
+    :type syms: set(sympy.core.symbol.Symbol)
+    :param num_vals: For each symbol in `syms`, a numeric value
+    :type num_vals: dict(sympy.core.symbol.Symbol) => float
+    :param traj_data: The accumulated trajectory data. Every time the `run`
+    method is called, the resulting trajectory data is incorporated. Thus, by
+    repeatedly calling `run`, an arbitrary number of trajectories may be
+    accumulated in `traj_data`
+    :type traj_data: qnet.misc.trajectory_data.TrajectoryData
+    """
 
     _known_steppers = ['Order4Step', 'AdaptiveStep', 'AdaptiveJump',
                        'AdaptiveOrthoJump']
@@ -255,12 +273,15 @@ class QSDCodeGen(object):
     def __init__(self, circuit, num_vals=None):
         self.circuit = circuit.toSLH()
         self.num_vals = {}
+        self.traj_data = None
         self._psi_initial = None
         self._traj_params = {}
         self._moving_params = {}
 
         # Set of sympy.core.symbol.Symbol instances
         self.syms = set(circuit.all_symbols())
+        # The add_observable and set_trajectories methods may later extend this
+        # set
 
         # Set of qnet.algebra.operator_algebra.Operator, all "atomic"
         # operators required in the code generation
@@ -771,7 +792,12 @@ class QSDCodeGen(object):
         """Run the QSD program. The `compile` method must have been called
         before `run`. If `compile` was called with ``delay=True``, compile at
         this point and run the resulting program. Otherwise, just run the
-        existing program from the earlier compilation
+        existing program from the earlier compilation. The resulting directory
+        data is returned, and in addition the `traj_data` attribute is updated
+        to include the new trajectories (in addition to any previous
+        trajectories)
+
+        The `run` method may be called repeatedly to accumulate trajectories.
 
         :param seed: Random number generator seed (unsigned integer), will be
             passed to the executable as the only argument.
@@ -782,6 +808,9 @@ class QSDCodeGen(object):
         :type workdir: str
         :param keep: If True, keep QSD output files inside `workdir`
         :type keep: boolean
+
+        :returns: instance of qnet.misc.trajectory_data.TrajectoryData for the
+        simulated trajectories.
 
         :raises QSDCodeGenError: if compile method was not called
         :raises OSError: if creating/removing files/folders fails
@@ -808,7 +837,12 @@ class QSDCodeGen(object):
                                 [(name, fn) for (name, (__, fn))
                                  in self._observables.items()]),
         }
-        return qsd_run_worker(kwargs)
+        traj = qsd_run_worker(kwargs)
+        if self.traj_data is None:
+            self.traj_data = traj
+        else:
+            self.traj_data += traj
+        return traj
 
     def __str__(self):
         return self.generate_code()
@@ -1073,14 +1107,13 @@ def qsd_run_worker(kwargs, _runner=None):
             delete_folder = folder
             folder = os.path.abspath(os.path.join(folder, '..'))
         os.makedirs(workdir)
-    local_executable = os.path.join(path, executable)
-    local_executable = _full_expand(local_executable)
+    local_executable = _full_expand(os.path.join(path, executable))
     is_exe = lambda f: os.path.isfile(f) and os.access(f, os.X_OK)
     if not is_exe(local_executable):
         raise FileNotFoundError("No executable "+local_executable)
     cmd = [local_executable, str(seed)]
     output = _runner(cmd, stderr=sp.STDOUT, cwd=workdir)
-    traj =  TrajectoryData.from_qsd_data(operators, seed, workdir=workdir)
+    traj = TrajectoryData.from_qsd_data(operators, seed, workdir=workdir)
     if not keep:
         for filename in operators.values():
             os.unlink(os.path.join(workdir, filename))
