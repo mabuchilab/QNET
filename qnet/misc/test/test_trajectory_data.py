@@ -8,47 +8,22 @@ from collections import OrderedDict
 import uuid
 import hashlib
 import numpy as np
+import qnet.misc.testing_tools
+from qnet.misc.testing_tools import qsd_traj
 import pytest
+from pytest import fixture
+# built-in fixtures: tmpdir
+
+datadir = fixture(qnet.misc.testing_tools.datadir)
 
 TRAJ1_SEED = 103212
 
-@pytest.fixture
-def datadir(tmpdir, request):
-    '''Fixture responsible for searching a folder with the same name of test
-    module and, if available, moving all contents to a temporary directory so
-    tests can use them freely.'''
-    # http://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
-    filename = request.module.__file__
-    test_dir, _ = os.path.splitext(filename)
-
-    if os.path.isdir(test_dir):
-        dir_util.copy_tree(test_dir, str(tmpdir))
-
-    return str(tmpdir)
-
-
-def qsd_traj(folder, seed):
-    """Return a fixture that returns a TrajectoryData instance based on all the
-    *.out file in the given folder (relative to the test datadir), and with the
-    given seed"""
-    def fixture(datadir):
-        operators = OrderedDict()
-        datafiles = sorted(glob(join(datadir, folder, '*.out')))
-        assert len(datafiles) >0, "No files *.out in %s"%folder
-        for file in datafiles:
-            op_name = os.path.splitext(os.path.split(file)[1])[0]
-            operators[op_name] = file
-        return TrajectoryData.from_qsd_data(operators, seed=seed)
-    return pytest.fixture(fixture)
-
-
-traj1               = qsd_traj('traj1', TRAJ1_SEED)
-traj1_coarse        = qsd_traj('traj1_coarse', TRAJ1_SEED)
-traj2_10            = qsd_traj('traj2_10', 18322321)
-traj2_10_traj1_seed = qsd_traj('traj2_10', TRAJ1_SEED)
-traj11_20           = qsd_traj('traj11_20', 38324389)
-traj2_coarse        = qsd_traj('traj2_coarse', 28324389)
-
+traj1               = fixture(qsd_traj(datadir, 'traj1', TRAJ1_SEED))
+traj1_coarse        = fixture(qsd_traj(datadir, 'traj1_coarse', TRAJ1_SEED))
+traj2_10            = fixture(qsd_traj(datadir, 'traj2_10', 18322321))
+traj2_10_traj1_seed = fixture(qsd_traj(datadir, 'traj2_10', TRAJ1_SEED))
+traj11_20           = fixture(qsd_traj(datadir, 'traj11_20', 38324389))
+traj2_coarse        = fixture(qsd_traj(datadir, 'traj2_coarse', 28324389))
 
 def test_new_id():
     id1 = TrajectoryData.new_id()

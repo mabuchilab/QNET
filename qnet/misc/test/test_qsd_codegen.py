@@ -1,5 +1,4 @@
 import sympy
-from distutils import dir_util
 from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
     QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT, expand_cmd,
     compilation_worker, qsd_run_worker)
@@ -18,25 +17,12 @@ import stat
 import re
 from textwrap import dedent
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
+import qnet.misc.testing_tools
 import pytest
 # built-in fixtures: tmpdir, request, monkeypatch
 # pytest-capturelog fixtures: caplog
 
-
-@pytest.fixture
-def datadir(tmpdir, request):
-    '''Fixture responsible for searching a folder with the same name of test
-    module and, if available, moving all contents to a temporary directory so
-    tests can use them freely.'''
-    # http://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
-    filename = request.module.__file__
-    test_dir, _ = os.path.splitext(filename)
-
-    if os.path.isdir(test_dir):
-        dir_util.copy_tree(test_dir, str(tmpdir))
-
-    return str(tmpdir)
-
+datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
 
 def test_local_ops():
     psa = PseudoNAND()
