@@ -737,4 +737,25 @@ def test_qsd_run_worker(datadir, tmpdir, monkeypatch):
     assert traj.ID == 'd9831647-f2e7-3793-8b24-7c49c5c101a7'
     assert os.path.isfile(os.path.join(workdir, 'X1.out'))
 
-# TODO: test_compile
+
+def test_compile(Sec6_codegen):
+    traj = Sec6_codegen
+    assert traj.compile_cmd == ''
+    with pytest.raises(ValueError) as exc_info:
+        traj.compile(qsd_lib='~/local/lib', qsd_headers='~/local/header',
+                    executable='qsd_test', path='~/bin', compiler='$CC',
+                    compile_options='-g -O0', delay=True, keep_cc=False)
+    assert "point to a file of the name libqsd.a" in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        traj.compile(qsd_lib='~/local/lib/libqsd.a',
+                    qsd_headers='~/local/header', executable='~/bin/qsd_test',
+                    path='~/bin', compiler='$CC', compile_options='-g -O0',
+                    delay=True, keep_cc=False)
+    assert "Invalid executable name" in str(exc_info.value)
+    traj.compile(qsd_lib='~/local/lib/libqsd.a',
+                qsd_headers='~/local/header', executable='qsd_test',
+                path='~/bin', compiler='$CC', compile_options='-g -O0',
+                delay=True, keep_cc=False)
+    assert traj.compile_cmd == '$CC -g -O0 -I~/local/header -o qsd_test '\
+                               'qsd_test.cc -L~/local/lib -lqsd'
+    assert traj._path == '~/bin'
