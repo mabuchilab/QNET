@@ -802,17 +802,13 @@ class QSDCodeGen(object):
         if seed is None:
             seed = random.randint(0, UNSIGNED_MAXINT)
         kwargs = {
-                'executable': local_executable,
+                'executable': local_executable, 'keep': keep,
                 'path': '.', 'seed': seed, 'workdir': workdir,
                 'operators': OrderedDict(
                                 [(name, fn) for (name, (__, fn))
                                  in self._observables.items()]),
         }
-        traj = qsd_run_worker(kwargs)
-        if not keep:
-            for filename in kwargs['operators'].values():
-                os.unlink(filename)
-        return traj
+        return qsd_run_worker(kwargs)
 
     def __str__(self):
         return self.generate_code()
@@ -1041,14 +1037,22 @@ def qsd_run_worker(kwargs, _runner=None):
         Mapping of operator name to filename, see `operators` parameter of
         `qnet.misc.trajectory_data.TrajectoryData.from_qsd_data`
     kwargs['workdir']: str
-        The working directory from which to execute the executable (relative to
+        The working directory in which to execute the executable (relative to
         the current working directory). The output files defined in `operators`
-        will be created in this folder.
+        will be created in this folder. If `workdir` does not exist yet, it
+        will be created
+    kwargs['keep']: boolean
+        If True, keep the the QSD output files. If False, remove the output
+        files as well as any folders that may have been created alongside with
+        `workdir`
+
+    :raises FileNotFoundError: if `executable` does not exist in `path`
 
     :returns: Instance of `qnet.misc.trajectory_data.TrajectoryData`
     """
     import subprocess as sp
     import os
+    import shutil
     from qnet.misc.trajectory_data import TrajectoryData
     if _runner is None:
         _runner = sp.check_output
@@ -1057,8 +1061,29 @@ def qsd_run_worker(kwargs, _runner=None):
     seed = int(kwargs['seed'])
     operators = kwargs['operators']
     workdir = _full_expand(kwargs['workdir'])
+    keep = kwargs['keep']
+    delete_folder = None
+    if not os.path.isdir(workdir):
+        # If keep is True, we want to remove not only the QSD output files, but
+        # also any folder that is newly created as part of workdir. Therefore,
+        # before creating workdir, we walk up the path to find the topmost
+        # nonexisting folder
+        folder = os.path.abspath(workdir)
+        while not os.path.isdir(folder):
+            delete_folder = folder
+            folder = os.path.abspath(os.path.join(folder, '..'))
+        os.makedirs(workdir)
     local_executable = os.path.join(path, executable)
     local_executable = _full_expand(local_executable)
+    is_exe = lambda f: os.path.isfile(f) and os.access(f, os.X_OK)
+    if not is_exe(local_executable):
+        raise FileNotFoundError("No executable "+local_executable)
     cmd = [local_executable, str(seed)]
     output = _runner(cmd, stderr=sp.STDOUT, cwd=workdir)
-    return TrajectoryData.from_qsd_data(operators, seed, workdir=workdir)
+    traj =  TrajectoryData.from_qsd_data(operators, seed, workdir=workdir)
+    if not keep:
+        for filename in operators.values():
+            os.unlink(os.path.join(workdir, filename))
+        if delete_folder is not None:
+            shutil.rmtree(delete_folder)
+    return traj
