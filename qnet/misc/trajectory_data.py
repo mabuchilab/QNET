@@ -1,5 +1,6 @@
 import hashlib
 import uuid
+import os
 import re
 import json
 from collections import OrderedDict
@@ -311,7 +312,7 @@ class TrajectoryData(object):
         return traj
 
     @classmethod
-    def from_qsd_data(cls, operators, seed):
+    def from_qsd_data(cls, operators, seed, workdir='.'):
         """Instantiate from one or more QSD output files specified as values of
         the dictionary `operators`
 
@@ -329,12 +330,15 @@ class TrajectoryData(object):
         initial seed for the random number generator.
 
         :param operators: dictionary (preferrably OrderedDict) of operator
-            name to filename. Each filename must contain data in the format
-            described above
+            name to filename. The filenames are relative to the `workdir`.
+            Each filename must contain data in the format described above
         :type operators: dict(str) => str
         :param seed: The seed to the random number generator that was used to
             produce the data file
         :type seed: int
+        :param workdir: directory to which the filenames in `operators` are
+            relative to
+        'type workdir: str
 
         :raises ValueError: if any of the datafiles do not have the correct
             format or are inconsistent
@@ -354,6 +358,7 @@ class TrajectoryData(object):
             raise ValueError("Must give at least one mapping "
                              "operator_name => file in operators dic")
         for (operator_name, file_name) in operators.items():
+            file_name = os.path.join(workdir, file_name)
             md5s.append(hashlib.md5(open(file_name,'rb').read()).hexdigest())
             with open(file_name) as in_fh:
                 header = in_fh.readline()

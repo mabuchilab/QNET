@@ -767,7 +767,7 @@ class QSDCodeGen(object):
         # an indicator whether the compile method is complete
         self._executable = executable
 
-    def run(self, seed=None):
+    def run(self, seed=None, workdir='.', keep=False):
         """Run the QSD program. The `compile` method must have been called
         before `run`. If `compile` was called with ``delay=True``, compile at
         this point and run the resulting program. Otherwise, just run the
@@ -776,6 +776,12 @@ class QSDCodeGen(object):
         :param seed: Random number generator seed (unsigned integer), will be
             passed to the executable as the only argument.
         :type seed: int
+        :param workdir: The directory in which to (temporarily) create the
+            output files. The workdir must exist. Environment variables and '~'
+            will be expanded.
+        :type workdir: str
+        :param keep: If True, keep QSD output files inside `workdir`
+        :type keep: boolean
 
         :raises QSDCodeGenError: if compile method was not called
         :raises OSError: if creating/removing files/folders fails
@@ -795,8 +801,18 @@ class QSDCodeGen(object):
             local_executable = compilation_worker(kwargs)
         if seed is None:
             seed = random.randint(0, UNSIGNED_MAXINT)
-        cmd = [local_executable, str(seed)]
-        return sp.check_output(cmd, stderr=sp.STDOUT)
+        kwargs = {
+                'executable': local_executable,
+                'path': '.', 'seed': seed, 'workdir': workdir,
+                'operators': OrderedDict(
+                                [(name, fn) for (name, (__, fn))
+                                 in self._observables.items()]),
+        }
+        traj = qsd_run_worker(kwargs)
+        if not keep:
+            for filename in kwargs['operators'].values():
+                os.unlink(filename)
+        return traj
 
     def __str__(self):
         return self.generate_code()
@@ -946,10 +962,11 @@ def compilation_worker(kwargs, _runner=None):
     IPython cluster. All arguments are in the kwargs dictionary.
 
     kwargs['executable']: str
-        Name of the executable to be created
+        Name of the executable to be created. Nothing will be expanded.
     kwargs['path']: str
-        Path where the executable should be created, relative to the current
-        working directory. Environment variables and '~' will be expanded.
+        Path where the executable should be created, as absolute path or
+        relative to the current working directory. Environment variables and
+        '~' will be expanded.
     kwargs['cc_code']: str
         Multiline string that contains the entire C++ program to be compiled
     kwargs['keep_cc']: boolean
@@ -1002,3 +1019,46 @@ def compilation_worker(kwargs, _runner=None):
     else:
         raise sp.CalledProcessError("Compilation did not create executable %s"
                                     % executable_abs)
+
+
+def qsd_run_worker(kwargs, _runner=None):
+    """"Worker to perform run of a previously compiled program (see
+    `compilation_worker`), suitable e.g. for being run on an
+    IPython cluster. All arguments are in the kwargs dictionary.
+
+    kwargs['executable']: str
+        Name of the executable to be run. Nothing will be expanded.
+        This should generally be only the name of the executable, but it can
+        also be a path relative to ``kwargs['path']``, or a (fully expanded)
+        absolute path, in which case ``kwargs['path']`` is ignored.
+    kwargs['path']: str
+        Path where the executable can be found, as absolute path or
+        relative to the current working directory. Environment variables and
+        '~' will be expanded.
+    kwargs['seed']: int
+        Seed (unsigned int) to be passed as argument to the executable
+    kwargs['operators']: dict or OrderedDict(str => str)
+        Mapping of operator name to filename, see `operators` parameter of
+        `qnet.misc.trajectory_data.TrajectoryData.from_qsd_data`
+    kwargs['workdir']: str
+        The working directory from which to execute the executable (relative to
+        the current working directory). The output files defined in `operators`
+        will be created in this folder.
+
+    :returns: Instance of `qnet.misc.trajectory_data.TrajectoryData`
+    """
+    import subprocess as sp
+    import os
+    from qnet.misc.trajectory_data import TrajectoryData
+    if _runner is None:
+        _runner = sp.check_output
+    executable = str(kwargs['executable'])
+    path = _full_expand(str(kwargs['path']))
+    seed = int(kwargs['seed'])
+    operators = kwargs['operators']
+    workdir = _full_expand(kwargs['workdir'])
+    local_executable = os.path.join(path, executable)
+    local_executable = _full_expand(local_executable)
+    cmd = [local_executable, str(seed)]
+    output = _runner(cmd, stderr=sp.STDOUT, cwd=workdir)
+    return TrajectoryData.from_qsd_data(operators, seed, workdir=workdir)
