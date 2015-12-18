@@ -2,7 +2,7 @@ import sympy
 from distutils import dir_util
 from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
     QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT, expand_cmd,
-    compilation_worker)
+    compilation_worker, qsd_run_worker)
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
@@ -13,6 +13,7 @@ from qnet.algebra.state_algebra import (
 )
 from qnet.algebra.hilbert_space_algebra import BasisRegistry
 import os
+import shutil
 import stat
 import re
 from textwrap import dedent
@@ -694,5 +695,44 @@ def test_compilation_worker(tmpdir, monkeypatch, Sec6_codegen):
     assert os.path.isfile(os.path.join(HOME, 'tmp', 'run_qsd1.cc'))
     assert executable == os.path.join(HOME, 'tmp', 'run_qsd1')
     assert os.path.isfile(executable)
+
+
+def test_qsd_run_worker(datadir, tmpdir, monkeypatch):
+    # set up an isolated environment
+    HOME = str(tmpdir)
+    PREFIX = os.path.join(HOME, 'local')
+    monkeypatch.setenv('HOME', HOME)
+    monkeypatch.setenv('PREFIX', PREFIX)
+    os.mkdir(os.path.join(HOME, 'jobs'))
+    os.mkdir(os.path.join(HOME, 'bin'))
+    executable = os.path.join(HOME, 'bin', 'run_qsd')
+    workdir = os.path.join(HOME, 'jobs', 'traj1')
+    with open(executable, 'w') as out_fh:
+        out_fh.write("#!/bin/bash\n")
+        out_fh.write("echo 'Hello World'\n")
+    st = os.stat(executable)
+    os.chmod(executable, st.st_mode | stat.S_IEXEC)
+    assert not os.path.isdir(workdir)
+    # mock runner (needs to create the expected output files in workdir)
+    def runner(cmd, stderr, cwd):
+        """simulate invocation of the of the compiled program"""
+        assert cwd == workdir
+        assert os.path.isdir(cwd) # should have been created
+        assert " ".join(expand_cmd(cmd)) == HOME+'/bin/run_qsd 232334'
+        shutil.copy(os.path.join(datadir, 'X1.out'), workdir)
+        shutil.copy(os.path.join(datadir, 'X2.out'), workdir)
+    # run the worker
+    kwargs = {'executable': 'run_qsd', 'path': '~/bin',
+            'seed': 232334, 'operators': {'X1': 'X1.out', 'X2': 'X2.out'},
+            'workdir': '~/jobs/traj1', 'keep': False}
+    traj = qsd_run_worker(kwargs, _runner=runner)
+    assert not os.path.isdir(workdir)
+    assert os.path.isdir(os.path.join(HOME, 'jobs'))
+    kwargs = {'executable': 'run_qsd', 'path': '~/bin',
+            'seed': 232334, 'operators': {'X1': 'X1.out', 'X2': 'X2.out'},
+            'workdir': '~/jobs/traj1', 'keep': True}
+    traj = qsd_run_worker(kwargs, _runner=runner)
+    assert traj.ID == 'd9831647-f2e7-3793-8b24-7c49c5c101a7'
+    assert os.path.isfile(os.path.join(workdir, 'X1.out'))
 
 # TODO: test_compile
