@@ -269,6 +269,8 @@ class QSDCodeGen(object):
     }}''').strip()
 
     _max_op_name_length = 16
+    _lib_qsd = 'libqsd.a' # expected name of qsd library
+    _link_qsd = '-lqsd' # compiler option to link qsd
 
     def __init__(self, circuit, num_vals=None):
         self.circuit = circuit.toSLH()
@@ -743,6 +745,7 @@ class QSDCodeGen(object):
             an added '.cc' file extension.
         :type keep_cc: boolean
 
+        :raises ValueError: if executable name or qsd_lib are invalid
         :raises OSError: if required files or folders are not found or have
             invalid names
         :raises subprocess.CalledProcessError: if compilation fails
@@ -758,9 +761,9 @@ class QSDCodeGen(object):
             else:
                 raise ValueError("Invalid executable name '%s'" % executable)
         link_dir, libqsd_a = os.path.split(qsd_lib)
-        if not libqsd_a == "libqsd.a":
-            raise FileNotFoundError("qsd_lib "+qsd_lib+" does not point to a "
-                                    "file of the name libqsd.a")
+        if not libqsd_a == self._lib_qsd:
+            raise ValueError("qsd_lib "+qsd_lib+" does not point to a "
+                             "file of the name "+self._lib_qsd)
         if not delay:
             if not os.path.isdir(_full_expand(qsd_headers)):
                 raise FileNotFoundError("Header directory "+qsd_headers
@@ -769,7 +772,7 @@ class QSDCodeGen(object):
                 raise FileNotFoundError("File "+qsd_lib+" does not exist")
         self._compile_cmd = ([compiler, ] + shlex.split(compile_options)
                            + ['-I%s'%qsd_headers, '-o', executable, cc_file]
-                           + ['-L%s'%link_dir, '-lqsd'])
+                           + ['-L%s'%link_dir, self._link_qsd])
         if not delay:
             kwargs = {'executable': executable, 'path': self._path,
                       'cc_code': self.generate_code(),
