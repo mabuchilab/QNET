@@ -424,7 +424,7 @@ class QSDCodeGen(object):
             raise ValueError("Cannot generate filename for operator "
                              "%s. You must use a different name" % name)
         filename = filename + '.out'
-        if filename in [fn for (op, fn) in self._observables.values()]:
+        if filename in [fn for (__, fn) in self._observables.values()]:
             raise ValueError("Cannot generate unique filename for operator "
                              "%s. You must use a different name" % name)
         op_local_ops = local_ops(op)

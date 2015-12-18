@@ -343,7 +343,9 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
     codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
     codegen.add_observable(Sp*A2*Sm*Sp, name="X1")
     codegen.add_observable(Sm*Sp*A2*Sm, name="X2")
+    assert codegen._observables["X2"] == (Sm*Sp*A2*Sm, 'X2.out')
     codegen.add_observable(A2, name="A2")
+    assert codegen._observables["A2"] == (A2, 'A2.out')
     scode = codegen._observables_lines()
     assert dedent(scode).strip() == dedent(r'''
     const int nOfOut = 3;
