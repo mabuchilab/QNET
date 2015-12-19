@@ -18,8 +18,8 @@ def datadir(tmpdir, request):
 
     In any test, import the datadir routine and turn it into a fixture:
     >>> import pytest
-    >>> import qnet.misc.testing
-    >>> datadir = pytest.fixture(qnet.misc.testing.datadir)
+    >>> import qnet.misc.testing_tools
+    >>> datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
     '''
     # http://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
     filename = request.module.__file__
@@ -38,8 +38,9 @@ def qsd_traj(datadir, folder, seed):
 
     The returned function should be turned into a fixture:
     >>> import pytest
-    >>> import qnet.misc.testing
-    >>> datadir = pytest.fixture(qnet.misc.testing.datadir)
+    >>> import qnet.misc.testing_tools
+    >>> from qnet.misc.testing_tools import qsd_traj
+    >>> datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
     >>> traj1 = pytest.fixture(qsd_traj(datadir, 'traj1', 102121))
     """
     def proto_fixture(datadir):
