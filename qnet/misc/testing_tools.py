@@ -53,3 +53,22 @@ def qsd_traj(datadir, folder, seed):
         return TrajectoryData.from_qsd_data(operators, seed=seed)
     import pytest # local import, so that qnet can be installed w/o pytest
     return proto_fixture
+
+
+def fake_traj(traj_template, ID, seed):
+    """Return a new trajectory that has the same data as traj_template, but a
+    different ID and seed. Assumes that traj_template only has a single record
+    (i.e., it was created from QSD data)"""
+    assert len(traj_template.record) == 1
+    orig_id = traj_template.ID
+    orig_seed, ntraj, op = traj_template._record[orig_id]
+    assert ID != orig_id
+    assert seed != orig_seed
+
+    traj = traj_template.copy()
+    traj._ID = ID
+    traj._record[ID] = (seed, ntraj, op)
+    del traj._record[orig_id]
+    assert (traj + traj_template).ID != traj_template.ID
+    return traj
+

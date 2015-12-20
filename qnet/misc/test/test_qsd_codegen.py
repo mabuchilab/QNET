@@ -16,13 +16,25 @@ import shutil
 import stat
 import re
 from textwrap import dedent
+from collections import OrderedDict
 from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
-import qnet.misc.testing_tools
+from qnet.misc.testing_tools import datadir, qsd_traj, fake_traj
+import numpy as np
 import pytest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 # built-in fixtures: tmpdir, request, monkeypatch
 # pytest-capturelog fixtures: caplog
 
-datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
+
+datadir = pytest.fixture(datadir)
+TRAJ1_SEED = 103212
+traj1    = pytest.fixture(qsd_traj(datadir, 'traj1', TRAJ1_SEED))
+TRAJ2_SEED = 18322321
+traj2_10 = pytest.fixture(qsd_traj(datadir, 'traj2_10', TRAJ2_SEED))
+
 
 def test_local_ops():
     psa = PseudoNAND()
@@ -745,3 +757,71 @@ def test_compile(Sec6_codegen):
     assert traj.compile_cmd == '$CC -g -O0 -I~/local/header -o qsd_test '\
                                'qsd_test.cc -L~/local/lib -lqsd'
     assert traj._path == '~/bin'
+
+
+@mock.patch('qnet.misc.qsd_codegen.compilation_worker',
+            return_value='/home/qnet/bin/qsd_test')
+def test_compilation_worker(mock_compilation_worker, Sec6_codegen, traj1,
+        traj2_10):
+    codegen = Sec6_codegen
+    codegen.compile(qsd_lib='~/local/lib/libqsd.a',
+                qsd_headers='~/local/header', executable='qsd_test',
+                path='~/bin', compiler='$CC', compile_options='-g -O0',
+                delay=True, keep_cc=False)
+    comp_kwargs = {'executable': 'qsd_test', 'path':'~/bin',
+                   'cc_code':str(codegen), 'keep_cc': False,
+                   'cmd': ['$CC', '-g', '-O0', '-I~/local/header',
+                           '-o', 'qsd_test', 'qsd_test.cc', '-L~/local/lib',
+                           '-lqsd']}
+    operators = OrderedDict([('X1', 'X1.out'), ('X2', 'X2.out'),
+                             ('A2', 'A2.out')])
+    run_kwargs = {'executable': '/home/qnet/bin/qsd_test',
+                  'workdir': '.', 'operators': operators, 'keep': False,
+                  'seed': TRAJ1_SEED, 'path': '.'}
+    qsd_run_worker = 'qnet.misc.qsd_codegen.qsd_run_worker'
+    traj1_ID = traj1.ID
+    traj2_10_ID = traj2_10.ID
+
+    traj_IDs = [] # all the IDs we generate by calls to run()
+
+    # The first call to run()
+    assert codegen.traj_data is None
+    with mock.patch(qsd_run_worker, return_value=traj1) as mock_runner:
+        traj_first = codegen.run(seed=TRAJ1_SEED)
+        traj_IDs.append(traj_first.ID)
+    mock_compilation_worker.assert_called_once_with(comp_kwargs)
+    mock_runner.assert_called_once_with(run_kwargs)
+    assert codegen.traj_data == traj_first
+
+    # assert that same seed raises early exception
+    with mock.patch(qsd_run_worker, return_value=traj2_10) as mock_runner:
+        with pytest.raises(ValueError) as exc_info:
+            traj = codegen.run(seed=TRAJ1_SEED)
+        assert "already in record" in str(exc_info.value)
+
+    # The second call to run()
+    with mock.patch(qsd_run_worker, return_value=traj2_10) as mock_runner:
+        traj_second = codegen.run(seed=TRAJ2_SEED)
+        traj_IDs.append(traj_second.ID)
+    run_kwargs['seed'] = TRAJ2_SEED
+    mock_runner.assert_called_once_with(run_kwargs)
+    assert codegen.traj_data == traj_first + traj_second
+    for col, arr in codegen.traj_data.table.items():
+        delta = arr - ((traj_first.table[col]+9*traj_second.table[col])/10.0)
+        assert np.max(np.abs(delta)) < 1.0e-12
+
+    # Repeated calls to run with auto-seeding
+    for call in range(5):
+        def side_effect(kwargs):
+            return fake_traj(traj1, traj1.new_id(), kwargs['seed'])
+        with mock.patch(qsd_run_worker, side_effect=side_effect) \
+                as mock_runner:
+            traj = codegen.run()
+            traj_IDs.append(traj.ID)
+    assert len(codegen.traj_data.record) == 7
+
+    # check that bug was fixed where codegen.traj_data was a reference to traj1
+    # instead of a copy, thereby modifying the traj1 with the second call
+    assert traj1.ID == traj1_ID
+    assert traj2_10.ID == traj2_10_ID
+
