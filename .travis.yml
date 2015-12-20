@@ -19,10 +19,10 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib scipy sympy ipython bokeh pytest nose ply cython
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib scipy sympy ipython bokeh pytest nose ply sphinx cython
   - source activate test-environment
   - pip install --no-use-wheel qutip
-  - pip install --process-dependency-links -e .[simulation,circuit_visualization]
+  - pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 script:
   py.test qnet
