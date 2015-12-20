@@ -822,9 +822,13 @@ class QSDCodeGen(object):
         :raises OSError: if creating/removing files/folders fails
         :raises subprocess.CalledProcessError: if delayed compilation fails or
             executable returns with non-zero exit code
+        :raises ValueError: if seed is not unique
         """
         if self._executable is None:
             raise QSDCodeGenError("Call compile method first")
+        if self.traj_data is not None:
+            if seed in self.traj_data.record_seeds:
+                raise ValueError("Seed %d already in record" % seed)
         local_executable = os.path.join(self._path, self._executable)
         local_executable = _full_expand(local_executable)
         is_exe = lambda f: os.path.isfile(f) and os.access(f, os.X_OK)
@@ -845,7 +849,7 @@ class QSDCodeGen(object):
         }
         traj = qsd_run_worker(kwargs)
         if self.traj_data is None:
-            self.traj_data = traj
+            self.traj_data = traj.copy()
         else:
             self.traj_data += traj
         return traj
