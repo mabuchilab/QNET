@@ -140,6 +140,28 @@ def test_qsd_codegen_parameters():
     assert "There is no value for symbol c" in str(excinfo.value)
 
 
+def test_latex_symbols(slh_Sec6):
+    """Test that if any of the symbols contain "special" characters such as
+    backslashes (LaTeX code), we still get valid C++ code (basic ASCII words
+    only)."""
+    k = symbols("\kappa", positive=True)
+    x = symbols(r'\chi^{(1)}_{\text{main}}', real=True)
+    c = symbols("c")
+
+    a = Destroy(1)
+    H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
+    L = sqrt(k) * a
+    slh = SLH(identity_matrix(1), [L], H)
+    codegen = QSDCodeGen(circuit=slh, num_vals={x: 2., c: 1+2j, k: 2})
+
+    scode = codegen._parameters_lines()
+    assert dedent(scode).strip() == dedent("""
+    Complex I(0.0,1.0);
+    Complex c(1,2);
+    double chi_1_textmain = 2;
+    double kappa = 2;""").strip()
+
+
 def test_qsd_codegen_hamiltonian():
     k = symbols("kappa", positive=True)
     x = symbols("chi", real=True)
