@@ -250,7 +250,7 @@ def slh_Sec6():
     eta    = symbols("eta",real=True)
     gamma1 = symbols("gamma1", positive=True)
     gamma2 = symbols("gamma2", positive=True)
-    kappa  = symbols("kamma", positive=True)
+    kappa  = symbols("kappa", positive=True)
     A1 = Destroy(0)
     Ac1 = A1.dag()
     N1 = Ac1*A1
@@ -279,7 +279,7 @@ def slh_Sec6_vals():
         symbols("eta",real=True):         0.001,
         symbols("gamma1", positive=True): 1.0,
         symbols("gamma2", positive=True): 1.0,
-        symbols("kamma", positive=True):  0.1
+        symbols("kappa", positive=True):  0.1
     }
 
 
@@ -313,7 +313,7 @@ def test_qsd_codegen_lindblads(slh_Sec6):
     Operator L[nL]={
       (sqrt(2)*sqrt(gamma1)) * (A0),
       (sqrt(2)*sqrt(gamma2)) * (A1),
-      (sqrt(2)*sqrt(kamma)) * (S2_0_1)
+      (sqrt(2)*sqrt(kappa)) * (S2_0_1)
     };
     ''').strip()
 
@@ -676,9 +676,10 @@ def test_generate_code(datadir, Sec6_codegen):
     scode = Sec6_codegen.generate_code()
     #with(open("scode.out", 'w')) as out_fh:
         #out_fh.write(scode)
+        #out_fh.write("\n")
     with open(os.path.join(datadir, 'Sec6.cc')) as in_fh:
         scode_expected = in_fh.read()
-    assert scode  == scode_expected
+    assert scode.strip()  == scode_expected.strip()
 
 
 def test_expand_cmd(monkeypatch):

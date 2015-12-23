@@ -42,7 +42,7 @@ double chi = 0.4;
 double eta = 0.001;
 double gamma1 = 1;
 double gamma2 = 1;
-double kamma = 0.1;
+double kappa = 0.1;
 double omega = -0.7;
 
 Operator H = ((omega) * (S2_1_1) + (I*E) * ((Ad0 + (-1) * (A0))) + (0.5*I*chi) * (((Ad0 * Ad0 * A1) + (-1) * ((A0 * A0 * Ad1)))) + (I*eta) * (((-1) * ((Ad1 * S2_0_1)) + (A1 * S2_1_0))));
@@ -52,7 +52,7 @@ const int nL = 3;
 Operator L[nL]={
   (sqrt(2)*sqrt(gamma1)) * (A0),
   (sqrt(2)*sqrt(gamma2)) * (A1),
-  (sqrt(2)*sqrt(kamma)) * (S2_0_1)
+  (sqrt(2)*sqrt(kappa)) * (S2_0_1)
 };
 
 // Observables
