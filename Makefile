@@ -41,17 +41,17 @@ clean:
 .venv/py27/bin/py.test:
 	@conda create -y -m -p .venv/py27 python=2.7 $(PACKAGES)
 	@.venv/py27/bin/pip install --no-use-wheel qutip
-	@.venv/py27/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization]
+	@.venv/py27/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 .venv/py33/bin/py.test:
 	@conda create -y -m -p .venv/py33 python=3.3 $(PACKAGES)
 	@.venv/py33/bin/pip install --no-use-wheel qutip
-	@.venv/py33/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization]
+	@.venv/py33/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 .venv/py34/bin/py.test:
 	@conda create -y -m -p .venv/py34 python=3.4 $(PACKAGES)
 	@.venv/py34/bin/pip install --no-use-wheel qutip
-	@.venv/py34/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization]
+	@.venv/py34/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 test27: .venv/py27/bin/py.test
 	$< -v $(TESTOPTIONS) $(TESTS)
