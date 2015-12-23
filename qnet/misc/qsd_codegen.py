@@ -438,14 +438,7 @@ class QSDCodeGen(object):
             # It is necessary to delete the observable, otherwise the check for
             # unique filenames would be tripped
             del self._observables[name]
-        replacements = {'^':'_', '+':'_', '*':'_', ' ':'_'}
-        allowed_letters = re.compile(r'[.a-zA-Z0-9_-]')
-        filename = ''
-        for letter in name:
-            if letter in replacements:
-                letter = replacements[letter]
-            if allowed_letters.match(letter):
-                filename += letter
+        filename = sanitize_filename(name)
         if (len(filename) == 0):
             raise ValueError("Cannot generate filename for operator "
                              "%s. You must use a different name" % name)
@@ -883,7 +876,14 @@ class QSDCodeGen(object):
         constants"""
         lines = set() # parameter definitions may be in any order
         lines.add("Complex I(0.0,1.0);")
+        used_vars = set([])
         for s in list(self.syms):
+            var = sanitize_varname(str(s))
+            if var in used_vars:
+                raise ValueError("Cannot generate a unique variable name for "
+                                 "symbol '%s'" % s)
+            else:
+                used_vars.add(var)
             try:
                 val = self.num_vals[s]
             except KeyError:
@@ -894,10 +894,10 @@ class QSDCodeGen(object):
                     raise ValueError(("Value %s for %s is complex, but "
                                      "should be real") % (val, s))
                 lines.add("double {!s} = {:g};"
-                          .format(s, val.real))
+                          .format(var, val.real))
             else:
                 lines.add("Complex {!s}({:g},{:g});"
-                          .format(s, val.real, val.imag))
+                          .format(var, val.real, val.imag))
         return "\n".join(sorted(lines))
 
 
@@ -1130,3 +1130,25 @@ def qsd_run_worker(kwargs, _runner=None):
         if delete_folder is not None:
             shutil.rmtree(delete_folder)
     return traj
+
+
+def sanitize_name(name, allowed_letters, replacements):
+    sanitized = ''
+    for letter in name:
+        if letter in replacements:
+            letter = replacements[letter]
+        if allowed_letters.match(letter):
+            sanitized += letter
+    return sanitized
+
+
+sanitize_filename = partial(sanitize_name,
+        allowed_letters=re.compile(r'[.a-zA-Z0-9_-]'),
+        replacements={'^':'_', '+':'_', '*':'_', ' ':'_'})
+sanitize_filename.__doc__ = "Sanitize name to be used as a filename"
+
+
+sanitize_varname = partial(sanitize_name,
+        allowed_letters=re.compile(r'[a-zA-Z0-9_]'),
+        replacements={'^':'_', '+':'_', '*':'_', ' ':'_', '-':'_', '.':'_'})
+sanitize_filename.__doc__ = "Sanitize name to be used as a C++ variable name"
