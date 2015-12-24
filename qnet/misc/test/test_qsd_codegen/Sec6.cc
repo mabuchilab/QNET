@@ -40,8 +40,8 @@ Complex I(0.0,1.0);
 double E = 20;
 double chi = 0.4;
 double eta = 0.001;
-double gamma1 = 1;
-double gamma2 = 1;
+double gamma_1 = 1;
+double gamma_2 = 1;
 double kappa = 0.1;
 double omega = -0.7;
 
@@ -50,8 +50,8 @@ Operator H = ((omega) * (S2_1_1) + (I*E) * ((Ad0 + (-1) * (A0))) + (0.5*I*chi) *
 // Lindblad operators
 const int nL = 3;
 Operator L[nL]={
-  (sqrt(2)*sqrt(gamma1)) * (A0),
-  (sqrt(2)*sqrt(gamma2)) * (A1),
+  (sqrt(2)*sqrt(gamma_1)) * (A0),
+  (sqrt(2)*sqrt(gamma_2)) * (A1),
   (sqrt(2)*sqrt(kappa)) * (S2_0_1)
 };
 

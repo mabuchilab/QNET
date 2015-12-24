@@ -109,8 +109,8 @@ def test_qsd_codegen_operator_basis():
 
 
 def test_qsd_codegen_parameters():
-    k = symbols("kappa", positive=True)
-    x = symbols("chi", real=True)
+    k = symbols(r'kappa', positive=True)
+    x = symbols(r'chi', real=True)
     c = symbols("c")
 
     a = Destroy(1)
@@ -163,8 +163,8 @@ def test_latex_symbols(slh_Sec6):
 
 
 def test_qsd_codegen_hamiltonian():
-    k = symbols("kappa", positive=True)
-    x = symbols("chi", real=True)
+    k = symbols(r'\kappa', positive=True)
+    x = symbols(r'\chi', real=True)
     c = symbols("c",real=True)
 
     a = Destroy(1)
@@ -244,13 +244,13 @@ def test_QSDOperator():
 @pytest.fixture
 def slh_Sec6():
     """SHL for the model in Section 6 of the QSD paper"""
-    E      = symbols("E", positive=True)
-    chi    = symbols("chi", real=True)
-    omega  = symbols("omega",real=True)
-    eta    = symbols("eta",real=True)
-    gamma1 = symbols("gamma1", positive=True)
-    gamma2 = symbols("gamma2", positive=True)
-    kappa  = symbols("kappa", positive=True)
+    E      = symbols(r'E',        positive=True)
+    chi    = symbols(r'\chi',     real=True)
+    omega  = symbols(r'\omega',   real=True)
+    eta    = symbols(r'\eta',     real=True)
+    gamma1 = symbols(r'\gamma_1', positive=True)
+    gamma2 = symbols(r'\gamma_2', positive=True)
+    kappa  = symbols(r'\kappa',   positive=True)
     A1 = Destroy(0)
     Ac1 = A1.dag()
     N1 = Ac1*A1
@@ -273,13 +273,13 @@ def slh_Sec6():
 @pytest.fixture
 def slh_Sec6_vals():
     return {
-        symbols("E", positive=True):     20.0,
-        symbols("chi", real=True):        0.4,
-        symbols("omega",real=True):      -0.7,
-        symbols("eta",real=True):         0.001,
-        symbols("gamma1", positive=True): 1.0,
-        symbols("gamma2", positive=True): 1.0,
-        symbols("kappa", positive=True):  0.1
+        symbols(r'E',        positive=True):    20.0,
+        symbols(r'\chi',     real=True):         0.4,
+        symbols(r'\omega',   real=True):        -0.7,
+        symbols(r'\eta',     real=True):         0.001,
+        symbols(r'\gamma_1', positive=True):     1.0,
+        symbols(r'\gamma_2', positive=True):     1.0,
+        symbols(r'\kappa',   positive=True):     0.1
     }
 
 
@@ -305,14 +305,21 @@ def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
     return codegen
 
 
+def test_operator_str(Sec6_codegen):
+    gamma1 = symbols(r'\gamma_1', positive=True)
+    A0 = Destroy(0)
+    Op = sqrt(gamma1)*A0
+    assert Sec6_codegen._operator_str(Op) == '(sqrt(gamma_1)) * (A0)'
+
+
 def test_qsd_codegen_lindblads(slh_Sec6):
     codegen = QSDCodeGen(circuit=slh_Sec6)
     scode = codegen._lindblads_lines()
     assert dedent(scode).strip() == dedent(r'''
     const int nL = 3;
     Operator L[nL]={
-      (sqrt(2)*sqrt(gamma1)) * (A0),
-      (sqrt(2)*sqrt(gamma2)) * (A1),
+      (sqrt(2)*sqrt(gamma_1)) * (A0),
+      (sqrt(2)*sqrt(gamma_2)) * (A1),
       (sqrt(2)*sqrt(kappa)) * (S2_0_1)
     };
     ''').strip()
@@ -419,6 +426,7 @@ def test_define_atomic_kets(slh_Sec6):
     with pytest.raises(QSDCodeGenError) as excinfo:
         lines = codegen._define_atomic_kets(psi_cav1(0))
     assert "not in the Hilbert space of the Hamiltonian" in str(excinfo.value)
+    BasisRegistry.registry = {} # reset
     with pytest.raises(QSDCodeGenError) as excinfo:
         lines = codegen._define_atomic_kets(psi_tot(0,0,0))
     assert "Unknown dimension for Hilbert space" in str(excinfo.value)
@@ -463,6 +471,7 @@ def test_define_atomic_kets(slh_Sec6):
         lines = codegen._define_atomic_kets(psi)
     assert "neither a known symbol nor a complex number" in str(excinfo.value)
     codegen.syms.add(alpha)
+    codegen._update_var_names()
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''

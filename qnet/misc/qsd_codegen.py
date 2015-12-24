@@ -278,8 +278,11 @@ class QSDCodeGen(object):
 
         # Set of sympy.core.symbol.Symbol instances
         self.syms = set(circuit.all_symbols())
-        # The add_observable and set_trajectories methods may later extend this
-        # set
+        # Mapping symbol => variable name (sanitized)
+        self._var_names = {}
+        self._update_var_names()
+        # The add_observable and set_trajectories methods may later extend syms
+        # and _var_names
 
         # Set of qnet.algebra.operator_algebra.Operator, all "atomic"
         # operators required in the code generation
@@ -410,6 +413,19 @@ class QSDCodeGen(object):
             else:
                 raise TypeError(str(op))
 
+    def _update_var_names(self):
+        """Ensure that for every symbol, there is a var name in the cache"""
+        used_vars = set(self._var_names.values())
+        for sym in self.syms:
+            if not sym in self._var_names:
+                var = sanitize_varname(str(sym))
+                if var in used_vars:
+                    raise ValueError("Cannot generate a unique variable name "
+                                     "for symbol '%s'" % s)
+                else:
+                    self._var_names[sym] = var
+                    used_vars.add(var)
+
     def add_observable(self, op, name=None):
         """Register an operators as an observable, together with a name that
         will be used in the header of the table of expectation values, and on
@@ -450,6 +466,7 @@ class QSDCodeGen(object):
         self._local_ops.update(op_local_ops)
         self._update_qsd_ops(op_local_ops)
         self.syms.update(op.all_symbols())
+        self._update_var_names()
         self._observables[name] = (op, filename)
 
     def set_moving_basis(self, move_dofs, delta=1e-4, width=2, move_eps=1e-4):
@@ -542,6 +559,7 @@ class QSDCodeGen(object):
             self._local_ops.update(psi_local_ops)
             self._update_qsd_ops(psi_local_ops)
             self.syms.update(psi_initial.all_symbols())
+            self._update_var_names()
         if not stepper in self._known_steppers:
             raise ValueError("stepper '%s' must be one of %s"
                               % (value, self._known_steppers))
@@ -605,7 +623,7 @@ class QSDCodeGen(object):
                 elif isinstance(ket, CoherentStateKet):
                     alpha = ket.operands[1]
                     if alpha in self.syms:
-                        alpha_name = str(alpha)
+                        alpha_name = self._var_names[alpha]
                     else:
                         try:
                             alpha = complex(ket.operands[1])
@@ -874,16 +892,11 @@ class QSDCodeGen(object):
     def _parameters_lines(self):
         """Return a multiline string of C++ code that defines all numerical
         constants"""
-        lines = set() # parameter definitions may be in any order
+        self._update_var_names() # should be superfluous, but just to be safe
+        lines = set() # sorting will happen at the very end
         lines.add("Complex I(0.0,1.0);")
-        used_vars = set([])
         for s in list(self.syms):
-            var = sanitize_varname(str(s))
-            if var in used_vars:
-                raise ValueError("Cannot generate a unique variable name for "
-                                 "symbol '%s'" % s)
-            else:
-                used_vars.add(var)
+            var = self._var_names[s]
             try:
                 val = self.num_vals[s]
             except KeyError:
@@ -963,13 +976,23 @@ class QSDCodeGen(object):
 
 
     def _scalar_str(self, sc):
-        if isinstance(sc, sympy.Basic):
-            return str(sc)
-        return "{:g}".format(sc)
+        if sc in self._var_names:
+            return self._var_names[sc]
+        elif isinstance(sc, sympy.Basic):
+            scalar_str = str(sc)
+            # the string conversion will not take into account our existing
+            # var_names for symbols
+            for sym in sc.free_symbols:
+                if sym in self._var_names:
+                    scalar_str = scalar_str.replace(
+                                    str(sym), self._var_names[sym])
+            return scalar_str
+        else:
+            return "{:g}".format(sc)
 
     def _hamiltonian_lines(self):
         H = self.circuit.H
-        return "Operator H = {};".format(self._operator_str(H))
+        return "Operator H = "+self._operator_str(H)+";"
 
     def _lindblads_lines(self):
         lines = []
