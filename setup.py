@@ -37,6 +37,14 @@ def find_packages(path=".", prefix=""):
 
 packages = list(find_packages(qnet.__path__, qnet.__name__))
 
+try:
+    # In Python >3.3, 'mock' is part of the standard library
+    import unittest.mock
+    mock_package = []
+except ImportError:
+    # In other versions, it has be to be installed as an exernal package
+    mock_package = ['mock', ]
+
 setup(
     name='QNET',
     version=version,
@@ -56,7 +64,8 @@ setup(
         'numpy',
     ],
     extras_require={
-        'dev': ['pytest', 'sphinx', 'nose', 'cython'],
+        'dev': (['pytest', 'sphinx', 'nose', 'cython', 'pytest-capturelog']
+                + mock_package),
         'simulation': ['cython', 'qutip>=3.0.1'],
         'circuit_visualization': 'pyx==0.12.1' if sys.version_info < (3, 0) else 'pyx>=0.13',
     },
@@ -84,3 +93,4 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics',
     ],
 )
+

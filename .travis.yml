@@ -5,6 +5,8 @@ python:
   - "3.3"
   - "3.4"
 install:
+  - sudo add-apt-repository -y ppa:texlive-backports/ppa
+  - sudo apt-get update
   - sudo apt-get install texlive
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -17,10 +19,10 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib scipy sympy ipython bokeh pytest nose ply cython
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib scipy sympy ipython bokeh pytest nose ply sphinx cython
   - source activate test-environment
   - pip install --no-use-wheel qutip
-  - pip install --process-dependency-links -e .[simulation,circuit_visualization]
+  - pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 script:
   py.test qnet

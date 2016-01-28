@@ -222,7 +222,7 @@ class KetSymbol(Ket, Operation):
         return (self,) + (0,)*(order - 1)
 
     def _all_symbols(self):
-        return {self}
+        return set([self, ])
 
 
 @singleton
@@ -259,7 +259,7 @@ class ZeroKet(Ket, Expression):
     _str_bra = _str_ket
 
     def _all_symbols(self):
-        return set(())
+        return set([])
 
 @singleton
 class TrivialKet(Ket, Expression):
@@ -302,7 +302,7 @@ class TrivialKet(Ket, Expression):
         return "<id|"
 
     def _all_symbols(self):
-        return set(())
+        return set([])
 
 class LocalKet(Ket, Operation):
     """
@@ -406,6 +406,12 @@ class CoherentStateKet(LocalKet):
 
         return CoherentStateKet(hs, ampc)
 
+    def _all_symbols(self):
+        hs, amp = self.operands
+        if isinstance(amp, SympyBasic):
+            return set([amp, ])
+        else:
+            return set([])
 
 
 class UnequalSpaces(AlgebraError):
