@@ -31,7 +31,8 @@ For a list of all properties and methods of an operator object, see the document
 
 
 from __future__ import division
-from abc import ABCMeta, abstractproperty, abstractmethod
+
+from abc import abstractproperty
 from collections import defaultdict
 from itertools import product as cartesian_product
 
@@ -65,7 +66,7 @@ from numpy import (array as np_array,
                    arange,
                    cos as np_cos,
                    sin as np_sin,
-                   eye as np_eye, 
+                   eye as np_eye,
                    argwhere,
                    int64, complex128, float64)
 from qnet.algebra.permutations import check_permutation
@@ -76,7 +77,7 @@ sympyOne = sympify(1)
 def check_qutip():
     if qutip is None:
         raise ImportError("""
-QuTiP is not installed. Cannot convert to numerical representation. 
+QuTiP is not installed. Cannot convert to numerical representation.
 Please install QuTiP by running: `pip install qutip`.
 """)
 
@@ -92,9 +93,9 @@ def adjoint(obj):
 @six.add_metaclass(ABCMeta)
 class Operator(object):
     """
-    The basic operator class, which fixes the abstract interface of operator objects 
+    The basic operator class, which fixes the abstract interface of operator objects
     and where possible also defines the default behavior under operations.
-    Any operator contains an associated HilbertSpace object, 
+    Any operator contains an associated HilbertSpace object,
     on which it is taken to act non-trivially.
     """
 
@@ -325,7 +326,7 @@ class IdentityOperator(Operator, Expression):
         return self
 
     def _to_qutip(self, full_space):
-        
+
 
         return qutip.tensor(*[qutip.qeye(s.dimension) for s in full_space.local_factors()])
 
@@ -395,7 +396,7 @@ class ZeroOperator(Operator, Expression):
         return "0"
 
     def _all_symbols(self):
-        return (())
+        return set(())
 
 
 def _implied_local_space_mtd(dcls, clsmtd, cls, space, *ops):
@@ -521,6 +522,126 @@ class Destroy(LocalOperator):
         return r"a_{!s}".format(self.space)
 
 
+@implied_local_space
+@check_signature
+class Jz(LocalOperator):
+    """
+    ``Jz(space)`` yields the z-component of a general spin operator acting on a particular local space/degree of freedom
+    with well defined spin quantum number J.
+    It is hermitian
+
+        >>> Jz(1).adjoint()
+            Jz(1)
+
+    Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
+
+        >>> (Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand()
+            Jplus(1)
+
+        >>> (Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand()
+            -Jminus(1)
+
+        >>> (Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand()
+            2*Jz(1)
+
+    where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
+
+
+    :param space: Associated local Hilbert space.
+    :type space: LocalSpace or str
+    """
+    signature = (LocalSpace, basestring, int),
+
+    def _to_qutip_local_factor(self):
+        return qutip.create(self.space.dimension)
+
+    def _tex(self):
+        return r"{{J_z^{{({})}}}}".format(self.space.tex())
+
+    def __str__(self):
+        return r"Jz_{!s}".format(self.space)
+
+
+
+@implied_local_space
+@check_signature
+class Jplus(LocalOperator):
+    """
+    ``Jplus(space)`` yields the J_+ raising ladder operator of a general spin operator acting on a particular local
+    space/degree of freedom with well defined spin quantum number J.
+    It's adjoint is the lowering operator
+
+        >>> Jplus(1).adjoint()
+            Jminus(1)
+
+    Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
+
+        >>> (Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand()
+            Jplus(1)
+
+        >>> (Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand()
+            -Jminus(1)
+
+        >>> (Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand()
+            2*Jz(1)
+
+    where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
+
+
+    :param space: Associated local Hilbert space.
+    :type space: LocalSpace or str
+    """
+    signature = (LocalSpace, basestring, int),
+
+    def _to_qutip_local_factor(self):
+        return qutip.create(self.space.dimension)
+
+    def _tex(self):
+        return r"{{J_+^{{({})}}}}".format(self.space.tex())
+
+    def __str__(self):
+        return r"J+_{!s}".format(self.space)
+
+@implied_local_space
+@check_signature
+class Jminus(LocalOperator):
+    """
+    ``Jminus(space)`` yields the J_- lowering ladder operator of a general spin operator acting on a particular local
+    space/degree of freedom with well defined spin quantum number J.
+    It's adjoint is the raising operator
+
+        >>> Jminus(1).adjoint()
+            Jplus(1)
+
+    Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
+
+        >>> (Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand()
+            Jplus(1)
+
+        >>> (Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand()
+            -Jminus(1)
+
+        >>> (Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand()
+            2*Jz(1)
+
+    where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
+
+
+    :param space: Associated local Hilbert space.
+    :type space: LocalSpace or str
+    """
+    signature = (LocalSpace, basestring, int),
+
+    def _to_qutip_local_factor(self):
+        return qutip.create(self.space.dimension)
+
+    def _tex(self):
+        return r"{{J_-^{{({})}}}}".format(self.space.tex())
+
+    def __str__(self):
+        return r"J-_{!s}".format(self.space)
+
+
 def simplify_scalar(s):
     """
     Simplify all occurences of scalar expressions in s
@@ -546,7 +667,7 @@ def scalar_free_symbols(*operands):
         return set()
     o, = operands
     if isinstance(o, SympyBasic):
-        return o.free_symbols
+        return set(o.free_symbols)
     return set()
 
 
@@ -1624,6 +1745,18 @@ OperatorPlus._binary_rules += [
     ((A, A), lambda A: 2 * A),
 ]
 
+def Jpjmcoeff(ls, m):
+    try:
+        j = (sympify(ls.dimension)-1)/2
+        coeff = sqrt(j*(j+1)-m*(m+1))
+        return coeff
+    except BasisNotSetError:
+        raise CannotSimplify()
+
+def Jmjmcoeff(ls, m):
+    return Jpjmcoeff(ls, m-1)
+
+
 OperatorTimes._binary_rules += [
     ((ScalarTimesOperator(u, A), B), lambda u, A, B: u * (A * B)),
 
@@ -1633,6 +1766,8 @@ OperatorTimes._binary_rules += [
      lambda ls, ra, rb, rc, rd: LocalSigma(ls, ra, rd)
      if rb == rc else ZeroOperator),
 
+
+    ## Harmonic oscillator rules
     ((Create(ls), LocalSigma(ls, rc, rd)),
      lambda ls, rc, rd: sqrt(rc + 1) * LocalSigma(ls, rc + 1, rd)),
 
@@ -1645,9 +1780,11 @@ OperatorTimes._binary_rules += [
     ((LocalSigma(ls, rc, rd), Create(ls)),
      lambda ls, rc, rd: sqrt(rd) * LocalSigma(ls, rc, rd - 1)),
 
+    ## Normal ordering for harmonic oscillator <=> all a^* to the left, a to the right.
     ((Destroy(ls), Create(ls)),
      lambda ls: IdentityOperator + Create(ls) * Destroy(ls)),
 
+    ## Oscillator unitary group rules
     ((Phase(ls, u), Phase(ls, v)), lambda ls, u, v: Phase.create(ls, u + v)),
     ((Displace(ls, u), Displace(ls, v)),
      lambda ls, u, v: exp((u * v.conjugate() - u.conjugate() * v) / 2) * Displace.create(ls, u + v)),
@@ -1660,6 +1797,38 @@ OperatorTimes._binary_rules += [
 
     ((Phase(ls, u), LocalSigma(ls, n, m)), lambda ls, u, n, m: exp(I * u * n) * LocalSigma(ls, n, m)),
     ((LocalSigma(ls, n, m), Phase(ls, u)), lambda ls, u, n, m: exp(I * u * m) * LocalSigma(ls, n, m)),
+
+
+    ## Spin rules
+     ((Jplus(ls), LocalSigma(ls, rc, rd)),
+     lambda ls, rc, rd: Jpjmcoeff(ls, rc) * LocalSigma(ls, rc + 1, rd)),
+
+     ((Jminus(ls), LocalSigma(ls, rc, rd)),
+     lambda ls, rc, rd: Jmjmcoeff(ls, rc) * LocalSigma(ls, rc - 1, rd)),
+
+    ((Jz(ls), LocalSigma(ls, rc, rd)),
+     lambda ls, rc, rd: rc * LocalSigma(ls, rc , rd)),
+
+    ((LocalSigma(ls, rc, rd), Jplus(ls)),
+     lambda ls, rc, rd: Jmjmcoeff(ls, rd) * LocalSigma(ls, rc, rd - 1)),
+
+    ((LocalSigma(ls, rc, rd), Jminus(ls)),
+     lambda ls, rc, rd: Jpjmcoeff(ls, rd) * LocalSigma(ls, rc, rd + 1)),
+
+    ((LocalSigma(ls, rc, rd), Jz(ls)),
+     lambda ls, rc, rd: rd * LocalSigma(ls, rc, rd)),
+
+    ## Normal ordering for angular momentum <=> all J_+ to the left, J_z to center and J_- to the right
+    ((Jminus(ls), Jplus(ls)),
+     lambda ls: -2*Jz(ls) + Jplus(ls) * Jminus(ls)),
+
+    ((Jminus(ls), Jz(ls)),
+     lambda ls: Jz(ls) * Jminus(ls) + Jminus(ls)),
+
+    ((Jz(ls), Jplus(ls)),
+     lambda ls: Jplus(ls) * Jz(ls) + Jplus(ls)),
+
+
 ]
 
 Adjoint._rules += [
@@ -1669,6 +1838,9 @@ Adjoint._rules += [
     ((Adjoint(A),), lambda A: A),
     ((Create(ls),), lambda ls: Destroy(ls)),
     ((Destroy(ls),), lambda ls: Create(ls)),
+    ((Jplus(ls),), lambda ls: Jminus(ls)),
+    ((Jminus(ls),), lambda ls: Jplus(ls)),
+    ((Jz(ls),), lambda ls: Jz(ls)),
     ((LocalSigma(ls, ra, rb),), lambda ls, ra, rb: LocalSigma(ls, rb, ra)),
 ]
 
@@ -1779,8 +1951,8 @@ class Matrix(Expression):
         return self._hash
 
     def __eq__(self, other):
-        return (isinstance(other, Matrix) 
-                and self.shape == other.shape 
+        return (isinstance(other, Matrix)
+                and self.shape == other.shape
                 and (self.matrix == other.matrix).all())
 
     def __add__(self, other):

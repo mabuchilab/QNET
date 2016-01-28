@@ -1,6 +1,9 @@
 QNET
 ====
 
+.. image:: https://travis-ci.org/mabuchilab/QNET.svg
+    :target: https://travis-ci.org/mabuchilab/QNET
+
 The QNET package is a set of tools created and compiled to aid in the design and analysis of photonic circuit models.
 Our proposed Quantum Hardware Description Language (cf. QHDL_) serves to describe a circuit topology and specification of a larger entity in terms of parametrizable subcomponents.
 This is strongly analogous to the specification of electric circuitry using the structural description elements of VHDL or Verilog.

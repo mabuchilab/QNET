@@ -222,13 +222,13 @@ class KetSymbol(Ket, Operation):
         return (self,) + (0,)*(order - 1)
 
     def _all_symbols(self):
-        return {self}
+        return set([self, ])
 
 
 @singleton
-class KetZero(Ket, Expression):
+class ZeroKet(Ket, Expression):
     """
-    KetZero constant (singleton) object for the null-state.
+    ZeroKet constant (singleton) object for the null-state.
     """
 
     @property
@@ -259,7 +259,7 @@ class KetZero(Ket, Expression):
     _str_bra = _str_ket
 
     def _all_symbols(self):
-        return set(())
+        return set([])
 
 @singleton
 class TrivialKet(Ket, Expression):
@@ -302,7 +302,7 @@ class TrivialKet(Ket, Expression):
         return "<id|"
 
     def _all_symbols(self):
-        return set(())
+        return set([])
 
 class LocalKet(Ket, Operation):
     """
@@ -403,9 +403,15 @@ class CoherentStateKet(LocalKet):
             ampc = amp.subs(svar_map)
         else:
             ampc = substitute(amp, var_map)
-            
+
         return CoherentStateKet(hs, ampc)
-            
+
+    def _all_symbols(self):
+        hs, amp = self.operands
+        if isinstance(amp, SympyBasic):
+            return set([amp, ])
+        else:
+            return set([])
 
 
 class UnequalSpaces(AlgebraError):
@@ -441,31 +447,33 @@ class KetPlus(Ket, Operation):
     :type summands: Ket
     """
     signature = Ket,
-    neutral_element = KetZero
+    neutral_element = ZeroKet
     _binary_rules = []
-
 
     @classmethod
     def order_key(cls, a):
         if isinstance(a, ScalarTimesKet):
-            return Operation.order_key(a.term), a.coeff
-        return Operation.order_key(a), 1
+            c = a.coeff
+            if isinstance(c, SympyBasic):
+                c = inf
+            return KeyTuple((Operation.order_key(a.term), c))
+        return KeyTuple((Operation.order_key(a), 1))
 
     def _to_qutip(self):
         return sum((op.to_qutip() for op in self.operands), 0)
 
     def _expand(self):
-        return sum((o.expand() for o in self.operands), KetZero)
+        return sum((o.expand() for o in self.operands), ZeroKet)
 
     def _series_expand(self, param, about, order):
-        res = sum((o.series_expand(param, about, order) for o in self.operands), KetZero)
+        res = sum((o.series_expand(param, about, order) for o in self.operands), ZeroKet)
         return res
 
     def _tex_ketbra(self, bra = False):
         ret = self.operands[0].tex()
 
         for o in self.operands[1:]:
-            if isinstance(o, ScalarTimesKet) and ScalarTimesKet.has_minus_prefactor(o.coeff):
+            if isinstance(o, ScalarTimesKet) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
                 if bra:
                     ret += " - " + (-o)._tex_bra()
                 else:
@@ -487,7 +495,7 @@ class KetPlus(Ket, Operation):
         ret = str(self.operands[0])
 
         for o in self.operands[1:]:
-            if isinstance(o, ScalarTimesKet) and ScalarTimesKet.has_minus_prefactor(o.coeff):
+            if isinstance(o, ScalarTimesKet) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
                 if bra:
                     ret += " - " + (-o)._str_bra()
                 else:
@@ -536,8 +544,8 @@ class TensorKet(Ket, Operation):
 
     @classmethod
     def create(cls, *ops):
-        if any(o == KetZero for o in ops):
-            return KetZero
+        if any(o == ZeroKet for o in ops):
+            return ZeroKet
         spc = TrivialSpace
         for o in ops:
             if o.space & spc > TrivialSpace:
@@ -581,7 +589,7 @@ class TensorKet(Ket, Operation):
         # store tuples of summands of all expanded factors
         eopssummands = [eo.operands if isinstance(eo, KetPlus) else (eo,) for eo in eops]
         # iterate over a cartesian product of all factor summands, form product of each tuple and sum over result
-        return sum((TensorKet.create(*combo) for combo in cartesian_product(*eopssummands)), KetZero)
+        return sum((TensorKet.create(*combo) for combo in cartesian_product(*eopssummands)), ZeroKet)
 
     def _tex_ketbra(self, bra = False):
         if bra:
@@ -738,7 +746,7 @@ class ScalarTimesKet(Ket, Operation):
         c, t = self.operands
         et = t.expand()
         if isinstance(et, KetPlus):
-            return sum((c * eto for eto in et.operands), KetZero)
+            return sum((c * eto for eto in et.operands), ZeroKet)
         return c * et
 
     def _series_expand(self, param, about, order):
@@ -881,11 +889,11 @@ class OperatorTimesKet(Ket, Operation):
         et = t.expand()
         if isinstance(et, KetPlus):
             if isinstance(ct, OperatorPlus):
-                return sum((cto * eto for eto in et.operands for cto in ct.operands), KetZero)
+                return sum((cto * eto for eto in et.operands for cto in ct.operands), ZeroKet)
             else:
-                return sum((c * eto for eto in et.operands), KetZero)
+                return sum((c * eto for eto in et.operands), ZeroKet)
         elif isinstance(ct, OperatorPlus):
-            return sum((cto * et for cto in ct.operands), KetZero)
+            return sum((cto * et for cto in ct.operands), ZeroKet)
         return ct * et
 
     def _series_expand(self, param, about, order):
@@ -1014,6 +1022,18 @@ class BraKet(Operator, Operation):
             ks = self.ket.tex()
         return bs + ks
 
+    def _to_qutip(self):
+        bq = self.bra.to_qutip()
+        kq = self.ket.to_qutip()
+        return bq * kq
+
+    def _series_expand(self, param, about, order):
+        be = self.bra.series_expand(param, about, order)
+        ke = self.ket.series_expand(param, about, order)
+        return tuple(be[k] * ke[n - k]
+                     for n in range(order + 1) for k in range(n + 1))
+
+
 
 
 @check_same_space
@@ -1052,7 +1072,8 @@ class KetBra(Operator, Operation):
         be, ke = b.expand(), k.expand()
         kesummands = ke.operands if isinstance(ke, KetPlus) else (ke,)
         besummands = be.operands if isinstance(be, KetPlus) else (be,)
-        return sum(KetBra.create(kes, bes) for bes in besummands for kes in kesummands)
+        return sum(KetBra.create(kes, bes)
+                   for bes in besummands for kes in kesummands)
 
     def _tex(self):
         if isinstance(self.bra.ket, KetPlus):
@@ -1065,8 +1086,17 @@ class KetBra(Operator, Operation):
             ks = self.ket.tex()
         return ks + bs
 
+    def _to_qutip(self):
+        bq = self.bra.to_qutip()
+        kq = self.ket.to_qutip()
+        return kq * bq
 
+    def _series_expand(self, param, about, order):
 
+        ke = self.ket.series_expand(param, about, order)
+        be = self.bra.series_expand(param, about, order)
+        return tuple(ke[k] * be[n - k]
+                     for n in range(order + 1) for k in range(n + 1))
 
 
 def act_locally(op, ket):
@@ -1134,24 +1164,38 @@ Phi_tensor = wc("Phi", head=TensorKet)
 
 ScalarTimesKet._rules += [
     ((1, Psi), lambda Psi: Psi),
-    ((0, Psi), lambda Psi: KetZero),
-    ((u, KetZero), lambda u: KetZero),
+    ((0, Psi), lambda Psi: ZeroKet),
+    ((u, ZeroKet), lambda u: ZeroKet),
     ((u, ScalarTimesKet(v, Psi)), lambda u, v, Psi: (u * v) * Psi)
 ]
 
+# local_rule = lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)
+
+def local_rule(A, B, Psi):
+    return OperatorTimes.create(*A) * (B * Psi)
+
 OperatorTimesKet._rules += [
     ((IdentityOperator, Psi), lambda Psi: Psi),
-    ((ZeroOperator, Psi), lambda Psi: KetZero),
-    ((A, KetZero), lambda u: KetZero),
+    ((ZeroOperator, Psi), lambda Psi: ZeroKet),
+    ((A, ZeroKet), lambda A: ZeroKet),
     ((A, ScalarTimesKet(v, Psi)), lambda A, v, Psi:  v *(A* Psi)),
-    ((LocalSigma(ls, n, m), BasisKet(ls, k)), lambda ls, n, m, k: BasisKet(ls, n) if m == k else KetZero),
+
+    ((LocalSigma(ls, n, m), BasisKet(ls, k)), lambda ls, n, m, k: BasisKet(ls, n) if m == k else ZeroKet),
+
+    # harmonic oscillator
     ((Create(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n+1) * BasisKet(ls, n + 1)),
     ((Destroy(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n) * BasisKet(ls, n - 1)),
     ((Destroy(ls), CoherentStateKet(ls, u)), lambda ls, u: u * CoherentStateKet(ls, u)),
+
+    # spin
+    ((Jplus(ls), BasisKet(ls, n)), lambda ls, n: Jpjmcoeff(ls, n) * BasisKet(ls, n+1)),
+    ((Jminus(ls), BasisKet(ls, n)), lambda ls, n: Jmjmcoeff(ls, n) * BasisKet(ls, n-1)),
+    ((Jz(ls), BasisKet(ls, n)), lambda ls, n: n * BasisKet(ls, n)),
+
     ((A_local, Psi_tensor), lambda A, Psi: act_locally(A, Psi)),
     ((A_times, Psi_tensor), lambda A, Psi: act_locally_times_tensor(A, Psi)),
     ((A, OperatorTimesKet(B, Psi)), lambda A, B, Psi: (A * B) * Psi if (B * Psi) == OperatorTimesKet(B, Psi) else A * (B * Psi)),
-    ((OperatorTimes(A__, B_local), Psi_local), lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)),
+    ((OperatorTimes(A__, B_local), Psi_local), local_rule),
     ((ScalarTimesOperator(u, A), Psi), lambda u, A, Psi: u * (A * Psi)),
     ((Displace(ls, u), BasisKet(ls, 0)), lambda ls, u: CoherentStateKet(ls, u)),
     ((Displace(ls, u), CoherentStateKet(ls, v)), lambda ls, u, v: (Displace(ls,u) * Displace(ls, v)) * BasisKet(ls, 0)),
