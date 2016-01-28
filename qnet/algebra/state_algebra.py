@@ -403,9 +403,9 @@ class CoherentStateKet(LocalKet):
             ampc = amp.subs(svar_map)
         else:
             ampc = substitute(amp, var_map)
-            
+
         return CoherentStateKet(hs, ampc)
-            
+
 
 
 class UnequalSpaces(AlgebraError):
@@ -1163,7 +1163,8 @@ ScalarTimesKet._rules += [
     ((u, ScalarTimesKet(v, Psi)), lambda u, v, Psi: (u * v) * Psi)
 ]
 
-local_rule = lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)
+# local_rule = lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)
+
 def local_rule(A, B, Psi):
     return OperatorTimes.create(*A) * (B * Psi)
 
@@ -1172,10 +1173,19 @@ OperatorTimesKet._rules += [
     ((ZeroOperator, Psi), lambda Psi: ZeroKet),
     ((A, ZeroKet), lambda A: ZeroKet),
     ((A, ScalarTimesKet(v, Psi)), lambda A, v, Psi:  v *(A* Psi)),
+
     ((LocalSigma(ls, n, m), BasisKet(ls, k)), lambda ls, n, m, k: BasisKet(ls, n) if m == k else ZeroKet),
+
+    # harmonic oscillator
     ((Create(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n+1) * BasisKet(ls, n + 1)),
     ((Destroy(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n) * BasisKet(ls, n - 1)),
     ((Destroy(ls), CoherentStateKet(ls, u)), lambda ls, u: u * CoherentStateKet(ls, u)),
+
+    # spin
+    ((Jplus(ls), BasisKet(ls, n)), lambda ls, n: Jpjmcoeff(ls, n) * BasisKet(ls, n+1)),
+    ((Jminus(ls), BasisKet(ls, n)), lambda ls, n: Jmjmcoeff(ls, n) * BasisKet(ls, n-1)),
+    ((Jz(ls), BasisKet(ls, n)), lambda ls, n: n * BasisKet(ls, n)),
+
     ((A_local, Psi_tensor), lambda A, Psi: act_locally(A, Psi)),
     ((A_times, Psi_tensor), lambda A, Psi: act_locally_times_tensor(A, Psi)),
     ((A, OperatorTimesKet(B, Psi)), lambda A, B, Psi: (A * B) * Psi if (B * Psi) == OperatorTimesKet(B, Psi) else A * (B * Psi)),

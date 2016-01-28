@@ -176,6 +176,14 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
         self.assertEqual(Destroy(1) * BasisKet(1, 0), ZeroKet)
         self.assertEqual(Destroy(1) * CoherentStateKet(1, 10.), 10 * CoherentStateKet(1, 10.))
 
+    def testSpin(self):
+        j = 3
+        h = local_space("j", basis=range(-j,j+1))
+
+        self.assertEqual(Jplus(h) * BasisKet(h, 2), sqrt(j*(j+1)-2*(2+1)) * BasisKet(h, 3))
+        self.assertEqual(Jminus(h) * BasisKet(h, 2), sqrt(j*(j+1)-2*(2-1)) * BasisKet(h, 1))
+        self.assertEqual(Jz(h) * BasisKet(h, 2), 2 * BasisKet(h, 2))
+
 
     def testPhase(self):
         self.assertEqual(Phase(1, 5) * BasisKet(1, 3), exp(I * 15) * BasisKet(1, 3))

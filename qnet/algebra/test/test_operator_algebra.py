@@ -19,6 +19,7 @@
 
 
 import unittest
+
 from qnet.algebra.operator_algebra import *
 
 
@@ -84,7 +85,7 @@ class TestOperatorAddition(unittest.TestCase):
         b = OperatorSymbol("b", hs)
         self.assertEqual(a + b, b + a)
         self.assertEqual(a + b, OperatorPlus(a, b))
-    
+
     def testAdditionToOperatorProduct(self):
         hs = local_space("hs")
         a = OperatorSymbol("a", hs)
@@ -133,6 +134,8 @@ class TestOperatorTimes(unittest.TestCase):
 
          self.assertEqual(b * a, a * b)
          self.assertEqual(c * a * b * c * a, OperatorTimes(a, a, c, b, c))
+
+
     def testHilbertSpace(self):
         h1 = local_space("h1")
         h2 = local_space("h2")
@@ -199,6 +202,39 @@ class TestLocalOperatorRelations(unittest.TestCase):
         ii = IdentityOperator
         self.assertEqual(Destroy(h) * Create(h) - Create(h) * Destroy(h), ii )
 
+
+
+    def testSpin(self):
+        j = 3
+        h = local_space("h", basis=range(-j,j+1))
+        jz = Jz(h)
+        jp = Jplus(h)
+        jm = Jminus(h)
+
+        self.assertEqual((jp*jm-jm*jp).expand(), 2*jz)
+        self.assertEqual((jz*jm-jm*jz).expand(), -jm)
+        self.assertEqual((jz*jp-jp*jz).expand(), jp)
+
+        self.assertEqual(jp*LocalProjector(h,3), ZeroOperator)
+        self.assertEqual(jp*LocalProjector(h,2), sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, 3, 2))
+
+        self.assertEqual(jm*LocalProjector(h,-3), ZeroOperator)
+        self.assertEqual(jm*LocalProjector(h,-2), sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, -3, -2))
+
+        self.assertEqual(jz*LocalProjector(h,-3), -3*LocalProjector(h, -3))
+
+        self.assertEqual(LocalProjector(h,3)*jm, ZeroOperator)
+        self.assertEqual(LocalProjector(h,2)*jm, sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, 2, 3))
+
+        self.assertEqual(LocalProjector(h,-3)*jp, ZeroOperator)
+        self.assertEqual(LocalProjector(h,-2)*jp, sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, -2, -3))
+
+        self.assertEqual(LocalProjector(h,-3)*jz, -3*LocalProjector(h, -3))
+
+
+
+
+
     def testPhase(self):
         self.assertEqual(Phase(1, 5).adjoint(), Phase(1, -5))
         self.assertEqual(Phase(1, 5) * Phase(1, -5), IdentityOperator)
@@ -229,7 +265,7 @@ class TestLocalOperatorRelations(unittest.TestCase):
         z = ZeroOperator
         self.assertEqual(Destroy(h) * LocalSigma(h, 0, 1), z)
         self.assertEqual(LocalSigma(h, 1, 0) * Create(h), z)
-
+1
 
 class TestOperatorTrace(unittest.TestCase):
 
