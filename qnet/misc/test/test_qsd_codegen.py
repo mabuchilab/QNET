@@ -80,6 +80,15 @@ def test_find_kets():
         find_kets({}, cls=LocalKet)
 
 
+def test_operator_hilbert_space_check():
+    circuit = SLH(identity_matrix(0), [], 1)
+    s = LocalSigma("sys", 'g', 'e')
+    codegen = QSDCodeGen(circuit)
+    with pytest.raises(ValueError) as exc_info:
+        codegen._update_qsd_ops([s, ])
+    assert "not in the circuit's Hilbert space" in str(exc_info.value)
+
+
 def test_qsd_codegen_operator_basis():
     a = Destroy(1)
     ad = a.dag()

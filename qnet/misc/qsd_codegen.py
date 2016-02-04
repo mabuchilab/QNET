@@ -388,6 +388,9 @@ class QSDCodeGen(object):
         # arbitrary, but well-defined order (sorting them according to their
         # string representation)
         for op in sorted(operators, key=str):
+            if not op.space.is_tensor_factor_of(self._full_space):
+                raise ValueError(("Operator '%s' is not in the circuit's "
+                                  "Hilbert space") % str(op))
             if isinstance(op, IdentityOperator.__class__):
                 continue
             elif isinstance(op, (Create, Destroy)):
