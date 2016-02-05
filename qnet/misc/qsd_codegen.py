@@ -412,7 +412,13 @@ class QSDCodeGen(object):
                     instantiator=('= A{k}.hc()'.format(k=k)))
             elif isinstance(op, LocalSigma):
                 k = self._hilbert_space_index[op.space]
-                i, j = op.operands[1:]
+                try:
+                    i = op.space.basis.index(op.operands[1])
+                    j = op.space.basis.index(op.operands[2])
+                except ValueError:
+                    raise ValueError(("The states %s in %s are not elements "
+                        "of the basis of the Hilbert space %s")
+                        % (str(op.operands[1:]), str(op), str(op.space)))
                 self._qsd_ops[op] = QSDOperator(
                     qsd_type='FieldTransitionOperator',
                     name="S{k}_{i}_{j}".format(k=k,i=i,j=j),

@@ -10,7 +10,7 @@ from qnet.algebra.circuit_algebra import (
 from qnet.algebra.state_algebra import (
     BasisKet, LocalKet, TensorKet, CoherentStateKet
 )
-from qnet.algebra.hilbert_space_algebra import BasisRegistry
+from qnet.algebra.hilbert_space_algebra import BasisRegistry, local_space
 import os
 import shutil
 import stat
@@ -87,6 +87,19 @@ def test_operator_hilbert_space_check():
     with pytest.raises(ValueError) as exc_info:
         codegen._update_qsd_ops([s, ])
     assert "not in the circuit's Hilbert space" in str(exc_info.value)
+
+
+def test_labeled_basis_op():
+    """Check that in QSD code generation labeled basis states are translated
+    into numbered basis states"""
+    hs = local_space('tls', namespace='sys', basis=('g', 'e'))
+    a = Destroy(hs)
+    ad = a.dag()
+    s = LocalSigma(hs, 'g', 'e')
+    circuit = SLH(identity_matrix(0), [], a*ad)
+    codegen = QSDCodeGen(circuit)
+    codegen._update_qsd_ops([s, ])
+    assert codegen._qsd_ops[s].instantiator == '(0,1,0)' != '(g,e,0)'
 
 
 def test_qsd_codegen_operator_basis():
