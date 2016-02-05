@@ -375,7 +375,10 @@ class QSDCodeGen(object):
 
         :param operators: iterable (list, set, ...) of operators for which to
             define QSDOpertors. These operators must be "atomic", i.e. they
-            must not be an algebraic combination of other operators
+            must not be an algebraic combination of other operators. They must
+            be in the Hilbert space of the circuit (otherwise, a ValueError is
+            raised), and their Hilbert-space must be (a subspace of) the
+            circuit Hilbert space (otherwise, a BasisNotSetError is raised)
         :type operators: [qnet.operator_algebra.Operator, ...]
         """
         self._qsd_ops[IdentityOperator] = QSDOperator(
@@ -391,6 +394,8 @@ class QSDCodeGen(object):
             if not op.space.is_tensor_factor_of(self._full_space):
                 raise ValueError(("Operator '%s' is not in the circuit's "
                                   "Hilbert space") % str(op))
+            if not op.space is TrivialSpace:
+                __ = op.space.basis # raises BasisNotSetError
             if isinstance(op, IdentityOperator.__class__):
                 continue
             elif isinstance(op, (Create, Destroy)):

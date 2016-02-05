@@ -91,8 +91,10 @@ def test_operator_hilbert_space_check():
 
 def test_qsd_codegen_operator_basis():
     a = Destroy(1)
+    a.space.dimension = 10
     ad = a.dag()
     s = LocalSigma(2, 1, 0)
+    s.space.dimension = 2
     sd = s.dag()
     circuit = SLH(identity_matrix(0), [], a*ad + s + sd)
     codegen = QSDCodeGen(circuit)
@@ -272,6 +274,10 @@ def slh_Sec6():
     Sm = Sp.dag()
     Id3 = identity_matrix(3)
 
+    BasisRegistry.set_basis(A1.space, range(50))
+    BasisRegistry.set_basis(A2.space, range(50))
+    BasisRegistry.set_basis(Sp.space, range(2))
+
     H  = E*I*(Ac1-A1) + 0.5*chi*I*(Ac1*Ac1*A2 - A1*A1*Ac2) \
          + omega*Sp*Sm + eta*I*(A2*Sp-Ac2*Sm)
     Lindblads = [sqrt(2*gamma1)*A1, sqrt(2*gamma2)*A2, sqrt(2*kappa)*Sm]
@@ -304,9 +310,6 @@ def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
     psi0 = BasisKet(0, 0)
     psi1 = BasisKet(1, 0)
     psi2 = BasisKet(2, 0)
-    BasisRegistry.set_basis(psi0.space, range(50))
-    BasisRegistry.set_basis(psi1.space, range(50))
-    BasisRegistry.set_basis(psi2.space, range(2))
     codegen.set_trajectories(psi_initial=psi0*psi1*psi2,
             stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
@@ -547,6 +550,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     psi_spin = lambda n:  BasisKet(2, n)
     psi_tot = lambda n, m, l: psi_cav1(n) * psi_cav2(m) * psi_spin(l)
 
+    BasisRegistry.registry = {} # reset
     psi_cav1(0).space.dimension = 10
     psi_cav2(0).space.dimension = 10
     psi_spin(0).space.dimension = 2
