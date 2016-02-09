@@ -26,4 +26,6 @@ install:
 
 script:
   make doc
+  which sphinx-build
+  which sphinx-apidoc
   py.test qnet
