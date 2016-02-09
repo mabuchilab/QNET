@@ -25,7 +25,7 @@ install:
   - pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 script:
-  make doc
-  which sphinx-build
-  which sphinx-apidoc
-  py.test qnet
+  - which sphinx-build
+  - which sphinx-apidoc
+  - make doc
+  - py.test qnet
