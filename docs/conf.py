@@ -14,7 +14,10 @@
 import sys, os
 
 
-import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'matplotlib.pyplot', 'qutip', 'ply','pyx','pyx.text']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
