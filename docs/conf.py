@@ -19,8 +19,7 @@ try:
 except ImportError:
     import mock
 MOCK_MODULES = ['numpy', 'numpy.linalg', 'scipy', 'scipy.sparse', 'matplotlib',
-    'matplotlib.pyplot', 'qutip', 'ply','pyx','pyx.text', 'sympy',
-    'sympy.printing']
+    'matplotlib.pyplot', 'qutip', 'ply','pyx','pyx.text']
 sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 
 
