@@ -181,8 +181,29 @@ class Operator(object):
         """
         return self._simplify_scalar()
 
+
     def _simplify_scalar(self):
         return self
+
+
+    def diff(self, sym, n=1, expand_simplify=True):
+        """
+        Differentiate by scalar parameter sym.
+
+        :param (sympy.Symbol) sym: What to differentiate by.
+        :param (int) n: How often to differentiate
+        :param (bool) expand_simplify: Whether to simplify the result.
+        :return (Operator): The n-th derivative.
+        """
+        expr = self
+        for k in range(n):
+            expr = expr._diff(sym)
+        if expand_simplify:
+            expr = expr.expand().simplify_scalar()
+        return expr
+
+    def _diff(self, sym):
+        return ZeroOperator
 
     def series_expand(self, param, about, order):
         """
@@ -696,6 +717,9 @@ class Phase(LocalOperator):
     _rules = []
 
     # TODO implement _series_expand for the phase parameter
+    # TODO implement differentiation
+    def _diff(self, sym):
+        raise NotImplementedError()
 
     def _to_qutip_local_factor(self):
         arg = complex(self.operands[1]) * arange(self.space.dimension)
@@ -746,7 +770,10 @@ class Displace(LocalOperator):
     signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
-    # TODO implement _series_expand for the coherent displacement parameter
+    # TODO implement _series_expand
+    # TODO implement differentiation
+    def _diff(self, sym):
+        raise NotImplementedError()
 
     def _to_qutip_local_factor(self):
         return qutip.displace(self.space.dimension, complex(self.operands[1]))
@@ -793,7 +820,10 @@ class Squeeze(LocalOperator):
     signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
-    # TODO implement _series_expand for the squeeze parameter
+    # TODO implement _series_expand
+    # TODO implement differentiation
+    def _diff(self, sym):
+        raise NotImplementedError()
 
     def _to_qutip_local_factor(self):
         return qutip.squeeze(self.space.dimension, complex(self.operands[1]))
@@ -966,6 +996,9 @@ class OperatorPlus(OperatorOperation):
     def _series_expand(self, param, about, order):
         res = tuple_sum((o.series_expand(param, about, order) for o in self.operands))
         return res
+
+    def _diff(self, sym):
+        return sum([o._diff(sym) for o in self.operands], ZeroOperator)
 
     def _tex(self):
         ret = self.operands[0].tex()
@@ -1140,6 +1173,13 @@ class OperatorTimes(OperatorOperation):
         crest = OperatorTimes.create(*self.operands[1:]).series_expand(param, about, order)
         return tuple(sum(cfirst[k] * crest[n - k] for k in range(n + 1)) for n in range(order + 1))
 
+    def _diff(self, sym):
+        assert len(self.operands) > 1
+        first = self.operands[0]
+        rest = OperatorTimes.create(*self.operands[1:])
+        return first._diff(sym) * rest + first * rest._diff(sym)
+
+
     def _tex(self):
         ret = ""
         # for o in self.operands[1:]:
@@ -1273,6 +1313,10 @@ class ScalarTimesOperator(Operator, Operation):
             return tuple(sum(ce[k] * te[n - k] for k in range(n + 1)) for n in range(order + 1))
         else:
             return tuple(self.coeff * tek for tek in te)
+
+    def _diff(self, sym):
+        c, t = self.operands
+        return c.diff(sym)*t + c * t._diff(sym)
 
     def _pseudo_inverse(self):
         c, t = self.operands
@@ -1451,6 +1495,9 @@ class Adjoint(OperatorOperation):
             return "{}^*".format(str(self.operand))
         return "({})^*".format(str(self.operand))
 
+    def _diff(self, sym):
+        return Adjoint.create(self.operands[0]._diff(sym))
+
 # for hilbert space dimensions less than or equal to this,
 # compute numerically PseudoInverse and NullSpaceProjector representations
 DENSE_DIMENSION_LIMIT = 1000
@@ -1479,6 +1526,7 @@ class PseudoInverse(OperatorOperation):
     delegate_to_method = ScalarTimesOperator, Squeeze, Displace, ZeroOperator.__class__, IdentityOperator.__class__
 
     # TODO implement _series_expand
+    # TODO implement _diff
 
     @classmethod
     def create(cls, op):
@@ -1548,6 +1596,7 @@ class NullSpaceProjector(OperatorOperation):
     _rules = []
 
     # TODO implement _series_expand
+    # TODO implement _diff
 
     @property
     def operand(self):
@@ -1636,6 +1685,10 @@ class OperatorTrace(Operator, Operation):
 
     def _all_symbols(self):
         return self.operands[1].all_symbols()
+
+    def _diff(self, sym):
+        s, o = self.operands
+        return OperatorTrace.create(s, o._diff(sym))
 
 
 tr = OperatorTrace.create
