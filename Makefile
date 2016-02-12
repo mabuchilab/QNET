@@ -3,10 +3,14 @@ PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest sphinx nose pl
 TESTPYPI = https://testpypi.python.org/pypi
 
 #TESTOPTIONS = --doctest-modules
-TESTOPTIONS =
-TESTS = qnet
+TESTOPTIONS = -s -x --pdb
+TESTS = qnet/misc/test/test_qsd_codegen.py
 # You may redefine TESTS to run a specific test. E.g.
 #     make test TESTS="qnet/algebra/test"
+
+VERSION = $(shell grep __version__ < qnet/__init__.py | sed 's/.*"\(.*\)"/\1/')
+
+DOC = qnet-doc-$(VERSION)
 
 develop:
 	pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
@@ -37,6 +41,7 @@ clean:
 	@rm -rf QDYN.egg-info
 	@find . -iname *pyc | xargs rm -f
 	@find . -iname __pycache__ | xargs rm -rf
+	@rm -rf $(DOC) $(DOC).tgz
 
 .venv/py27/bin/py.test:
 	@conda create -y -m -p .venv/py27 python=2.7 $(PACKAGES)
@@ -66,6 +71,10 @@ test: test27 test33 test34
 
 doc:
 	make -C docs html
+	@rm -rf $(DOC)
+	@cp -r docs/_build/html $(DOC)
+	tar -c $(DOC) | gzip > $(DOC).tgz
+	@rm -rf $(DOC)
 
 .PHONY: install develop uninstall upload test-upload test-install sdist clean \
 test test27 test33 test34 doc

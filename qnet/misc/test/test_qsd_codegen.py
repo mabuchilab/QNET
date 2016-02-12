@@ -10,7 +10,7 @@ from qnet.algebra.circuit_algebra import (
 from qnet.algebra.state_algebra import (
     BasisKet, LocalKet, TensorKet, CoherentStateKet
 )
-from qnet.algebra.hilbert_space_algebra import BasisRegistry
+from qnet.algebra.hilbert_space_algebra import BasisRegistry, local_space
 import os
 import shutil
 import stat
@@ -80,10 +80,34 @@ def test_find_kets():
         find_kets({}, cls=LocalKet)
 
 
+def test_operator_hilbert_space_check():
+    circuit = SLH(identity_matrix(0), [], 1)
+    s = LocalSigma("sys", 'g', 'e')
+    codegen = QSDCodeGen(circuit)
+    with pytest.raises(ValueError) as exc_info:
+        codegen._update_qsd_ops([s, ])
+    assert "not in the circuit's Hilbert space" in str(exc_info.value)
+
+
+def test_labeled_basis_op():
+    """Check that in QSD code generation labeled basis states are translated
+    into numbered basis states"""
+    hs = local_space('tls', namespace='sys', basis=('g', 'e'))
+    a = Destroy(hs)
+    ad = a.dag()
+    s = LocalSigma(hs, 'g', 'e')
+    circuit = SLH(identity_matrix(0), [], a*ad)
+    codegen = QSDCodeGen(circuit)
+    codegen._update_qsd_ops([s, ])
+    assert codegen._qsd_ops[s].instantiator == '(0,1,0)' != '(g,e,0)'
+
+
 def test_qsd_codegen_operator_basis():
     a = Destroy(1)
+    a.space.dimension = 10
     ad = a.dag()
     s = LocalSigma(2, 1, 0)
+    s.space.dimension = 2
     sd = s.dag()
     circuit = SLH(identity_matrix(0), [], a*ad + s + sd)
     codegen = QSDCodeGen(circuit)
@@ -263,6 +287,10 @@ def slh_Sec6():
     Sm = Sp.dag()
     Id3 = identity_matrix(3)
 
+    BasisRegistry.set_basis(A1.space, range(50))
+    BasisRegistry.set_basis(A2.space, range(50))
+    BasisRegistry.set_basis(Sp.space, range(2))
+
     H  = E*I*(Ac1-A1) + 0.5*chi*I*(Ac1*Ac1*A2 - A1*A1*Ac2) \
          + omega*Sp*Sm + eta*I*(A2*Sp-Ac2*Sm)
     Lindblads = [sqrt(2*gamma1)*A1, sqrt(2*gamma2)*A2, sqrt(2*kappa)*Sm]
@@ -295,9 +323,6 @@ def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
     psi0 = BasisKet(0, 0)
     psi1 = BasisKet(1, 0)
     psi2 = BasisKet(2, 0)
-    BasisRegistry.set_basis(psi0.space, range(50))
-    BasisRegistry.set_basis(psi1.space, range(50))
-    BasisRegistry.set_basis(psi2.space, range(2))
     codegen.set_trajectories(psi_initial=psi0*psi1*psi2,
             stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
@@ -538,6 +563,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     psi_spin = lambda n:  BasisKet(2, n)
     psi_tot = lambda n, m, l: psi_cav1(n) * psi_cav2(m) * psi_spin(l)
 
+    BasisRegistry.registry = {} # reset
     psi_cav1(0).space.dimension = 10
     psi_cav2(0).space.dimension = 10
     psi_spin(0).space.dimension = 2

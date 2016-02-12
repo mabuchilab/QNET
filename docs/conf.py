@@ -14,10 +14,13 @@
 import sys, os
 
 
-import mock
-MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'matplotlib.pyplot', 'qutip', 'ply','pyx','pyx.text']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+MOCK_MODULES = ['numpy', 'numpy.linalg', 'scipy', 'scipy.sparse', 'matplotlib',
+    'matplotlib.pyplot', 'qutip', 'ply','pyx','pyx.text']
+sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 
 
 # If extensions (or modules to document with autodoc) are in another directory,

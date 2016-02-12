@@ -375,7 +375,10 @@ class QSDCodeGen(object):
 
         :param operators: iterable (list, set, ...) of operators for which to
             define QSDOpertors. These operators must be "atomic", i.e. they
-            must not be an algebraic combination of other operators
+            must not be an algebraic combination of other operators. They must
+            be in the Hilbert space of the circuit (otherwise, a ValueError is
+            raised), and their Hilbert-space must be (a subspace of) the
+            circuit Hilbert space (otherwise, a BasisNotSetError is raised)
         :type operators: [qnet.operator_algebra.Operator, ...]
         """
         self._qsd_ops[IdentityOperator] = QSDOperator(
@@ -388,6 +391,11 @@ class QSDCodeGen(object):
         # arbitrary, but well-defined order (sorting them according to their
         # string representation)
         for op in sorted(operators, key=str):
+            if not op.space.is_tensor_factor_of(self._full_space):
+                raise ValueError(("Operator '%s' is not in the circuit's "
+                                  "Hilbert space") % str(op))
+            if not op.space is TrivialSpace:
+                __ = op.space.basis # raises BasisNotSetError
             if isinstance(op, IdentityOperator.__class__):
                 continue
             elif isinstance(op, (Create, Destroy)):
@@ -404,7 +412,13 @@ class QSDCodeGen(object):
                     instantiator=('= A{k}.hc()'.format(k=k)))
             elif isinstance(op, LocalSigma):
                 k = self._hilbert_space_index[op.space]
-                i, j = op.operands[1:]
+                try:
+                    i = op.space.basis.index(op.operands[1])
+                    j = op.space.basis.index(op.operands[2])
+                except ValueError:
+                    raise ValueError(("The states %s in %s are not elements "
+                        "of the basis of the Hilbert space %s")
+                        % (str(op.operands[1:]), str(op), str(op.space)))
                 self._qsd_ops[op] = QSDOperator(
                     qsd_type='FieldTransitionOperator',
                     name="S{k}_{i}_{j}".format(k=k,i=i,j=j),
