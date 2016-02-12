@@ -1316,7 +1316,8 @@ class ScalarTimesOperator(Operator, Operation):
 
     def _diff(self, sym):
         c, t = self.operands
-        return c.diff(sym)*t + c * t._diff(sym)
+        cd = c.diff(sym) if isinstance(c, SympyBasic) else 0
+        return cd*t + c * t._diff(sym)
 
     def _pseudo_inverse(self):
         c, t = self.operands

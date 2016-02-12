@@ -196,6 +196,44 @@ class TestScalarTimesOperator(unittest.TestCase):
         self.assertEqual((5*(a * b)).space, h1*h2)
 
 
+class TestDifferentiation(unittest.TestCase):
+
+    def testConstantOps(self):
+        x = symbols("x")
+
+        X = OperatorSymbol("X", 1)
+        self.assertEqual(X.diff(x), ZeroOperator)
+        self.assertEqual((2*X).diff(x), ZeroOperator)
+        self.assertEqual(X.dag().diff(x), ZeroOperator)
+
+        a = Destroy(1)
+        self.assertEqual(a.diff(x), ZeroOperator)
+        self.assertEqual(a.dag().diff(x), ZeroOperator)
+        self.assertEqual((a + a.dag()).diff(x), ZeroOperator)
+        self.assertEqual((a * a.dag()).diff(x), ZeroOperator)
+
+        s = LocalSigma(1,1,2)
+        self.assertEqual(s.diff(x), ZeroOperator)
+
+    def testNonConstantOps(self):
+        x = symbols("x", real=True)
+
+        X = OperatorSymbol("X", 1)
+        Y = OperatorSymbol("Y", 1)
+        self.assertEqual((x*X).diff(x), X)
+        self.assertEqual(((2*x**2)*X).diff(x), 4*x*X)
+        self.assertEqual((x*X).dag().diff(x), X.dag())
+        self.assertEqual((x*X + X).diff(x), X)
+
+        self.assertEqual((x*X + (x**2)*Y).diff(x), X + 2*x*Y)
+        self.assertEqual((x*X + (x**2)*Y).diff(x, 2), 2*Y)
+
+        self.assertEqual(((x*X) * (x**2)*Y).diff(x), 3*x**2 * X * Y)
+        self.assertEqual(((x*X + Y) * (x**2)*Y).diff(x), 3*x**2 * X * Y + 2*x*Y*Y)
+
+
+
+
 class TestLocalOperatorRelations(unittest.TestCase):
     def testCommutatorAAdag(self):
         h = local_space("h")
