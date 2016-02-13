@@ -30,6 +30,9 @@ sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 
 # -- General configuration -----------------------------------------------------
 
+# Report broken links as warnings
+nitpicky = True
+
 # If your documentation needs a minimal Sphinx version, state it here.
 #needs_sphinx = '1.0'
 
