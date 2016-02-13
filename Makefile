@@ -41,6 +41,7 @@ clean:
 	@rm -rf QDYN.egg-info
 	@find . -iname *pyc | xargs rm -f
 	@find . -iname __pycache__ | xargs rm -rf
+	@make -C docs clean
 	@rm -rf $(DOC) $(DOC).tgz
 
 .venv/py27/bin/py.test:
