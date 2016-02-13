@@ -124,9 +124,9 @@ napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = True
-napoleon_use_param = True
-napoleon_use_rtype = True
+napoleon_use_ivar = True # overwritten by patch below!
+napoleon_use_param = False
+napoleon_use_rtype = False
 
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 
@@ -153,8 +153,6 @@ def patched_parse(self):
     self._unpatched_parse()
 GoogleDocstring._unpatched_parse = GoogleDocstring._parse
 GoogleDocstring._parse = patched_parse
-
-
 
 
 # -- Options for HTML output ---------------------------------------------------
