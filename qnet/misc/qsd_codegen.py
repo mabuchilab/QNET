@@ -340,6 +340,11 @@ class QSDCodeGen(object):
         if num_vals is not None:
             self.num_vals.update(num_vals)
 
+        # when the `run` method is called with `delay=True`, the `kwargs`
+        # dictionary is appended to the following list. A call to `run_delayed`
+        # may then process the whole list in parallel
+        self._delayed_runs_kwargs = []
+
     @property
     def observables(self):
         """Iterator over all defined observables (instances of
@@ -823,7 +828,7 @@ class QSDCodeGen(object):
         # an indicator whether the compile method is complete
         self._executable = executable
 
-    def run(self, seed=None, workdir='.', keep=False):
+    def run(self, seed=None, workdir='.', keep=False, delay=False):
         """Run the QSD program. The :meth:`compile` method must have been
         called before `run`. If :meth:`compile` was called with
         ``delay=True``, compile at this point and run the resulting program.
@@ -840,11 +845,13 @@ class QSDCodeGen(object):
             workdir (str): The directory in which to (temporarily) create the
                 output files. The workdir must exist. Environment variables and
                 '~' will be expanded.
-            keep (bool): If True, keep QSD output files inside `workdir`
+            keep (bool): If True, keep QSD output files inside `workdir`.
+            delay (bool): If True, schedule the run to be performed at a later
+                point in time, when the :meth:`run_delayed` routine is called.
 
         Returns:
             qnet.misc.trajectory_data.TrajectoryData: Averaged data obtained
-            from the newly simulated trajectories only.
+            from the newly simulated trajectories only. None if `delay=True`.
 
         Raises:
             QSDCodeGenError: if :meth:`compile` was not called
@@ -876,12 +883,15 @@ class QSDCodeGen(object):
                                 [(name, fn) for (name, (__, fn))
                                  in self._observables.items()]),
         }
-        traj = qsd_run_worker(kwargs)
-        if self.traj_data is None:
-            self.traj_data = traj.copy()
+        if delay:
+            self._delayed_runs_kwargs.append(kwargs)
         else:
-            self.traj_data += traj
-        return traj
+            traj = qsd_run_worker(kwargs)
+            if self.traj_data is None:
+                self.traj_data = traj.copy()
+            else:
+                self.traj_data += traj
+            return traj
 
     def __str__(self):
         return self.generate_code()
