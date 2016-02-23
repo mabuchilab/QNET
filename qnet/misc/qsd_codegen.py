@@ -828,7 +828,7 @@ class QSDCodeGen(object):
         # an indicator whether the compile method is complete
         self._executable = executable
 
-    def run(self, seed=None, workdir='.', keep=False, delay=False):
+    def run(self, seed=None, workdir=None, keep=False, delay=False):
         """Run the QSD program. The :meth:`compile` method must have been
         called before `run`. If :meth:`compile` was called with
         ``delay=True``, compile at this point and run the resulting program.
@@ -842,9 +842,10 @@ class QSDCodeGen(object):
         Arguments:
             seed (int): Random number generator seed (unsigned integer), will
                 be passed to the executable as the only argument.
-            workdir (str): The directory in which to (temporarily) create the
-                output files. The workdir must exist. Environment variables and
-                '~' will be expanded.
+            workdir (str or None): The directory in which to (temporarily)
+                create the output files. If None, a temporary directory will be
+                used. Otherwise, the `workdir` must exist. Environment
+                variables and '~' will be expanded.
             keep (bool): If True, keep QSD output files inside `workdir`.
             delay (bool): If True, schedule the run to be performed at a later
                 point in time, when the :meth:`run_delayed` routine is called.
@@ -892,6 +893,32 @@ class QSDCodeGen(object):
             else:
                 self.traj_data += traj
             return traj
+
+    def run_delayed(self, map=map, _run_worker=None):
+        """Execute all scheduled runs (see `delay` option in :meth:`run`
+        method)
+
+        Arguments:
+            map (callable): ``map(qsd_run_worker, list_of_kwargs)``
+            must be equivalent to
+            ``[qsd_run_worker(kwargs) for kwargs in list_of_kwargs]``
+
+        Note:
+            Parallel execution is achieve by passing an appropriate `map`
+            routine. For example, ``map=multiprocessing.Pool(5).map`` would use
+            a thread pool of 5 workers. Another alternative would be provided
+            by the `map` method of an `ipyparallel` view.
+        """
+        if _run_worker is None:
+            _run_worker = qsd_run_worker
+        trajs = list(map(_run_worker, self._delayed_runs_kwargs))
+        self._delayed_runs_kwargs = []
+        for traj in trajs:
+            if self.traj_data is None:
+                self.traj_data = traj.copy()
+            else:
+                self.traj_data += traj
+        return trajs
 
     def __str__(self):
         return self.generate_code()
@@ -1034,6 +1061,8 @@ class QSDCodeGen(object):
 
 
 def _full_expand(s):
+    if s is None:
+        return s
     return os.path.expanduser(os.path.expandvars(s))
 
 
@@ -1133,10 +1162,11 @@ def qsd_run_worker(kwargs, _runner=None):
         operators(dict or OrderedDict of str to str)): Mapping of operator name
             to filename, see `operators` parameter of
             :meth:`~qnet.misc.trajectory_data.TrajectoryData.from_qsd_data`
-        workdir (str): The working directory in which to execute the executable
-            (relative to the current working directory). The output files
-            defined in `operators` will be created in this folder. If `workdir`
-            does not exist yet, it will be created
+        workdir (str or None): The working directory in which to execute the
+            executable (relative to the current working directory). The output
+            files defined in `operators` will be created in this folder. If
+            None, a temporary directory will be used. If `workdir` does not
+            exist yet, it will be created.
         keep (bool): If True, keep the QSD output files. If False,
             remove the output files as well as any folders that may have been
             created alongside with `workdir`
@@ -1153,14 +1183,17 @@ def qsd_run_worker(kwargs, _runner=None):
     import subprocess as sp
     import os
     import shutil
+    import tempfile
     from qnet.misc.trajectory_data import TrajectoryData
     if _runner is None:
         _runner = sp.check_output
     executable = str(kwargs['executable'])
-    path = _full_expand(str(kwargs['path']))
+    path = os.path.abspath(_full_expand(str(kwargs['path'])))
     seed = int(kwargs['seed'])
     operators = kwargs['operators']
     workdir = _full_expand(kwargs['workdir'])
+    if workdir is None:
+        workdir = tempfile.mkdtemp()
     keep = kwargs['keep']
     delete_folder = None
     if not os.path.isdir(workdir):
