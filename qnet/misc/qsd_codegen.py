@@ -220,9 +220,11 @@ class QSDCodeGen(object):
             symbols to numeric value. Must specify a value for any symbol in
             `syms`.
         traj_data (:obj:`~qnet.misc.trajectory_data.TrajectoryData`): The
-            accumulated trajectory data. Every time the :meth:`run` method is
+            accumulated trajectory data. Every time the :meth:`run`,
+            respectively the :meth:`run_delayed` method is
             called, the resulting trajectory data is incorporated. Thus, by
-            repeatedly calling :meth:`run`, an arbitrary number of trajectories
+            repeatedly calling :meth:`run` (followed by :meth:`run_delayed` if
+            ``delay=True``), an arbitrary number of trajectories
             may be accumulated in `traj_data`.
     """
 
@@ -359,8 +361,8 @@ class QSDCodeGen(object):
 
     @property
     def compile_cmd(self):
-        """Command to be used for compilation (after compile method has been
-        called). Environment variables and '~' are not expanded"""
+        """Command to be used for compilation (after :meth:`compile` method has
+        been called). Environment variables and '~' are not expanded"""
         if self._executable is None:
             return ''
         else:
@@ -375,7 +377,8 @@ class QSDCodeGen(object):
 
     def get_observable(self, name):
         """Return the observable for the given name
-        (instance of obj:`~qnet.algebra.operator_algebra.Operator`)"""
+        (instance of :obj:`~qnet.algebra.operator_algebra.Operator`), according
+        to the mapping defined by :meth:`add_observable`"""
         return self._observables[name][0]
 
     def _update_qsd_ops(self, operators):
@@ -762,7 +765,7 @@ class QSDCodeGen(object):
         """Compile into an executable
 
         Arguments:
-            qsd_lib (str): full path to the file libqsd.a containing the
+            qsd_lib (str): full path to the file ``libqsd.a`` containing the
                 statically compiled QSD library.  May reference environment
                 variables the home directory ('~')
             qsd_headers (str): path to the folder containing the QSD header
@@ -866,6 +869,13 @@ class QSDCodeGen(object):
             subprocess.CalledProcessError: if delayed compilation fails or
                 executable returns with non-zero exit code
             ValueError: if seed is not unique
+
+        Note:
+            The only way to run multiple trajectories in parallel is by giving
+            ``delay=True``. After preparing an arbitrary number of trajectories
+            by repeated calls to :meth:`run`. Then :meth:`run_delayed` must be
+            called with a `map` argument that supports parallel execution.
+
         """
         if self._executable is None:
             raise QSDCodeGenError("Call compile method first")
@@ -893,18 +903,23 @@ class QSDCodeGen(object):
 
     def run_delayed(self, map=map, _run_worker=None):
         """Execute all scheduled runs (see `delay` option in :meth:`run`
-        method)
+        method), possibly in parallel.
 
         Arguments:
             map (callable): ``map(qsd_run_worker, list_of_kwargs)``
-            must be equivalent to
-            ``[qsd_run_worker(kwargs) for kwargs in list_of_kwargs]``
+                must be equivalent to
+                ``[qsd_run_worker(kwargs) for kwargs in list_of_kwargs]``.
+                Defaults to the builtin `map` routine, which will process the
+                scheduled runs serially.
 
         Note:
             Parallel execution is achieve by passing an appropriate `map`
             routine. For example, ``map=multiprocessing.Pool(5).map`` would use
-            a thread pool of 5 workers. Another alternative would be provided
-            by the `map` method of an `ipyparallel` view.
+            a local thread pool of 5 workers. Another alternative would be the
+            `map` method of an ``ipyparallel`` View. If (and only if) the View
+            connects remote IPython engines, :meth:`compile` must have been
+            called with an appropriate `remote_apply` argument that compiled
+            the QSD program on all of the remote engines.
         """
         if _run_worker is None:
             _run_worker = qsd_run_worker
@@ -1142,7 +1157,7 @@ def compilation_worker(kwargs, _runner=None):
 
 def qsd_run_worker(kwargs, _runner=None):
     """Worker to perform run of a previously compiled program (see
-    `compilation_worker`), suitable e.g. for being run on an
+    :func:`compilation_worker`), suitable e.g. for being run on an
     IPython cluster. All arguments are in the `kwargs` dictionary.
 
     Keys:
@@ -1165,8 +1180,8 @@ def qsd_run_worker(kwargs, _runner=None):
             None, a temporary directory will be used. If `workdir` does not
             exist yet, it will be created.
         keep (bool): If True, keep the QSD output files. If False,
-            remove the output files as well as any folders that may have been
-            created alongside with `workdir`
+            remove the output files as well as any parent folders that may have
+            been created alongside with `workdir`
 
     Raises:
         FileNotFoundError: if `executable` does not exist in `path`
@@ -1231,6 +1246,15 @@ def sanitize_name(name, allowed_letters, replacements):
 
     Returns:
         str: sanitized name
+
+    Example:
+
+    >>> sanitize_filename = partial(sanitize_name,
+    ...         allowed_letters=re.compile(r'[.a-zA-Z0-9_-]'),
+    ...         replacements={'^':'_', '+':'_', '*':'_', ' ':'_'})
+    >>> sanitize_filename.__doc__ = "Sanitize name to be used as a filename"
+    >>> sanitize_filename('\chi^{(1)}_1')
+    'chi_1_1'
     """
     sanitized = ''
     for letter in name:
