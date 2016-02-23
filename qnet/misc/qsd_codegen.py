@@ -757,8 +757,8 @@ class QSDCodeGen(object):
             out_fh.write("\n")
 
     def compile(self, qsd_lib, qsd_headers, executable='qsd_run',
-            path='.', compiler='g++', compile_options='-O2', delay=True,
-            keep_cc=False):
+            path='.', compiler='g++', compile_options='-O2', delay=False,
+            keep_cc=False, remote_apply=None):
         """Compile into an executable
 
         Arguments:
@@ -776,17 +776,26 @@ class QSDCodeGen(object):
                 directory ('~')
             compiler (str): compiler executable
             compile_options (str): options to pass to the compiler
-            delay (bool): If True, delay compilation to a later point in time.
+            delay (bool): Deprecated, must be False
             keep_cc (bool): If True, keep the C++ code from which the
                 executable was compiled. It will have the same name as the
                 executable, with an added '.cc' file extension.
+            remote_apply (callable or None): If not None,
+                ``remote_apply(compilation_worker, kwargs)`` must call
+                :func:`compilation_worker` on any remote node.
+                Typically, this might point to the `apply` method of an
+                ``ipyparallel`` View instance. The `remote_apply` argument
+                should only be given if :meth:`run_delayed` will be called with
+                an argument `map` that will push the calculation of a
+                trajectory to a remote node.
 
         Raises:
             ValueError: if `executable` name or `qsd_lib` are invalid
-            OSError: if required files or folders are not found or have
-                invalid names
             subprocess.CalledProcessError: if compilation fails
         """
+        if delay:
+            raise DeprecationWarning(
+                    "`delay` will be removed in future versions")
         logger = logging.getLogger(__name__)
         executable = str(executable)
         self._path = str(path)
@@ -801,29 +810,26 @@ class QSDCodeGen(object):
         if not libqsd_a == self._lib_qsd:
             raise ValueError("qsd_lib "+qsd_lib+" does not point to a "
                              "file of the name "+self._lib_qsd)
-        if not delay:
-            if not os.path.isdir(_full_expand(qsd_headers)):
-                raise FileNotFoundError("Header directory "+qsd_headers
-                                        +" does not exist")
-            if not os.path.isfile(_full_expand(qsd_lib)):
-                raise FileNotFoundError("File "+qsd_lib+" does not exist")
         self._compile_cmd = ([compiler, ] + shlex.split(compile_options)
                            + ['-I%s'%qsd_headers, '-o', executable, cc_file]
                            + ['-L%s'%link_dir, self._link_qsd])
-        if not delay:
-            kwargs = {'executable': executable, 'path': self._path,
-                      'cc_code': self.generate_code(),
-                      'keep_cc': self._keep_cc, 'cmd': self._compile_cmd}
+        kwargs = {'executable': executable, 'path': self._path,
+                    'cc_code': self.generate_code(),
+                    'keep_cc': self._keep_cc, 'cmd': self._compile_cmd}
+        if remote_apply is None:
+            if not os.path.isdir(_full_expand(qsd_headers)):
+                logger.warn("Header directory "+qsd_headers+" does not exist")
+            if not os.path.isfile(_full_expand(qsd_lib)):
+                logger.warn("File "+qsd_lib+" does not exist")
             try:
                 executable_abs = compilation_worker(kwargs)
             except sp.CalledProcessError as exc_info:
                 logger.error("command '{cmd:s}' failed with code {code:d}"
-                             .format(cmd=self._compile_cmd,
-                                     code=int(exc_info.returncode)))
+                                .format(cmd=self._compile_cmd,
+                                        code=int(exc_info.returncode)))
                 raise
-            is_exe = lambda f: os.path.isfile(f) and os.access(f, os.X_OK)
-            if not is_exe(executable_abs):
-                raise FileNotFoundError("No executable "+executable_abs)
+        else:
+            remote_apply(compilation_worker, kwargs)
         # We set the executable only at the very end so that we can use it as
         # an indicator whether the compile method is complete
         self._executable = executable
@@ -866,20 +872,11 @@ class QSDCodeGen(object):
         if self.traj_data is not None:
             if seed in self.traj_data.record_seeds:
                 raise ValueError("Seed %d already in record" % seed)
-        local_executable = os.path.join(self._path, self._executable)
-        local_executable = _full_expand(local_executable)
-        is_exe = lambda f: os.path.isfile(f) and os.access(f, os.X_OK)
-        if not is_exe(local_executable):
-            # compilation was delayed, do it now
-            kwargs = {'executable': self._executable, 'path': self._path,
-                      'cc_code': self.generate_code(),
-                      'keep_cc': self._keep_cc, 'cmd': self._compile_cmd}
-            local_executable = compilation_worker(kwargs)
         if seed is None:
             seed = random.randint(0, UNSIGNED_MAXINT)
         kwargs = {
-                'executable': local_executable, 'keep': keep,
-                'path': '.', 'seed': seed, 'workdir': workdir,
+                'executable': self._executable, 'keep': keep,
+                'path': self._path, 'seed': seed, 'workdir': workdir,
                 'operators': OrderedDict(
                                 [(name, fn) for (name, (__, fn))
                                  in self._observables.items()]),
