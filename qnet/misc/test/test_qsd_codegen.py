@@ -834,7 +834,7 @@ def test_compilation_worker(mock_compilation_worker, Sec6_codegen, traj1,
     operators = OrderedDict([('X1', 'X1.out'), ('X2', 'X2.out'),
                              ('A2', 'A2.out')])
     run_kwargs = {'executable': '/home/qnet/bin/qsd_test',
-                  'workdir': '.', 'operators': operators, 'keep': False,
+                  'workdir': None, 'operators': operators, 'keep': False,
                   'seed': TRAJ1_SEED, 'path': '.'}
     qsd_run_worker = 'qnet.misc.qsd_codegen.qsd_run_worker'
     traj1_ID = traj1.ID
