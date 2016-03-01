@@ -294,7 +294,7 @@ class LocalSpace(HilbertSpace, Operation):
             current_length = len(current_basis)
             if current_length == dimension:
                 return
-            if current_basis != range(current_length):
+            if current_basis != list(range(current_length)):
                 raise ValueError('It appears that the current basis of {} is not simply a range of integer-labelled states: {}'.format(str(self), str(current_basis)))
             BasisRegistry.set_basis(self, range(dimension))
         except BasisNotSetError:
