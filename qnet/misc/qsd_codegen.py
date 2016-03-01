@@ -925,11 +925,11 @@ class QSDCodeGen(object):
             _run_worker = qsd_run_worker
         trajs = list(map(_run_worker, self._delayed_runs_kwargs))
         self._delayed_runs_kwargs = []
-        for traj in trajs:
-            if self.traj_data is None:
-                self.traj_data = traj.copy()
-            else:
-                self.traj_data += traj
+        if self.traj_data is None:
+            self.traj_data = trajs[0].copy()
+            self.traj_data.extend(*trajs[1:])
+        else:
+            self.traj_data.extend(*trajs)
         return trajs
 
     def __str__(self):
