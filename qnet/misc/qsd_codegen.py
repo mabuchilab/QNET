@@ -34,10 +34,11 @@ UNSIGNED_MAXINT = 2 ** (struct.Struct('I').size * 8 - 1) - 1
 
 
 def local_ops(expr):
-    """Given a QNET symbolic expression, return a set of "atomic" operators
-    occuring in that expression (instances of
-    qnet.algebra.operator_algebra.Operator). The set is "atomic" in the sense
-    that the operators are not algebraic combinations of other operators."""
+    """Given a symbolic expression, extract the set of "atomic" operators
+    (instances of :class:`~qnet.algebra.operator_algebra.Operator`) occurring
+    in that expression. The set is "atomic" in the sense that the
+    operators are not algebraic combinations of other operators.
+    """
     if isinstance(expr, Operator.scalar_types + (str,)):
         return set()
     elif isinstance(expr, (LocalOperator, IdentityOperator.__class__)):
@@ -54,8 +55,10 @@ def local_ops(expr):
 
 
 def find_kets(expr, cls=LocalKet):
-    """Given a QNET Ket instance, return the set of LocalKet instances
-    contained in it"""
+    """Given a :class:`~qnet.algebra.state_algebra.Ket` instance,
+    return the set of :class:`~qnet.algebra.state_algebra.LocalKet`
+    instances contained in it.
+    """
     if isinstance(expr, Operator.scalar_types + (str,)):
         return set()
     elif isinstance(expr, cls):
@@ -72,6 +75,8 @@ class QSDOperator(object):
     required to instantiate that operator and to use it in C++ code
     expressions.
 
+    All arguments set the corresponding properties.
+
     Examples:
 
         >>> A0 = QSDOperator('AnnihilationOperator', 'A0', '(0)')
@@ -79,7 +84,7 @@ class QSDOperator(object):
 
     """
 
-    _known_types = ['AnnihilationOperator', 'FieldTransitionOperator',
+    known_types = ['AnnihilationOperator', 'FieldTransitionOperator',
                     'IdentityOperator', 'Operator']
 
     def __init__(self, qsd_type, name, instantiator):
@@ -106,15 +111,15 @@ class QSDOperator(object):
     @property
     def qsd_type(self):
         """QSD object type, i.e., name of the C++ class. See
-        ``_known_types`` class attribute for allowed type names
+        :attr:`known_types` class attribute for allowed type names
         """
         return self._type
 
     @qsd_type.setter
     def qsd_type(self, value):
-        if not value in self._known_types:
+        if not value in self.known_types:
             raise ValueError("Type '%s' must be one of %s"
-                              % (value, self._known_types))
+                              % (value, self.known_types))
         self._type = value
 
     @property
@@ -134,7 +139,7 @@ class QSDOperator(object):
     @property
     def instantiator(self):
         """String that instantiates the operator object. This
-        must either be the constructur arguments of the operator's QSD class,
+        must either be the constructor arguments of the operator's QSD class,
         or a C++ expression (starting with an equal sign) that initializes the
         object
         """
@@ -169,7 +174,7 @@ class QSDOperator(object):
         return 3
 
     def __iter__(self):
-        """Allows to convert ``QSDOperator`` into a tuple.
+        """Split :obj:`QSDOperator` into a tuple.
 
         Example:
 
@@ -190,35 +195,41 @@ class QSDOperator(object):
 
 
 class QSDCodeGenError(Exception):
-    """Exception raised for missing data in QSDCodeGen instance"""
+    """Exception raised for missing data in a :obj:`QSDCodeGen` instance"""
     pass
 
 
 class QSDCodeGen(object):
     """Class that allows to generate a QSD program for QNET expressions, and
-    to run the program to (accumulative) collect expecatation values for
-    obervables
+    to run the program to (accumulative) collect expectation values for
+    observables
 
-    An instance has the following attributes:
+    Parameters:
+        circuit (:obj:`~qnet.algebra.circuit_algebra.SLH`): The circuit to be
+            simulated via QSD.
+        num_vals (dict of :obj:`~sympy.core.symbol.Symbol` to float)): Numeric
+            value for any symbol occurring in the `circuit`, or any
+            operator/state that may be added later on.
 
-    :param circuit: The SLH object to be simulated via QSD
-    :type circuit: qnet.algebra.circuit_algebra.SLH
-    :param syms: The set of symbols used either in the circuit, any of the
-        observables, or the initial state
-    :type syms: set(sympy.core.symbol.Symbol)
-    :param num_vals: For each symbol in `syms`, a numeric value
-    :type num_vals: dict(sympy.core.symbol.Symbol) => float
-    :param traj_data: The accumulated trajectory data. Every time the `run`
-    method is called, the resulting trajectory data is incorporated. Thus, by
-    repeatedly calling `run`, an arbitrary number of trajectories may be
-    accumulated in `traj_data`
-    :type traj_data: qnet.misc.trajectory_data.TrajectoryData
+    Attributes:
+        circuit (:class:`~qnet.algebra.circuit_algebra.SLH`): see `circuit`
+            parameter
+        syms (set of :obj:`~sympy.core.symbol.Symbol`): The set of symbols used
+            either in the circuit, any of the observables, or the initial state
+        num_vals (dict of :obj:`~sympy.core.symbol.Symbol` to float)): Map of
+            symbols to numeric value. Must specify a value for any symbol in
+            `syms`.
+        traj_data (:obj:`~qnet.misc.trajectory_data.TrajectoryData`): The
+            accumulated trajectory data. Every time the :meth:`run` method is
+            called, the resulting trajectory data is incorporated. Thus, by
+            repeatedly calling :meth:`run`, an arbitrary number of trajectories
+            may be accumulated in `traj_data`.
     """
 
-    _known_steppers = ['Order4Step', 'AdaptiveStep', 'AdaptiveJump',
-                       'AdaptiveOrthoJump']
+    known_steppers = ['Order4Step', 'AdaptiveStep', 'AdaptiveJump',
+                      'AdaptiveOrthoJump']
 
-    template = dedent(r'''
+    _template = dedent(r'''
     #include "Complex.h"
     #include "ACG.h"
     #include "CmplxRan.h"
@@ -331,13 +342,14 @@ class QSDCodeGen(object):
 
     @property
     def observables(self):
-        """Iterator over all defined observables
-        (instances of qnet.algebra.operator_algebra.Operator)"""
+        """Iterator over all defined observables (instances of
+        :obj:`~qnet.algebra.operator_algebra.Operator`)
+        """
         return iter([op for (op, fn) in self._observables.values()])
 
     @property
     def observable_names(self):
-        """Iterator of all defined observable names"""
+        """Iterator of all defined observable names (str)"""
         return iter(self._observables.keys())
 
     @property
@@ -358,28 +370,30 @@ class QSDCodeGen(object):
 
     def get_observable(self, name):
         """Return the observable for the given name
-        (instances of qnet.algebra.operator_algebra.Operator)"""
+        (instance of obj:`~qnet.algebra.operator_algebra.Operator`)"""
         return self._observables[name][0]
 
     def _update_qsd_ops(self, operators):
-        """Update self._qsd_ops to that every operator in operators is mapped
-        to an appropriate QSDOperator. The names of the QSDOperators are chosen
-        automatically based on the operator type and the index of the Hilbert
-        space they act in. For a Hilbert space index k, the operators names are
-        chosen as follows:
+        """Update :attr:`self._qsd_ops` to that every operator in operators is
+        mapped to an appropriate :obj:`QSDOperator`. The names of the
+        operators are chosen automatically based on the operator type and
+        the index of the Hilbert space they act in. For a Hilbert space index
+        ``k``, the operators names are chosen as follows::
 
             IdentityOperator => Id
             Create => A{k}
             Destroy => Ad{k}
             LocalSigma |i><j| => S{k}_{i}_{j}
 
-        :param operators: iterable (list, set, ...) of operators for which to
-            define QSDOpertors. These operators must be "atomic", i.e. they
-            must not be an algebraic combination of other operators. They must
-            be in the Hilbert space of the circuit (otherwise, a ValueError is
-            raised), and their Hilbert-space must be (a subspace of) the
-            circuit Hilbert space (otherwise, a BasisNotSetError is raised)
-        :type operators: [qnet.operator_algebra.Operator, ...]
+        Arguments:
+            operators (iterable of :obj:`~qnet.operator_algebra.Operator`):
+                list or set of operators for which to define :obj:`QSDOperator`
+                instances.  These operators must be "atomic", i.e. they must
+                not be an algebraic combination of other operators. They must
+                be in the Hilbert space of the circuit (otherwise, a ValueError
+                is raised), and their Hilbert-space must be (a subspace of) the
+                circuit Hilbert space (otherwise, a :exc:`BasisNotSetError` is
+                raised)
         """
         self._qsd_ops[IdentityOperator] = QSDOperator(
                 qsd_type='Operator',
@@ -441,18 +455,19 @@ class QSDCodeGen(object):
                     used_vars.add(var)
 
     def add_observable(self, op, name=None):
-        """Register an operators as an observable, together with a name that
+        """Register an operator as an observable, together with a name that
         will be used in the header of the table of expectation values, and on
         which the name of the QSD output files will be based.
 
-        :param op: Observable (does not need to be Hermitian)
-        :type op: qnet.algebra.operator_algebra.Operator
-        :param name: Name of of the operator, to be used in the header of the
-            output table. If not given, ``str(op)`` is used.
-        :type name: str or None
+        Arguments:
+            op (:obj:`~qnet.algebra.operator_algebra.Operator`): Observable
+                (does not need to be Hermitian)
+            name (str or ``None``): Name of of the operator, to be used in the
+                header of the output table. If ``None``, ``str(op)`` is used.
 
-        :raises ValueError: If name is invalid or too long, or no unique
-        filename can be generated from the name
+        Raises:
+            ValueError: if `name` is invalid or too long, or no unique
+                filename can be generated from `name`
         """
         logger = logging.getLogger(__name__)
         if name is None:
@@ -484,25 +499,23 @@ class QSDCodeGen(object):
         self._observables[name] = (op, filename)
 
     def set_moving_basis(self, move_dofs, delta=1e-4, width=2, move_eps=1e-4):
-        """Activate the use of the the moving basis, see Section 6 of the QSD
+        """Activate the use of the moving basis, see Section 6 of the QSD
         Paper.
 
-        :param move_dofs: degrees of freedom for which to use a moving basis
-            (the first 'move_dofs' freedoms are recentered, and their cutoffs
-            adjusted.)
-        :type move_dofs: int
-        :param delta: probability threshold for the cutoff adjustment
-        :type delta: float
-        :param width: size of the "pad" for the cutoff
-        :type width: int
-        :param move_eps: numerical accuracy with which to make the shift. Cf.
-            ``shiftAccuracy`` in QSD ``State::recenter`` method
-        :type move_eps: float
+        Arguments:
+            move_dofs (int): degrees of freedom for which to use a moving basis
+                (the first 'move_dofs' freedoms are re-centered, and their
+                cutoffs adjusted.)
+            delta (float): probability threshold for the cutoff adjustment
+            width (int): size of the "pad" for the cutoff
+            move_eps (float): numerical accuracy with which to make the shift.
+                Cf. ``shiftAccuracy`` in QSD ``State::recenter`` method
 
-        :raises ValueError: if move_dofs is invalide
-        :raises QSDCodeGenError: if requesting a moving basis for a degree of
-            freedom for which any operator is defined that cannot be applied in
-            the moving basis
+        Raises:
+            ValueError: if `move_dofs` is invalid
+            QSDCodeGenError: if requesting a moving basis for a degree of
+                freedom for which any operator is defined that cannot be
+                applied in the moving basis
         """
         if move_dofs <= 0:
             raise ValueError("move_dofs must be an integer >0")
@@ -535,36 +548,31 @@ class QSDCodeGen(object):
         """Set the parameters that control the trajectories from which a plot
         of expectation values for the registered observables will be generated.
 
-        :param psi_initial: The initial state
-        :type psi_initial: qnet.agebra.state_algebra.Ket
-        :param stepper: Name of the QSD stepper that should handle propagation
-            of a single time step. See ``_known_steppers`` class attribute for
-            allowed values
-        :type stepper: str
-        :param dt: The duration for a single propagation step. Note that the
-            plot of expectation values will generally be on a coarser grid, as
-            controlled by the ``set_plotting`` routine
-        :type dt: float
-        :param nt_plot_step: Number of propagation steps per plot step. That
-            is, expectation values of the observables will be written out every
-            `nt_plot_step` propagation steps
-        :type nt_plot_step: int
-        :param n_plot_steps: Number of plot steps. The total number of
-            propagation steps for each trajectory will be
-            ``nt_plot_step * n_plot_steps``, and duration T of the entire
-            trajectory will be ``dt * nt_plot_step * n_plot_steps``
-        :type n_plot_stpes: int
-        :param n_trajectories: The number of trajectories over which to average
-            for getting the expectation values of the observables
-        :type n_trajectories: int
-        :param traj_save: Number of trajectories to propagate before writing
-            the averaged expectation values of all oberservables to file. This
-            ensures that if the program is terminated before the calculation of
-            ``n_trajectories`` is complete, the lost data is at most that of
-            the last ``traj_save`` trajectories is lost. A value of 0
-            indictates that the values are to be written out only after
-            completing all trajectories.
-        :type traj_save: int
+        Arguments:
+            psi_initial (:obj:`~qnet.algebra.state_algebra.Ket`): The initial
+                state
+            stepper (str): Name of the QSD stepper that should handle
+                propagation of a single time step. See :attr:`known_steppers`
+                for allowed values
+            dt (float): The duration for a single propagation step. Note that
+                the plot of expectation values will generally be on a coarser
+                grid, as controlled by the ``set_plotting`` routine
+            nt_plot_step (int): Number of propagation steps per plot step. That
+                is, expectation values of the observables will be written out
+                every `nt_plot_step` propagation steps
+            n_plot_steps (int): Number of plot steps. The total number of
+                propagation steps for each trajectory will be ``nt_plot_step *
+                n_plot_steps``, and duration T of the entire trajectory will be
+                ``dt * nt_plot_step * n_plot_steps``
+            n_trajectories (int): The number of trajectories over which to
+                average for getting the expectation values of the observables
+            traj_save (int): Number of trajectories to propagate before writing
+                the averaged expectation values of all observables to file.
+                This ensures that if the program is terminated before the
+                calculation of ``n_trajectories`` is complete, the lost data is
+                at most that of the last ``traj_save`` trajectories is lost. A
+                value of 0 indicates that the values are to be written out
+                only after completing all trajectories.
         """
         self._psi_initial = psi_initial
         if isinstance(psi_initial, Operation):
@@ -574,9 +582,9 @@ class QSDCodeGen(object):
             self._update_qsd_ops(psi_local_ops)
             self.syms.update(psi_initial.all_symbols())
             self._update_var_names()
-        if not stepper in self._known_steppers:
+        if not stepper in self.known_steppers:
             raise ValueError("stepper '%s' must be one of %s"
-                              % (value, self._known_steppers))
+                              % (value, self.known_steppers))
         self._traj_params['stepper'] = stepper
         self._traj_params['dt'] = dt
         self._traj_params['nt_plot_step'] = nt_plot_step
@@ -586,7 +594,7 @@ class QSDCodeGen(object):
 
     def _ordered_tensor_operands(self, state):
         """Return the operands of the given TensorKet instance ordered by their
-        Hilbert space (using self._hilbert_space_index)
+        Hilbert space (using `self._hilbert_space_index`)
 
         This is necessary because in QNET, state carry a label for their
         Hilbert space, while in QSD they do not. Instead, in a Tensor product
@@ -601,10 +609,10 @@ class QSDCodeGen(object):
         """Find all "atomic" kets in the given state and register them in
         self._qsd_states. Return an array of lines of C++ code that defines
         the state in a QSD program. If reset is True, any existing entries in
-        self._qsd_states are discared
+        self._qsd_states are discarded.
 
-        The "atomic" kets are instances of LocalKet or TensorKet, both of which
-        require to be defined with their own name in QSD code
+        The "atomic" kets are instances of `LocalKet` or `TensorKet`, both of
+        which require to be defined with their own name in QSD code
         """
         if not state.space == self._full_space:
             raise QSDCodeGenError(("State %s is not in the Hilbert "
@@ -727,7 +735,7 @@ class QSDCodeGen(object):
     def generate_code(self):
         """Return C++ program that corresponds to the circuit as a multiline
         string"""
-        return self.template.format(
+        return self._template.format(
                 OPERATORBASIS=self._operator_basis_lines(),
                 PARAMETERS=self._parameters_lines(),
                 HAMILTONIAN=self._hamiltonian_lines(),
@@ -748,35 +756,31 @@ class QSDCodeGen(object):
             keep_cc=False):
         """Compile into an executable
 
-        :param qsd_lib: full path to the file libqsd.a containing the
-            statically compiled QSD library.  May reference environment
-            variables the home directory ('~')
-        :type qsd_lib: str
-        :param qsd_headers: path to the folder containing the QSD header files.
-            May reference environment variables the home directory ('~')
-        :type qsd_headers: str
-        :param executable: name of executable to which the QSD program should
-            be compiled. Must consist only of letters, numbers, dashes, and
-            underscores only
-        :type executable: str
-        :param path: The path to the folder where executable will be generated.
-            May reference environment variables the home directory ('~')
-        :type path: str
-        :param compiler: compiler executable
-        :type compiler: str
-        :param compile_options: options to pass to the compiler
-        :type compile_options: str
-        :param delay: If True, delay compilation to a later point in time.
-        :type delay: boolean
-        :param keep_cc: If True, keep the C++ code from which the executable
-            was compiled. It will have the same name as the executable, with
-            an added '.cc' file extension.
-        :type keep_cc: boolean
+        Arguments:
+            qsd_lib (str): full path to the file libqsd.a containing the
+                statically compiled QSD library.  May reference environment
+                variables the home directory ('~')
+            qsd_headers (str): path to the folder containing the QSD header
+                files.  May reference environment variables the home directory
+                ('~')
+            executable (str): name of executable to which the QSD program
+                should be compiled. Must consist only of letters, numbers,
+                dashes, and underscores only
+            path (str): The path to the folder where executable will be
+                generated.  May reference environment variables the home
+                directory ('~')
+            compiler (str): compiler executable
+            compile_options (str): options to pass to the compiler
+            delay (bool): If True, delay compilation to a later point in time.
+            keep_cc (bool): If True, keep the C++ code from which the
+                executable was compiled. It will have the same name as the
+                executable, with an added '.cc' file extension.
 
-        :raises ValueError: if executable name or qsd_lib are invalid
-        :raises OSError: if required files or folders are not found or have
-            invalid names
-        :raises subprocess.CalledProcessError: if compilation fails
+        Raises:
+            ValueError: if `executable` name or `qsd_lib` are invalid
+            OSError: if required files or folders are not found or have
+                invalid names
+            subprocess.CalledProcessError: if compilation fails
         """
         logger = logging.getLogger(__name__)
         executable = str(executable)
@@ -820,34 +824,34 @@ class QSDCodeGen(object):
         self._executable = executable
 
     def run(self, seed=None, workdir='.', keep=False):
-        """Run the QSD program. The `compile` method must have been called
-        before `run`. If `compile` was called with ``delay=True``, compile at
-        this point and run the resulting program. Otherwise, just run the
-        existing program from the earlier compilation. The resulting directory
-        data is returned, and in addition the `traj_data` attribute is updated
-        to include the new trajectories (in addition to any previous
-        trajectories)
+        """Run the QSD program. The :meth:`compile` method must have been
+        called before `run`. If :meth:`compile` was called with
+        ``delay=True``, compile at this point and run the resulting program.
+        Otherwise, just run the existing program from the earlier compilation.
+        The resulting directory data is returned, and in addition the
+        `traj_data` attribute is updated to include the new trajectories (in
+        addition to any previous trajectories)
 
         The `run` method may be called repeatedly to accumulate trajectories.
 
-        :param seed: Random number generator seed (unsigned integer), will be
-            passed to the executable as the only argument.
-        :type seed: int
-        :param workdir: The directory in which to (temporarily) create the
-            output files. The workdir must exist. Environment variables and '~'
-            will be expanded.
-        :type workdir: str
-        :param keep: If True, keep QSD output files inside `workdir`
-        :type keep: boolean
+        Arguments:
+            seed (int): Random number generator seed (unsigned integer), will
+                be passed to the executable as the only argument.
+            workdir (str): The directory in which to (temporarily) create the
+                output files. The workdir must exist. Environment variables and
+                '~' will be expanded.
+            keep (bool): If True, keep QSD output files inside `workdir`
 
-        :returns: instance of qnet.misc.trajectory_data.TrajectoryData for the
-        simulated trajectories.
+        Returns:
+            qnet.misc.trajectory_data.TrajectoryData: Averaged data obtained
+            from the newly simulated trajectories only.
 
-        :raises QSDCodeGenError: if compile method was not called
-        :raises OSError: if creating/removing files/folders fails
-        :raises subprocess.CalledProcessError: if delayed compilation fails or
-            executable returns with non-zero exit code
-        :raises ValueError: if seed is not unique
+        Raises:
+            QSDCodeGenError: if :meth:`compile` was not called
+            OSError: if creating/removing files/folders fails
+            subprocess.CalledProcessError: if delayed compilation fails or
+                executable returns with non-zero exit code
+            ValueError: if seed is not unique
         """
         if self._executable is None:
             raise QSDCodeGenError("Call compile method first")
@@ -1035,36 +1039,38 @@ def expand_cmd(cmd):
 
 
 def compilation_worker(kwargs, _runner=None):
-    """"Worker to perform compilation, suitable e.g. for being run on an
-    IPython cluster. All arguments are in the kwargs dictionary.
+    """Worker to perform compilation, suitable e.g. for being run on an
+    IPython cluster. All arguments are in the `kwargs` dictionary.
 
-    kwargs['executable']: str
-        Name of the executable to be created. Nothing will be expanded.
-    kwargs['path']: str
-        Path where the executable should be created, as absolute path or
-        relative to the current working directory. Environment variables and
-        '~' will be expanded.
-    kwargs['cc_code']: str
-        Multiline string that contains the entire C++ program to be compiled
-    kwargs['keep_cc']: boolean
-        Keep C++ file after compilation? It will have the same name as the
-        executable, with an added '.cc' file extension.
-    kargs['cmd'] list of str
-        Command line arguments (see `args` in ``subprocess.check_output``).
-        In each argument, environment variables are expanded, and '~' is
-        expanded to $HOME. It must meet the following requirements:
-        * the compiler (first argument) must be in the $PATH
-        * Invocation of the command must compile a C++ file with the name
-        `executable`.cc in the current working directory to `exectuable`, also
-        in the current working directoy. It must *not* take into account
-        `path`. This is because the working directory for the subprocess
-        handling the command invocation will be set to `path`. Thus, the
-        executable will be created in `path`.
+    Keys:
+        executable (str): Name of the executable to be created. Nothing will be
+            expanded.
+        path (str): Path where the executable should be created, as absolute
+            path or relative to the current working directory. Environment
+            variables and '~' will be expanded.
+        cc_code (str): Multiline string that contains the entire C++ program to
+            be compiled
+        keep_cc (bool): Keep C++ file after compilation? It will have the
+            same name as the executable, with an added ``.cc`` file extension.
+        cmd (list of str): Command line arguments (see `args` in
+            `subprocess.check_output`).  In each argument, environment
+            variables are expanded, and '~' is
+            expanded to ``$HOME``. It must meet the following requirements:
 
-    :returns: Absolute path of the compiled executable
+            * the compiler (first argument) must be in the ``$PATH``
+            * Invocation of the command must compile a C++ file with the name
+              `executable`.cc in the current working directory to `exectuable`,
+              also in the current working directoy. It must *not* take into
+              account `path`. This is because the working directory for the
+              subprocess handling the command invocation will be set to `path`.
+              Thus, that is where the executable will be created.
 
-    :raises subprocess.CalledProcessError: if compilation fails
-    :raises OSError: if creating/removing files/folder fails
+    Returns:
+        Absolute path of the compiled executable
+
+    Raises:
+        subprocess.CalledProcessError: if compilation fails
+        OSError: if creating/removing files/folder fails
     """
     # we import subprocess locally, to make the routine completely
     # self-contained. This is a requirement e.g. to be a worker on an IPython
@@ -1099,38 +1105,41 @@ def compilation_worker(kwargs, _runner=None):
 
 
 def qsd_run_worker(kwargs, _runner=None):
-    """"Worker to perform run of a previously compiled program (see
+    """Worker to perform run of a previously compiled program (see
     `compilation_worker`), suitable e.g. for being run on an
-    IPython cluster. All arguments are in the kwargs dictionary.
+    IPython cluster. All arguments are in the `kwargs` dictionary.
 
-    kwargs['executable']: str
-        Name of the executable to be run. Nothing will be expanded.
-        This should generally be only the name of the executable, but it can
-        also be a path relative to ``kwargs['path']``, or a (fully expanded)
-        absolute path, in which case ``kwargs['path']`` is ignored.
-    kwargs['path']: str
-        Path where the executable can be found, as absolute path or
-        relative to the current working directory. Environment variables and
-        '~' will be expanded.
-    kwargs['seed']: int
-        Seed (unsigned int) to be passed as argument to the executable
-    kwargs['operators']: dict or OrderedDict(str => str)
-        Mapping of operator name to filename, see `operators` parameter of
-        `qnet.misc.trajectory_data.TrajectoryData.from_qsd_data`
-    kwargs['workdir']: str
-        The working directory in which to execute the executable (relative to
-        the current working directory). The output files defined in `operators`
-        will be created in this folder. If `workdir` does not exist yet, it
-        will be created
-    kwargs['keep']: boolean
-        If True, keep the the QSD output files. If False, remove the output
-        files as well as any folders that may have been created alongside with
-        `workdir`
+    Keys:
+        executable (str): Name of the executable to be run. Nothing will be
+            expanded.  This should generally be only the name of the
+            executable, but it can also be a path relative to
+            ``kwargs['path']``, or a (fully expanded) absolute path, in which
+            case ``kwargs['path']`` is ignored.
+        path (str): Path where the executable can be found, as absolute path or
+            relative to the current working directory. Environment variables
+            and '~' will be expanded.
+        seed (int): Seed (unsigned int) to be passed as argument to the
+            executable
+        operators(dict or OrderedDict of str to str)): Mapping of operator name
+            to filename, see `operators` parameter of
+            :meth:`~qnet.misc.trajectory_data.TrajectoryData.from_qsd_data`
+        workdir (str): The working directory in which to execute the executable
+            (relative to the current working directory). The output files
+            defined in `operators` will be created in this folder. If `workdir`
+            does not exist yet, it will be created
+        keep (bool): If True, keep the QSD output files. If False,
+            remove the output files as well as any folders that may have been
+            created alongside with `workdir`
 
-    :raises FileNotFoundError: if `executable` does not exist in `path`
+    Raises:
+        FileNotFoundError: if `executable` does not exist in `path`
 
-    :returns: Instance of `qnet.misc.trajectory_data.TrajectoryData`
+    Returns:
+        Expectation values and variances of the observables, from the newly
+        simulated trajectories only (instance of
+        :obj:`~qnet.misc.trajectory_data.TrajectoryData`)
     """
+    # imports *must* be local so that we can send this to an IPython engine
     import subprocess as sp
     import os
     import shutil
@@ -1170,6 +1179,19 @@ def qsd_run_worker(kwargs, _runner=None):
 
 
 def sanitize_name(name, allowed_letters, replacements):
+    """Return a sanitized `name`, where all letters that occur as keys in
+    `replacements` are replaced by their corresponding values, and any letters
+    that do not match `allowed_letters` are dropped
+
+    Arguments:
+        name (str): string to be sanitized
+        allowed_letters (regex): compiled regular expression
+            that any allowed letter must match
+        replacement (dict of str to str): dictionary of mappings
+
+    Returns:
+        str: sanitized name
+    """
     sanitized = ''
     for letter in name:
         if letter in replacements:

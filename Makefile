@@ -3,8 +3,8 @@ PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest sphinx nose pl
 TESTPYPI = https://testpypi.python.org/pypi
 
 #TESTOPTIONS = --doctest-modules
-TESTOPTIONS = -s -x --pdb
-TESTS = qnet/misc/test/test_qsd_codegen.py
+TESTOPTIONS =
+TESTS = qnet
 # You may redefine TESTS to run a specific test. E.g.
 #     make test TESTS="qnet/algebra/test"
 
@@ -41,6 +41,7 @@ clean:
 	@rm -rf QDYN.egg-info
 	@find . -iname *pyc | xargs rm -f
 	@find . -iname __pycache__ | xargs rm -rf
+	@make -C docs clean
 	@rm -rf $(DOC) $(DOC).tgz
 
 .venv/py27/bin/py.test:
