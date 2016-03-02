@@ -1137,8 +1137,11 @@ def compilation_worker(kwargs, _runner=None):
     keep_cc = kwargs['keep_cc']
     cmd = expand_cmd(kwargs['cmd'])
     cc_file = executable + '.cc'
-    if not os.path.isdir(path):
-        os.makedirs(path)
+    try:
+        os.makedirs(workdir)
+    except OSError:
+        # Ignore existing directory
+        pass
     with open(os.path.join(path, cc_file), 'w') as out_fh:
         out_fh.write(cc_code)
         out_fh.write("\n")
@@ -1217,7 +1220,12 @@ def qsd_run_worker(kwargs, _runner=None):
         while not os.path.isdir(folder):
             delete_folder = folder
             folder = os.path.abspath(os.path.join(folder, '..'))
-        os.makedirs(workdir)
+        try:
+            os.makedirs(workdir)
+        except OSError:
+            # This might happen sometimes when using multi-threading and
+            # another thread has created the directory since the "isdir" check
+            pass
     local_executable = _full_expand(os.path.join(path, executable))
     is_exe = lambda f: os.path.isfile(f) and os.access(f, os.X_OK)
     if not is_exe(local_executable):
@@ -1229,7 +1237,7 @@ def qsd_run_worker(kwargs, _runner=None):
         for filename in operators.values():
             os.unlink(os.path.join(workdir, filename))
         if delete_folder is not None:
-            shutil.rmtree(delete_folder)
+            shutil.rmtree(delete_folder, ignore_errors=True)
     return traj
 
 
