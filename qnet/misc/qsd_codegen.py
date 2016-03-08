@@ -1,6 +1,5 @@
 import re
 import random
-import sys
 import os
 import logging
 import struct
@@ -10,15 +9,14 @@ from collections import OrderedDict
 from functools import partial
 import subprocess as sp
 
-from qnet.algebra.abstract_algebra import prod
 from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
-    Operation, Circuit, set_union, TrivialSpace, LocalSigma,
+    Operation, Circuit, set_union, LocalSigma,
     ScalarTimesOperator, OperatorPlus, OperatorTimes
 )
 from qnet.algebra.state_algebra import (
-    Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet, ScalarTimesOperator,
+    Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet,
     ScalarTimesKet, KetPlus
 )
 from qnet.misc.trajectory_data import TrajectoryData
@@ -457,7 +455,7 @@ class QSDCodeGen(object):
                 var = sanitize_varname(str(sym))
                 if var in used_vars:
                     raise ValueError("Cannot generate a unique variable name "
-                                     "for symbol '%s'" % s)
+                                     "for symbol '%s'" % sym)
                 else:
                     self._var_names[sym] = var
                     used_vars.add(var)
@@ -592,7 +590,7 @@ class QSDCodeGen(object):
             self._update_var_names()
         if not stepper in self.known_steppers:
             raise ValueError("stepper '%s' must be one of %s"
-                              % (value, self.known_steppers))
+                              % (stepper, self.known_steppers))
         self._traj_params['stepper'] = stepper
         self._traj_params['dt'] = dt
         self._traj_params['nt_plot_step'] = nt_plot_step
@@ -698,9 +696,8 @@ class QSDCodeGen(object):
         return "\n".join(lines)
 
     def _trajectory_lines(self):
-        logger = logging.getLogger(__name__)
         try:
-            read_files = self._traj_params['stepper']
+            __ = self._traj_params['stepper']
         except KeyError:
             raise QSDCodeGenError("No trajectories set up. Ensure that "
                                   "'set_trajectories' method has been called")
@@ -825,7 +822,7 @@ class QSDCodeGen(object):
             if not os.path.isfile(_full_expand(qsd_lib)):
                 logger.warn("File "+qsd_lib+" does not exist")
             try:
-                executable_abs = compilation_worker(kwargs)
+                compilation_worker(kwargs)
             except sp.CalledProcessError as exc_info:
                 logger.error("command '{cmd:s}' failed with code {code:d}"
                                 .format(cmd=self._compile_cmd,
@@ -912,6 +909,10 @@ class QSDCodeGen(object):
                 Defaults to the builtin `map` routine, which will process the
                 scheduled runs serially.
 
+        Raises:
+            TypeError: If `map` does not return a list of
+                :class:`~qnet.misc.trajectory_data.TrajectoryData` instances.
+
         Note:
             Parallel execution is achieved by passing an appropriate `map`
             routine. For example, ``map=multiprocessing.Pool(5).map`` would use
@@ -923,13 +924,19 @@ class QSDCodeGen(object):
         """
         if _run_worker is None:
             _run_worker = qsd_run_worker
-        trajs = list(map(_run_worker, self._delayed_runs_kwargs))
-        self._delayed_runs_kwargs = []
-        if self.traj_data is None:
-            self.traj_data = trajs[0].copy()
-            self.traj_data.extend(*trajs[1:])
-        else:
-            self.traj_data.extend(*trajs)
+        trajs = []
+        try:
+            trajs = list(map(_run_worker, self._delayed_runs_kwargs))
+            self._delayed_runs_kwargs = []
+            if self.traj_data is None:
+                self.traj_data = trajs[0].copy()
+                if len(trajs) > 1:
+                    self.traj_data.extend(*trajs[1:])
+            else:
+                self.traj_data.extend(*trajs)
+        except (IndexError, TypeError, AttributeError):
+            raise TypeError("`map ` does not return a list of TrajectoryData "
+                            "instances.")
         return trajs
 
     def __str__(self):
@@ -1147,7 +1154,7 @@ def compilation_worker(kwargs, _runner=None):
         out_fh.write("\n")
     executable_abs = os.path.abspath(os.path.join(path, executable))
     try:
-        output = _runner(cmd, stderr=sp.STDOUT, cwd=path)
+        _runner(cmd, stderr=sp.STDOUT, cwd=path)
     finally:
         if not keep_cc:
             os.unlink(cc_file)
@@ -1231,7 +1238,7 @@ def qsd_run_worker(kwargs, _runner=None):
     if not is_exe(local_executable):
         raise FileNotFoundError("No executable "+local_executable)
     cmd = [local_executable, str(seed)]
-    output = _runner(cmd, stderr=sp.STDOUT, cwd=workdir)
+    _runner(cmd, stderr=sp.STDOUT, cwd=workdir)
     traj = TrajectoryData.from_qsd_data(operators, seed, workdir=workdir)
     if not keep:
         for filename in operators.values():

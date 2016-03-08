@@ -587,7 +587,8 @@ class TrajectoryData(object):
 
         Raises:
             ValueError: if `data` in `self` and and any element of `others` are
-            incompatible
+                incompatible
+            TypeError: if any `others` are not an instance of `TrajectoryData`
         """
         err_msg = "TrajectoryData may only be extended by completely "\
                   "disjunct other TrajectoryData object"
@@ -601,6 +602,9 @@ class TrajectoryData(object):
         # X_n += n_j*X_j for j over all j sets of trajectories
         try:
             for other in others:
+                if not isinstance(other, TrajectoryData):
+                    raise TypeError("All 'others' must be instances of "
+                                    "TrajectoryData")
                 if not self.record_IDs.isdisjoint(other.record_IDs):
                     raise ValueError("%s: Repeated ID"%err_msg)
                 if not self.record_seeds.isdisjoint(other.record_seeds):
