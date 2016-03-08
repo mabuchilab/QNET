@@ -913,7 +913,7 @@ class QSDCodeGen(object):
                 scheduled runs serially.
 
         Note:
-            Parallel execution is achieve by passing an appropriate `map`
+            Parallel execution is achieved by passing an appropriate `map`
             routine. For example, ``map=multiprocessing.Pool(5).map`` would use
             a local thread pool of 5 workers. Another alternative would be the
             `map` method of an ``ipyparallel`` View. If (and only if) the View
@@ -1138,7 +1138,7 @@ def compilation_worker(kwargs, _runner=None):
     cmd = expand_cmd(kwargs['cmd'])
     cc_file = executable + '.cc'
     try:
-        os.makedirs(workdir)
+        os.makedirs(path)
     except OSError:
         # Ignore existing directory
         pass
