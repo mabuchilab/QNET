@@ -3,7 +3,7 @@ import uuid
 import os
 import re
 import json
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 import numpy as np
 
@@ -580,39 +580,64 @@ class TrajectoryData(object):
                 n_total += n_traj
         return n_total
 
-    def extend(self, other):
-        """Extend data with data from another `TrajectoryData` instance,
-        averaging the expectation values. Equivalently to
+    def extend(self, *others):
+        """Extend data with data from one or more other `TrajectoryData`
+        instances, averaging the expectation values. Equivalently to
         ``traj1.extend(traj2)``, the syntax ``traj1 += traj2`` may be used.
 
         Raises:
-            ValueError: if `data` in `self` and `other` are incompatible
+            ValueError: if `data` in `self` and and any element of `others` are
+                incompatible
+            TypeError: if any `others` are not an instance of `TrajectoryData`
         """
         err_msg = "TrajectoryData may only be extended by completely "\
                   "disjunct other TrajectoryData object"
-        if not self.record_IDs.isdisjoint(other.record_IDs):
-            raise ValueError("%s: Repeated ID"%err_msg)
-        if not self.record_seeds.isdisjoint(other.record_seeds):
-            if not set(self.operators).isdisjoint(set(other.operators)):
-                raise ValueError("%s: Repeated seed"%err_msg)
-        if not abs(self.dt - other.dt) < self._prec_dt:
-            raise ValueError("Extending TrajectoryData does not match dt")
+        n_trajs = defaultdict(lambda: 0) # op => total number of trajectories
+        # X_n -> n * X_n for existing operators
         for op in self._operators:
-            if op in other._operators:
-                n_self = self.n_trajectories(op)
-                n_other = other.n_trajectories(op)
+            n_trajs[op] = self.n_trajectories(op)
+            for col in self._operator_cols(op):
+                self.table[col] *= n_trajs[op]
+        used_IDs = [self.ID, ]
+        # X_n += n_j*X_j for j over all j sets of trajectories
+        try:
+            for other in others:
+                if not isinstance(other, TrajectoryData):
+                    raise TypeError("All 'others' must be instances of "
+                                    "TrajectoryData")
+                if not self.record_IDs.isdisjoint(other.record_IDs):
+                    raise ValueError("%s: Repeated ID"%err_msg)
+                if not self.record_seeds.isdisjoint(other.record_seeds):
+                    if not set(self.operators).isdisjoint(set(other.operators)):
+                        raise ValueError("%s: Repeated seed"%err_msg)
+                if not abs(self.dt - other.dt) < self._prec_dt:
+                    raise ValueError("Extending TrajectoryData does not "
+                                     "match dt")
+                for op in other._operators:
+                    n_other = other.n_trajectories(op)
+                    n_trajs[op] = n_trajs[op] + n_other
+                    if op in self._operators:
+                        for col in self._operator_cols(op):
+                            if n_other == 1:
+                                self.table[col] += other.table[col]
+                            else:
+                                self.table[col] += n_other * other.table[col]
+                    else:
+                        self._operators.append(op)
+                        for col in self._operator_cols(op):
+                            if n_other == 1:
+                                self.table[col] = other.table[col].copy()
+                            else:
+                                self.table[col] = n_other * other.table[col]
+                self._record.update(other._record)
+                used_IDs.append(other.ID)
+        finally: # do not leave trajectory data in a broken state!
+            # X_n -> X_n / n (with new n)
+            for op in self._operators:
                 for col in self._operator_cols(op):
-                    self.table[col] *= n_self
-                    self.table[col] += n_other * other.table[col]
-                    self.table[col] /= float(n_self + n_other)
-        # we may also have to account for other containing new operators
-        for op in other._operators:
-            if op not in self._operators:
-                self._operators.append(op)
-                for col in self._operator_cols(op):
-                    self.table[col] = other.table[col].copy()
-        self._record.update(other._record)
-        self._ID = self.new_id(name="".join(sorted([self.ID, other.ID])))
+                    if n_trajs[op] > 1:
+                        self.table[col] /= n_trajs[op]
+            self._ID = self.new_id(name="".join(sorted(used_IDs)))
 
     def __add__(self, other):
         combined = self.copy()

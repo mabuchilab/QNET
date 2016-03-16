@@ -250,9 +250,12 @@ def test_write(tmpdir, traj1_coarse):
     assert p.read() == traj1_coarse.to_str()
 
 
-def deep_eq(t1, t2):
+def deep_eq(t1, t2, diff=0.0):
     for col in t1.table:
-        assert np.all(t1.table[col] == t2.table[col])
+        if diff == 0.0:
+            assert np.all(t1.table[col] == t2.table[col])
+        else:
+            assert np.max(np.abs(t1.table[col] - t2.table[col])) < diff
         assert not (t1.table[col] is t2.table[col])
     for attr in t1.__dict__:
         if attr == 'table':
@@ -284,6 +287,7 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
     assert "Repeated seed" in str(excinfo.value)
 
     traj1_copy = traj1.copy()
+    traj1_copy2 = traj1.copy()
     traj1.extend(traj2_10)
     assert list(traj1.operators) == ['X1', 'X2', 'A2']
     assert traj1.n_trajectories('X1') == 10
@@ -300,7 +304,9 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
                 - (traj1_copy.table[col] + 9.0 * traj2_10.table[col])/10.0)
         assert np.max(np.abs(diff)) <= 1.0e-14
     for col in traj1._operator_cols('A2'):
-        assert np.all(traj1.table[col] == traj2_10.table[col])
+        # because we multipy and then divide A2 by 9, we only get the same
+        # result up to machine precision
+        assert np.max(np.abs(traj1.table[col]-traj2_10.table[col])) < 1e-15
     # test the syntactic sugar
     traj1_copy += traj2_10
     deep_eq(traj1_copy, traj1)
@@ -317,6 +323,10 @@ def test_extend(traj1, traj2_10, traj11_20, traj1_coarse, traj2_coarse,
     # test the syntactic sugar
     traj_combined = traj1_copy + traj11_20
     deep_eq(traj_combined, traj1)
+
+    # test extend with multiple arguments
+    traj1_copy2.extend(traj2_10, traj11_20)
+    deep_eq(traj_combined, traj1, diff=1e-15)
 
 
 def test_parse_header_line():

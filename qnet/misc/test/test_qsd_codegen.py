@@ -797,21 +797,23 @@ def test_qsd_run_worker(datadir, tmpdir, monkeypatch):
 def test_compile(Sec6_codegen):
     traj = Sec6_codegen
     assert traj.compile_cmd == ''
+    no_op = lambda f, kwargs: None
     with pytest.raises(ValueError) as exc_info:
         traj.compile(qsd_lib='~/local/lib', qsd_headers='~/local/header',
                     executable='qsd_test', path='~/bin', compiler='$CC',
-                    compile_options='-g -O0', delay=True, keep_cc=False)
+                    compile_options='-g -O0', keep_cc=False,
+                    remote_apply=no_op)
     assert "point to a file of the name libqsd.a" in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         traj.compile(qsd_lib='~/local/lib/libqsd.a',
                     qsd_headers='~/local/header', executable='~/bin/qsd_test',
                     path='~/bin', compiler='$CC', compile_options='-g -O0',
-                    delay=True, keep_cc=False)
+                    keep_cc=False, remote_apply=no_op)
     assert "Invalid executable name" in str(exc_info.value)
     traj.compile(qsd_lib='~/local/lib/libqsd.a',
                 qsd_headers='~/local/header', executable='qsd_test',
                 path='~/bin', compiler='$CC', compile_options='-g -O0',
-                delay=True, keep_cc=False)
+                keep_cc=False, remote_apply=no_op)
     assert traj.compile_cmd == '$CC -g -O0 -I~/local/header -o qsd_test '\
                                'qsd_test.cc -L~/local/lib -lqsd'
     assert traj._path == '~/bin'
@@ -825,17 +827,18 @@ def test_compilation_worker(mock_compilation_worker, Sec6_codegen, traj1,
     codegen.compile(qsd_lib='~/local/lib/libqsd.a',
                 qsd_headers='~/local/header', executable='qsd_test',
                 path='~/bin', compiler='$CC', compile_options='-g -O0',
-                delay=True, keep_cc=False)
+                keep_cc=False)
     comp_kwargs = {'executable': 'qsd_test', 'path':'~/bin',
                    'cc_code':str(codegen), 'keep_cc': False,
                    'cmd': ['$CC', '-g', '-O0', '-I~/local/header',
                            '-o', 'qsd_test', 'qsd_test.cc', '-L~/local/lib',
                            '-lqsd']}
+    mock_compilation_worker.assert_called_once_with(comp_kwargs)
     operators = OrderedDict([('X1', 'X1.out'), ('X2', 'X2.out'),
                              ('A2', 'A2.out')])
-    run_kwargs = {'executable': '/home/qnet/bin/qsd_test',
-                  'workdir': '.', 'operators': operators, 'keep': False,
-                  'seed': TRAJ1_SEED, 'path': '.'}
+    run_kwargs = {'executable': 'qsd_test', 'workdir': None,
+                  'operators': operators, 'keep': False,
+                  'seed': TRAJ1_SEED, 'path': '~/bin'}
     qsd_run_worker = 'qnet.misc.qsd_codegen.qsd_run_worker'
     traj1_ID = traj1.ID
     traj2_10_ID = traj2_10.ID
@@ -847,7 +850,6 @@ def test_compilation_worker(mock_compilation_worker, Sec6_codegen, traj1,
     with mock.patch(qsd_run_worker, return_value=traj1) as mock_runner:
         traj_first = codegen.run(seed=TRAJ1_SEED)
         traj_IDs.append(traj_first.ID)
-    mock_compilation_worker.assert_called_once_with(comp_kwargs)
     mock_runner.assert_called_once_with(run_kwargs)
     assert codegen.traj_data == traj_first
 
