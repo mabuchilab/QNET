@@ -238,6 +238,8 @@ class QSDCodeGen(object):
     #include "FieldOp.h"
     #include "Traject.h"
 
+    {PARAMETERS}
+
     int main(int argc, char* argv[])
     {{
 
@@ -254,24 +256,22 @@ class QSDCodeGen(object):
         }}
       }}
 
-    // Primary Operators
+      // Primary Operators
     {OPERATORBASIS}
 
-    // Hamiltonian
-    {PARAMETERS}
-
+      // Hamiltonian
     {HAMILTONIAN}
 
-    // Lindblad operators
+      // Lindblad operators
     {LINDBLADS}
 
-    // Observables
+      // Observables
     {OBSERVABLES}
 
-    // Initial state
+      // Initial state
     {INITIAL_STATE}
 
-    // Trajectory
+      // Trajectory
     {TRAJECTORY}
     }}''').strip()
 
@@ -686,16 +686,16 @@ class QSDCodeGen(object):
         return lines
 
 
-    def _initial_state_lines(self):
+    def _initial_state_lines(self, indent=2):
         if not isinstance(self._psi_initial, Ket):
             raise TypeError("Initial state must be a Ket instance")
         lines = self._define_atomic_kets(self._psi_initial)
         lines.append('')
         lines.append('State psiIni = '+self._ket_str(self._psi_initial)+';')
         lines.append('psiIni.normalize();')
-        return "\n".join(lines)
+        return "\n".join(_indent(lines, indent))
 
-    def _trajectory_lines(self):
+    def _trajectory_lines(self, indent=2):
         try:
             __ = self._traj_params['stepper']
         except KeyError:
@@ -734,7 +734,8 @@ class QSDCodeGen(object):
             ])
         fmt_mapping = self._traj_params.copy()
         fmt_mapping.update(self._moving_params)
-        return "\n".join([line.format(**fmt_mapping) for line in lines])
+        rendered_lines = [line.format(**fmt_mapping) for line in lines]
+        return "\n".join(_indent(rendered_lines, indent))
 
 
     def generate_code(self):
@@ -742,7 +743,7 @@ class QSDCodeGen(object):
         string"""
         return self._template.format(
                 OPERATORBASIS=self._operator_basis_lines(),
-                PARAMETERS=self._parameters_lines(),
+                PARAMETERS=self._parameters_lines(indent=0),
                 HAMILTONIAN=self._hamiltonian_lines(),
                 LINDBLADS=self._lindblads_lines(),
                 OBSERVABLES=self._observables_lines(),
@@ -942,7 +943,7 @@ class QSDCodeGen(object):
     def __str__(self):
         return self.generate_code()
 
-    def _operator_basis_lines(self):
+    def _operator_basis_lines(self, indent=2):
         """Return a multiline string of C++ code that defines and initializes
         all operators in the system"""
         # QSD demands that we first define all "special" operators (instances
@@ -961,9 +962,9 @@ class QSDCodeGen(object):
                 general_op_lines.append(line)
             else:
                 special_op_lines.append(line)
-        return "\n".join(special_op_lines + general_op_lines)
+        return "\n".join(_indent(special_op_lines + general_op_lines, indent))
 
-    def _parameters_lines(self):
+    def _parameters_lines(self, indent=2):
         """Return a multiline string of C++ code that defines all numerical
         constants"""
         self._update_var_names() # should be superfluous, but just to be safe
@@ -985,10 +986,10 @@ class QSDCodeGen(object):
             else:
                 lines.add("Complex {!s}({:g},{:g});"
                           .format(var, val.real, val.imag))
-        return "\n".join(sorted(lines))
+        return "\n".join(_indent(sorted(lines), indent))
 
 
-    def _observables_lines(self):
+    def _observables_lines(self, indent=2):
         """Return a multiline string of C++ code that defines all
         observables"""
         lines = []
@@ -1001,14 +1002,15 @@ class QSDCodeGen(object):
         for (observable, outfile) in self._observables.values():
             outlist_lines.append(self._operator_str(observable))
             outfiles.append(outfile)
-        lines.append("Operator outlist[nOfOut] = {\n  "
-                     + ",\n  ".join(outlist_lines) + "\n};")
+        lines.extend(("Operator outlist[nOfOut] = {\n  "
+                      + ",\n  ".join(outlist_lines)).split("\n"))
+        lines.append("};")
         lines.append('char *flist[nOfOut] = {{{filenames}}};'
                      .format(filenames=", ".join(
                          [('"'+fn+'"') for fn in outfiles]
                      )))
         lines.append(r'int pipe[4] = {1,2,3,4};')
-        return "\n".join(lines)
+        return "\n".join(_indent(lines, indent))
 
 
     def _operator_str(self, op):
@@ -1064,19 +1066,20 @@ class QSDCodeGen(object):
         else:
             return "{:g}".format(sc)
 
-    def _hamiltonian_lines(self):
+    def _hamiltonian_lines(self, indent=2):
         H = self.circuit.H
-        return "Operator H = "+self._operator_str(H)+";"
+        return " "*indent + "Operator H = "+self._operator_str(H)+";"
 
-    def _lindblads_lines(self):
+    def _lindblads_lines(self, indent=2):
         lines = []
         lines.append('const int nL = {nL};'.format(nL=self.circuit.cdim))
         L_op_lines = []
         for L_op in self.circuit.L.matrix.flatten():
             L_op_lines.append(self._operator_str(L_op))
-        lines.append(
-            "Operator L[nL]={\n  " + ",\n  ".join(L_op_lines) + "\n};")
-        return "\n".join(lines)
+        lines.extend(
+            ("Operator L[nL]={\n  " + ",\n  ".join(L_op_lines) + "\n};")
+            .split("\n"))
+        return "\n".join(_indent(lines, indent))
 
 
 def _full_expand(s):
@@ -1278,6 +1281,16 @@ def sanitize_name(name, allowed_letters, replacements):
         if allowed_letters.match(letter):
             sanitized += letter
     return sanitized
+
+
+def _indent(lines, indent=2):
+    indented_lines = []
+    for line in lines:
+        if len(line) > 0:
+            indented_lines.append(" "*indent + line)
+        else:
+            indented_lines.append(line)
+    return indented_lines
 
 
 sanitize_filename = partial(sanitize_name,
