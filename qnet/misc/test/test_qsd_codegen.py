@@ -1,11 +1,13 @@
 import sympy
+from sympy import symbols, sqrt, I
 from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
     QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT, expand_cmd,
     compilation_worker, qsd_run_worker, _find_time_dependent_coeffs)
-from qnet.algebra.circuit_algebra import (
-    IdentityOperator, Create, Destroy, LocalOperator, Operator,
-    Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
-    LocalSigma, identity_matrix, I
+from qnet.algebra.abstract_algebra import set_union
+from qnet.algebra.circuit_algebra import Circuit, SLH
+from qnet.algebra.operator_algebra import (IdentityOperator, Create, Destroy,
+        LocalOperator, Operator, Operation, TrivialSpace, LocalSigma,
+        identity_matrix,
 )
 from qnet.algebra.state_algebra import (
     BasisKet, LocalKet, TensorKet, CoherentStateKet

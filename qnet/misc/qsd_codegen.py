@@ -9,17 +9,16 @@ from collections import OrderedDict
 from functools import partial
 import subprocess as sp
 
+from qnet.algebra.abstract_algebra import Operation, set_union
 from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
-from qnet.algebra.circuit_algebra import (
-    IdentityOperator, Create, Destroy, LocalOperator, Operator,
-    Operation, Circuit, set_union, LocalSigma,
-    ScalarTimesOperator, OperatorPlus, OperatorTimes
-)
+from qnet.algebra.circuit_algebra import Circuit
 from qnet.algebra.state_algebra import (
     Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet,
     ScalarTimesKet, KetPlus
 )
-from qnet.algebra.operator_algebra import scalar_free_symbols
+from qnet.algebra.operator_algebra import (scalar_free_symbols,
+        IdentityOperator, Create, Destroy, LocalOperator, Operator, LocalSigma,
+        ScalarTimesOperator, OperatorPlus, OperatorTimes)
 from qnet.misc.trajectory_data import TrajectoryData
 import sympy
 try:

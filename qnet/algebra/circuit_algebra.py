@@ -36,10 +36,32 @@ References:
 
 from __future__ import division
 
+import re
 import os
+from abc import ABCMeta, abstractproperty, abstractmethod
+from functools import reduce
 
-from qnet.algebra.operator_algebra import *
-from qnet.algebra.permutations import *
+import six
+from sympy import symbols
+from sympy.utilities.lambdify import lambdify
+
+if six.PY3:
+    basestring = str
+    long = int
+
+from qnet.algebra.abstract_algebra import (AlgebraException, AlgebraError,
+        Operation, Expression, check_signature, singleton,
+        preprocess_create_with, assoc, filter_neutral, match_replace_binary,
+        check_signature_assoc, match_replace, wc, CannotSimplify, prod)
+from qnet.algebra.operator_algebra import (Operator, OperatorPlus,
+        ScalarTimesOperator, Matrix, IdentityOperator, Create, Destroy,
+        block_matrix, zerosm, permutation_matrix, Im, ImAdjoint, get_coeffs,
+        vstackm, space)
+from qnet.algebra.permutations import (check_permutation, invert_permutation,
+        BadPermutationError, permutation_to_block_permutations,
+        block_perm_and_perms_within_blocks, full_block_perm)
+from qnet.algebra.hilbert_space_algebra import (HilbertSpace, TrivialSpace,
+        FullSpace, LocalSpace)
 
 class CannotConvertToSLH(AlgebraException):
     """
@@ -527,7 +549,7 @@ class SLH(Circuit, Operation):
         n = self.cdim - 1
 
         if out_index != n:
-            return (map_signals_circuit({out_index: n}, self.cdim).toSLH() 
+            return (map_signals_circuit({out_index: n}, self.cdim).toSLH()
                 << self).feedback(in_index=in_index)
         elif in_index != n:
             return (self << map_signals_circuit({n: in_index}, self.cdim).toSLH()).feedback()
@@ -2437,6 +2459,26 @@ def connect(components, connections, force_SLH=True, expand_simplify=True):
     return combined
 
 
-
+def _time_dependent_to_qutip(op, full_space=None,
+        time_symbol=symbols("t", real=True), convert_as='pyfunc'):
+    """Convert a possiblty time-dependent operator into the nested-list
+    structure required by QuTiP"""
+    if time_symbol in op.all_symbols():
+        op = op.expand()
+        if isinstance(op, OperatorPlus):
+            return [_time_dependent_to_qutip(o, full_space)
+                    for o in op.operands]
+        elif isinstance(op, ScalarTimesOperator):
+            if convert_as == 'pyfunc':
+                coeff = lambdify(time_symbol, op.coeff)
+            elif convert_as == 'str':
+                # a bit of a hack to replace imaginary unit
+                coeff = re.sub("I", "(1.0j)", str(op.coeff))
+            else:
+                raise ValueError(("Invalid value '%s' for `convert_as`, must "
+                                  "be one of 'str', 'pyfunc'") % convert_as)
+            return [op.term.to_qutip(full_space), coeff]
+    else:
+        return op
 
 

@@ -23,10 +23,11 @@ See :py:class:`Beamsplitter`
 """
 
 import unittest
-from qnet.algebra.circuit_algebra import SLH, Matrix, pi, sin, cos, TrivialSpace
+from sympy import pi, sin, cos
+from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.operator_algebra import Matrix
+from qnet.algebra.hilbert_space_algebra import TrivialSpace
 from qnet.circuit_components.component import Component
-
-
 
 
 class Beamsplitter(Component):
