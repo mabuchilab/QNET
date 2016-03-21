@@ -42,8 +42,12 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 from functools import reduce
 
 import six
-from sympy import symbols
+from sympy import symbols, sympify
 from sympy.utilities.lambdify import lambdify
+from sympy import Matrix as SympyMatrix
+from sympy import I
+
+import numpy as np
 
 if six.PY3:
     basestring = str
@@ -52,16 +56,18 @@ if six.PY3:
 from qnet.algebra.abstract_algebra import (AlgebraException, AlgebraError,
         Operation, Expression, check_signature, singleton,
         preprocess_create_with, assoc, filter_neutral, match_replace_binary,
-        check_signature_assoc, match_replace, wc, CannotSimplify, prod)
+        check_signature_assoc, match_replace, wc, CannotSimplify, prod, tex,
+        substitute)
 from qnet.algebra.operator_algebra import (Operator, OperatorPlus,
         ScalarTimesOperator, Matrix, IdentityOperator, Create, Destroy,
         block_matrix, zerosm, permutation_matrix, Im, ImAdjoint, get_coeffs,
-        vstackm, space)
+        vstackm, space, ZeroOperator, OperatorSymbol, identity_matrix, adjoint,
+        identifier_to_tex, LocalProjector, LocalSigma)
 from qnet.algebra.permutations import (check_permutation, invert_permutation,
         BadPermutationError, permutation_to_block_permutations,
-        block_perm_and_perms_within_blocks, full_block_perm)
+        block_perm_and_perms_within_blocks, full_block_perm, concatenate_permutations)
 from qnet.algebra.hilbert_space_algebra import (HilbertSpace, TrivialSpace,
-        FullSpace, LocalSpace)
+        FullSpace, LocalSpace, BasisNotSetError)
 
 class CannotConvertToSLH(AlgebraException):
     """
@@ -543,8 +549,11 @@ class SLH(Circuit, Operation):
         return SLH(self.S.adjoint(), - self.S.adjoint() * self.L, -self.H)
 
     def _feedback(self, out_index, in_index):
+
         if not isinstance(self.S, Matrix) or not isinstance(self.L, Matrix):
             return Feedback(self, out_index, in_index)
+
+        sympyOne = sympify(1)
 
         n = self.cdim - 1
 
@@ -799,8 +808,8 @@ class ABCD(Circuit, Operation):
 
     def _toSLH(self):
         # TODO IMPLEMENT ABCD._toSLH()
-        doubled_up_as = vstackm((Matrix([[Destroy(spc) for spc in self.space.local_factors()]]).T,
-                                 Matrix([[Create(spc) for spc in self.space.local_factors()]]).T))
+        vstackm((Matrix([[Destroy(spc) for spc in self.space.local_factors()]]).T,
+                 Matrix([[Create(spc) for spc in self.space.local_factors()]]).T))
 
 
 @check_signature
@@ -2066,23 +2075,23 @@ Feedback._rules += [
 #
 #     if double_up:
 #         # initialize the matrices
-#         A = np_zeros((2*ncav, 2*ncav), dtype=object)
-#         B = np_zeros((2*ncav, 2*cdim), dtype=object)
-#         C = np_zeros((2*cdim, 2*ncav), dtype=object)
+#         A = np.zeros((2*ncav, 2*ncav), dtype=object)
+#         B = np.zeros((2*ncav, 2*cdim), dtype=object)
+#         C = np.zeros((2*cdim, 2*ncav), dtype=object)
 #
 #         D_ = slh.S.matrix.element_wise(_ascomplex)
 #         D = block_matrix(D_, zerosm(D_.shape), zerosm(D_.shape), D_.conjugate()).matrix
-#         a = np_zeros(ncav, dtype=object)
-#         c = np_zeros(cdim, dtype=object)
+#         a = np.zeros(ncav, dtype=object)
+#         c = np.zeros(cdim, dtype=object)
 #     else:
 #         # initialize the matrices
-#         A = np_zeros((ncav, ncav), dtype=object)
-#         B = np_zeros((ncav, cdim), dtype=object)
-#         C = np_zeros((cdim, ncav), dtype=object)
+#         A = np.zeros((ncav, ncav), dtype=object)
+#         B = np.zeros((ncav, cdim), dtype=object)
+#         C = np.zeros((cdim, ncav), dtype=object)
 #
 #         D = slh.S.matrix.element_wise(_ascomplex).matrix
-#         a = np_zeros(ncav, dtype=object)
-#         c = np_zeros(cdim, dtype=object)
+#         a = np.zeros(ncav, dtype=object)
+#         c = np.zeros(cdim, dtype=object)
 #
 #     # make symbols for the external field modes
 #     noises = [OperatorSymbol('b_{{{}}}'.format(n), "ext({})".format(n)) for n in range(cdim)]
@@ -2181,18 +2190,18 @@ def getABCD(slh, a0={}, doubled_up=True):
 
     # initialize the matrices
     if doubled_up:
-        A = np_zeros((2*ncav, 2*ncav), dtype=object)
-        B = np_zeros((2*ncav, 2*cdim), dtype=object)
-        C = np_zeros((2*cdim, 2*ncav), dtype=object)
-        a = np_zeros(2*ncav, dtype=object)
-        c = np_zeros(2*cdim, dtype=object)
+        A = np.zeros((2*ncav, 2*ncav), dtype=object)
+        B = np.zeros((2*ncav, 2*cdim), dtype=object)
+        C = np.zeros((2*cdim, 2*ncav), dtype=object)
+        a = np.zeros(2*ncav, dtype=object)
+        c = np.zeros(2*cdim, dtype=object)
 
     else:
-        A = np_zeros((ncav, ncav), dtype=object)
-        B = np_zeros((ncav, cdim), dtype=object)
-        C = np_zeros((cdim, ncav), dtype=object)
-        a = np_zeros(ncav, dtype=object)
-        c = np_zeros(cdim, dtype=object)
+        A = np.zeros((ncav, ncav), dtype=object)
+        B = np.zeros((ncav, cdim), dtype=object)
+        C = np.zeros((cdim, ncav), dtype=object)
+        a = np.zeros(ncav, dtype=object)
+        c = np.zeros(cdim, dtype=object)
 
     def _as_complex(o):
         if isinstance(o, Operator):
@@ -2211,14 +2220,14 @@ def getABCD(slh, a0={}, doubled_up=True):
         except TypeError:
             return o
 
-    D = np_array([[_as_complex(o) for o in Sjj] for Sjj in slh.S.matrix])
+    D = np.array([[_as_complex(o) for o in Sjj] for Sjj in slh.S.matrix])
 
     if doubled_up:
         # need to explicitly compute D^* because numpy object-dtype array's conjugate() method
         # doesn't work
-        Dc = np_array([[D[ii, jj].conjugate() for jj in range(cdim)] for ii in range(cdim)])
-        D = np_vstack((np_hstack((D, np_zeros((cdim, cdim)))),
-                       np_hstack((np_zeros((cdim, cdim)), Dc))))
+        Dc = np.array([[D[ii, jj].conjugate() for jj in range(cdim)] for ii in range(cdim)])
+        D = np.vstack((np.hstack((D, np.zeros((cdim, cdim)))),
+                       np.hstack((np.zeros((cdim, cdim)), Dc))))
 
     # create substitutions to displace the model
     mode_substitutions = {aj: aj + aj_0 * IdentityOperator for aj, aj_0 in a0.items()}
@@ -2289,7 +2298,7 @@ def move_drive_to_H(slh, which=[]):
     :rtype : SLH
     """
     slh = slh.expand()
-    S, L, H = slh.S, slh.L, slh.H
+    L= slh.L
     scalarcs = []
     for jj, Lj in enumerate(L.matrix[:, 0]):
         if not which or jj in which:
