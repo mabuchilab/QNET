@@ -19,6 +19,7 @@ from qnet.algebra.state_algebra import (
     Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet,
     ScalarTimesKet, KetPlus
 )
+from qnet.algebra.operator_algebra import scalar_free_symbols
 from qnet.misc.trajectory_data import TrajectoryData
 import sympy
 try:
@@ -245,6 +246,7 @@ class QSDCodeGen(object):
     #include "Traject.h"
 
     {PARAMETERS}
+    {FUNCTIONS}
 
     int main(int argc, char* argv[])
     {{
@@ -299,6 +301,10 @@ class QSDCodeGen(object):
         self.syms.discard(self.time_symbol)
         # Mapping symbol => variable name (sanitized)
         self._var_names = {}
+        if self.time_symbol is not None:
+            # it is important to register the time symbol before any other
+            # symbols, to detect possible name clashes
+            self._var_names[self.time_symbol] = 't'
         self._update_var_names()
         # The add_observable and set_trajectories methods may later extend syms
         # and _var_names
@@ -754,6 +760,8 @@ class QSDCodeGen(object):
         return self._template.format(
                 OPERATORBASIS=self._operator_basis_lines(),
                 PARAMETERS=self._parameters_lines(indent=0),
+                FUNCTIONS=self._function_lines(ops=[self.circuit.H, ],
+                                               indent=0),
                 HAMILTONIAN=self._hamiltonian_lines(),
                 LINDBLADS=self._lindblads_lines(),
                 OBSERVABLES=self._observables_lines(),
@@ -1090,6 +1098,67 @@ class QSDCodeGen(object):
             ("Operator L[nL]={\n  " + ",\n  ".join(L_op_lines) + "\n};")
             .split("\n"))
         return "\n".join(_indent(lines, indent))
+
+    def _function_lines(self, ops, indent=2):
+        if self.time_symbol is None:
+            return ''
+        func_lines = []
+        tfunc_counter = 0
+        # for any time-dependent coefficient, we keep
+        #   coeff => (time-function-name, time-function-placehold, is_real)
+        # in a dictionary
+        self._tfuncs = {}
+        for op in ops:
+            for coeff in _find_time_dependent_coeffs(op, self.time_symbol):
+                if coeff in self._tfuncs:
+                    continue
+                is_real = coeff.is_real()
+                if is_real:
+                    function_type = 'double'
+                else:
+                    function_type = 'Complex'
+                tfunc_counter += 1
+                func_name = "tfunc%d" % tfunc_counter
+                # remember that the _var_name for the time_symbol was set to
+                # 't' in the __init__ routine
+                func_lines.append("%s %s(double t)"
+                                  % (function_type, func_name))
+                func_lines.append("{")
+                func_lines.append("  %s" % self._scalar_str(coeff))
+                func_lines.append("}")
+                func_lines.append("")
+                # choose a variable name for the time-dependent coefficient
+                u = "u%d" % tfunc_counter
+                func_placeholder = u
+                u_counter = 1
+                while func_placeholder in self.syms:
+                    func_placeholder = "%s_%d" % (u, u_counter)
+                    u_counter += 1
+                self._tfuncs[coeff] = (func_name, func_placeholder, is_real)
+        if len(func_lines) > 0:
+            lines = ["", ] + func_lines + ["", ]
+            for coeff in self._tfuncs:
+                func_name, func_placeholder, is_real = self._tfuncs[coeff]
+                if is_real:
+                    lines.append("RealFunction %s = %s"
+                                 % (func_placeholder, func_name))
+                else:
+                    lines.append("ComplexFunction %s = %s"
+                                 % (func_placeholder, func_name))
+        else:
+            lines = []
+        return "\n".join(_indent(lines, indent))
+
+
+
+def _find_time_dependent_coeffs(op, time_symbol):
+    if isinstance(op, ScalarTimesOperator):
+        if time_symbol in scalar_free_symbols(op.coeff):
+            yield op.coeff
+    else:
+        for operand in op.operands:
+            for coeff in _find_time_dependent_coeffs(operand, time_symbol):
+                yield coeff
 
 
 def _full_expand(s):

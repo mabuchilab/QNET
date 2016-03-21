@@ -1,7 +1,7 @@
 import sympy
 from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
     QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT, expand_cmd,
-    compilation_worker, qsd_run_worker)
+    compilation_worker, qsd_run_worker, _find_time_dependent_coeffs)
 from qnet.algebra.circuit_algebra import (
     IdentityOperator, Create, Destroy, LocalOperator, Operator,
     Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
@@ -884,4 +884,27 @@ def test_compilation_worker(mock_compilation_worker, Sec6_codegen, traj1,
     # instead of a copy, thereby modifying the traj1 with the second call
     assert traj1.ID == traj1_ID
     assert traj2_10.ID == traj2_10_ID
+
+
+def test_find_time_dependent_coeffs():
+    E0, sigma, t, t0, a, b = sympy.symbols('E_0, sigma, t, t_0, a, b',
+                                           real=True)
+    op_a = Destroy(0)
+    op_n = op_a.dag() * op_a
+    gaussian = E0 * sympy.exp(-(t-t0)**2/(2*sigma**2))
+    linear = a * t
+    H =   b * op_a.dag() + gaussian * op_n + linear * op_a
+    coeffs = list(_find_time_dependent_coeffs(H, t))
+    assert len(coeffs) == 2
+    assert gaussian in coeffs
+    assert linear in coeffs
+
+    H = (gaussian * op_n) * (linear * op_a) + b
+    coeffs = list(_find_time_dependent_coeffs(H, t))
+    assert len(coeffs) == 1
+    assert gaussian*linear in coeffs
+
+    H = b * op_n
+    coeffs = list(_find_time_dependent_coeffs(H, t))
+    len(coeffs) == 9
 

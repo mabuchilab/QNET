@@ -15,6 +15,7 @@ double gamma_2 = 1;
 double kappa = 0.1;
 double omega = -0.7;
 
+
 int main(int argc, char* argv[])
 {
 
