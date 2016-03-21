@@ -359,6 +359,11 @@ class QSDCodeGen(object):
         # may then process the whole list in parallel
         self._delayed_runs_kwargs = []
 
+        # for any time-dependent coefficient, we keep
+        #   coeff => (time-function-name, time-function-placehold, is_real)
+        # in a dictionary
+        self._tfuncs = {}
+
     @property
     def observables(self):
         """Iterator over all defined observables (instances of
@@ -1039,14 +1044,19 @@ class QSDCodeGen(object):
         if isinstance(op, LocalOperator):
             return str(self._qsd_ops[op])
         elif isinstance(op, ScalarTimesOperator):
-            return "({}) * ({})".format(self._scalar_str(op.coeff),
-                    self._operator_str(op.term))
+            if op.coeff in self._tfuncs:
+                func_placeholder = self._tfuncs[op.coeff][1]
+                return "%s * (%s)" % (func_placeholder,
+                                      self._operator_str(op.term))
+            else:
+                return "(%s) * (%s)" % (self._scalar_str(op.coeff),
+                                        self._operator_str(op.term))
         elif isinstance(op, OperatorPlus):
-            return "({})".format(" + ".join([self._operator_str(o)
-                for o in op.operands]))
+            str_expr = " + ".join([self._operator_str(o) for o in op.operands])
+            return "(" + str_expr + ")"
         elif isinstance(op, OperatorTimes):
-            return "({})".format(" * ".join([self._operator_str(o)
-                for o in op.operands]))
+            str_expr = " * ".join([self._operator_str(o) for o in op.operands])
+            return "(" + str_expr + ")"
         elif op is IdentityOperator:
             return str(self._qsd_ops[op])
         else:
@@ -1104,10 +1114,6 @@ class QSDCodeGen(object):
             return ''
         func_lines = []
         tfunc_counter = 0
-        # for any time-dependent coefficient, we keep
-        #   coeff => (time-function-name, time-function-placehold, is_real)
-        # in a dictionary
-        self._tfuncs = {}
         for op in ops:
             for coeff in _find_time_dependent_coeffs(op, self.time_symbol):
                 if coeff in self._tfuncs:
