@@ -208,12 +208,18 @@ class QSDCodeGen(object):
         num_vals (dict of :obj:`~sympy.core.symbol.Symbol` to float)): Numeric
             value for any symbol occurring in the `circuit`, or any
             operator/state that may be added later on.
+        time_symbol (None or :obj:`~sympy.core.symbol.Symbol`): symbol to
+            denote the time dependence in the Hamiltonian (usually `t`). If
+            None, the Hamiltonian is time-independent.
 
     Attributes:
         circuit (:class:`~qnet.algebra.circuit_algebra.SLH`): see `circuit`
             parameter
+        time_symbol (None or :obj:`~sympy.core.symbol.Symbol`): see
+            `time_symbol` parameter
         syms (set of :obj:`~sympy.core.symbol.Symbol`): The set of symbols used
-            either in the circuit, any of the observables, or the initial state
+            either in the circuit, any of the observables, or the initial
+            state, excluding `time_symbol`
         num_vals (dict of :obj:`~sympy.core.symbol.Symbol` to float)): Map of
             symbols to numeric value. Must specify a value for any symbol in
             `syms`.
@@ -279,8 +285,9 @@ class QSDCodeGen(object):
     _lib_qsd = 'libqsd.a' # expected name of qsd library
     _link_qsd = '-lqsd' # compiler option to link qsd
 
-    def __init__(self, circuit, num_vals=None):
+    def __init__(self, circuit, num_vals=None, time_symbol=None):
         self.circuit = circuit.toSLH()
+        self.time_symbol = time_symbol
         self.num_vals = {}
         self.traj_data = None
         self._psi_initial = None
@@ -289,6 +296,7 @@ class QSDCodeGen(object):
 
         # Set of sympy.core.symbol.Symbol instances
         self.syms = set(circuit.all_symbols())
+        self.syms.discard(self.time_symbol)
         # Mapping symbol => variable name (sanitized)
         self._var_names = {}
         self._update_var_names()
@@ -501,6 +509,7 @@ class QSDCodeGen(object):
         self._local_ops.update(op_local_ops)
         self._update_qsd_ops(op_local_ops)
         self.syms.update(op.all_symbols())
+        self.syms.discard(self.time_symbol)
         self._update_var_names()
         self._observables[name] = (op, filename)
 
@@ -587,6 +596,7 @@ class QSDCodeGen(object):
             self._local_ops.update(psi_local_ops)
             self._update_qsd_ops(psi_local_ops)
             self.syms.update(psi_initial.all_symbols())
+            self.syms.discard(self.time_symbol)
             self._update_var_names()
         if not stepper in self.known_steppers:
             raise ValueError("stepper '%s' must be one of %s"
