@@ -18,6 +18,8 @@
 ###########################################################################
 
 from qnet.algebra.operator_algebra import *
+from qnet.algebra.circuit_algebra import _time_dependent_to_qutip
+from sympy import symbols
 import qutip
 import unittest
 
@@ -82,3 +84,45 @@ class TestQutipConversion(unittest.TestCase):
         ad = Create(H)
         a = Create(H).adjoint()
         self.assertEqual(2 * a.to_qutip(), (2 * a).to_qutip())
+
+
+def test_time_dependent_to_qutip():
+    Hil = local_space("H", dimension=5)
+    ad = Create(Hil)
+    a = Create(Hil).adjoint()
+
+    w, g, t = symbols('w, g, t', real=True)
+
+    H =  ad*a + (a + ad)
+    assert _time_dependent_to_qutip(H) == H.to_qutip()
+
+    H =  g * t * a
+    res = _time_dependent_to_qutip(H, time_symbol=t)
+    assert res[0] == a.to_qutip()
+    assert res[1](1) == g
+
+    H =  ad*a + g* t * (a + ad)
+    res = _time_dependent_to_qutip(H, time_symbol=t, expand=False)
+    assert len(res) == 2
+    assert res[0] == (ad*a).to_qutip()
+    assert res[1][0] == (a + ad).to_qutip()
+    assert res[1][1](1) == g
+
+    H =  ad*a + g* t * (a + ad)
+    res = _time_dependent_to_qutip(H, time_symbol=t, expand=False,
+                                   convert_as='str')
+    assert res[1][1] == 'g*t'
+
+    H =  ad*a + g* t * (a + ad)
+    res = _time_dependent_to_qutip(H, time_symbol=t, expand=True)
+    assert len(res) == 3
+    assert res[0] == (ad*a).to_qutip()
+    assert res[1][0] == ad.to_qutip()
+    assert res[1][1](1) == g
+    assert res[2][0] == a.to_qutip()
+    assert res[2][1](1) == g
+
+    H =  (ad*a + t * (a + ad))**2
+    res = _time_dependent_to_qutip(H, time_symbol=t, expand=True)
+    from IPython.core.debugger import Tracer; Tracer()() # DEBUG
+    # TODO: quadaratic Hamiltonian
