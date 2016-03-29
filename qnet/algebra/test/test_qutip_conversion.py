@@ -102,19 +102,7 @@ def test_time_dependent_to_qutip():
     assert res[1](1) == g
 
     H =  ad*a + g* t * (a + ad)
-    res = _time_dependent_to_qutip(H, time_symbol=t, expand=False)
-    assert len(res) == 2
-    assert res[0] == (ad*a).to_qutip()
-    assert res[1][0] == (a + ad).to_qutip()
-    assert res[1][1](1) == g
-
-    H =  ad*a + g* t * (a + ad)
-    res = _time_dependent_to_qutip(H, time_symbol=t, expand=False,
-                                   convert_as='str')
-    assert res[1][1] == 'g*t'
-
-    H =  ad*a + g* t * (a + ad)
-    res = _time_dependent_to_qutip(H, time_symbol=t, expand=True)
+    res = _time_dependent_to_qutip(H, time_symbol=t)
     assert len(res) == 3
     assert res[0] == (ad*a).to_qutip()
     assert res[1][0] == ad.to_qutip()
@@ -122,9 +110,12 @@ def test_time_dependent_to_qutip():
     assert res[2][0] == a.to_qutip()
     assert res[2][1](1) == g
 
+    res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
+    terms = [t for H, t in res[1:]]
+    assert terms == ['g*t', 'g*t']
+
     H =  (ad*a + t * (a + ad))**2
-    res = _time_dependent_to_qutip(H, time_symbol=t, expand=True,
-                                   convert_as='str')
+    res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
     assert len(res) == 9
     terms = [t for H, t in res[1:]]
     assert terms == ['t**2', 't', 't', 't**2', '2*t', '2*t**2 + 1', '2*t',

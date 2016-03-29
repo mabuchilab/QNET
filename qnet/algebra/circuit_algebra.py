@@ -2468,15 +2468,14 @@ def connect(components, connections, force_SLH=True, expand_simplify=True):
     return combined
 
 
-def _time_dependent_to_qutip(op, full_space=None, expand=True,
+def _time_dependent_to_qutip(op, full_space=None,
         time_symbol=symbols("t", real=True), convert_as='pyfunc'):
     """Convert a possiblty time-dependent operator into the nested-list
     structure required by QuTiP"""
     if full_space is None:
         full_space = op.space
     if time_symbol in op.all_symbols():
-        if expand:
-            op = op.expand()
+        op = op.expand()
         if isinstance(op, OperatorPlus):
             result = []
             for o in op.operands:
@@ -2488,7 +2487,7 @@ def _time_dependent_to_qutip(op, full_space=None, expand=True,
             for o in op.operands:
                 if time_symbol in o.all_symbols():
                     result.append(_time_dependent_to_qutip(o, full_space,
-                                    expand, time_symbol, convert_as))
+                                  time_symbol, convert_as))
             return result
         elif isinstance(op, ScalarTimesOperator):
             if convert_as == 'pyfunc':
@@ -2500,6 +2499,9 @@ def _time_dependent_to_qutip(op, full_space=None, expand=True,
                 raise ValueError(("Invalid value '%s' for `convert_as`, must "
                                   "be one of 'str', 'pyfunc'") % convert_as)
             return [op.term.to_qutip(full_space), coeff]
+        else:
+            raise ValueError("op cannot be expressed in qutip. It must have "
+                             "the structure op = sum_i f_i(t) * op_i")
     else:
         return op.to_qutip(full_space=full_space)
 
