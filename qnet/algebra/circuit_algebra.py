@@ -2472,6 +2472,8 @@ def _time_dependent_to_qutip(op, full_space=None, expand=True,
         time_symbol=symbols("t", real=True), convert_as='pyfunc'):
     """Convert a possiblty time-dependent operator into the nested-list
     structure required by QuTiP"""
+    if full_space is None:
+        full_space = op.space
     if time_symbol in op.all_symbols():
         if expand:
             op = op.expand()
@@ -2480,9 +2482,9 @@ def _time_dependent_to_qutip(op, full_space=None, expand=True,
             for o in op.operands:
                 if not time_symbol in o.all_symbols():
                     if len(result) == 0:
-                        result.append(o.to_qutip())
+                        result.append(o.to_qutip(full_space=full_space))
                     else:
-                        result[0] += o.to_qutip()
+                        result[0] += o.to_qutip(full_space=full_space)
             for o in op.operands:
                 if time_symbol in o.all_symbols():
                     result.append(_time_dependent_to_qutip(o, full_space,
@@ -2499,6 +2501,6 @@ def _time_dependent_to_qutip(op, full_space=None, expand=True,
                                   "be one of 'str', 'pyfunc'") % convert_as)
             return [op.term.to_qutip(full_space), coeff]
     else:
-        return op.to_qutip()
+        return op.to_qutip(full_space=full_space)
 
 
