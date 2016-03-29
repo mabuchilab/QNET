@@ -123,6 +123,9 @@ def test_time_dependent_to_qutip():
     assert res[2][1](1) == g
 
     H =  (ad*a + t * (a + ad))**2
-    res = _time_dependent_to_qutip(H, time_symbol=t, expand=True)
-    from IPython.core.debugger import Tracer; Tracer()() # DEBUG
-    # TODO: quadaratic Hamiltonian
+    res = _time_dependent_to_qutip(H, time_symbol=t, expand=True,
+                                   convert_as='str')
+    assert len(res) == 9
+    terms = [t for H, t in res[1:]]
+    assert terms == ['t**2', 't', 't', 't**2', '2*t', '2*t**2 + 1', '2*t',
+                     't**2']
