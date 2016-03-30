@@ -111,12 +111,12 @@ def test_time_dependent_to_qutip():
     assert res[2][1](1) == g
 
     res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
-    terms = [t for H, t in res[1:]]
+    terms = [term for H, term in res[1:]]
     assert terms == ['g*t', 'g*t']
 
     H =  (ad*a + t * (a + ad))**2
     res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
     assert len(res) == 9
-    terms = [t for H, t in res[1:]]
+    terms = [term for H, term in res[1:]]
     assert terms == ['t**2', 't', 't', 't**2', '2*t', '2*t**2 + 1', '2*t',
                      't**2']
