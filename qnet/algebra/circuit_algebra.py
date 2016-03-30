@@ -510,9 +510,11 @@ class SLH(Circuit, Operation):
         return SLH(self.S.simplify_scalar(), self.L.simplify_scalar(), self.H.simplify_scalar())
 
 
-    def HL_to_qutip(self, full_space=None):
+    def HL_to_qutip(self, full_space=None, time_symbol=None,
+            convert_as='pyfunc'):
         """
-        Generate and return QuTiP representation matrices for the Hamiltonian and the collapse operators.
+        Generate and return QuTiP representation matrices for the Hamiltonian
+        and the collapse operators.
 
         :param full_space: The Hilbert space in which to represent the operators.
         :type full_space: HilbertSpace or None
@@ -520,13 +522,21 @@ class SLH(Circuit, Operation):
         """
         if full_space:
             if not full_space >= self.space:
-                raise AlgebraError("full_space = {} needs to at least include self.space = {}".format(str(full_space),
-                                                                                                      str(self.space)))
+                raise AlgebraError("full_space="+str(full_space)+" needs to "
+                    "at least include self.space = "+str(self.space))
         else:
             full_space = self.space
-        H = self.H.to_qutip(full_space)
-        Ls = [L.to_qutip(full_space) for L in self.L.matrix.flatten() if isinstance(L, Operator)]
-
+        if time_symbol is None:
+            H = self.H.to_qutip(full_space)
+            Ls = [L.to_qutip(full_space) for L in self.L.matrix.flatten()
+                  if isinstance(L, Operator)]
+        else:
+            H = _time_dependent_to_qutip(self.H, full_space, time_symbol,
+                                         convert_as)
+            Ls = []
+            for L in self.L.matrix.flatten():
+                Ls.append(_time_dependent_to_qutip(L, full_space, time_symbol,
+                                                   convert_as))
         return H, Ls
 
 
