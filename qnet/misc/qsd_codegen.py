@@ -399,14 +399,7 @@ class QSDCodeGen(object):
         if self._executable is None:
             return ''
         else:
-            result = ''
-            for part in self._compile_cmd:
-                part = part.replace('"', '\\"')
-                if " " in part:
-                    result += ' "%s"' % part
-                else:
-                    result += ' %s' % part
-            return result.strip()
+            return _cmd_list_to_str(self._compile_cmd)
 
     def get_observable(self, name):
         """Return the observable for the given name
@@ -840,19 +833,13 @@ class QSDCodeGen(object):
         executable = str(executable)
         self._path = str(path)
         self._keep_cc = keep_cc
-        cc_file = executable + '.cc'
         if not re.match(r'^[\w-]{1,128}$', executable):
             if len(executable) > 128:
                 raise ValueError("Executable name too long")
             else:
                 raise ValueError("Invalid executable name '%s'" % executable)
-        link_dir, libqsd_a = os.path.split(qsd_lib)
-        if not libqsd_a == self._lib_qsd:
-            raise ValueError("qsd_lib "+qsd_lib+" does not point to a "
-                             "file of the name "+self._lib_qsd)
-        self._compile_cmd = ([compiler, ] + shlex.split(compile_options)
-                           + ['-I%s'%qsd_headers, '-o', executable, cc_file]
-                           + ['-L%s'%link_dir, self._link_qsd])
+        self._compile_cmd = self._build_compile_cmd(qsd_lib, qsd_headers,
+                executable, self._path, compiler, compile_options)
         kwargs = {'executable': executable, 'path': self._path,
                     'cc_code': self.generate_code(),
                     'keep_cc': self._keep_cc, 'cmd': self._compile_cmd}
@@ -873,6 +860,20 @@ class QSDCodeGen(object):
         # We set the executable only at the very end so that we can use it as
         # an indicator whether the compile method is complete
         self._executable = executable
+
+    def _build_compile_cmd(self, qsd_lib, qsd_headers, executable, path,
+            compiler, compile_options):
+        # For debugging purposes, it can be useful to call
+        # _cmd_list_to_str(_build_compile_cmd(...))
+        # instead of the compile method
+        link_dir, libqsd_a = os.path.split(qsd_lib)
+        cc_file = executable + '.cc'
+        if not libqsd_a == self._lib_qsd:
+            raise ValueError("qsd_lib "+qsd_lib+" does not point to a "
+                             "file of the name "+self._lib_qsd)
+        return ([compiler, ] + shlex.split(compile_options)
+                + ['-I%s'%qsd_headers, '-o', executable, cc_file]
+                + ['-L%s'%link_dir, self._link_qsd])
 
     def run(self, seed=None, workdir=None, keep=False, delay=False):
         """Run the QSD program. The :meth:`compile` method must have been
@@ -1382,6 +1383,16 @@ def _indent(lines, indent=2):
             indented_lines.append(line)
     return indented_lines
 
+
+def _cmd_list_to_str(cmd_list):
+    result = ''
+    for part in cmd_list:
+        part = part.replace('"', '\\"')
+        if " " in part:
+            result += ' "%s"' % part
+        else:
+            result += ' %s' % part
+    return result.strip()
 
 sanitize_filename = partial(sanitize_name,
         allowed_letters=re.compile(r'[.a-zA-Z0-9_-]'),
