@@ -21,6 +21,7 @@ from qnet.algebra.operator_algebra import (scalar_free_symbols,
         ScalarTimesOperator, OperatorPlus, OperatorTimes)
 from qnet.misc.trajectory_data import TrajectoryData
 import sympy
+from sympy.printing.ccode import CCodePrinter
 try:
     issubclass(FileNotFoundError, OSError)
 except NameError: # indicates Python 2
@@ -29,6 +30,20 @@ except NameError: # indicates Python 2
 
 # max unsigned int in C/C++ when compiled the same way as python
 UNSIGNED_MAXINT = 2 ** (struct.Struct('I').size * 8 - 1) - 1
+
+
+class QSDCCodePrinter(CCodePrinter):
+    """A printer for converting SymPy expressions to C++ code, while taking
+    into account pre-defined variable names for symbols"""
+    def __init__(self, settings={}):
+        self._default_settings['user_symbols'] = {}
+        super(QSDCCodePrinter, self).__init__(settings=settings)
+        self.known_symbols = dict(settings.get('user_symbols'))
+    def _print_Symbol(self, expr):
+        if expr in self.known_symbols:
+            return self.known_symbols[expr]
+        else:
+            return super(QSDCCodePrinter,self)._print_Symbol(expr)
 
 
 def local_ops(expr):
@@ -236,6 +251,8 @@ class QSDCodeGen(object):
                       'AdaptiveOrthoJump']
 
     _template = dedent(r'''
+    #define _USE_MATH_DEFINES
+    #include <cmath>
     #include "Complex.h"
     #include "ACG.h"
     #include "CmplxRan.h"
@@ -1078,20 +1095,9 @@ class QSDCodeGen(object):
             raise TypeError(str(ket))
 
 
-    def _scalar_str(self, sc):
-        if sc in self._var_names:
-            return self._var_names[sc]
-        elif isinstance(sc, sympy.Basic):
-            scalar_str = str(sc)
-            # the string conversion will not take into account our existing
-            # var_names for symbols
-            for sym in sc.free_symbols:
-                if sym in self._var_names:
-                    scalar_str = scalar_str.replace(
-                                    str(sym), self._var_names[sym])
-            return scalar_str
-        else:
-            return "{:g}".format(sc)
+    def _scalar_str(self, sc, assign_to=None):
+        ccode = QSDCCodePrinter(settings={'user_symbols':self._var_names})
+        return ccode.doprint(sc, assign_to=assign_to)
 
     def _hamiltonian_lines(self, indent=2):
         H = self.circuit.H
