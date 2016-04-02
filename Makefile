@@ -4,9 +4,9 @@ TESTPYPI = https://testpypi.python.org/pypi
 
 #TESTOPTIONS = --doctest-modules
 TESTOPTIONS =
-TESTS = qnet
+TESTS = tests
 # You may redefine TESTS to run a specific test. E.g.
-#     make test TESTS="qnet/algebra/test"
+#     make test TESTS="tests/algebra"
 
 VERSION = $(shell grep __version__ < qnet/__init__.py | sed 's/.*"\(.*\)"/\1/')
 
