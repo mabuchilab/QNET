@@ -1124,21 +1124,13 @@ class QSDCodeGen(object):
             for coeff in _find_time_dependent_coeffs(op, self.time_symbol):
                 if coeff in self._tfuncs:
                     continue
-                is_real = coeff.is_real()
+                is_real = coeff.is_real
                 if is_real:
-                    function_type = 'double'
+                    func_type = 'double'
                 else:
-                    function_type = 'Complex'
+                    func_type = 'Complex'
                 tfunc_counter += 1
                 func_name = "tfunc%d" % tfunc_counter
-                # remember that the _var_name for the time_symbol was set to
-                # 't' in the __init__ routine
-                func_lines.append("%s %s(double t)"
-                                  % (function_type, func_name))
-                func_lines.append("{")
-                func_lines.append("  %s" % self._scalar_str(coeff))
-                func_lines.append("}")
-                func_lines.append("")
                 # choose a variable name for the time-dependent coefficient
                 u = "u%d" % tfunc_counter
                 func_placeholder = u
@@ -1146,16 +1138,26 @@ class QSDCodeGen(object):
                 while func_placeholder in self.syms:
                     func_placeholder = "%s_%d" % (u, u_counter)
                     u_counter += 1
+                # remember that the _var_name for the time_symbol was set to
+                # 't' in the __init__ routine
+                func_lines.append("%s %s(double t)" % (func_type, func_name))
+                func_lines.append("{")
+                func_lines.append("  "+func_type+" "+func_placeholder+";")
+                func_lines.append("  "+self._scalar_str(coeff,
+                                       assign_to=func_placeholder))
+                func_lines.append("  return "+func_placeholder+";")
+                func_lines.append("}")
+                func_lines.append("")
                 self._tfuncs[coeff] = (func_name, func_placeholder, is_real)
         if len(func_lines) > 0:
             lines = ["", ] + func_lines + ["", ]
             for coeff in self._tfuncs:
                 func_name, func_placeholder, is_real = self._tfuncs[coeff]
                 if is_real:
-                    lines.append("RealFunction %s = %s"
+                    lines.append("RealFunction %s = %s;"
                                  % (func_placeholder, func_name))
                 else:
-                    lines.append("ComplexFunction %s = %s"
+                    lines.append("ComplexFunction %s = %s;"
                                  % (func_placeholder, func_name))
         else:
             lines = []
@@ -1168,9 +1170,13 @@ def _find_time_dependent_coeffs(op, time_symbol):
         if time_symbol in scalar_free_symbols(op.coeff):
             yield op.coeff
     else:
-        for operand in op.operands:
-            for coeff in _find_time_dependent_coeffs(operand, time_symbol):
-                yield coeff
+        try:
+            for operand in op.operands:
+                for coeff in _find_time_dependent_coeffs(operand, time_symbol):
+                    yield coeff
+        except AttributeError:
+            # e.g. IdentityOperator has no attribute 'operands'
+            pass
 
 
 def _full_expand(s):
