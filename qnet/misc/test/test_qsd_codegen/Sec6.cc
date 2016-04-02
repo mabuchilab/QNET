@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "Complex.h"
 #include "ACG.h"
 #include "CmplxRan.h"

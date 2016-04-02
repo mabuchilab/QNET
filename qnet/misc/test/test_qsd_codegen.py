@@ -592,10 +592,9 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     State phiT0List[3] = {(phiL0 + phiL3), (phiL1 + phiL4), phiL2};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
 
-    State psiIni = (1/2) * (phiT0);
+    State psiIni = (1.0L/2.0L) * (phiT0);
     psiIni.normalize();
     ''').strip()
-    # TODO: Fix 1/2 => 1.0/2.0
 
     alpha = symbols('alpha')
     psi = CoherentStateKet(0, alpha) * psi_cav2(0) * psi_spin(0)
@@ -630,7 +629,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     State phiT1List[3] = {phiL3, phiL1, phiL2};
     State phiT1(3, phiT1List); // HS 0 * HS 1 * HS 2
 
-    State psiIni = (sqrt(2)/2) * ((phiT0 + phiT1));
+    State psiIni = ((1.0L/2.0L)*sqrt(2)) * ((phiT0 + phiT1));
     psiIni.normalize();
     ''').strip()
 
