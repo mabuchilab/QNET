@@ -2501,9 +2501,21 @@ def _time_dependent_to_qutip(op, full_space=None,
             return result
         elif isinstance(op, ScalarTimesOperator):
             if convert_as == 'pyfunc':
-                coeff = lambdify(time_symbol, op.coeff)
+                func_no_args = lambdify(time_symbol, op.coeff)
+                if {time_symbol, } == op.coeff.free_symbols:
+                    def func(t, args):
+                        # args are ignored for increased efficiency, since we
+                        # know there are no free symbols except t
+                        return func_no_args(t)
+                else:
+                    def func(t, args):
+                        return func_no_args(t).subs(args)
+                coeff = func
             elif convert_as == 'str':
                 # a bit of a hack to replace imaginary unit
+                # TODO: we can probably use one of the sympy code generation
+                # routines, or lambdify with 'numexpr' to implement this in a
+                # more robust way
                 coeff = re.sub("I", "(1.0j)", str(op.coeff))
             else:
                 raise ValueError(("Invalid value '%s' for `convert_as`, must "
