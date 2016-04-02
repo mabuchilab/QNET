@@ -99,16 +99,17 @@ def test_time_dependent_to_qutip():
     H =  g * t * a
     res = _time_dependent_to_qutip(H, time_symbol=t)
     assert res[0] == a.to_qutip()
-    assert res[1](1) == g
+    assert res[1](1, {}) == g
+    assert res[1](1, {g: 2}) == 2
 
     H =  ad*a + g* t * (a + ad)
     res = _time_dependent_to_qutip(H, time_symbol=t)
     assert len(res) == 3
     assert res[0] == (ad*a).to_qutip()
     assert res[1][0] == ad.to_qutip()
-    assert res[1][1](1) == g
+    assert res[1][1](1, {}) == g
     assert res[2][0] == a.to_qutip()
-    assert res[2][1](1) == g
+    assert res[2][1](1, {}) == g
 
     res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
     terms = [term for H, term in res[1:]]
