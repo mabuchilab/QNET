@@ -23,9 +23,10 @@ See documentation of :py:class:`Phase`.
 """
 import unittest
 
-from qnet.circuit_components.component import Component
-from qnet.algebra.circuit_algebra import Matrix, exp, SLH, I, TrivialSpace
 from sympy.core.symbol import symbols
+from sympy import exp, I
+from qnet.circuit_components.component import Component
+from qnet.algebra.circuit_algebra import Matrix, SLH, TrivialSpace
 
 
 class Phase(Component):

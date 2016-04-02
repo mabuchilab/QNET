@@ -44,7 +44,8 @@ None.
 
 """
 
-from qnet.algebra.circuit_algebra import Circuit, Expression, tex, CannotConvertToABCD, substitute
+from qnet.algebra.circuit_algebra import Circuit, CannotConvertToABCD
+from qnet.algebra.abstract_algebra import Expression, substitute, tex
 
 
 #TODO update str insertion to str.format()

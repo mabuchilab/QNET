@@ -1,11 +1,13 @@
 import sympy
+from sympy import symbols, sqrt, I
 from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
     QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT, expand_cmd,
-    compilation_worker, qsd_run_worker)
-from qnet.algebra.circuit_algebra import (
-    IdentityOperator, Create, Destroy, LocalOperator, Operator,
-    Operation, Circuit, SLH, set_union, TrivialSpace, symbols, sqrt,
-    LocalSigma, identity_matrix, I
+    compilation_worker, qsd_run_worker, _find_time_dependent_coeffs)
+from qnet.algebra.abstract_algebra import set_union
+from qnet.algebra.circuit_algebra import Circuit, SLH
+from qnet.algebra.operator_algebra import (IdentityOperator, Create, Destroy,
+        LocalOperator, Operator, Operation, TrivialSpace, LocalSigma,
+        identity_matrix,
 )
 from qnet.algebra.state_algebra import (
     BasisKet, LocalKet, TensorKet, CoherentStateKet
@@ -111,7 +113,7 @@ def test_qsd_codegen_operator_basis():
     sd = s.dag()
     circuit = SLH(identity_matrix(0), [], a*ad + s + sd)
     codegen = QSDCodeGen(circuit)
-    ob = codegen._operator_basis_lines()
+    ob = codegen._operator_basis_lines(indent=0)
     assert dedent(ob).strip() == dedent("""
     IdentityOperator Id0(0);
     IdentityOperator Id1(1);
@@ -123,7 +125,7 @@ def test_qsd_codegen_operator_basis():
     """).strip()
     circuit = SLH(identity_matrix(0), [], ad)
     codegen = QSDCodeGen(circuit)
-    ob = codegen._operator_basis_lines()
+    ob = codegen._operator_basis_lines(indent=0)
     assert dedent(ob).strip() == dedent("""
     IdentityOperator Id0(0);
     AnnihilationOperator A0(0);
@@ -143,7 +145,7 @@ def test_qsd_codegen_parameters():
     slh = SLH(identity_matrix(1), [L], H)
     codegen = QSDCodeGen(circuit=slh, num_vals={x: 2., c: 1+2j, k: 2})
 
-    scode = codegen._parameters_lines()
+    scode = codegen._parameters_lines(indent=0)
     assert dedent(scode).strip() == dedent("""
     Complex I(0.0,1.0);
     Complex c(1,2);
@@ -151,7 +153,7 @@ def test_qsd_codegen_parameters():
     double kappa = 2;""").strip()
 
     codegen.num_vals.update({c: 1})
-    scode = codegen._parameters_lines()
+    scode = codegen._parameters_lines(indent=0)
     assert dedent(scode).strip() == dedent("""
     Complex I(0.0,1.0);
     Complex c(1,0);
@@ -160,7 +162,7 @@ def test_qsd_codegen_parameters():
 
     del codegen.num_vals[c]
     with pytest.raises(KeyError) as excinfo:
-        scode = codegen._parameters_lines()
+        scode = codegen._parameters_lines(indent=0)
     assert "There is no value for symbol c" in str(excinfo.value)
 
 
@@ -178,7 +180,7 @@ def test_latex_symbols(slh_Sec6):
     slh = SLH(identity_matrix(1), [L], H)
     codegen = QSDCodeGen(circuit=slh, num_vals={x: 2., c: 1+2j, k: 2})
 
-    scode = codegen._parameters_lines()
+    scode = codegen._parameters_lines(indent=0)
     assert dedent(scode).strip() == dedent("""
     Complex I(0.0,1.0);
     Complex c(1,2);
@@ -197,8 +199,8 @@ def test_qsd_codegen_hamiltonian():
     slh = SLH(identity_matrix(1), [L], H)
     codegen = QSDCodeGen(circuit=slh, num_vals={x: 2., c: 1, k: 2})
 
-    codegen._operator_basis_lines()
-    scode = codegen._hamiltonian_lines()
+    codegen._operator_basis_lines(indent=0)
+    scode = codegen._hamiltonian_lines(indent=0)
     assert scode.strip() == (r'Operator H = ((c) * (Ad0) + (c) * (A0) + (chi) '
                              r'* (((Ad0 * Ad0) + (A0 * A0))));')
 
@@ -339,7 +341,7 @@ def test_operator_str(Sec6_codegen):
 
 def test_qsd_codegen_lindblads(slh_Sec6):
     codegen = QSDCodeGen(circuit=slh_Sec6)
-    scode = codegen._lindblads_lines()
+    scode = codegen._lindblads_lines(indent=0)
     assert dedent(scode).strip() == dedent(r'''
     const int nL = 3;
     Operator L[nL]={
@@ -357,7 +359,7 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
     codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
 
     with pytest.raises(QSDCodeGenError) as excinfo:
-        scode = codegen._observables_lines()
+        scode = codegen._observables_lines(indent=0)
     assert "Must register at least one observable" in str(excinfo.value)
 
     codegen.add_observable(Sp*A2*Sm*Sp)
@@ -398,7 +400,7 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
     assert codegen._observables["X2"] == (Sm*Sp*A2*Sm, 'X2.out')
     codegen.add_observable(A2, name="A2")
     assert codegen._observables["A2"] == (A2, 'A2.out')
-    scode = codegen._observables_lines()
+    scode = codegen._observables_lines(indent=0)
     assert dedent(scode).strip() == dedent(r'''
     const int nOfOut = 3;
     Operator outlist[nOfOut] = {
@@ -423,8 +425,8 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
     assert str(codegen._qsd_ops[P1]) == 'S2_1_1'
     assert zeta in codegen.syms
     codegen.num_vals.update({zeta: 1.0})
-    assert 'zeta' in codegen._parameters_lines()
-    assert str(codegen._qsd_ops[P1]) in codegen._operator_basis_lines()
+    assert 'zeta' in codegen._parameters_lines(indent=0)
+    assert str(codegen._qsd_ops[P1]) in codegen._operator_basis_lines(indent=0)
     assert Sp*A2 in set(codegen.observables)
     assert Sm*A2 in set(codegen.observables)
     assert zeta*P1 in set(codegen.observables)
@@ -580,7 +582,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
             traj_save=10)
 
-    scode = codegen._initial_state_lines()
+    scode = codegen._initial_state_lines(indent=0)
     assert scode == dedent(r'''
     State phiL0(10,0,FIELD); // HS 0
     State phiL1(10,0,FIELD); // HS 1
@@ -590,17 +592,16 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     State phiT0List[3] = {(phiL0 + phiL3), (phiL1 + phiL4), phiL2};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
 
-    State psiIni = (1/2) * (phiT0);
+    State psiIni = (1.0L/2.0L) * (phiT0);
     psiIni.normalize();
     ''').strip()
-    # TODO: Fix 1/2 => 1.0/2.0
 
     alpha = symbols('alpha')
     psi = CoherentStateKet(0, alpha) * psi_cav2(0) * psi_spin(0)
     codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
             traj_save=10)
-    scode = codegen._initial_state_lines()
+    scode = codegen._initial_state_lines(indent=0)
     assert scode == dedent(r'''
     State phiL0(10,0,FIELD); // HS 1
     State phiL1(2,0,FIELD); // HS 2
@@ -616,7 +617,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
             traj_save=10)
-    scode = codegen._initial_state_lines()
+    scode = codegen._initial_state_lines(indent=0)
     assert scode == dedent(r'''
     State phiL0(10,0,FIELD); // HS 0
     State phiL1(10,0,FIELD); // HS 1
@@ -628,7 +629,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     State phiT1List[3] = {phiL3, phiL1, phiL2};
     State phiT1(3, phiT1List); // HS 0 * HS 1 * HS 2
 
-    State psiIni = (sqrt(2)/2) * ((phiT0 + phiT1));
+    State psiIni = ((1.0L/2.0L)*sqrt(2)) * ((phiT0 + phiT1));
     psiIni.normalize();
     ''').strip()
 
@@ -643,13 +644,13 @@ def test_qsd_codegen_traj(slh_Sec6):
     codegen.add_observable(A2, name="A2")
 
     with pytest.raises(QSDCodeGenError) as excinfo:
-        scode = codegen._trajectory_lines()
+        scode = codegen._trajectory_lines(indent=0)
     assert "No trajectories set up"  in str(excinfo.value)
 
     codegen.set_trajectories(psi_initial=None, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
             traj_save=10)
-    scode = codegen._trajectory_lines()
+    scode = codegen._trajectory_lines(indent=0)
     assert dedent(scode).strip() == dedent(r'''
     ACG gen(rndSeed); // random number generator
     ComplexNormal rndm(&gen); // Complex Gaussian random numbers
@@ -681,7 +682,7 @@ def test_qsd_codegen_traj(slh_Sec6):
                                  move_eps=0.01)
     assert "A moving basis cannot be used" in str(excinfo.value)
     codegen.set_moving_basis(move_dofs=2, delta=0.01, width=2, move_eps=0.01)
-    scode = codegen._trajectory_lines()
+    scode = codegen._trajectory_lines(indent=0)
     assert dedent(scode).strip() == dedent(r'''
     ACG gen(rndSeed); // random number generator
     ComplexNormal rndm(&gen); // Complex Gaussian random numbers
@@ -884,4 +885,27 @@ def test_compilation_worker(mock_compilation_worker, Sec6_codegen, traj1,
     # instead of a copy, thereby modifying the traj1 with the second call
     assert traj1.ID == traj1_ID
     assert traj2_10.ID == traj2_10_ID
+
+
+def test_find_time_dependent_coeffs():
+    E0, sigma, t, t0, a, b = sympy.symbols('E_0, sigma, t, t_0, a, b',
+                                           real=True)
+    op_a = Destroy(0)
+    op_n = op_a.dag() * op_a
+    gaussian = E0 * sympy.exp(-(t-t0)**2/(2*sigma**2))
+    linear = a * t
+    H =   b * op_a.dag() + gaussian * op_n + linear * op_a
+    coeffs = list(_find_time_dependent_coeffs(H, t))
+    assert len(coeffs) == 2
+    assert gaussian in coeffs
+    assert linear in coeffs
+
+    H = (gaussian * op_n) * (linear * op_a) + b
+    coeffs = list(_find_time_dependent_coeffs(H, t))
+    assert len(coeffs) == 1
+    assert gaussian*linear in coeffs
+
+    H = b * op_n
+    coeffs = list(_find_time_dependent_coeffs(H, t))
+    len(coeffs) == 9
 

@@ -9,14 +9,19 @@
 #include "Traject.h"
 
 Complex I(0.0,1.0);
-double E = 20;
-double chi = 0.4;
-double eta = 0.001;
-double gamma_1 = 1;
-double gamma_2 = 1;
-double kappa = 0.1;
-double omega = -0.7;
+double E_0 = 6.28319;
+double T = 10;
+double omega = 1;
 
+double tfunc1(double t)
+{
+  double u1;
+  u1 = 0.5*E_0*(-0.5*cos(2*M_PI*t/T) + 0.08*cos(4*M_PI*t/T) + 0.42);
+  return u1;
+}
+
+
+RealFunction u1 = tfunc1;
 
 int main(int argc, char* argv[])
 {
@@ -36,46 +41,34 @@ int main(int argc, char* argv[])
 
   // Primary Operators
   IdentityOperator Id0(0);
-  IdentityOperator Id1(1);
-  IdentityOperator Id2(2);
   AnnihilationOperator A0(0);
-  AnnihilationOperator A1(1);
-  FieldTransitionOperator S2_1_1(1,1,2);
-  FieldTransitionOperator S2_0_1(0,1,2);
-  FieldTransitionOperator S2_1_0(1,0,2);
-  Operator Id = Id0*Id1*Id2;
+  FieldTransitionOperator S0_1_0(1,0,0);
+  FieldTransitionOperator S0_0_1(0,1,0);
+  FieldTransitionOperator S0_1_1(1,1,0);
+  Operator Id = Id0;
   Operator Ad0 = A0.hc();
-  Operator Ad1 = A1.hc();
 
   // Hamiltonian
-  Operator H = ((omega) * (S2_1_1) + (I*E) * ((Ad0 + (-1) * (A0))) + (0.5*I*chi) * (((Ad0 * Ad0 * A1) + (-1) * ((A0 * A0 * Ad1)))) + (I*eta) * (((-1) * ((Ad1 * S2_0_1)) + (A1 * S2_1_0))));
+  Operator H = (u1 * ((S0_1_0 + S0_0_1)) + (omega) * ((Ad0 * A0)));
 
   // Lindblad operators
-  const int nL = 3;
+  const int nL = 0;
   Operator L[nL]={
-    (sqrt(2)*sqrt(gamma_1)) * (A0),
-    (sqrt(2)*sqrt(gamma_2)) * (A1),
-    (sqrt(2)*sqrt(kappa)) * (S2_0_1)
+    
   };
 
   // Observables
-  const int nOfOut = 3;
+  const int nOfOut = 1;
   Operator outlist[nOfOut] = {
-    (A1 * S2_1_0),
-    (A1 * S2_0_1),
-    A1
+    S0_1_1
   };
-  char *flist[nOfOut] = {"X1.out", "X2.out", "A2.out"};
+  char *flist[nOfOut] = {"P_e.out"};
   int pipe[4] = {1,2,3,4};
 
   // Initial state
-  State phiL0(50,0,FIELD); // HS 0
-  State phiL1(50,0,FIELD); // HS 1
-  State phiL2(2,0,FIELD); // HS 2
-  State phiT0List[3] = {phiL0, phiL1, phiL2};
-  State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
+  State phiL0(2,1,FIELD); // HS 0
 
-  State psiIni = phiT0;
+  State psiIni = phiL0;
   psiIni.normalize();
 
   // Trajectory
@@ -83,8 +76,8 @@ int main(int argc, char* argv[])
   ComplexNormal rndm(&gen); // Complex Gaussian random numbers
 
   double dt = 0.01;
-  int dtsperStep = 100;
-  int nOfSteps = 5;
+  int dtsperStep = 5;
+  int nOfSteps = 200;
   int nTrajSave = 10;
   int nTrajectory = 1;
   int ReadFile = 0;
