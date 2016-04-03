@@ -1,9 +1,9 @@
 PROJECT_NAME = QNET
-PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest sphinx nose ply cython
+PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest sphinx nose ply cython coverage
 TESTPYPI = https://testpypi.python.org/pypi
 
-#TESTOPTIONS = --doctest-modules
-TESTOPTIONS =
+#TESTOPTIONS = --doctest-modules --cov=qnet
+TESTOPTIONS = --cov=qnet
 TESTS = tests
 # You may redefine TESTS to run a specific test. E.g.
 #     make test TESTS="tests/algebra"
@@ -43,6 +43,9 @@ clean:
 	@find . -iname __pycache__ | xargs rm -rf
 	@make -C docs clean
 	@rm -rf $(DOC) $(DOC).tgz
+	@rm -rf htmlcov
+	@rm -rf .cache
+	@rm -f .coverage
 
 .venv/py27/bin/py.test:
 	@conda create -y -m -p .venv/py27 python=2.7 $(PACKAGES)
@@ -70,6 +73,10 @@ test34: .venv/py34/bin/py.test
 
 test: test27 test33 test34
 
+coverage: test34
+	@rm -rf htmlcov/index.html
+	.venv/py34/bin/coverage html
+
 doc:
 	make -C docs html
 	@rm -rf $(DOC)
@@ -78,4 +85,4 @@ doc:
 	@rm -rf $(DOC)
 
 .PHONY: install develop uninstall upload test-upload test-install sdist clean \
-test test27 test33 test34 doc
+test test27 test33 test34 doc coverage

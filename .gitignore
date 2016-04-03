@@ -10,3 +10,7 @@
 *.synctex.gz
 backup/*
 docsrc/_build/*
+/htmlcov
+/.venv
+/.cache
+/.coverage
