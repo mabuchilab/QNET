@@ -374,6 +374,8 @@ class QSDCodeGen(object):
         # dictionary is appended to the following list. A call to `run_delayed`
         # may then process the whole list in parallel
         self._delayed_runs_kwargs = []
+        # We also cache the 'seed' of each kwargs in _delayed_runs_kwargs
+        self._delayed_seeds = []
 
         # for any time-dependent coefficient, we keep
         #   coeff => (time-function-name, time-function-placehold, is_real)
@@ -918,10 +920,19 @@ class QSDCodeGen(object):
         if self._executable is None:
             raise QSDCodeGenError("Call compile method first")
         if self.traj_data is not None:
-            if seed in self.traj_data.record_seeds:
-                raise ValueError("Seed %d already in record" % seed)
+            if ( (seed in self.traj_data.record_seeds)
+            or   (seed in self._delayed_seeds) ):
+                raise ValueError("Seed %d already in record or in delayed run"
+                                 % seed)
         if seed is None:
             seed = random.randint(0, UNSIGNED_MAXINT)
+            # ensure we don't reuse an existing or schedules seed
+            while ( (seed in self.traj_data.record_seeds)
+            or      (seed in self._delayed_seeds) ):
+                seed = random.randint(0, UNSIGNED_MAXINT)
+            if delay:
+                while seed in delayed_seed:
+                    seed = random.randint(0, UNSIGNED_MAXINT)
         kwargs = {
                 'executable': self._executable, 'keep': keep,
                 'path': self._path, 'seed': seed, 'workdir': workdir,
@@ -931,6 +942,7 @@ class QSDCodeGen(object):
         }
         if delay:
             self._delayed_runs_kwargs.append(kwargs)
+            self._delayed_seeds.append(kwargs['seed'])
         else:
             traj = qsd_run_worker(kwargs)
             if self.traj_data is None:
@@ -969,6 +981,7 @@ class QSDCodeGen(object):
         try:
             trajs = list(map(_run_worker, self._delayed_runs_kwargs))
             self._delayed_runs_kwargs = []
+            self._delayed_seeds = []
             if self.traj_data is None:
                 self.traj_data = trajs[0].copy()
                 if len(trajs) > 1:
