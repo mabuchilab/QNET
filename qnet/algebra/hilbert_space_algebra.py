@@ -389,6 +389,12 @@ class ProductSpace(HilbertSpace, Operation):
     signature = HilbertSpace,
     neutral_element = TrivialSpace
 
+    def __init__(self, *args):
+        super(ProductSpace, self).__init__(*args)
+        if len(set(args)) != len(args):
+            raise ValueError(repr(args))
+
+
     @classmethod
     def create(cls, *operands):
         if any(o is FullSpace for o in operands):
@@ -498,4 +504,3 @@ class BasisRegistry(object):
             return inf
         dims = [len(self.get_basis(s)) for s in space.local_factors()]
         return prod(dims)
-

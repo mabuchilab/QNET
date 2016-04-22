@@ -574,7 +574,7 @@ class Jz(LocalOperator):
     signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
-        return qutip.create(self.space.dimension)
+        return qutip.jmat((self.space.dimension-1)/2., "z")
 
     def _tex(self):
         return r"{{J_z^{{({})}}}}".format(self.space.tex())
@@ -615,7 +615,7 @@ class Jplus(LocalOperator):
     signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
-        return qutip.create(self.space.dimension)
+        return qutip.jmat((self.space.dimension-1)/2., "+")
 
     def _tex(self):
         return r"{{J_+^{{({})}}}}".format(self.space.tex())
@@ -654,7 +654,7 @@ class Jminus(LocalOperator):
     signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
-        return qutip.create(self.space.dimension)
+        return qutip.jmat((self.space.dimension-1)/2., "-")
 
     def _tex(self):
         return r"{{J_-^{{({})}}}}".format(self.space.tex())
@@ -1367,7 +1367,7 @@ def safe_tex(obj):
     if isinstance(obj, (int, float, complex)):
         return format_number_for_tex(obj)
 
-    if isinstance(obj, SympyBasic):
+    if isinstance(obj, (SympyBasic, SympyMatrix)):
         return sympy_latex(obj).strip('$')
     try:
         return obj.tex()
@@ -1801,9 +1801,17 @@ OperatorPlus._binary_rules += [
 
 def Jpjmcoeff(ls, m):
     try:
-        j = (sympify(ls.dimension)-1)/2
+        j = sympify(ls.dimension-1)/2
+        m = j-m
         coeff = sqrt(j*(j+1)-m*(m+1))
         return coeff
+    except BasisNotSetError:
+        raise CannotSimplify()
+
+def Jzjmcoeff(ls, m):
+    try:
+        j = sympify(ls.dimension-1)/2
+        return j-m
     except BasisNotSetError:
         raise CannotSimplify()
 
@@ -2423,6 +2431,3 @@ def get_coeffs(expr, expand=False, epsilon=0.):
 #                         Qj += factor_right(Ak, Xj)
 #                     except CannotFactorException:
 #                         pass
-
-
-
