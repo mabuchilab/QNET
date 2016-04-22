@@ -126,7 +126,8 @@ class Circuit(object):
     @property
     def block_structure(self):
         """
-        If the circuit is *reducible* (i.e., it can be represented as a :py:class:Concatenation: of individual circuit expressions),
+        If the circuit is *reducible* (i.e., it can be represented as a
+        :py:class:Concatenation: of individual circuit expressions),
         this gives a tuple of cdim values of the subblocks.
         E.g. if A and B are irreducible and have ``A.cdim = 2``, ``B.cdim = 3``
 
@@ -2162,25 +2163,23 @@ def getABCD(slh, a0={}, doubled_up=True):
     dA_out = (C X + c) dt + D dA_in
 
     where, if doubled_up == False
-        dX = [a_1, ..., a_m] if doubled_up == False
-     and
+
+        dX = [a_1, ..., a_m]
         dA_in = [dA_1, ..., dA_n]
 
     or if doubled_up == True
+
         dX = [a_1, ..., a_m, a_1^*, ... a_m^*]
-     and
         dA_in = [dA_1, ..., dA_n, dA_1^*, ..., dA_n^*]
 
-    Params
-    ------
+
     :param slh: SLH object
     :param a0: dictionary of coherent amplitudes {a1: a1_0, a2: a2_0, ...} with annihilation mode operators
         as keys and (numeric or symbolic) amplitude as values.
     :param doubled_up: boolean, necessary for phase-sensitive / active systems
 
     Returns SymPy matrix objects
-    ----------------------------
-    A tuple (A, B, C, D, a, c])
+    :returns: A tuple (A, B, C, D, a, c])
 
     A: coupling of modes to each other
     B: coupling of external input fields to modes
@@ -2526,5 +2525,3 @@ def _time_dependent_to_qutip(op, full_space=None,
                              "the structure op = sum_i f_i(t) * op_i")
     else:
         return op.to_qutip(full_space=full_space)
-
-
