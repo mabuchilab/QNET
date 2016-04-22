@@ -1806,7 +1806,7 @@ OperatorPlus._binary_rules += [
 def Jpjmcoeff(ls, m):
     try:
         j = sympify(ls.dimension-1)/2
-        m = j-m
+        # m = j-m
         coeff = sqrt(j*(j+1)-m*(m+1))
         return coeff
     except BasisNotSetError:
@@ -1814,8 +1814,10 @@ def Jpjmcoeff(ls, m):
 
 def Jzjmcoeff(ls, m):
     try:
-        j = sympify(ls.dimension-1)/2
-        return j-m
+        return m
+        # j = sympify(ls.dimension-1)/2
+        # return j-m
+
     except BasisNotSetError:
         raise CannotSimplify()
 
