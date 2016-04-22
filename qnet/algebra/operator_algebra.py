@@ -347,9 +347,13 @@ class IdentityOperator(Operator, Expression):
         return self
 
     def _to_qutip(self, full_space):
-
-
-        return qutip.tensor(*[qutip.qeye(s.dimension) for s in full_space.local_factors()])
+        local_spaces = full_space.local_factors()
+        if len(local_spaces) == 0:
+            raise ValueError("full_space %s does not have local factors"
+                             % full_space)
+        else:
+            return qutip.tensor(*[qutip.qeye(s.dimension)
+                                  for s in local_spaces])
 
     #    def mathematica(self):
     #        return "IdentityOperator"

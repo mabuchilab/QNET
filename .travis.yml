@@ -28,4 +28,4 @@ script:
   - which sphinx-build
   - which sphinx-apidoc
   - make doc
-  - py.test qnet
+  - py.test --cov=qnet tests

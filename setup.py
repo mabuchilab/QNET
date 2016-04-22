@@ -64,8 +64,8 @@ setup(
         'numpy',
     ],
     extras_require={
-        'dev': (['pytest', 'sphinx', 'nose', 'cython', 'pytest-capturelog']
-                + mock_package),
+        'dev': (['pytest', 'sphinx', 'nose', 'cython', 'coverage',
+                 'pytest-cov', 'pytest-capturelog'] + mock_package),
         'simulation': ['cython', 'qutip>=3.0.1'],
         'circuit_visualization': 'pyx==0.12.1' if sys.version_info < (3, 0) else 'pyx>=0.13',
     },
