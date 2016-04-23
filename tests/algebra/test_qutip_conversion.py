@@ -92,6 +92,9 @@ class TestQutipConversion(unittest.TestCase):
         N = Create(1)*Destroy(1)
         N.space.dimension = 10
 
+        M = Create(2)*Destroy(2)
+        M.space.dimension = 5
+
         converter1 = {
             expN: lambda: N.to_qutip().expm()
         }
@@ -100,6 +103,13 @@ class TestQutipConversion(unittest.TestCase):
 
         assert np.linalg.norm(expNq.data.toarray()
             - (N.to_qutip().expm().data.toarray())) < 1e-8
+
+        with represent_symbols_as(converter1):
+            expNMq = (expN*M).to_qutip()
+
+        assert np.linalg.norm(expNMq.data.toarray()
+            - (qutip.tensor(N.to_qutip().expm(),
+                            M.to_qutip()).data.toarray())) < 1e-8
 
         def converter2(obj, full_space=None):
             if obj == expN:
@@ -112,6 +122,18 @@ class TestQutipConversion(unittest.TestCase):
 
         assert np.linalg.norm(expNq.data.toarray()
             - (N.to_qutip().expm().data.toarray())) < 1e-8
+
+
+        with represent_symbols_as(converter2):
+            expNMq = (expN*M).to_qutip()
+
+        assert np.linalg.norm(expNMq.data.toarray()
+            - (qutip.tensor(N.to_qutip().expm(),
+                            M.to_qutip()).data.toarray())) < 1e-8
+
+
+
+
 
 
 
