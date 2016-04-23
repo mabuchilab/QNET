@@ -20,6 +20,7 @@
 from qnet.algebra.operator_algebra import *
 from qnet.algebra.circuit_algebra import _time_dependent_to_qutip
 from sympy import symbols
+import numpy as np
 import qutip
 import unittest
 
@@ -84,6 +85,34 @@ class TestQutipConversion(unittest.TestCase):
         ad = Create(H)
         a = Create(H).adjoint()
         self.assertEqual(2 * a.to_qutip(), (2 * a).to_qutip())
+
+
+    def testSymbol(self):
+        expN = OperatorSymbol("expN", 1)
+        N = Create(1)*Destroy(1)
+        N.space.dimension = 10
+
+        converter1 = {
+            expN: lambda: N.to_qutip().expm()
+        }
+        with represent_symbols_as(converter1):
+            expNq = expN.to_qutip()
+
+        assert np.linalg.norm(expNq.data.toarray()
+            - (N.to_qutip().expm().data.toarray())) < 1e-8
+
+        def converter2(obj, full_space=None):
+            if obj == expN:
+                return N.to_qutip(full_space=full_space).expm()
+            else:
+                raise ValueError(str(obj))
+
+        with represent_symbols_as(converter2):
+            expNq = expN.to_qutip()
+
+        assert np.linalg.norm(expNq.data.toarray()
+            - (N.to_qutip().expm().data.toarray())) < 1e-8
+
 
 
 def test_time_dependent_to_qutip():

@@ -35,6 +35,7 @@ from __future__ import division
 from abc import abstractproperty
 from collections import defaultdict
 from itertools import product as cartesian_product
+from contextlib import contextmanager
 
 try:
     import qutip
@@ -282,6 +283,57 @@ def space(obj):
         if isinstance(obj, Operator.scalar_types):
             return TrivialSpace
         raise ValueError(str(obj))
+
+
+
+@contextmanager
+def represent_symbols_as(to_qutip):
+    """
+    This context manager allows to wrap an expression containing OperatorSymbols
+    in a way that allows the "to_qutip()" conversion to be defined for those
+    symbols by passing a custom function or dictionary to implement the
+    generation.
+
+    Arguments
+    ---------
+    to_qutip (dict or callable): Custom qutip-conversion method for all symbols.
+
+
+    Example
+    -------
+
+    >>> expN = OperatorSymbol("expN", 1)
+    >>> N = Create(1)*Destroy(1)
+    >>> N.space.dimension = 10
+    >>> converter = {
+            expN: lambda: N.to_qutip().expm()
+        }
+    >>> with represent_symbols_as(converter):
+            expNq = expN.to_qutip()
+    >>> assert np.linalg.norm(expNq.data.toarray()
+        - (N.to_qutip().expm().data.toarray())) < 1e-8
+
+
+    """
+    tq = OperatorSymbol.to_qutip
+    if isinstance(to_qutip, dict):
+        def to_qutip_fn(sym):
+
+            ret = to_qutip[sym]
+            if isinstance(ret, qutip.Qobj):
+                return ret
+            # else assume callable (useful for regenerating when basis changed)
+            return ret()
+    else:
+        to_qutip_fn = to_qutip
+        assert callable(to_qutip_fn)
+    try:
+
+        OperatorSymbol.to_qutip = to_qutip_fn
+        yield
+    finally:
+        OperatorSymbol.to_qutip = tq
+
 
 
 @check_signature
