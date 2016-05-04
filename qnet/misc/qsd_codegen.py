@@ -951,7 +951,7 @@ class QSDCodeGen(object):
                 self.traj_data += traj
             return traj
 
-    def run_delayed(self, map=map, _run_worker=None):
+    def run_delayed(self, map=map, n_procs_extend=1, _run_worker=None):
         """Execute all scheduled runs (see `delay` option in :meth:`run`
         method), possibly in parallel.
 
@@ -961,6 +961,8 @@ class QSDCodeGen(object):
                 ``[qsd_run_worker(kwargs) for kwargs in list_of_kwargs]``.
                 Defaults to the builtin `map` routine, which will process the
                 scheduled runs serially.
+            n_procs_extend (int): Number of local processes to use when
+                averaging over trajectories.
 
         Raises:
             TypeError: If `map` does not return a list of
@@ -985,9 +987,9 @@ class QSDCodeGen(object):
             if self.traj_data is None:
                 self.traj_data = trajs[0].copy()
                 if len(trajs) > 1:
-                    self.traj_data.extend(*trajs[1:])
+                    self.traj_data.extend(*trajs[1:], n_procs=n_procs_extend)
             else:
-                self.traj_data.extend(*trajs)
+                self.traj_data.extend(*trajs, n_procs=n_procs_extend)
         except (IndexError, TypeError, AttributeError):
             raise TypeError("`map ` does not return a list of TrajectoryData "
                             "instances.")

@@ -3,6 +3,7 @@ import uuid
 import os
 import re
 import json
+import multiprocessing
 from collections import OrderedDict, defaultdict
 
 import numpy as np
@@ -580,7 +581,7 @@ class TrajectoryData(object):
                 n_total += n_traj
         return n_total
 
-    def extend(self, *others):
+    def extend(self, *others, **kwargs):
         """Extend data with data from one or more other `TrajectoryData`
         instances, averaging the expectation values. Equivalently to
         ``traj1.extend(traj2)``, the syntax ``traj1 += traj2`` may be used.
@@ -590,8 +591,11 @@ class TrajectoryData(object):
                 incompatible
             TypeError: if any `others` are not an instance of `TrajectoryData`
         """
+        n_procs = kwargs.get('n_procs', 1)
         err_msg = "TrajectoryData may only be extended by completely "\
                   "disjunct other TrajectoryData object"
+        if len(others) == 0:
+            return
         n_trajs = defaultdict(lambda: 0) # op => total number of trajectories
         # X_n -> n * X_n for existing operators
         for op in self._operators:
@@ -600,6 +604,19 @@ class TrajectoryData(object):
                 self.table[col] *= n_trajs[op]
         used_IDs = [self.ID, ]
         # X_n += n_j*X_j for j over all j sets of trajectories
+        if n_procs > 1:
+            # perform a first pass, in which `others` is split into chuncs,
+            # then each chunk is average, and finally `others` is replaced with
+            # the list of averaged trajectories from all the chunks.
+            chunks = []
+            splitsize = 1.0/n_procs*len(others)
+            for i in range(n_procs):
+                chunks.append(others[int(round(i*splitsize))
+                                     :int(round((i+1)*splitsize))])
+                if len(chunks[-1]) == 0:
+                    del chunks[-1]
+            n_chunks = len(chunks)
+            others = multiprocessing.Pool(n_chunks).map(_extend_worker, chunks)
         try:
             for other in others:
                 if not isinstance(other, TrajectoryData):
@@ -648,4 +665,11 @@ class TrajectoryData(object):
         self.extend(other)
         return self
 
+def _extend_worker(chunk):
+    # chuck is guaranteed to have a least one traj
+    if len(chunk) == 1:
+        return chunk[0]
+    traj = chunk[0].copy()
+    traj.extend(*chunk[1:])
+    return traj
 
