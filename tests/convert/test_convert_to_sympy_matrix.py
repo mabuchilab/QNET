@@ -1,5 +1,5 @@
 import qnet.algebra.operator_algebra
-from qnet.misc.to_sympy_matrix import convert_to_sympy_matrix
+from qnet.convert.to_sympy_matrix import convert_to_sympy_matrix
 from qnet.algebra.hilbert_space_algebra import local_space
 
 import sympy
