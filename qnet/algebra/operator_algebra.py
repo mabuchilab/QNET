@@ -317,7 +317,7 @@ def represent_symbols_as(to_qutip):
     """
     tq = OperatorSymbol.to_qutip
     if isinstance(to_qutip, dict):
-        def to_qutip_fn(sym):
+        def to_qutip_fn(sym, **kwargs):
 
             ret = to_qutip[sym]
             if isinstance(ret, qutip.Qobj):
@@ -1056,14 +1056,22 @@ class OperatorPlus(OperatorOperation):
     def _diff(self, sym):
         return sum([o._diff(sym) for o in self.operands], ZeroOperator)
 
+    @staticmethod
+    def _tex_conditional_wrap(op):
+        if isinstance(op, OperatorPlus):
+            return r"\left( " + tex(op) + r"\right)"
+        return tex(op)
+
     def _tex(self):
-        ret = self.operands[0].tex()
+
+        _tex_cw = OperatorPlus._tex_conditional_wrap
+        ret = _tex_cw(self.operands[0].tex())
 
         for o in self.operands[1:]:
             if isinstance(o, ScalarTimesOperator) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
-                ret += " - " + tex(-o)
+                ret += " - " + _tex_cw(-o)
             else:
-                ret += " + " + tex(o)
+                ret += " + " + _tex_cw(o)
         return ret
 
     def __str__(self):
