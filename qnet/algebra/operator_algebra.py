@@ -1057,31 +1057,39 @@ class OperatorPlus(OperatorOperation):
         return sum([o._diff(sym) for o in self.operands], ZeroOperator)
 
     @staticmethod
-    def _tex_conditional_wrap(op):
-        if isinstance(op, OperatorPlus):
-            return r"\left( " + tex(op) + r"\right)"
-        return tex(op)
+    def _conditional_wrap(op, tex=False):
+        if tex:
+            if isinstance(op, OperatorPlus):
+                return r"\left( " + tex(op) + r"\right)"
+            else:
+                return tex(op)
+        else:
+            if isinstance(op, OperatorPlus):
+                return r"( " + str(op) + " )"
+            else:
+                return str(op)
 
     def _tex(self):
 
-        _tex_cw = OperatorPlus._tex_conditional_wrap
-        ret = _tex_cw(self.operands[0].tex())
+        _cw = OperatorPlus._conditional_wrap
+        ret = _cw(self.operands[0].tex(), tex=True)
 
         for o in self.operands[1:]:
             if isinstance(o, ScalarTimesOperator) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
-                ret += " - " + _tex_cw(-o)
+                ret += " - " + _cw(-o, tex=True)
             else:
-                ret += " + " + _tex_cw(o)
+                ret += " + " + _cw(o, tex=True)
         return ret
 
     def __str__(self):
-        ret = str(self.operands[0])
+        _cw = OperatorPlus._conditional_wrap
+        ret = _cw(self.operands[0])
 
         for o in self.operands[1:]:
             if isinstance(o, ScalarTimesOperator) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
-                ret += " - " + str(-o)
+                ret += " - " + _cw(-o)
             else:
-                ret += " + " + str(o)
+                ret += " + " + _cw(o)
         return ret
 
 
