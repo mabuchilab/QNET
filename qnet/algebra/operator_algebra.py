@@ -1057,8 +1057,8 @@ class OperatorPlus(OperatorOperation):
         return sum([o._diff(sym) for o in self.operands], ZeroOperator)
 
     @staticmethod
-    def _conditional_wrap(op, tex=False):
-        if tex:
+    def _conditional_wrap(op, istex=False):
+        if istex:
             if isinstance(op, OperatorPlus):
                 return r"\left( " + tex(op) + r"\right)"
             else:
@@ -1072,13 +1072,13 @@ class OperatorPlus(OperatorOperation):
     def _tex(self):
 
         _cw = OperatorPlus._conditional_wrap
-        ret = _cw(self.operands[0].tex(), tex=True)
+        ret = _cw(self.operands[0].tex(), istex=True)
 
         for o in self.operands[1:]:
             if isinstance(o, ScalarTimesOperator) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
-                ret += " - " + _cw(-o, tex=True)
+                ret += " - " + _cw(-o, istex=True)
             else:
-                ret += " + " + _cw(o, tex=True)
+                ret += " + " + _cw(o, istex=True)
         return ret
 
     def __str__(self):
