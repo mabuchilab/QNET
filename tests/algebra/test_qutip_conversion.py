@@ -96,7 +96,7 @@ class TestQutipConversion(unittest.TestCase):
         M.space.dimension = 5
 
         converter1 = {
-            expN: lambda: N.to_qutip().expm()
+            expN: lambda fs: N.to_qutip().expm()
         }
         with represent_symbols_as(converter1):
             expNq = expN.to_qutip()
