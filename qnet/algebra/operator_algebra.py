@@ -317,13 +317,13 @@ def represent_symbols_as(to_qutip):
     """
     tq = OperatorSymbol.to_qutip
     if isinstance(to_qutip, dict):
-        def to_qutip_fn(sym, **kwargs):
+        def to_qutip_fn(sym, full_space=None):
 
             ret = to_qutip[sym]
             if isinstance(ret, qutip.Qobj):
                 return ret
             # else assume callable (useful for regenerating when basis changed)
-            return ret()
+            return ret(full_space)
     else:
         to_qutip_fn = to_qutip
         assert callable(to_qutip_fn)
