@@ -19,7 +19,9 @@
 
 
 from qnet.misc.parse_circuit_strings import parse_circuit_strings
-from qnet.algebra.circuit_algebra import Concatenation, SeriesProduct, CPermutation, CircuitSymbol, CIdentity, cid, Feedback, identity_matrix, Create, Destroy, Matrix, SLH
+from qnet.algebra.circuit_algebra import Concatenation, SeriesProduct, CPermutation, CircuitSymbol, CIdentity, cid, Feedback, SLH
+from qnet.algebra.operator_algebra import (identity_matrix, Create, Destroy,
+        Matrix)
 from qnet.misc.circuit_visualization import draw_circuit
 from os import path, remove
 from tempfile import gettempdir

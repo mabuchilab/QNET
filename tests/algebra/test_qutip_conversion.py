@@ -18,6 +18,9 @@
 ###########################################################################
 
 from qnet.algebra.operator_algebra import *
+from qnet.algebra.circuit_algebra import _time_dependent_to_qutip
+from sympy import symbols
+import numpy as np
 import qutip
 import unittest
 
@@ -82,3 +85,90 @@ class TestQutipConversion(unittest.TestCase):
         ad = Create(H)
         a = Create(H).adjoint()
         self.assertEqual(2 * a.to_qutip(), (2 * a).to_qutip())
+
+
+    def testSymbol(self):
+        expN = OperatorSymbol("expN", 1)
+        N = Create(1)*Destroy(1)
+        N.space.dimension = 10
+
+        M = Create(2)*Destroy(2)
+        M.space.dimension = 5
+
+        converter1 = {
+            expN: lambda: N.to_qutip().expm()
+        }
+        with represent_symbols_as(converter1):
+            expNq = expN.to_qutip()
+
+        assert np.linalg.norm(expNq.data.toarray()
+            - (N.to_qutip().expm().data.toarray())) < 1e-8
+
+        with represent_symbols_as(converter1):
+            expNMq = (expN*M).to_qutip()
+
+        assert np.linalg.norm(expNMq.data.toarray()
+            - (qutip.tensor(N.to_qutip().expm(),
+                            M.to_qutip()).data.toarray())) < 1e-8
+
+        def converter2(obj, full_space=None):
+            if obj == expN:
+                return N.to_qutip(full_space=full_space).expm()
+            else:
+                raise ValueError(str(obj))
+
+        with represent_symbols_as(converter2):
+            expNq = expN.to_qutip()
+
+        assert np.linalg.norm(expNq.data.toarray()
+            - (N.to_qutip().expm().data.toarray())) < 1e-8
+
+
+        with represent_symbols_as(converter2):
+            expNMq = (expN*M).to_qutip()
+
+        assert np.linalg.norm(expNMq.data.toarray()
+            - (qutip.tensor(N.to_qutip().expm(),
+                            M.to_qutip()).data.toarray())) < 1e-8
+
+
+
+
+
+
+
+def test_time_dependent_to_qutip():
+    Hil = local_space("H", dimension=5)
+    ad = Create(Hil)
+    a = Create(Hil).adjoint()
+
+    w, g, t = symbols('w, g, t', real=True)
+
+    H =  ad*a + (a + ad)
+    assert _time_dependent_to_qutip(H) == H.to_qutip()
+
+    H =  g * t * a
+    res = _time_dependent_to_qutip(H, time_symbol=t)
+    assert res[0] == a.to_qutip()
+    assert res[1](1, {}) == g
+    assert res[1](1, {g: 2}) == 2
+
+    H =  ad*a + g* t * (a + ad)
+    res = _time_dependent_to_qutip(H, time_symbol=t)
+    assert len(res) == 3
+    assert res[0] == (ad*a).to_qutip()
+    assert res[1][0] == ad.to_qutip()
+    assert res[1][1](1, {}) == g
+    assert res[2][0] == a.to_qutip()
+    assert res[2][1](1, {}) == g
+
+    res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
+    terms = [term for H, term in res[1:]]
+    assert terms == ['g*t', 'g*t']
+
+    H =  (ad*a + t * (a + ad))**2
+    res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
+    assert len(res) == 9
+    terms = [term for H, term in res[1:]]
+    assert terms == ['t**2', 't', 't', 't**2', '2*t', '2*t**2 + 1', '2*t',
+                     't**2']

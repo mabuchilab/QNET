@@ -3,6 +3,11 @@ QNET
 
 .. image:: https://travis-ci.org/mabuchilab/QNET.svg
     :target: https://travis-ci.org/mabuchilab/QNET
+    :alt: Build Status
+
+.. image:: https://readthedocs.org/projects/qnet/badge/?version=latest
+    :target: http://qnet.readthedocs.org/en/latest/?badge=latest
+    :alt: Documentation Status
 
 The QNET package is a set of tools created and compiled to aid in the design and analysis of photonic circuit models.
 Our proposed Quantum Hardware Description Language (cf. QHDL_) serves to describe a circuit topology and specification of a larger entity in terms of parametrizable subcomponents.
@@ -116,7 +121,9 @@ Acknowledgements
 ----------------
 
 `Hideo Mabuchi <mailto:hmabuchi@stanford.edu>`_ had the initial idea for a software package that could exploit the Gough-James SLH formalism to generate an overall open quantum system model for a quantum feedback network based solely on its topology and the component models in analytic form.
-The actual QNET package was then planned and implemented by `Nikolas Tezak <mailto:ntezak@stanford.edu>`_. In its current form, QNET comprises
+The actual QNET package was then planned and implemented by `Nikolas Tezak <mailto:ntezak@stanford.edu>`_. In the Fall of 2015 `Michael Goerz <mailto:goerz@stanford.edu>`_ joined as a main developer.
+
+In its current form, QNET comprises
 functionality [#additionalFeatures]_ that goes well beyond what would be necessary to achieve the original goal, but which has proven to be immensely useful.
 In addition to the authors of the software packages listed under Dependencies_ that QNET relies on, we would like to acknowledge the following people's direct support to QNET which included their vision, ideas, examples, bug reports and feedback.
 
@@ -148,10 +155,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with QNET.  If not, see `this page <http://www.gnu.org/licenses/>`_.
 
-Copyright (C) 2012, Nikolas Tezak
+Copyright (C) 2012-2016, Nikolas Tezak
 
-
-.. image:: https://d2weczhvl823v0.cloudfront.net/mabuchilab/QNET/trend.png
-   :alt: Bitdeli badge
-   :target: https://bitdeli.com/free
 

@@ -344,7 +344,7 @@ class BasisKet(LocalKet):
     :param LocalSpace hs: The local Hilbert space degree of freedom.
     :param (str or int) rep: The basis state label.
     """
-    signature = (LocalSpace, str, int), (str, int)
+    signature = (LocalSpace, str, int), (str, int, SympyBasic)
 
     def _tex_ket(self):
         return r"\left| {!s} \right\rangle_{{{}}}".format(self.operands[1], self.space.tex())
@@ -421,7 +421,7 @@ def _check_same_space_mtd(dcls, clsmtd, cls, *ops):
     """
     Check that all operands are from the same Hilbert space.
     """
-    if not len({o.space for o in ops}) == 1:
+    if not len({o.space for o in ops if not o is ZeroKet}) == 1:
         raise UnequalSpaces(str(ops))
     return clsmtd(cls, *ops)
 
@@ -789,7 +789,7 @@ class OperatorTimesKet(Ket, Operation):
     @classmethod
     def create(cls, op, ket):
         if not op.space <= ket.space:
-            raise SpaceTooLargeError(str(op) + " " + str(ket))
+            raise SpaceTooLargeError(str(op.space) + " <!= " + str(ket.space))
         return super(OperatorTimesKet, cls).create(op, ket)
 
 
@@ -1145,6 +1145,8 @@ def tensor_decompose_kets(a, b, operation):
 #m = wc("m", head=(int, str))
 k = wc("k", head=(int, str))
 
+nsym = wc("nsym", head=(int, str, SympyBasic))
+
 Psi = wc("Psi", head=Ket)
 Phi = wc("Phi", head=Ket)
 Psi_plus = wc("Psi", head=KetPlus)
@@ -1190,7 +1192,17 @@ OperatorTimesKet._rules += [
     # spin
     ((Jplus(ls), BasisKet(ls, n)), lambda ls, n: Jpjmcoeff(ls, n) * BasisKet(ls, n+1)),
     ((Jminus(ls), BasisKet(ls, n)), lambda ls, n: Jmjmcoeff(ls, n) * BasisKet(ls, n-1)),
-    ((Jz(ls), BasisKet(ls, n)), lambda ls, n: n * BasisKet(ls, n)),
+    ((Jz(ls), BasisKet(ls, n)), lambda ls, n: Jzjmcoeff(ls, n) * BasisKet(ls, n)),
+
+    # # harmonic oscillator
+    # ((Create(ls), BasisKet(ls, nsym)), lambda ls, nsym: sqrt(nsym+1) * BasisKet(ls, nsym + 1)),
+    # ((Destroy(ls), BasisKet(ls, nsym)), lambda ls, nsym: sqrt(nsym) * BasisKet(ls, nsym - 1)),
+    # ((Destroy(ls), CoherentStateKet(ls, u)), lambda ls, u: u * CoherentStateKet(ls, u)),
+    #
+    # # spin
+    # ((Jplus(ls), BasisKet(ls, nsym)), lambda ls, nsym: Jpjmcoeff(ls, nsym) * BasisKet(ls, nsym+1)),
+    # ((Jminus(ls), BasisKet(ls, nsym)), lambda ls, nsym: Jmjmcoeff(ls, nsym) * BasisKet(ls, nsym-1)),
+    # ((Jz(ls), BasisKet(ls, nsym)), lambda ls, nsym: nsym * BasisKet(ls, nsym)),
 
     ((A_local, Psi_tensor), lambda A, Psi: act_locally(A, Psi)),
     ((A_times, Psi_tensor), lambda A, Psi: act_locally_times_tensor(A, Psi)),
@@ -1216,9 +1228,13 @@ TensorKet._binary_rules += [
 ]
 
 BraKet._rules += [
+    ((Phi, ZeroKet), lambda Phi: ZeroOperator),
+    ((ZeroKet, Phi), lambda Phi: ZeroOperator),
     ((BasisKet(ls, m), BasisKet(ls, n)), lambda ls, m, n: IdentityOperator if m == n else ZeroOperator),
+    ((BasisKet(ls, nsym), BasisKet(ls, nsym)), lambda ls, nsym: IdentityOperator),
     ((Psi_tensor, Phi_tensor), lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create)),
     ((ScalarTimesKet(u, Psi), Phi), lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi)),
+    ((OperatorTimesKet(A, Psi), Phi), lambda A, Psi, Phi: (Psi.adjoint() * (A.dag() * Phi))),
     ((Psi, ScalarTimesKet(u,Phi)), lambda Psi, u, Phi: u * (Psi.adjoint() * Phi)),
 ]
 

@@ -24,9 +24,11 @@ See documentation of :py:class:`KerrCavity`.
 import unittest
 
 from qnet.circuit_components.component import Component, SubComponent
-from qnet.circuit_components.library import make_namespace_string
-from qnet.algebra.circuit_algebra import HilbertSpace, Destroy, local_space, IdentityMatrix, Matrix, sqrt, SLH, tex, identity_matrix
+from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.operator_algebra import Destroy, Matrix, identity_matrix
+from qnet.algebra.hilbert_space_algebra import local_space
 from sympy.core.symbol import symbols
+from sympy import sqrt
 
 
 

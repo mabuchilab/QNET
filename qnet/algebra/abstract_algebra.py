@@ -377,7 +377,7 @@ class Operation(Expression):
     """
 
     # hash str, is generated on demand (lazily)
-    __hash = None
+    _hash = None
 
     def __init__(self, *operands):
         """
@@ -422,9 +422,20 @@ class Operation(Expression):
         return type(self) == type(other) and self.operands == other.operands
 
     def __hash__(self):
-        if not self.__hash:
-            self.__hash = hash((self.__class__, self.operands))
-        return self.__hash
+        if self._hash is None:
+            self._hash = hash((self.__class__, self.operands))
+        return self._hash
+
+    def __getstate__(self):
+        d = self.__dict__.copy()
+        if "_hash"  in d:
+            del d["_hash"]
+        return d
+
+
+    # def __setstate__(self, state):
+    #     cls, ops = state
+    #     return cls.create(*ops)
 
     @classmethod
     def create(cls, *operands):

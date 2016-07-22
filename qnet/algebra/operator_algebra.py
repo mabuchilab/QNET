@@ -35,6 +35,7 @@ from __future__ import division
 from abc import abstractproperty
 from collections import defaultdict
 from itertools import product as cartesian_product
+from contextlib import contextmanager
 
 try:
     import qutip
@@ -181,8 +182,29 @@ class Operator(object):
         """
         return self._simplify_scalar()
 
+
     def _simplify_scalar(self):
         return self
+
+
+    def diff(self, sym, n=1, expand_simplify=True):
+        """
+        Differentiate by scalar parameter sym.
+
+        :param (sympy.Symbol) sym: What to differentiate by.
+        :param (int) n: How often to differentiate
+        :param (bool) expand_simplify: Whether to simplify the result.
+        :return (Operator): The n-th derivative.
+        """
+        expr = self
+        for k in range(n):
+            expr = expr._diff(sym)
+        if expand_simplify:
+            expr = expr.expand().simplify_scalar()
+        return expr
+
+    def _diff(self, sym):
+        return ZeroOperator
 
     def series_expand(self, param, about, order):
         """
@@ -263,6 +285,57 @@ def space(obj):
         raise ValueError(str(obj))
 
 
+
+@contextmanager
+def represent_symbols_as(to_qutip):
+    """
+    This context manager allows to wrap an expression containing OperatorSymbols
+    in a way that allows the "to_qutip()" conversion to be defined for those
+    symbols by passing a custom function or dictionary to implement the
+    generation.
+
+    Arguments
+    ---------
+    to_qutip (dict or callable): Custom qutip-conversion method for all symbols.
+
+
+    Example
+    -------
+
+    >>> expN = OperatorSymbol("expN", 1)
+    >>> N = Create(1)*Destroy(1)
+    >>> N.space.dimension = 10
+    >>> converter = {
+            expN: lambda: N.to_qutip().expm()
+        }
+    >>> with represent_symbols_as(converter):
+            expNq = expN.to_qutip()
+    >>> assert np.linalg.norm(expNq.data.toarray()
+        - (N.to_qutip().expm().data.toarray())) < 1e-8
+
+
+    """
+    tq = OperatorSymbol.to_qutip
+    if isinstance(to_qutip, dict):
+        def to_qutip_fn(sym, full_space=None):
+
+            ret = to_qutip[sym]
+            if isinstance(ret, qutip.Qobj):
+                return ret
+            # else assume callable (useful for regenerating when basis changed)
+            return ret(full_space)
+    else:
+        to_qutip_fn = to_qutip
+        assert callable(to_qutip_fn)
+    try:
+
+        OperatorSymbol.to_qutip = to_qutip_fn
+        yield
+    finally:
+        OperatorSymbol.to_qutip = tq
+
+
+
 @check_signature
 class OperatorSymbol(Operator, Operation):
     """
@@ -326,9 +399,13 @@ class IdentityOperator(Operator, Expression):
         return self
 
     def _to_qutip(self, full_space):
-
-
-        return qutip.tensor(*[qutip.qeye(s.dimension) for s in full_space.local_factors()])
+        local_spaces = full_space.local_factors()
+        if len(local_spaces) == 0:
+            raise ValueError("full_space %s does not have local factors"
+                             % full_space)
+        else:
+            return qutip.tensor(*[qutip.qeye(s.dimension)
+                                  for s in local_spaces])
 
     #    def mathematica(self):
     #        return "IdentityOperator"
@@ -553,7 +630,7 @@ class Jz(LocalOperator):
     signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
-        return qutip.create(self.space.dimension)
+        return qutip.jmat((self.space.dimension-1)/2., "z")
 
     def _tex(self):
         return r"{{J_z^{{({})}}}}".format(self.space.tex())
@@ -594,7 +671,7 @@ class Jplus(LocalOperator):
     signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
-        return qutip.create(self.space.dimension)
+        return qutip.jmat((self.space.dimension-1)/2., "+")
 
     def _tex(self):
         return r"{{J_+^{{({})}}}}".format(self.space.tex())
@@ -633,7 +710,7 @@ class Jminus(LocalOperator):
     signature = (LocalSpace, basestring, int),
 
     def _to_qutip_local_factor(self):
-        return qutip.create(self.space.dimension)
+        return qutip.jmat((self.space.dimension-1)/2., "-")
 
     def _tex(self):
         return r"{{J_-^{{({})}}}}".format(self.space.tex())
@@ -696,6 +773,9 @@ class Phase(LocalOperator):
     _rules = []
 
     # TODO implement _series_expand for the phase parameter
+    # TODO implement differentiation
+    def _diff(self, sym):
+        raise NotImplementedError()
 
     def _to_qutip_local_factor(self):
         arg = complex(self.operands[1]) * arange(self.space.dimension)
@@ -746,7 +826,10 @@ class Displace(LocalOperator):
     signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
-    # TODO implement _series_expand for the coherent displacement parameter
+    # TODO implement _series_expand
+    # TODO implement differentiation
+    def _diff(self, sym):
+        raise NotImplementedError()
 
     def _to_qutip_local_factor(self):
         return qutip.displace(self.space.dimension, complex(self.operands[1]))
@@ -793,7 +876,10 @@ class Squeeze(LocalOperator):
     signature = (LocalSpace, basestring, int), Operator.scalar_types
     _rules = []
 
-    # TODO implement _series_expand for the squeeze parameter
+    # TODO implement _series_expand
+    # TODO implement differentiation
+    def _diff(self, sym):
+        raise NotImplementedError()
 
     def _to_qutip_local_factor(self):
         return qutip.squeeze(self.space.dimension, complex(self.operands[1]))
@@ -967,24 +1053,43 @@ class OperatorPlus(OperatorOperation):
         res = tuple_sum((o.series_expand(param, about, order) for o in self.operands))
         return res
 
+    def _diff(self, sym):
+        return sum([o._diff(sym) for o in self.operands], ZeroOperator)
+
+    @staticmethod
+    def _conditional_wrap(op, istex=False):
+        if istex:
+            if isinstance(op, OperatorPlus):
+                return r"\left( " + tex(op) + r"\right)"
+            else:
+                return tex(op)
+        else:
+            if isinstance(op, OperatorPlus):
+                return r"( " + str(op) + " )"
+            else:
+                return str(op)
+
     def _tex(self):
-        ret = self.operands[0].tex()
+
+        _cw = OperatorPlus._conditional_wrap
+        ret = _cw(self.operands[0].tex(), istex=True)
 
         for o in self.operands[1:]:
             if isinstance(o, ScalarTimesOperator) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
-                ret += " - " + tex(-o)
+                ret += " - " + _cw(-o, istex=True)
             else:
-                ret += " + " + tex(o)
+                ret += " + " + _cw(o, istex=True)
         return ret
 
     def __str__(self):
-        ret = str(self.operands[0])
+        _cw = OperatorPlus._conditional_wrap
+        ret = _cw(self.operands[0])
 
         for o in self.operands[1:]:
             if isinstance(o, ScalarTimesOperator) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
-                ret += " - " + str(-o)
+                ret += " - " + _cw(-o)
             else:
-                ret += " + " + str(o)
+                ret += " + " + _cw(o)
         return ret
 
 
@@ -1140,6 +1245,13 @@ class OperatorTimes(OperatorOperation):
         crest = OperatorTimes.create(*self.operands[1:]).series_expand(param, about, order)
         return tuple(sum(cfirst[k] * crest[n - k] for k in range(n + 1)) for n in range(order + 1))
 
+    def _diff(self, sym):
+        assert len(self.operands) > 1
+        first = self.operands[0]
+        rest = OperatorTimes.create(*self.operands[1:])
+        return first._diff(sym) * rest + first * rest._diff(sym)
+
+
     def _tex(self):
         ret = ""
         # for o in self.operands[1:]:
@@ -1274,6 +1386,11 @@ class ScalarTimesOperator(Operator, Operation):
         else:
             return tuple(self.coeff * tek for tek in te)
 
+    def _diff(self, sym):
+        c, t = self.operands
+        cd = c.diff(sym) if isinstance(c, SympyBasic) else 0
+        return cd*t + c * t._diff(sym)
+
     def _pseudo_inverse(self):
         c, t = self.operands
         return t.pseudo_inverse() / c
@@ -1322,7 +1439,7 @@ def safe_tex(obj):
     if isinstance(obj, (int, float, complex)):
         return format_number_for_tex(obj)
 
-    if isinstance(obj, SympyBasic):
+    if isinstance(obj, (SympyBasic, SympyMatrix)):
         return sympy_latex(obj).strip('$')
     try:
         return obj.tex()
@@ -1451,6 +1568,9 @@ class Adjoint(OperatorOperation):
             return "{}^*".format(str(self.operand))
         return "({})^*".format(str(self.operand))
 
+    def _diff(self, sym):
+        return Adjoint.create(self.operands[0]._diff(sym))
+
 # for hilbert space dimensions less than or equal to this,
 # compute numerically PseudoInverse and NullSpaceProjector representations
 DENSE_DIMENSION_LIMIT = 1000
@@ -1479,6 +1599,7 @@ class PseudoInverse(OperatorOperation):
     delegate_to_method = ScalarTimesOperator, Squeeze, Displace, ZeroOperator.__class__, IdentityOperator.__class__
 
     # TODO implement _series_expand
+    # TODO implement _diff
 
     @classmethod
     def create(cls, op):
@@ -1548,6 +1669,7 @@ class NullSpaceProjector(OperatorOperation):
     _rules = []
 
     # TODO implement _series_expand
+    # TODO implement _diff
 
     @property
     def operand(self):
@@ -1636,6 +1758,10 @@ class OperatorTrace(Operator, Operation):
 
     def _all_symbols(self):
         return self.operands[1].all_symbols()
+
+    def _diff(self, sym):
+        s, o = self.operands
+        return OperatorTrace.create(s, o._diff(sym))
 
 
 tr = OperatorTrace.create
@@ -1747,9 +1873,19 @@ OperatorPlus._binary_rules += [
 
 def Jpjmcoeff(ls, m):
     try:
-        j = (sympify(ls.dimension)-1)/2
+        j = sympify(ls.dimension-1)/2
+        # m = j-m
         coeff = sqrt(j*(j+1)-m*(m+1))
         return coeff
+    except BasisNotSetError:
+        raise CannotSimplify()
+
+def Jzjmcoeff(ls, m):
+    try:
+        return m
+        # j = sympify(ls.dimension-1)/2
+        # return j-m
+
     except BasisNotSetError:
         raise CannotSimplify()
 
@@ -2369,6 +2505,3 @@ def get_coeffs(expr, expand=False, epsilon=0.):
 #                         Qj += factor_right(Ak, Xj)
 #                     except CannotFactorException:
 #                         pass
-
-
-
