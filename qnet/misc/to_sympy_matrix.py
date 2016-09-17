@@ -83,6 +83,8 @@ def convert_to_sympy_matrix(expr, full_space=None):
             return ((eta/2) * a**2 - (eta.conjugate()/2) * (a.H)**2).exp()
         elif isinstance(expr, LocalSigma):
             k, j = expr.operands[1:]
+            k = expr.space.basis.index(k)
+            j = expr.space.basis.index(j)
             ket = basis_state(k, n)
             bra = basis_state(j, n).H
             return ket * bra
