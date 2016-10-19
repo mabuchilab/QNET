@@ -182,7 +182,7 @@ def main(argv=None):
                 print("-" * 40)
 
     except Usage as err:
-        print(>> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg))
+        print(sys.argv[0].split("/")[-1] + ": " + str(err.msg), file=sys.stderr)
         return 2
     
     return 0
