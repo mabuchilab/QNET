@@ -88,7 +88,7 @@ def circuit_generator():
         for ii, (name, a) in enumerate(archs.items()):
             yield name, a.to_circuit(identifier_postfix = "_%d" % ii)
     elif len(archs) == 1:
-        for (name, a) in enumerate(archs.items()):
+        for (name, a) in archs.items():
             yield name, a.to_circuit()
 
 def write_modules(local = False):
