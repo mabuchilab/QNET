@@ -63,21 +63,6 @@ class Ket(object):
     dag = adjoint
 
 
-    def to_qutip(self):
-        """
-        Create a numerical representation of the ket as a QuTiP object.
-        Note that all symbolic scalar parameters need to be replaced by numerical values before calling this method.
-
-        :return: The numerical representation of the operator.
-        :rtype: qutip.Qobj
-        """
-        check_qutip()
-        return self._to_qutip()
-
-    @abstractmethod
-    def _to_qutip(self):
-        raise NotImplementedError(str(self.__class__))
-
     def expand(self):
         """
         Expand out distributively all products of sums. Note that this does not expand out sums of scalar coefficients.
@@ -208,9 +193,6 @@ class KetSymbol(Ket, Operation):
         return "\left\langle "+identifier_to_tex(self.operands[0]) + r"\right|_{" + self.space.tex() + "}"
 
 
-    def _to_qutip(self):
-        raise AlgebraError("Cannot convert operator symbol to  numeric representation. Substitute first.")
-
     @property
     def _space(self):
         return self.operands[1]
@@ -234,9 +216,6 @@ class ZeroKet(Ket, Expression):
     @property
     def _space(self):
         return FullSpace
-
-    def _to_qutip(self):
-        raise ValueError("Can't represent the ZeroKet numerically.")
 
     def _expand(self):
         return self
@@ -274,9 +253,6 @@ class TrivialKet(Ket, Expression):
 
     def _adjoint(self):
         return Bra(TrivialKet)
-
-    def _to_qutip(self):
-        raise AlgebraError("Cannot convert TrivialKet to numeric representation.")
 
     def _expand(self):
         return self
@@ -318,9 +294,6 @@ class LocalKet(Ket, Operation):
     def _space(self):
         return self.operands[0]
 
-    def _to_qutip(self):
-        raise NotImplementedError(self.__class__.__name__)
-
     def _expand(self):
         return self
 
@@ -358,9 +331,6 @@ class BasisKet(LocalKet):
     def _str_bra(self):
         return r"<{!s}|_{!s}".format(self.operands[1], self.space)
 
-    def _to_qutip(self):
-        return qutip.basis(self.space.dimension, self.space.basis.index(self.operands[1]))
-
 
 
 @check_signature
@@ -389,9 +359,6 @@ class CoherentStateKet(LocalKet):
 
     def _str_bra(self):
         return r"<D({!s})|_{!s}".format(self.operands[1], self.space)
-
-    def _to_qutip(self):
-        return qutip.coherent(self.space.dimension, complex(self.operands[1]))
 
     def _series_expand(self, param, about, order):
         return (self,) + (0,) * (order - 1)
@@ -458,9 +425,6 @@ class KetPlus(Ket, Operation):
                 c = inf
             return KeyTuple((Operation.order_key(a.term), c))
         return KeyTuple((Operation.order_key(a), 1))
-
-    def _to_qutip(self):
-        return sum((op.to_qutip() for op in self.operands), 0)
 
     def _expand(self):
         return sum((o.expand() for o in self.operands), ZeroKet)
@@ -572,17 +536,6 @@ class TensorKet(Ket, Operation):
     @property
     def _space(self):
         return prod((o.space for o in self.operands), TrivialSpace)
-
-    def _to_qutip(self):
-
-        # if any factor acts non-locally, we need to expand distributively.
-        if any(len(op.space) > 1 for op in self.operands):
-            se = self.expand()
-            if se == self:
-                raise ValueError("Cannot represent as QuTiP object: {!s}".format(self))
-            return se.to_qutip()
-
-        return qutip.tensor(*[o.to_qutip() for o in self.operands])
 
     def _expand(self):
         eops = [o.expand() for o in self.operands]
@@ -704,7 +657,6 @@ class ScalarTimesKet(Ket, Operation):
         return self._tex_ketbra(bra = True)
 
 
-
     def _str_ketbra(self, bra = False):
         coeff, term = self.operands
 
@@ -737,10 +689,6 @@ class ScalarTimesKet(Ket, Operation):
 
     def _str_bra(self):
         return self._str_ketbra(bra = True)
-
-
-    def _to_qutip(self):
-        return complex(self.coeff) * self.term.to_qutip()
 
     def _expand(self):
         c, t = self.operands
@@ -841,8 +789,6 @@ class OperatorTimesKet(Ket, Operation):
     def _tex_bra(self):
         return self._tex_ketbra(bra = True)
 
-
-
     def _str_ketbra(self, bra = True):
         coeff, term = self.operands
 
@@ -877,11 +823,6 @@ class OperatorTimesKet(Ket, Operation):
 
     def _str_bra(self):
         return self._str_ketbra(bra = True)
-
-
-
-    def _to_qutip(self):
-        return self.coeff.to_qutip(self.space) * self.term.to_qutip()
 
     def _expand(self):
         c, t = self.operands
@@ -1022,11 +963,6 @@ class BraKet(Operator, Operation):
             ks = self.ket.tex()
         return bs + ks
 
-    def _to_qutip(self):
-        bq = self.bra.to_qutip()
-        kq = self.ket.to_qutip()
-        return bq * kq
-
     def _series_expand(self, param, about, order):
         be = self.bra.series_expand(param, about, order)
         ke = self.ket.series_expand(param, about, order)
@@ -1086,13 +1022,7 @@ class KetBra(Operator, Operation):
             ks = self.ket.tex()
         return ks + bs
 
-    def _to_qutip(self):
-        bq = self.bra.to_qutip()
-        kq = self.ket.to_qutip()
-        return kq * bq
-
     def _series_expand(self, param, about, order):
-
         ke = self.ket.series_expand(param, about, order)
         be = self.bra.series_expand(param, about, order)
         return tuple(ke[k] * be[n - k]

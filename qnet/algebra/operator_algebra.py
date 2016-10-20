@@ -37,11 +37,6 @@ from collections import defaultdict
 from itertools import product as cartesian_product
 from contextlib import contextmanager
 
-try:
-    import qutip
-except ImportError:
-    qutip = None
-
 import qnet.algebra.abstract_algebra
 from qnet.algebra.hilbert_space_algebra import *
 
@@ -74,13 +69,6 @@ from qnet.algebra.permutations import check_permutation
 
 sympyOne = sympify(1)
 
-
-def check_qutip():
-    if qutip is None:
-        raise ImportError("""
-QuTiP is not installed. Cannot convert to numerical representation.
-Please install QuTiP by running: `pip install qutip`.
-""")
 
 def adjoint(obj):
     """
@@ -138,26 +126,6 @@ class Operator(object):
 
     def _pseudo_inverse(self):
         return PseudoInverse.create(self)
-
-    def to_qutip(self, full_space=None):
-        """
-        Create a numerical representation of the operator as a QuTiP object.
-        Note that all symbolic scalar parameters need to be replaced by numerical values before calling this method.
-
-        :param full_space: The full Hilbert space in which to represent the operator.
-        :type full_space: HilbertSpace
-        :return: The matrix representation of the operator.
-        :rtype: qutip.Qobj (:py:class:`qutip.Qobj`)
-        """
-        check_qutip()
-        if full_space is None:
-            return self._to_qutip(self.space)
-        else:
-            return self._to_qutip(full_space)
-
-    @abstractmethod
-    def _to_qutip(self, full_space):
-        raise NotImplementedError(str(self.__class__))
 
     def expand(self):
         """
@@ -285,57 +253,6 @@ def space(obj):
         raise ValueError(str(obj))
 
 
-
-@contextmanager
-def represent_symbols_as(to_qutip):
-    """
-    This context manager allows to wrap an expression containing OperatorSymbols
-    in a way that allows the "to_qutip()" conversion to be defined for those
-    symbols by passing a custom function or dictionary to implement the
-    generation.
-
-    Arguments
-    ---------
-    to_qutip (dict or callable): Custom qutip-conversion method for all symbols.
-
-
-    Example
-    -------
-
-    >>> expN = OperatorSymbol("expN", 1)
-    >>> N = Create(1)*Destroy(1)
-    >>> N.space.dimension = 10
-    >>> converter = {
-            expN: lambda: N.to_qutip().expm()
-        }
-    >>> with represent_symbols_as(converter):
-            expNq = expN.to_qutip()
-    >>> assert np.linalg.norm(expNq.data.toarray()
-        - (N.to_qutip().expm().data.toarray())) < 1e-8
-
-
-    """
-    tq = OperatorSymbol.to_qutip
-    if isinstance(to_qutip, dict):
-        def to_qutip_fn(sym):
-
-            ret = to_qutip[sym]
-            if isinstance(ret, qutip.Qobj):
-                return ret
-            # else assume callable (useful for regenerating when basis changed)
-            return ret()
-    else:
-        to_qutip_fn = to_qutip
-        assert callable(to_qutip_fn)
-    try:
-
-        OperatorSymbol.to_qutip = to_qutip_fn
-        yield
-    finally:
-        OperatorSymbol.to_qutip = tq
-
-
-
 @check_signature
 class OperatorSymbol(Operator, Operation):
     """
@@ -398,15 +315,6 @@ class IdentityOperator(Operator, Expression):
     def _adjoint(self):
         return self
 
-    def _to_qutip(self, full_space):
-        local_spaces = full_space.local_factors()
-        if len(local_spaces) == 0:
-            raise ValueError("full_space %s does not have local factors"
-                             % full_space)
-        else:
-            return qutip.tensor(*[qutip.qeye(s.dimension)
-                                  for s in local_spaces])
-
     #    def mathematica(self):
     #        return "IdentityOperator"
 
@@ -449,10 +357,6 @@ class ZeroOperator(Operator, Expression):
 
     def _adjoint(self):
         return self
-
-    def _to_qutip(self, full_space):
-        return qutip.tensor(
-            *[qutip.Qobj(csr_matrix((s.dimension, s.dimension))) for s in full_space.local_factors()])
 
     def _expand(self):
         return self
@@ -521,9 +425,6 @@ class LocalOperator(Operator, Operation):
         """
         return self._to_qutip_local_factor()
 
-    def _to_qutip_local_factor(self):
-        raise NotImplementedError(self.__class__.__name__)
-
     def _expand(self):
         return self
 
@@ -556,9 +457,6 @@ class Create(LocalOperator):
     """
     signature = (LocalSpace, basestring, int),
 
-    def _to_qutip_local_factor(self):
-        return qutip.create(self.space.dimension)
-
     def _tex(self):
         return r"{{a_{{{}}}^\dagger}}".format(self.space.tex())
 
@@ -588,9 +486,6 @@ class Destroy(LocalOperator):
     """
 
     signature = (LocalSpace, basestring, int),
-
-    def _to_qutip_local_factor(self):
-        return qutip.destroy(self.space.dimension)
 
     def _tex(self):
         return r"{{a_{{{}}}}}".format(self.space.tex())
@@ -777,11 +672,6 @@ class Phase(LocalOperator):
     def _diff(self, sym):
         raise NotImplementedError()
 
-    def _to_qutip_local_factor(self):
-        arg = complex(self.operands[1]) * arange(self.space.dimension)
-        d = np_cos(arg) + 1j * np_sin(arg)
-        return qutip.Qobj(np_diag(d))
-
     def _adjoint(self):
         return Phase(self.operands[0], -self.operands[1].conjugate())
 
@@ -831,9 +721,6 @@ class Displace(LocalOperator):
     def _diff(self, sym):
         raise NotImplementedError()
 
-    def _to_qutip_local_factor(self):
-        return qutip.displace(self.space.dimension, complex(self.operands[1]))
-
     def _adjoint(self):
         return Displace(self.operands[0], -self.operands[1])
 
@@ -881,9 +768,6 @@ class Squeeze(LocalOperator):
     def _diff(self, sym):
         raise NotImplementedError()
 
-    def _to_qutip_local_factor(self):
-        return qutip.squeeze(self.space.dimension, complex(self.operands[1]))
-
     def _adjoint(self):
         return Squeeze(self.operands[0], -self.operands[1])
 
@@ -925,12 +809,6 @@ class LocalSigma(LocalOperator):
     """
 
     signature = (LocalSpace, basestring, int), (int, basestring), (int, basestring)
-
-    def _to_qutip_local_factor(self):
-        k, j = self.operands[1:]
-        ket = qutip.basis(self.space.dimension, self.space.basis.index(k))
-        bra = qutip.basis(self.space.dimension, self.space.basis.index(j)).dag()
-        return ket * bra
 
     def _tex(self):
         j, k = self.operands[1:]
@@ -1039,12 +917,6 @@ class OperatorPlus(OperatorOperation):
                 c = inf
             return KeyTuple((Operation.order_key(a.term), c))
         return KeyTuple((Operation.order_key(a), 1))
-
-    def _to_qutip(self, full_space=None):
-        if full_space is None:
-            full_space = self.space
-        assert self.space <= full_space
-        return sum((op.to_qutip(full_space) for op in self.operands), 0)
 
     def _expand(self):
         return sum((o.expand() for o in self.operands), ZeroOperator)
@@ -1185,34 +1057,6 @@ class OperatorTimes(OperatorOperation):
             ops_not_on_spc = [o for o in self.operands if (o.space & spc) is TrivialSpace]
         return OperatorTimes.create(*ops_on_spc), OperatorTimes.create(*ops_not_on_spc)
 
-    def _to_qutip(self, full_space=None):
-        # if any factor acts non-locally, we need to expand distributively.
-        if any(len(op.space) > 1 for op in self.operands):
-            se = self.expand()
-            if se == self:
-                raise ValueError("Cannot represent as QuTiP object: {!s}".format(self))
-            return se.to_qutip(full_space)
-
-        if full_space == None:
-            full_space = self.space
-
-        all_spaces = full_space.local_factors()
-        by_space = []
-        ck = 0
-        for ls in all_spaces:
-            # group factors by associated local space
-            ls_ops = [o.to_qutip() for o in self.operands if o.space == ls]
-            if len(ls_ops):
-                # compute factor associated with local space
-                by_space.append(prod(ls_ops))
-                ck += len(ls_ops)
-            else:
-                # if trivial action, take identity matrix
-                by_space.append(qutip.qeye(ls.dimension))
-        assert ck == len(self.operands)
-        # combine local factors in tensor product
-        return qutip.tensor(*by_space)
-
     def _expand(self):
         eops = [o.expand() for o in self.operands]
         # store tuples of summands of all expanded factors
@@ -1340,10 +1184,6 @@ class ScalarTimesOperator(Operator, Operation):
             ct = r" {!s}".format(term)
 
         return cs + ct
-
-
-    def _to_qutip(self, full_space=None):
-        return complex(self.coeff) * self.term.to_qutip(full_space)
 
     def _expand(self):
         c, t = self.operands
@@ -1528,9 +1368,6 @@ class Adjoint(OperatorOperation):
 
     _rules = []
 
-    def _to_qutip(self, full_space=None):
-        return qutip.dag(self.operands[0].to_qutip(full_space))
-
     def _series_expand(self, param, about, order):
         ope = self.operand.series_expand(param, about, order)
         return tuple(adjoint(opet) for opet in ope)
@@ -1597,22 +1434,6 @@ class PseudoInverse(OperatorOperation):
 
     _rules = []
 
-    def _to_qutip(self, full_space=None):
-        mo = self.operand.to_qutip(full_space)
-        if full_space.dimension <= DENSE_DIMENSION_LIMIT:
-            arr = mo.data.toarray()
-            from scipy.linalg import pinv
-
-            piarr = pinv(arr)
-            pimo = qutip.Qobj(piarr)
-            pimo.dims = mo.dims
-            pimo.isherm = mo.isherm
-            pimo.type = 'oper'
-            return pimo
-        raise NotImplementedError("Only implemented for smaller state spaces")
-
-        #        return qutip.dag(self.operands[0].to_qutip(full_space))
-
     def _expand(self):
         return self
 
@@ -1658,27 +1479,6 @@ class NullSpaceProjector(OperatorOperation):
     @property
     def operand(self):
         return self.operands[0]
-
-    def to_qutip(self, full_space=None):
-        check_qutip()
-        mo = self.operand.to_qutip(full_space)
-        if full_space.dimension <= DENSE_DIMENSION_LIMIT:
-            arr = mo.data.toarray()
-
-            from scipy.linalg import svd
-            # compute Singular Value Decomposition
-            U, s, Vh = svd(arr)
-            tol = 1e-8 * s[0]
-            zero_svs = s < tol
-            Vhzero = Vh[zero_svs, :]
-            PKarr = Vhzero.conjugate().transpose().dot(Vhzero)
-            PKmo = qutip.Qobj(PKarr)
-            PKmo.dims = mo.dims
-            PKmo.isherm = True
-            PKmo.type = 'oper'
-            return PKmo
-        raise NotImplementedError("Only implemented for smaller state spaces")
-
 
     def _tex(self):
         return r"\mathcal{P}_{{\rm Ker}" + tex(self.operand) + "}"
@@ -1735,10 +1535,6 @@ class OperatorTrace(Operator, Operation):
     def __str__(self):
         s, o = self.operands
         return r"tr_{!s}[{!s}]".format(s, o)
-
-    def _to_qutip(self, full_space):
-        # TODO import OperatorTrace._to_qutip()
-        raise NotImplementedError(self.__class__.__name__)
 
     def _all_symbols(self):
         return self.operands[1].all_symbols()

@@ -36,14 +36,12 @@ References:
 
 from __future__ import division
 
-import re
 import os
 from abc import ABCMeta, abstractproperty, abstractmethod
 from functools import reduce
 
 import six
 from sympy import symbols, sympify
-from sympy.utilities.lambdify import lambdify
 from sympy import Matrix as SympyMatrix
 from sympy import I
 
@@ -509,36 +507,6 @@ class SLH(Circuit, Operation):
         :rtype: SLH
         """
         return SLH(self.S.simplify_scalar(), self.L.simplify_scalar(), self.H.simplify_scalar())
-
-
-    def HL_to_qutip(self, full_space=None, time_symbol=None,
-            convert_as='pyfunc'):
-        """
-        Generate and return QuTiP representation matrices for the Hamiltonian
-        and the collapse operators.
-
-        :param full_space: The Hilbert space in which to represent the operators.
-        :type full_space: HilbertSpace or None
-        :return tuple: (H, [L1, L2, ...]) as numerical qutip.Qobj representations.
-        """
-        if full_space:
-            if not full_space >= self.space:
-                raise AlgebraError("full_space="+str(full_space)+" needs to "
-                    "at least include self.space = "+str(self.space))
-        else:
-            full_space = self.space
-        if time_symbol is None:
-            H = self.H.to_qutip(full_space)
-            Ls = [L.to_qutip(full_space) for L in self.L.matrix.flatten()
-                  if isinstance(L, Operator)]
-        else:
-            H = _time_dependent_to_qutip(self.H, full_space, time_symbol,
-                                         convert_as)
-            Ls = []
-            for L in self.L.matrix.flatten():
-                Ls.append(_time_dependent_to_qutip(L, full_space, time_symbol,
-                                                   convert_as))
-        return H, Ls
 
 
     #    _block_structure_ = None
@@ -2477,51 +2445,3 @@ def connect(components, connections, force_SLH=True, expand_simplify=True):
     return combined
 
 
-def _time_dependent_to_qutip(op, full_space=None,
-        time_symbol=symbols("t", real=True), convert_as='pyfunc'):
-    """Convert a possiblty time-dependent operator into the nested-list
-    structure required by QuTiP"""
-    if full_space is None:
-        full_space = op.space
-    if time_symbol in op.all_symbols():
-        op = op.expand()
-        if isinstance(op, OperatorPlus):
-            result = []
-            for o in op.operands:
-                if not time_symbol in o.all_symbols():
-                    if len(result) == 0:
-                        result.append(o.to_qutip(full_space=full_space))
-                    else:
-                        result[0] += o.to_qutip(full_space=full_space)
-            for o in op.operands:
-                if time_symbol in o.all_symbols():
-                    result.append(_time_dependent_to_qutip(o, full_space,
-                                  time_symbol, convert_as))
-            return result
-        elif isinstance(op, ScalarTimesOperator):
-            if convert_as == 'pyfunc':
-                func_no_args = lambdify(time_symbol, op.coeff)
-                if {time_symbol, } == op.coeff.free_symbols:
-                    def func(t, args):
-                        # args are ignored for increased efficiency, since we
-                        # know there are no free symbols except t
-                        return func_no_args(t)
-                else:
-                    def func(t, args):
-                        return func_no_args(t).subs(args)
-                coeff = func
-            elif convert_as == 'str':
-                # a bit of a hack to replace imaginary unit
-                # TODO: we can probably use one of the sympy code generation
-                # routines, or lambdify with 'numexpr' to implement this in a
-                # more robust way
-                coeff = re.sub("I", "(1.0j)", str(op.coeff))
-            else:
-                raise ValueError(("Invalid value '%s' for `convert_as`, must "
-                                  "be one of 'str', 'pyfunc'") % convert_as)
-            return [op.term.to_qutip(full_space), coeff]
-        else:
-            raise ValueError("op cannot be expressed in qutip. It must have "
-                             "the structure op = sum_i f_i(t) * op_i")
-    else:
-        return op.to_qutip(full_space=full_space)

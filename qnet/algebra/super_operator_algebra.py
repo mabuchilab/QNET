@@ -71,26 +71,6 @@ class SuperOperator(object):
     def _superadjoint(self):
         return SuperAdjoint.create(self)
 
-
-    def to_qutip(self, full_space = None):
-        """
-        Create a numerical representation of the super-operator as a QuTiP object.
-        Note that all symbolic scalar parameters need to be replaced by numerical values before calling this method.
-
-        :param full_space: The full Hilbert space in which to represent the superoperator.
-        :type full_space: HilbertSpace
-        :return: The matrix representation of the superoperator.
-        :rtype: qutip.Qobj
-        """
-        check_qutip()
-        if full_space is None:
-            full_space = self.space
-        return self._to_qutip(full_space)
-
-    @abstractmethod
-    def _to_qutip(self, full_space):
-        raise NotImplementedError(str(self.__class__))
-
     def expand(self):
         """
         Expand out distributively all products of sums. Note that this does not expand out sums of scalar coefficients.
@@ -207,9 +187,6 @@ class SuperOperatorSymbol(SuperOperator, Operation):
     def _tex(self):
         return r"\hat{{{}}}".format(identifier_to_tex(self.operands[0]))
 
-    def _to_qutip(self, full_space=None):
-        raise AlgebraError("Cannot convert super-operator symbol to representation matrix. Substitute first.")
-
     @property
     def _space(self):
         return self.operands[1]
@@ -236,10 +213,6 @@ class IdentitySuperOperator(SuperOperator, Expression):
 
     def _superadjoint(self):
         return self
-
-    def _to_qutip(self, full_space):
-        return qutip.spre(qutip.tensor(*[qutip.qeye(s.dimension) for s in full_space.local_factors()]))
-
 
     def _expand(self):
         return self
@@ -276,9 +249,6 @@ class ZeroSuperOperator(SuperOperator, Expression):
 
     def _superadjoint(self):
         return self
-
-    def _to_qutip(self, full_space):
-        return qutip.spre(ZeroOperator.to_qutip(full_space))
 
     def _expand(self):
         return self
@@ -341,13 +311,6 @@ class SuperOperatorPlus(SuperOperatorOperation):
                 c = str(c)
             return Operation.order_key(a.term), c
         return Operation.order_key(a), 1
-
-    def _to_qutip(self, full_space=None):
-        if full_space is None:
-            full_space = self.space
-        else:
-            assert self.space <= full_space
-        return sum((op.to_qutip(full_space) for op in self.operands), 0)
 
     def _expand(self):
         return sum((o.expand() for o in self.operands), ZeroSuperOperator)
@@ -468,11 +431,6 @@ class SuperOperatorTimes(SuperOperatorOperation):
             return ZeroSuperOperator
         return cls(*ops)
 
-    def _to_qutip(self, full_space):
-        ops_qutip = [o.to_qutip(full_space) for o in self.operands]
-        return prod(ops_qutip)
-
-
     def _expand(self):
         eops = [o.expand() for o in self.operands]
         # store tuples of summands of all expanded factors
@@ -572,10 +530,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
 
         return cs + ct
 
-
-    def _to_qutip(self, full_space):
-        return complex(self.coeff) * self.term.to_qutip(full_space)
-
     def _expand(self):
         c, t = self.operands
         et = t.expand()
@@ -646,9 +600,6 @@ class SuperAdjoint(SuperOperatorOperation):
 
     _rules = []
 
-    def _to_qutip(self, full_space):
-        raise NotImplementedError('SuperAdjoint({!s}'.format(self.operand))
-
     def _expand(self):
         eo = self.operand.expand()
         if isinstance(eo, SuperOperatorPlus):
@@ -686,9 +637,6 @@ class SPre(SuperOperator, Operation):
     def _space(self):
         return self.operands[0].space
 
-    def _to_qutip(self, full_space):
-        return qutip.spre(self.operands[0].to_qutip(full_space))
-
     def _tex(self):
         return r"{{\rm spre}}\left[{}\right]".format(self.operands[0].tex())
 
@@ -724,9 +672,6 @@ class SPost(SuperOperator, Operation):
     @property
     def _space(self):
         return self.operands[0].space
-
-    def _to_qutip(self, full_space):
-        return qutip.spost(self.operands[0].to_qutip(full_space))
 
     def _tex(self):
         return r"{{\rm spost}}\left[{}\right]".format(self.operands[0].tex())
@@ -804,12 +749,6 @@ class SuperOperatorTimesOperator(Operator, Operation):
 
         return cs + ct
 
-
-    def _to_qutip(self, full_space):
-        sop, op = self.operands
-
-        return sop.to_qutip(full_space) * op.to_qutip(full_space)
-
     def _expand(self):
         sop, op = self.operands
         sope, ope = sop.expand(), op.expand()
@@ -861,20 +800,6 @@ class SuperOperatorTimesOperator(Operator, Operation):
 #
 #    _rules = []
 #
-#    def _to_qutip(self, full_space=None):
-#        mo = self.operand.to_qutip(full_space)
-#        if full_space.dimension <= DENSE_DIMENSION_LIMIT:
-#            arr = mo.data.toarray()
-#            from scipy.linalg import pinv
-#            piarr = pinv(arr)
-#            pimo = qutip.Qobj(piarr)
-#            pimo.dims = mo.dims
-#            pimo.isherm = mo.isherm
-#            pimo.type = 'oper'
-#            return pimo
-#        raise NotImplementedError("Only implemented for smaller state spaces")
-##        return qutip.dag(self.operands[0].to_qutip(full_space))
-#
 #    def _expand(self):
 #        return self
 #
@@ -908,25 +833,6 @@ class SuperOperatorTimesOperator(Operator, Operation):
 #    @property
 #    def operand(self):
 #        return self.operands[0]
-#
-#    def to_qutip(self, full_space=None):
-#        mo = self.operand.to_qutip(full_space)
-#        if full_space.dimension <= DENSE_DIMENSION_LIMIT:
-#            arr = mo.data.toarray()
-#            from scipy.linalg import svd
-#            # compute Singular Value Decomposition
-#            U, s, Vh = svd(arr)
-#            tol = 1e-8 * s[0]
-#            zero_svs = s < tol
-#            Vhzero = Vh[zero_svs,:]
-#            PKarr = Vhzero.conjugate().transpose().dot(Vhzero)
-#            PKmo = qutip.Qobj(PKarr)
-#            PKmo.dims = mo.dims
-#            PKmo.isherm = True
-#            PKmo.type = 'oper'
-#            return PKmo
-#        raise NotImplementedError("Only implemented for smaller state spaces")
-#
 #
 #    def _tex(self):
 #        return r"\mathcal{P}_{{\rm Ker}" + tex(self.operand) + "}"
