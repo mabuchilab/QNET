@@ -5,6 +5,7 @@ from qnet.algebra.circuit_algebra import SLH
 from qnet.misc.qsd_codegen import QSDCodeGen, _cmd_list_to_str
 from qnet.algebra.state_algebra import BasisKet
 from qnet.misc.testing_tools import datadir
+from qnet.convert.to_qutip import SLH_to_qutip
 
 import os
 
@@ -35,7 +36,7 @@ def test_driven_tls(datadir):
     num_vals = {w: 1.0, T:10.0, E0:1.0*2*np.pi}
 
     # test qutip conversion
-    H_qutip, Ls = circuit.substitute(num_vals).HL_to_qutip(time_symbol=t)
+    H_qutip, Ls = SLH_to_qutip(circuit.substitute(num_vals), time_symbol=t)
     assert len(Ls) == 0
     assert len(H_qutip) == 3
     times = np.linspace(0, num_vals[T], 201)
