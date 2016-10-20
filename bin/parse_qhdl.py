@@ -88,8 +88,8 @@ def circuit_generator():
         for ii, (name, a) in enumerate(archs.items()):
             yield name, a.to_circuit(identifier_postfix = "_%d" % ii)
     elif len(archs) == 1:
-        name, a = archs.items().pop()
-        yield name, a.to_circuit()
+        for (name, a) in archs.items():
+            yield name, a.to_circuit()
 
 def write_modules(local = False):
     entities = parser.entities.keys()
@@ -182,7 +182,7 @@ def main(argv=None):
                 print("-" * 40)
 
     except Usage as err:
-        print(>> sys.stderr, sys.argv[0].split("/")[-1] + ": " + str(err.msg))
+        print(sys.argv[0].split("/")[-1] + ": " + str(err.msg), file=sys.stderr)
         return 2
     
     return 0

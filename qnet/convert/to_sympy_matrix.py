@@ -58,12 +58,12 @@ def convert_to_sympy_matrix(expr, full_space=None):
         if full_space != expr.space:
             all_spaces = full_space.local_factors()
             own_space_index = all_spaces.index(expr.space)
-            return tensor(*( [sympy.eye(s.dimension)
-                              for s in all_spaces[:own_space_index]]
-                           + convert_to_sympy_matrix(expr, expr.space)
-                           + [sympy.eye(s.dimension)
-                              for s in all_spaces[own_space_index + 1:]]
-                         ))
+            factors = [sympy.eye(s.dimension)
+                       for s in all_spaces[:own_space_index]]
+            factors.append(convert_to_sympy_matrix(expr, expr.space))
+            factors.extend([sympy.eye(s.dimension)
+                            for s in all_spaces[own_space_index + 1:]])
+            return tensor(*factors)
         if isinstance(expr, (Create, Jz, Jplus)):
             return SympyCreate(n)
         elif isinstance(expr, (Destroy, Jminus)):
@@ -84,6 +84,8 @@ def convert_to_sympy_matrix(expr, full_space=None):
             return ((eta/2) * a**2 - (eta.conjugate()/2) * (a.H)**2).exp()
         elif isinstance(expr, LocalSigma):
             k, j = expr.operands[1:]
+            k = expr.space.basis.index(k)
+            j = expr.space.basis.index(j)
             ket = basis_state(k, n)
             bra = basis_state(j, n).H
             return ket * bra

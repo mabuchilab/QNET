@@ -84,7 +84,7 @@ def write_component(entity, architectures, local = False):
 
     if len(architectures) > 1:
         print("Warning: using only first architecture")
-    arch = architectures.values().pop(0)
+    arch = next(iter(architectures.values()))
 
     arch_circuit, circuit_symbols, instance_assignments = arch.to_circuit()
 
