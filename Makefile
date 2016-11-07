@@ -47,35 +47,27 @@ clean:
 	@rm -rf .cache
 	@rm -f .coverage
 
-.venv/py27/bin/py.test:
-	@conda create -y -m -p .venv/py27 python=2.7 $(PACKAGES)
-	@.venv/py27/bin/pip install --no-use-wheel qutip
-	@.venv/py27/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
-
 .venv/py33/bin/py.test:
 	@conda create -y -m -p .venv/py33 python=3.3 $(PACKAGES)
 	@.venv/py33/bin/pip install --no-use-wheel qutip
 	@.venv/py33/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
-.venv/py34/bin/py.test:
-	@conda create -y -m -p .venv/py34 python=3.4 $(PACKAGES)
-	@.venv/py34/bin/pip install --no-use-wheel qutip
-	@.venv/py34/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
-
-test27: .venv/py27/bin/py.test
-	$< -v $(TESTOPTIONS) $(TESTS)
+.venv/py35/bin/py.test:
+	@conda create -y -m -p .venv/py35 python=3.5 $(PACKAGES)
+	@.venv/py35/bin/pip install --no-use-wheel qutip
+	@.venv/py35/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 test33: .venv/py33/bin/py.test
 	$< -v $(TESTOPTIONS) $(TESTS)
 
-test34: .venv/py34/bin/py.test
+test35: .venv/py35/bin/py.test
 	$< -v $(TESTOPTIONS) $(TESTS)
 
-test: test27 test33 test34
+test: test33 test35
 
-coverage: test34
+coverage: test33
 	@rm -rf htmlcov/index.html
-	.venv/py34/bin/coverage html
+	.venv/py33/bin/coverage html
 
 doc:
 	make -C docs html
@@ -85,4 +77,4 @@ doc:
 	@rm -rf $(DOC)
 
 .PHONY: install develop uninstall upload test-upload test-install sdist clean \
-test test27 test33 test34 doc coverage
+test test33 test35 doc coverage
