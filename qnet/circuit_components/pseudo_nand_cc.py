@@ -1,17 +1,5 @@
 #!/usr/bin/env python
 # encoding: utf-8
-#This file was automatically created using QNET.
-
-"""
-pseudo_nand_cc.py
-
-Created automatically by $QNET/bin/parse_qhdl.py
-Get started by instantiating a circuit instance via:
-
-    >>> PseudoNAND()
-
-"""
-
 from sympy import symbols
 
 from qnet.circuit_components.library import make_namespace_string

@@ -16,16 +16,6 @@
 # Copyright (C) 2012-2013, Nikolas Tezak
 #
 ###########################################################################
-
-"""
-mach_zehnder_cc.py
-
-Created automatically by $QNET/bin/parse_qhdl.py
-Get started by instantiating a circuit instance via:
-
-    >>> MachZehnder()
-
-"""
 from sympy import symbols
 
 from qnet.circuit_components.library import make_namespace_string

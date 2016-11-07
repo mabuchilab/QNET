@@ -1,17 +1,5 @@
 #!/usr/bin/env python
 # encoding: utf-8
-#This file was automatically created using QNET.
-
-"""
-latch_cc.py
-
-Created automatically by $QNET/bin/parse_qhdl.py
-Get started by instantiating a circuit instance via:
-
-    >>> Latch()
-
-"""
-
 from qnet.circuit_components.library import make_namespace_string
 from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import cid, P_sigma, FB

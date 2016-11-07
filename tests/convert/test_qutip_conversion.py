@@ -108,11 +108,11 @@ def test_scalar_coeffs():
 
 def test_symbol():
     expN = OperatorSymbol("expN", 1)
-    N = Create(1)*Destroy(1)
-    N.space.dimension = 10
+    hs1 = LocalSpace("sym1", dimension=10)
+    hs2 = LocalSpace("sym2", dimension=5)
+    N = Create(hs1)*Destroy(hs1)
 
-    M = Create(2)*Destroy(2)
-    M.space.dimension = 5
+    M = Create(hs2)*Destroy(hs2)
 
     converter1 = {
         expN: convert_to_qutip(N).expm()

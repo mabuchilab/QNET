@@ -154,9 +154,11 @@ class Pattern():
         >>> C2 = CircuitSymbol('C2', 3)
         >>> C3 = CircuitSymbol('C3', 3)
         >>> C4 = CircuitSymbol('C4', 3)
-        >>> perm1 = CPermutation((3, 2, 1))
-        >>> perm2 = CPermutation((1, 3, 1))
-        >>> concat_expr = (C1 << C2 << perm1) + (C3 << C4 << perm2)
+        >>> perm1 = CPermutation((2, 1, 0))
+        >>> perm2 = CPermutation((0, 2, 1))
+        >>> concat_expr = Concatenation(
+        ...                   (C1 << C2 << perm1),
+        ...                   (C3 << C4 << perm2))
 
         We may match this with the following pattern::
         >>> conditions = [lambda c: c.cdim == 3,
@@ -169,10 +171,11 @@ class Pattern():
         ...         Concatenation,
         ...         pattern(SeriesProduct, A__Circuit, B_CPermutation),
         ...         pattern(SeriesProduct, C__Circuit, D_CPermutation))
+        >>> m = pattern_concat.match(concat_expr)
 
         The match returns the following dictionary::
         >>> result = {'A': [C1, C2], 'B': perm1, 'C': [C3, C4], 'D': perm2}
-        >>> assert pattern_concat.match(concat_expr) == result
+        >>> assert m == result
     """
     # Note: if we every need to allow Patterns that have backtracking (i.e.
     # multiple more-than-single wildcards, or more-than-single wildcards

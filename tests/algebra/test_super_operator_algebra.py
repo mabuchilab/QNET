@@ -19,14 +19,19 @@
 ###########################################################################
 
 import unittest
+from sympy import symbols, sqrt, I, conjugate
+
 
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.super_operator_algebra import (
         SuperOperator, SuperOperatorSymbol, IdentitySuperOperator,
         SuperOperatorPlus, SuperOperatorTimes, SuperOperatorTimesOperator,
-        ScalarTimesSuperOperator, ZeroSuperOperator, SPre, SPost)
+        ScalarTimesSuperOperator, ZeroSuperOperator, SPre, SPost, liouvillian,
+        liouvillian_normal_form)
 from qnet.algebra.pattern_matching import wc, ProtoExpr, pattern_head
-from qnet.algebra.operator_algebra import OperatorSymbol, ZeroOperator
+from qnet.algebra.operator_algebra import (
+        OperatorPlus, ScalarTimesOperator, OperatorSymbol, ZeroOperator,
+        Create, Destroy, OperatorTimes)
 
 
 class TestSuperOperatorCreation(unittest.TestCase):
@@ -236,3 +241,26 @@ class TestSuperOperatorTimesOperator(unittest.TestCase):
         a = SuperOperatorSymbol("a", h1)
         b = SuperOperatorSymbol("b", h2)
         assert (5 * (a * b)).space == h1 * h2
+
+
+def test_liouvillian_normal_form():
+    kappa_1, kappa_2 = symbols('kappa_1, kappa_2', positive=True)
+    Delta = symbols('Delta', real=True)
+    alpha = symbols('alpha')
+    H = (Delta * Create(1) * Destroy(1) +
+         (sqrt(kappa_1) / (2 * I)) *
+         (alpha * Create(1) - alpha.conjugate() * Destroy(1)))
+    Ls = [sqrt(kappa_1) * Destroy(1) + alpha, sqrt(kappa_2) * Destroy(1)]
+    LL = liouvillian(H, Ls)
+    Hnf, Lsnf = liouvillian_normal_form(LL)
+    Hnf_expected = OperatorPlus(
+            ScalarTimesOperator(-I*alpha*sqrt(kappa_1),
+                                Create(LocalSpace('1'))),
+            ScalarTimesOperator(I*sqrt(kappa_1)*conjugate(alpha),
+                                Destroy(LocalSpace('1'))),
+            ScalarTimesOperator(Delta, OperatorTimes(Create(LocalSpace('1')),
+                                Destroy(LocalSpace('1')))))
+    assert Hnf == Hnf_expected
+    Lsnf_expected = [ScalarTimesOperator(sqrt(kappa_1 + kappa_2),
+                                         Destroy(LocalSpace('1')))]
+    assert Lsnf == Lsnf_expected

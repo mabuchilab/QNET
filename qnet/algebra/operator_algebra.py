@@ -529,15 +529,15 @@ class Create(LocalOperator):
     particular local space/degree of freedom.
     Its adjoint is
 
-        >>> Create(1).adjoint()
-            Destroy(1)
+        >>> print(Create(1).adjoint())
+        a₍₁₎
 
     and it obeys the bosonic commutation relation
 
         >>> Destroy(1) * Create(1) - Create(1) * Destroy(1)
-            1
+        IdentityOperator
         >>> Destroy(1) * Create(2) - Create(2) * Destroy(1)
-            1
+        ZeroOperator
 
     :param space: Associated local Hilbert space.
     :type space: LocalSpace or str
@@ -556,15 +556,15 @@ class Destroy(LocalOperator):
     particular local space/degree of freedom.
     Its adjoint is
 
-        >>> Destroy(1).adjoint()
-            Create(1)
+        >>> print(Destroy(1).adjoint())
+        a⁺₍₁₎
 
     and it obeys the bosonic commutation relation
 
         >>> Destroy(1) * Create(1) - Create(1) * Destroy(1)
-            1
+        IdentityOperator
         >>> Destroy(1) * Create(2) - Create(2) * Destroy(1)
-            1
+        ZeroOperator
 
     :param space: Associated local Hilbert space.
     :type space: LocalSpace or str
@@ -581,21 +581,21 @@ class Destroy(LocalOperator):
 class Jz(LocalOperator):
     """``Jz(space)`` yields the z-component of a general spin operator acting
     on a particular local space/degree of freedom with well defined spin
-    quantum number J.  It is hermitian
+    quantum number J.  It is Hermitian
 
-        >>> Jz(1).adjoint()
-            Jz(1)
+        >>> print(Jz(1).adjoint())
+        J_{z,(1)}
 
     Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
 
-        >>> (Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand()
-            Jplus(1)
+        >>> print((Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand())
+        J_{+,(1)}
 
-        >>> (Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand()
-            -Jminus(1)
+        >>> print((Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand())
+         -J_{-,(1)}
 
-        >>> (Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand()
-            2*Jz(1)
+        >>> print((Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand())
+        2 * J_{z,(1)}
 
     where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
     """
@@ -613,19 +613,19 @@ class Jplus(LocalOperator):
     spin operator acting on a particular local space/degree of freedom with
     well defined spin quantum number J.  It's adjoint is the lowering operator
 
-        >>> Jplus(1).adjoint()
-            Jminus(1)
+        >>> print(Jplus(1).adjoint())
+        J_{-,(1)}
 
     Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
 
-        >>> (Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand()
-            Jplus(1)
+        >>> print((Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand())
+        J_{+,(1)}
 
-        >>> (Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand()
-            -Jminus(1)
+        >>> print((Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand())
+         -J_{-,(1)}
 
-        >>> (Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand()
-            2*Jz(1)
+        >>> print((Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand())
+        2 * J_{z,(1)}
 
     where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
     """
@@ -643,19 +643,19 @@ class Jminus(LocalOperator):
     spin operator acting on a particular local space/degree of freedom with
     well defined spin quantum number J.  It's adjoint is the raising operator
 
-        >>> Jminus(1).adjoint()
-            Jplus(1)
+        >>> print(Jminus(1).adjoint())
+        J_{+,(1)}
 
     Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
 
-        >>> (Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand()
-            Jplus(1)
+        >>> print((Jz(1) * Jplus(1) - Jplus(1)*Jz(1)).expand())
+        J_{+,(1)}
 
-        >>> (Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand()
-            -Jminus(1)
+        >>> print((Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand())
+         -J_{-,(1)}
 
-        >>> (Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand()
-            2*Jz(1)
+        >>> print((Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand())
+        2 * J_{z,(1)}
 
     where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
     """
@@ -2258,7 +2258,7 @@ def Re(op):
 
 def ImAdjoint(opmatrix):
     """
-    The imaginary part of an OperatorMatrix, i.e. a hermitian OperatorMatrix
+    The imaginary part of an OperatorMatrix, i.e. a Hermitian OperatorMatrix
     :param opmatrix: The operand.
     :type opmatrix: Matrix
     :return: The matrix imaginary part of the operand.
@@ -2268,7 +2268,7 @@ def ImAdjoint(opmatrix):
 
 
 def ReAdjoint(opmatrix):
-    """The real part of an OperatorMatrix, i.e. a hermitian OperatorMatrix
+    """The real part of an OperatorMatrix, i.e. a Hermitian OperatorMatrix
     :param opmatrix: The operand.
     :type opmatrix: Matrix
     :return: The matrix real part of the operand.

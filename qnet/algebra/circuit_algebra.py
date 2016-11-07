@@ -119,14 +119,14 @@ class Circuit(metaclass=ABCMeta):
         Then the block structure of their Concatenation is:
 
             >>> (A + B).block_structure
-                (2,3),
+            (2, 3)
 
         while
 
             >>> A.block_structure
-                (2,)
+            (2,)
             >>> B.block_structure
-                (3,)
+            (3,)
 
         """
         return self._block_structure
@@ -191,8 +191,10 @@ class Circuit(metaclass=ABCMeta):
         """Return the inverse object (under the series product) for a circuit.
         In general for any X
 
-            >>> X << X.series_inverse() == X.series_inverse() << X == cid(X.cdim)
-                True
+            >>> X = CircuitSymbol('X', cdim=3)
+            >>> (X << X.series_inverse() == X.series_inverse() << X ==
+            ...  cid(X.cdim))
+            True
         """
         return self._series_inverse()
 
@@ -1519,8 +1521,8 @@ def pad_with_identity(circuit, k, n):
 
         >>> A = CircuitSymbol('A', 1)
         >>> B = CircuitSymbol('B', 1)
-        >>> pad_with_identity(A+B, 1, 2)
-            (A + cid(2) + B)
+        >>> print(pad_with_identity(A+B, 1, 2))
+        A + cid(2) + B
 
     This method can also be applied to irreducible systems, but in that case
     the result can not be decomposed as nicely.
@@ -1656,13 +1658,14 @@ class SeriesInverse(Circuit, Operation):
 
     One generally has
 
-        >>> SeriesInverse(circuit) << circuit == cid(circuit.cdim)
-            True
+        >>> C = CircuitSymbol('C', cdim=3)
+        >>> SeriesInverse(C) << C == cid(C.cdim)
+        True
 
     and
 
-        >>> circuit << SeriesInverse(circuit) == cid(circuit.cdim)
-            True
+        >>> C << SeriesInverse(C) == cid(C.cdim)
+        True
 
     :param Circuit circuit: The circuit system to invert.
     """

@@ -27,11 +27,13 @@ See :ref:`super_operator_algebra` for more details.
 """
 from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
+from collections import defaultdict
 
 from numpy.linalg import eigh
 from numpy import (sqrt as np_sqrt, array as np_array)
 
-from sympy import (Basic as SympyBasic, Add, Matrix as SympyMatrix, sqrt, I)
+from sympy import (
+        symbols, Basic as SympyBasic, Add, Matrix as SympyMatrix, sqrt, I)
 
 from qnet.algebra.abstract_algebra import (
         Operation, Expression, singleton, tex, AlgebraError,
@@ -43,7 +45,7 @@ from qnet.algebra.hilbert_space_algebra import (
 from qnet.algebra.operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
         IdentityOperator, identifier_to_tex, simplify_scalar, OperatorSymbol,
-        Matrix)
+        Matrix, Create, Destroy)
 
 
 class SuperOperator(metaclass=ABCMeta):
@@ -953,14 +955,18 @@ def liouvillian_normal_form(L, symbolic = False):
     >>> kappa_1, kappa_2 = symbols('kappa_1, kappa_2', positive = True)
     >>> Delta = symbols('Delta', real = True)
     >>> alpha = symbols('alpha')
-    >>> H = Delta * Create(1) * Destroy(1) + (sqrt(kappa_1) / (2 * I)) * (alpha * Create(1) - alpha.conjugate() * Destroy(1))
+    >>> H = (Delta * Create(1) * Destroy(1) +
+    ...      (sqrt(kappa_1) / (2 * I)) *
+    ...      (alpha * Create(1) - alpha.conjugate() * Destroy(1)))
     >>> Ls = [sqrt(kappa_1) * Destroy(1) + alpha, sqrt(kappa_2) * Destroy(1)]
     >>> LL = liouvillian(H, Ls)
     >>> Hnf, Lsnf = liouvillian_normal_form(LL)
-    >>> Hnf
-        Delta * Create(1) * Destroy(1) - I *  sqrt(kappa_1) * (alpha * Create(1) - alpha.conjugate() * Destroy(1))
-    >>> Lsnf
-        [sqrt(kappa_1 + kappa_2) * Destroy(1)]
+    >>> print(Hnf)
+     -I*alpha*sqrt(kappa_1) * a⁺₍₁₎ + I*sqrt(kappa_1)*conjugate(alpha) * a₍₁₎ + Delta * a⁺₍₁₎ a₍₁₎
+    >>> len(Lsnf)
+    1
+    >>> print(Lsnf[0])
+    sqrt(kappa_1 + kappa_2) * a₍₁₎
 
     In terms of the ensemble dynamics this final system is equivalent.
     Note that this function will only work for proper Liouvillians.
@@ -1001,7 +1007,7 @@ def liouvillian_normal_form(L, symbolic = False):
 
                 try:
                     complex(coeff)
-                except ValueError:
+                except (ValueError, TypeError):
                     symbolic = True
                     coeff = coeff.simplify()
 

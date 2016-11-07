@@ -1,15 +1,5 @@
 #!/usr/bin/env python
 # encoding: utf-8
-#This file was automatically created using QNET.
-
-"""inverting_fanout_cc.py
-
-Created automatically by $QNET/bin/parse_qhdl.py
-Get started by instantiating a circuit instance via:
-
-    >>> InvertingFanout()
-
-"""
 
 from qnet.circuit_components.library import make_namespace_string
 from qnet.circuit_components.component import Component

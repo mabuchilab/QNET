@@ -440,14 +440,11 @@ class ProductSpace(FiniteHilbertSpace, Operation):
         obtained from the bases of the factors. The basis labels are
         comma-separated combinations of the basis labels of the factors::
 
-        >>> hs1 = LocalSpace('tls', '1', basis=(0,1))
-        >>> hs2 = LocalSpace('tls', '2', basis=(0,1))
+        >>> hs1 = LocalSpace('1', basis=(0,1))
+        >>> hs2 = LocalSpace('2', basis=(0,1))
         >>> hs = hs1 * hs2
         >>> hs.basis
-        ('0,0', '0,1', '1,0', '1,1')
-        >>> hs.basis = ('00', '01', '10', '11')
-        >>> hs.basis
-        ('00', '01', '10', '11')
+        ['0,0', '0,1', '1,0', '1,1']
         """
         bases = []
         dimension = self.dimension

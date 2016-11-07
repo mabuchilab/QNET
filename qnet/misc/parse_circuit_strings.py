@@ -36,32 +36,32 @@ def parse_circuit_strings(circuit_string):
         1) A circuit symbol can be instantiated via:
 
             >>> parse_circuit_strings('a_nice_name(3)')
-                CircuitSymbol('a_nice_name', 3)
+            CircuitSymbol('a_nice_name', 3)
 
         2) A concatenation can be instantiated by using the infix '+' operator
 
             >>> parse_circuit_strings('a(3) + b(5)')
-                Concatenation(CircuitSymbol('a', 3), CircuitSymbol('b', 5))
+            Concatenation(CircuitSymbol('a', 3), CircuitSymbol('b', 5))
 
         3) A series product can be instantiated by using the infix '<<' operator
 
             >>> parse_circuit_strings('a(3) << b(3)')
-                SeriesProduct(CircuitSymbol('a', 3), CircuitSymbol('b', 3))
+            SeriesProduct(CircuitSymbol('a', 3), CircuitSymbol('b', 3))
 
         4) Circuit identity objects for ``n`` channels can be instantiated via ``cid(n)``:
 
             >>> parse_circuit_strings('(a(3) + cid(1)) << b(4)')
-                SeriesProduct(Concatenation(CircuitSymbol('a', 3), CIdentity()), CircuitSymbol('b', 3))
+            SeriesProduct(Concatenation(CircuitSymbol('a', 3), CIdentity), CircuitSymbol('b', 4))
 
         5) Feedback operations are specified as
 
             >>> parse_circuit_strings('[a(5)]_(1->2)')
-                Feedback(CircuitSymbol('a', 5), 1, 2)
+            Feedback(CircuitSymbol('a', 5), 1, 2)
 
         6) Permutation objects are specified as
 
             >>> parse_circuit_strings('P_sigma(1,2,3,0)')
-                CPermutation((1,2,3,0))
+            CPermutation((1, 2, 3, 0))
 
     """
     p = _CircuitExpressionParser()
@@ -69,7 +69,7 @@ def parse_circuit_strings(circuit_string):
     if len(ret) == 1:
         return ret[0]
     return ret
-    
+
 
 
 
@@ -78,14 +78,14 @@ class ParseCircuitStringError(ParsingError):
     pass
 
 class _CircuitExpressionParser(Parser):
-    
+
     def parse(self, inputstring):
         self.entities = {}
         self.architectures = {}
         return Parser.parse(self, inputstring)
 
-        
-    
+
+
     reserved = {
         'cid': 'CID',
         'fb': 'FB',
@@ -106,8 +106,8 @@ class _CircuitExpressionParser(Parser):
 
     def __init__(self, **kw):
         Parser.__init__(self, **kw)
- 
-        
+
+
     t_ignore = ' \t\x0c'
 
     # Newlines
@@ -117,7 +117,7 @@ class _CircuitExpressionParser(Parser):
 
     # Assignment operators
     t_PLUS    = r'\+'
-    
+
     t_LSERIES = r'<<'
     # t_RSERIES = r'>>'
 
@@ -125,7 +125,7 @@ class _CircuitExpressionParser(Parser):
     t_LPAREN    = r'\('
     t_RPAREN    = r'\)'
     t_LBRACKET  = r'\['
-    t_RBRACKET  = r'\]'    
+    t_RBRACKET  = r'\]'
     t_UNDER     = r'_'
     t_RARROW    = r'\->'
     t_COMMA     = r','
@@ -135,7 +135,7 @@ class _CircuitExpressionParser(Parser):
         r'[A-Za-z][\w_]*'
         t.type = self.reserved.get(t.value.lower(),"ID")
         return t
-        
+
     # Integer literal
     t_ICONST = r'\d+'
 
@@ -146,23 +146,23 @@ class _CircuitExpressionParser(Parser):
     def t_error(self, t):
         print("Illegal character %s" % repr(t.value[0]))
         t.lexer.skip(1)
-        
-    start = 'expression_list'            
-    
+
+    start = 'expression_list'
+
     def p_expression_list(self, p):
         """
         expression_list : expression_list circuit_expression
                        | circuit_expression
-                       | 
+                       |
         """
         if len(p) == 3:
             p[0] = p[1] + [p[2]]
         elif len(p) == 2:
             p[0] = [p[1]]
-        else: 
+        else:
             p[0] = []
-        
-        
+
+
     def p_circuit_expression(self, p):
         """
         circuit_expression : closed_expression
@@ -170,7 +170,7 @@ class _CircuitExpressionParser(Parser):
                        | circuit_series
         """
         p[0] = p[1]
-        
+
     def p_closed_expression(self, p):
         """
         closed_expression : bracketed_circuit_expression
@@ -186,32 +186,32 @@ class _CircuitExpressionParser(Parser):
         bracketed_circuit_expression : LPAREN circuit_expression RPAREN
         """
         p[0] = p[2]
-        
+
     def p_circuit_identity(self, p):
         """
         circuit_identity : CID LPAREN ICONST RPAREN
         """
         p[0] = ca.cid(int(p[3]))
-        
+
     def p_circuit_symbol(self, p):
         """
         circuit_symbol : ID LPAREN int RPAREN
         """
         p[0] = ca.CircuitSymbol(p[1], p[3])
-    
+
     def p_circuit_concatenation_1(self, p):
         """
         circuit_concatenation : closed_expression PLUS closed_expression
         """
         p[0] = ca.Concatenation(p[1], p[3])
-    
+
     def p_circuit_concatenation_2(self, p):
         """
         circuit_concatenation : closed_expression PLUS circuit_concatenation
         """
         p[0] = ca.Concatenation(p[1], *p[3].operands)
-    
-    
+
+
     def p_circuit_series_1(self, p):
         """
         circuit_series : closed_expression LSERIES closed_expression
@@ -223,15 +223,15 @@ class _CircuitExpressionParser(Parser):
         circuit_series : closed_expression LSERIES circuit_series
         """
         p[0] = ca.SeriesProduct(p[1], *p[3].operands)
-        
-    
+
+
     def p_circuit_feedback_1(self, p):
         """
         circuit_feedback : LBRACKET circuit_expression RBRACKET UNDER LPAREN int RARROW int RPAREN
         """
-        
+
         p[0] = ca.Feedback(p[2], p[6], p[8])
-        
+
     def p_circuit_feedback_2(self, p):
         """
         circuit_feedback : FB LPAREN circuit_expression RPAREN
@@ -241,14 +241,14 @@ class _CircuitExpressionParser(Parser):
             p[0] = ca.Feedback(p[3], p[5], p[7])
         else:
             p[0] = ca.Feedback(p[3])
-        
+
     def p_circuit_permutation(self, p):
         """
         circuit_permutation : PSIGMA LPAREN int_list RPAREN
         """
         p[0] = ca.CPermutation(p[3])
-        
-    
+
+
     def p_int_list(self, p):
         """
         int_list : int_list COMMA int
@@ -258,7 +258,7 @@ class _CircuitExpressionParser(Parser):
             p[0] = (p[1],)
         else:
             p[0] = p[1] + (p[3],)
-    
+
     def p_int(self, p):
         """
         int : ICONST
@@ -270,7 +270,7 @@ class _CircuitExpressionParser(Parser):
         ('left', 'PLUS'),
         ('left', 'LSERIES'),
         )
-        
+
     def p_error(self, p):
         print(self.lexer)
         print(p, self.lexer.lineno  )

@@ -3,8 +3,8 @@ PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest sphinx nose pl
 TESTPYPI = https://testpypi.python.org/pypi
 
 #TESTOPTIONS = --doctest-modules --cov=qnet
-TESTOPTIONS = --cov=qnet
-TESTS = tests
+TESTOPTIONS = --doctest-modules --cov=qnet
+TESTS = qnet tests
 # You may redefine TESTS to run a specific test. E.g.
 #     make test TESTS="tests/algebra"
 

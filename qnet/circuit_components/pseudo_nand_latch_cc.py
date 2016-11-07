@@ -16,15 +16,6 @@
 # Copyright (C) 2012-2013, Nikolas Tezak
 #
 ###########################################################################
-"""
-pseudo_nand_latch_cc.py
-
-Created automatically by $QNET/bin/parse_qhdl.py
-Get started by instantiating a circuit instance via:
-
-    >>> PseudoNANDLatch()
-
-"""
 from qnet.circuit_components.library import make_namespace_string
 from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import cid, P_sigma, FB
