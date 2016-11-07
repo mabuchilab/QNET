@@ -1535,8 +1535,8 @@ def pad_with_identity(circuit, k, n):
     """
     circuit_n = circuit.cdim
     combined_circuit = circuit + circuit_identity(n)
-    permutation = (range(k) + range(circuit_n, circuit_n + n) +
-                   range(k, circuit_n))
+    permutation = (list(range(k)) + list(range(circuit_n, circuit_n + n)) +
+                   list(range(k, circuit_n)))
     return (CPermutation.create(invert_permutation(permutation)) <<
             combined_circuit << CPermutation.create(permutation))
 

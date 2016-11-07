@@ -24,7 +24,8 @@ import pytest
 from qnet.algebra.circuit_algebra import (
         SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
         SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
-        map_signals_circuit, FB, getABCD, connect, CIdentity)
+        map_signals_circuit, FB, getABCD, connect, CIdentity,
+        pad_with_identity)
 from qnet.algebra.permutations import (
         permute, full_block_perm, block_perm_and_perms_within_blocks)
 from qnet.algebra.operator_algebra import identity_matrix, sympyOne, Destroy
@@ -258,6 +259,15 @@ def test_inverse():
     left = X.series_inverse() << X
     expected = cid(X.cdim)
     assert left == right == expected
+
+
+def test_pad_with_identity():
+    """Test that pad_with_identity inserts identity channels correctly"""
+    A = CircuitSymbol('A', 1)
+    B = CircuitSymbol('B', 1)
+    res = pad_with_identity(A+B, 1, 2)
+    expected = A + cid(2) + B
+    assert res == expected
 
 
 def connect_data():
