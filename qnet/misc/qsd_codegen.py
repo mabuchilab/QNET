@@ -9,7 +9,7 @@ from collections import OrderedDict
 from functools import partial
 import subprocess as sp
 
-from qnet.algebra.abstract_algebra import Operation, set_union
+from qnet.algebra.abstract_algebra import Operation, Expression, set_union
 from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
 from qnet.algebra.circuit_algebra import Circuit
 from qnet.algebra.state_algebra import (
@@ -61,8 +61,8 @@ def local_ops(expr):
         Ls = slh.L.matrix.flatten().tolist()
         H = slh.H
         return set_union(*tuple(map(local_ops, Ls))) | local_ops(H)
-    elif isinstance(expr, Operation):
-        return set_union(*tuple(map(local_ops, expr.operands)))
+    elif isinstance(expr, Expression):
+        return set_union(*tuple(map(local_ops, expr.args)))
     else:
         raise TypeError(str(expr))
 
@@ -76,11 +76,11 @@ def find_kets(expr, cls=LocalKet):
         return set()
     elif isinstance(expr, cls):
         return set([expr])
-    elif isinstance(expr, Operation):
+    elif isinstance(expr, Expression):
         finder = partial(find_kets, cls=cls)
-        return set_union(*tuple(map(finder, expr.operands)))
+        return set_union(*tuple(map(finder, expr.args)))
     else:
-        raise TypeError(str(expr))
+        raise TypeError(str(expr.__class__.__name__))
 
 
 class QSDOperator(object):
@@ -463,8 +463,8 @@ class QSDCodeGen(object):
             elif isinstance(op, LocalSigma):
                 k = self._hilbert_space_index[op.space]
                 try:
-                    i = op.space.basis.index(op.operands[1])
-                    j = op.space.basis.index(op.operands[2])
+                    i = op.space.basis.index(op.args[1])
+                    j = op.space.basis.index(op.args[2])
                 except ValueError:
                     raise ValueError(("The states %s in %s are not elements "
                         "of the basis of the Hilbert space %s")
@@ -676,17 +676,17 @@ class QSDCodeGen(object):
                     "qnet.algebra.HilbertSpaceAlgebra.BasisRegistry.set_basis")
                     % str(ket.space))
                 if isinstance(ket, BasisKet):
-                    n = ket.space.basis.index(ket.operands[1])
+                    n = ket.space.basis.index(ket.label)
                     instantiation = '({N:d},{n:d},FIELD)'.format(N=N, n=n)
                     comment = ' // HS %d' \
                               % self._hilbert_space_index[ket.space]
                 elif isinstance(ket, CoherentStateKet):
-                    alpha = ket.operands[1]
+                    alpha = ket.ampl
                     if alpha in self.syms:
                         alpha_name = self._var_names[alpha]
                     else:
                         try:
-                            alpha = complex(ket.operands[1])
+                            alpha = complex(ket.ampl)
                         except TypeError:
                             raise TypeError(("CoherentStateKet amplitude %s "
                             "is neither a known symbol nor a complex number")

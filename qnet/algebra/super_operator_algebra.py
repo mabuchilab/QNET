@@ -25,19 +25,29 @@ Super-Operator Algebra
 The specification of a quantum mechanics symbolic super-operator algebra.
 See :ref:`super_operator_algebra` for more details.
 """
-
-import qutip
+from abc import ABCMeta, abstractmethod, abstractproperty
+from itertools import product as cartesian_product
 
 from numpy.linalg import eigh
-from numpy import sqrt as np_sqrt
+from numpy import (sqrt as np_sqrt, array as np_array)
+
+from sympy import (Basic as SympyBasic, Add, Matrix as SympyMatrix, sqrt, I)
+
+from qnet.algebra.abstract_algebra import (
+        Operation, Expression, singleton, tex, AlgebraError,
+        assoc, orderby, filter_neutral, match_replace, match_replace_binary,
+        AlgebraException, KeyTuple)
+from qnet.algebra.pattern_matching import wc, pattern_head, pattern
+from qnet.algebra.hilbert_space_algebra import (
+        HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)
+from qnet.algebra.operator_algebra import (
+        Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
+        IdentityOperator, identifier_to_tex, simplify_scalar, OperatorSymbol,
+        Matrix)
 
 
-from qnet.algebra.operator_algebra import *
-
-@six.add_metaclass(ABCMeta)
-class SuperOperator(object):
-    """
-    The super-operator abstract base class.
+class SuperOperator(metaclass=ABCMeta):
+    """The super-operator abstract base class.
 
     Any super-operator contains an associated HilbertSpace object,
     on which it is taken to act non-trivially.
@@ -46,34 +56,24 @@ class SuperOperator(object):
     # which data types may serve as scalar coefficients
     scalar_types = Operator.scalar_types
 
-
-    @property
-    def space(self):
-        """
-        The Hilbert space associated with the operator on which it acts non-trivially
-        """
-        return self._space
-
     @abstractproperty
-    def _space(self):
+    def space(self):
+        """The Hilbert space associated with the operator on which it acts
+        non-trivially"""
         raise NotImplementedError(self.__class__.__name__)
 
     def superadjoint(self):
-        """
-        The super-operator adjoint (w.r.t to the ``Tr`` operation).
+        """The super-operator adjoint (w.r.t to the ``Tr`` operation).
         See :py:class:`SuperAdjoint` documentation.
 
         :return: The super-adjoint of the super-operator.
         :rtype: SuperOperator
         """
-        return self._superadjoint()
-
-    def _superadjoint(self):
         return SuperAdjoint.create(self)
 
     def expand(self):
-        """
-        Expand out distributively all products of sums. Note that this does not expand out sums of scalar coefficients.
+        """Expand out distributively all products of sums. Note that this does
+        not expand out sums of scalar coefficients.
 
         :return: A fully expanded sum of superoperators.
         :rtype: SuperOperator
@@ -89,7 +89,6 @@ class SuperOperator(object):
         """
         return self._simplify_scalar()
 
-
     def _simplify_scalar(self):
         return self
 
@@ -97,30 +96,10 @@ class SuperOperator(object):
     def _expand(self):
         raise NotImplementedError(self.__class__.__name__)
 
-    #TODO implement SuperOperator.series_expand()
-
-#    def series_expand(self, param, about, order):
-#        """
-#        Expand the superoperator expression as a truncated power series in a scalar parameter.
-#        :param param: Expansion parameter.
-#        :type param: sympy.core.symbol.Symbol
-#        :param about: Point about which to expand.
-#        :type about:  Any one of Operator.scalar_types
-#        :param order: Maximum order of expansion.
-#        :type order: int >= 0
-#        :return: tuple of length (order + 1) featuring the contributions at different orders in the parameters
-#        :rtype: tuple of SuperOperator
-#        """
-#        return self._series_expand(param, about, order)
-#
-#    @abstractmethod
-#    def _series_expand(self, param, about, order):
-#        raise NotImplementedError(self.__class__.__name__)
-
-
     def __add__(self, other):
         if isinstance(other, SuperOperator.scalar_types):
-            return SuperOperatorPlus.create(self, other * IdentitySuperOperator)
+            return SuperOperatorPlus.create(self,
+                                            other * IdentitySuperOperator)
         elif isinstance(other, SuperOperator):
             return SuperOperatorPlus.create(self, other)
         return NotImplemented
@@ -156,12 +135,9 @@ class SuperOperator(object):
         return NotImplemented
 
 
-
-
-@check_signature
-class SuperOperatorSymbol(SuperOperator, Operation):
-    """
-    Super-operator symbol class, parametrized by an identifier string and an associated Hilbert space.
+class SuperOperatorSymbol(SuperOperator, Expression):
+    """Super-operator symbol class, parametrized by an identifier string and an
+    associated Hilbert space.
 
     Instantiate as::
 
@@ -172,44 +148,48 @@ class SuperOperatorSymbol(SuperOperator, Operation):
     :param hs: Associated Hilbert space.
     :type hs: HilbertSpace
     """
-    signature = str, (HilbertSpace, str, int, tuple)
+    signature = (str, (HilbertSpace, str, int, tuple)), {}
 
-    def __init__(self, name, hs):
+    def __init__(self, label, hs):
+        self.label = label
         if isinstance(hs, (str, int)):
-            hs = local_space(hs)
+            hs = LocalSpace(hs)
         elif isinstance(hs, tuple):
-            hs = prod([local_space(h) for h in hs], neutral=TrivialSpace)
-        super(SuperOperatorSymbol, self).__init__(name, hs)
-
-    def __str__(self):
-        return self.operands[0]
-
-    def _tex(self):
-        return r"\hat{{{}}}".format(identifier_to_tex(self.operands[0]))
+            hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
+        self._hs = hs
 
     @property
-    def _space(self):
-        return self.operands[1]
+    def args(self):
+        return self.label, self._hs
+
+    def __str__(self):
+        return self.label
+
+    def tex(self):
+        return r"\hat{{{}}}".format(identifier_to_tex(self.label))
+
+    @property
+    def space(self):
+        return self._hs
 
     def _expand(self):
         return self
 
-#    def _series_expand(self, param, about, order):
-#        return (self,) + (() * order)
-
-    def _all_symbols(self):
+    def all_symbols(self):
         return {self}
 
 
 @singleton
 class IdentitySuperOperator(SuperOperator, Expression):
-    """
-    IdentitySuperOperator constant (singleton) object.
-    """
+    """IdentitySuperOperator constant (singleton) object."""
 
     @property
-    def _space(self):
+    def space(self):
         return TrivialSpace
+
+    @property
+    def args(self):
+        return tuple()
 
     def _superadjoint(self):
         return self
@@ -217,11 +197,7 @@ class IdentitySuperOperator(SuperOperator, Expression):
     def _expand(self):
         return self
 
-#    def _series_expand(self, param, about, order):
-#        return (self,) + (() * order)
-
-
-    def _tex(self):
+    def tex(self):
         return r"\hat{1}"
 
     def __str__(self):
@@ -230,22 +206,21 @@ class IdentitySuperOperator(SuperOperator, Expression):
     def __eq__(self, other):
         return self is other or other == 1
 
-    def _all_symbols(self):
+    def all_symbols(self):
         return set(())
-
-
-
 
 
 @singleton
 class ZeroSuperOperator(SuperOperator, Expression):
-    """
-    ZeroSuperOperator constant (singleton) object.
-    """
+    """ZeroSuperOperator constant (singleton) object."""
 
     @property
-    def _space(self):
+    def space(self):
         return TrivialSpace
+
+    @property
+    def args(self):
+        return tuple()
 
     def _superadjoint(self):
         return self
@@ -253,10 +228,7 @@ class ZeroSuperOperator(SuperOperator, Expression):
     def _expand(self):
         return self
 
-#    def _series_expand(self, param, about, order):
-#        return (self,) + (() * order)
-
-    def _tex(self):
+    def tex(self):
         return r"\hat{0}"
 
     def __eq__(self, other):
@@ -265,34 +237,28 @@ class ZeroSuperOperator(SuperOperator, Expression):
     def __str__(self):
         return "_0_"
 
-    def _all_symbols(self):
+    def all_symbols(self):
         return set(())
 
 
 class SuperOperatorOperation(SuperOperator, Operation):
-    """
-    Base class for Operations acting only on SuperOperator arguments.
-    """
-    signature = SuperOperator,
+    """Base class for Operations acting only on SuperOperator arguments."""
+    signature = (SuperOperator, {})
 
     @property
-    def _space(self):
-        return prod((o.space for o in self.operands), TrivialSpace)
+    def space(self):
+        return ProductSpace.create(*(o.space for o in self.operands))
 
     def _simplify_scalar(self):
-        return self.__class__.create(*[o.simplify_scalar() for o in self.operands])
+        return self.__class__.create(*[o.simplify_scalar()
+                                       for o in self.operands])
+
+    def _expand(self):
+        raise NotImplementedError()
 
 
-
-@assoc
-@orderby
-@filter_neutral
-@match_replace_binary
-@filter_neutral
-@check_signature_assoc
 class SuperOperatorPlus(SuperOperatorOperation):
-    """
-    A sum of super-operators.
+    """A sum of super-operators.
 
     Instantiate as::
 
@@ -301,7 +267,9 @@ class SuperOperatorPlus(SuperOperatorOperation):
     :param SuperOperator summands: super-operator summands.
     """
     neutral_element = ZeroSuperOperator
-    _binary_rules = []
+    _binary_rules = []  # see end of module
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
+                        filter_neutral]
 
     @classmethod
     def order_key(cls, a):
@@ -309,21 +277,18 @@ class SuperOperatorPlus(SuperOperatorOperation):
             c = a.coeff
             if isinstance(c, SympyBasic):
                 c = str(c)
-            return Operation.order_key(a.term), c
-        return Operation.order_key(a), 1
+            return KeyTuple((Expression.order_key(a.term), c))
+        return KeyTuple((Expression.order_key(a), 1))
 
     def _expand(self):
         return sum((o.expand() for o in self.operands), ZeroSuperOperator)
 
-#    def _series_expand(self, param, about, order):
-#        res = tuple_sum((o.series_expand(param, about, order) for o in self.operands), ZeroSuperOperator)
-#        return res
-
-    def _tex(self):
+    def tex(self):
         ret = self.operands[0].tex()
 
         for o in self.operands[1:]:
-            if isinstance(o, ScalarTimesSuperOperator) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
+            if (isinstance(o, ScalarTimesSuperOperator) and
+                    ScalarTimesOperator.has_minus_prefactor(o.coeff)):
                 ret += " - " + tex(-o)
             else:
                 ret += " + " + tex(o)
@@ -333,95 +298,90 @@ class SuperOperatorPlus(SuperOperatorOperation):
         ret = str(self.operands[0])
 
         for o in self.operands[1:]:
-            if isinstance(o, ScalarTimesSuperOperator) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
+            if (isinstance(o, ScalarTimesSuperOperator) and
+                    ScalarTimesOperator.has_minus_prefactor(o.coeff)):
                 ret += " - " + str(-o)
             else:
                 ret += " + " + str(o)
         return ret
 
 
-
-@assoc
-@orderby
-@filter_neutral
-@match_replace_binary
-@filter_neutral
-#@orderby
-@check_signature_assoc
-class SuperOperatorTimes(SuperOperatorOperation):
+class SuperOperatorOrderKey(object):
+    """Auxiliary class that generates the correct pseudo-order relation for
+    operator products.  Only operators acting on different Hilbert spaces are
+    commuted to achieve the order specified in the full HilbertSpace.  I.e.,
+    sorted(factors, key = OperatorOrderKey) achieves this ordering.
     """
-    A product of super-operators that denotes order of application of super-operators (right to left)::
+    def __init__(self, op):
+        if isinstance(op, ScalarTimesSuperOperator):
+            op = op.term
+        space = op.space
+        self.op = op
+        self.full = False
+        self.trivial = False
+        if isinstance(space, LocalSpace):
+            self.local_spaces = {space.args, }
+        elif space is TrivialSpace:
+            self.local_spaces = set(())
+            self.trivial = True
+        elif space is FullSpace:
+            self.full = True
+        else:
+            assert isinstance(space, ProductSpace)
+            self.local_spaces = {s.args for s in space.args}
+
+    def __lt__(self, other):
+        if isinstance(self.op, SPre) and isinstance(other.op, SPost):
+            return True
+        elif isinstance(self.op, SPost) and isinstance(other.op, SPre):
+            return False
+
+        if self.trivial and other.trivial:
+            return (Expression.order_key(self.op) <
+                    Expression.order_key(other.op))
+
+        if self.full or len(self.local_spaces & other.local_spaces):
+            return False
+        return tuple(self.local_spaces) < tuple(other.local_spaces)
+
+    def __gt__(self, other):
+        if isinstance(self.op, SPost) and isinstance(other.op, SPre):
+            return True
+        elif isinstance(self.op, SPre) and isinstance(other.op, SPost):
+            return False
+
+        if self.trivial and other.trivial:
+            return (Expression.order_key(self.op) >
+                    Expression.order_key(other.op))
+
+        if self.full or len(self.local_spaces & other.local_spaces):
+            return False
+
+        return tuple(self.local_spaces) > tuple(other.local_spaces)
+
+    def __eq__(self, other):
+        if ((isinstance(self.op, SPost) and isinstance(other.op, SPre)) or
+                (isinstance(self.op, SPre) and isinstance(other.op, SPost))):
+            return False
+        if self.trivial and other.trivial:
+            return (Expression.order_key(self.op) ==
+                    Expression.order_key(other.op))
+
+        return self.full or len(self.local_spaces & other.local_spaces) > 0
+
+
+class SuperOperatorTimes(SuperOperatorOperation):
+    """A product of super-operators that denotes order of application of
+    super-operators (right to left)::
 
         SuperOperatorTimes(*factors)
 
     :param SuperOperator factors: Super-operator factors.
     """
-
-
-
     neutral_element = IdentitySuperOperator
-    _binary_rules = []
-
-    class SuperOperatorOrderKey(object):
-        """
-        Auxiliary class that generates the correct pseudo-order relation for operator products.
-        Only operators acting on different Hilbert spaces are commuted to achieve the order specified in the full HilbertSpace.
-        I.e., sorted(factors, key = OperatorOrderKey) achieves this ordering.
-        """
-        def __init__(self, op):
-            if isinstance(op, ScalarTimesSuperOperator):
-                op = op.term
-            space = op.space
-            self.op = op
-            self.full = False
-            self.trivial = False
-            if isinstance(space, LocalSpace):
-                self.local_spaces = {space.operands, }
-            elif space is TrivialSpace:
-                self.local_spaces = set(())
-                self.trivial = True
-            elif space is FullSpace:
-                self.full = True
-            else:
-                assert isinstance(space, ProductSpace)
-                self.local_spaces = {s.operands for s in space.operands}
-
-        def __lt__(self, other):
-            if isinstance(self.op, SPre) and isinstance(other.op, SPost):
-                return True
-            elif isinstance(self.op, SPost) and isinstance(other.op, SPre):
-                return False
-
-            if self.trivial and other.trivial:
-                return Operation.order_key(self.op) < Operation.order_key(other.op)
-
-            if self.full or len(self.local_spaces & other.local_spaces):
-                return False
-            return tuple(self.local_spaces) < tuple(other.local_spaces)
-
-        def __gt__(self, other):
-            if isinstance(self.op, SPost) and isinstance(other.op, SPre):
-                return True
-            elif isinstance(self.op, SPre) and isinstance(other.op, SPost):
-                return False
-
-            if self.trivial and other.trivial:
-                return Operation.order_key(self.op) > Operation.order_key(other.op)
-
-            if self.full or len(self.local_spaces & other.local_spaces):
-                return False
-
-            return tuple(self.local_spaces) > tuple(other.local_spaces)
-
-        def __eq__(self, other):
-            if (isinstance(self.op, SPost) and isinstance(other.op, SPre)) \
-                or (isinstance(self.op, SPre) and isinstance(other.op, SPost)):
-                return False
-            if self.trivial and other.trivial:
-                return Operation.order_key(self.op) == Operation.order_key(other.op)
-
-            return self.full or len(self.local_spaces & other.local_spaces) > 0
-
+    _binary_rules = []  # see end of module
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
+                        filter_neutral]
 
     order_key = SuperOperatorOrderKey
 
@@ -429,16 +389,21 @@ class SuperOperatorTimes(SuperOperatorOperation):
     def create(cls, *ops):
         if any(o == ZeroSuperOperator for o in ops):
             return ZeroSuperOperator
-        return cls(*ops)
+        return super().create(*ops)
 
     def _expand(self):
         eops = [o.expand() for o in self.operands]
         # store tuples of summands of all expanded factors
-        eopssummands = [eo.operands if isinstance(eo, SuperOperatorPlus) else (eo,) for eo in eops]
-        # iterate over a cartesian product of all factor summands, form product of each tuple and sum over result
-        return sum((SuperOperatorTimes.create(*combo) for combo in cartesian_product(*eopssummands)), ZeroSuperOperator)
+        eopssummands = [eo.operands
+                        if isinstance(eo, SuperOperatorPlus) else (eo,)
+                        for eo in eops]
+        # iterate over a Cartesian product of all factor summands, form product
+        # of each tuple and sum over result
+        return sum((SuperOperatorTimes.create(*combo)
+                    for combo in cartesian_product(*eopssummands)),
+                   ZeroSuperOperator)
 
-    def _tex(self):
+    def tex(self):
         ret = self.operands[0].tex()
         for o in self.operands[1:]:
             if isinstance(o, SuperOperatorPlus):
@@ -457,11 +422,8 @@ class SuperOperatorTimes(SuperOperatorOperation):
         return ret
 
 
-@match_replace
-@check_signature
 class ScalarTimesSuperOperator(SuperOperator, Operation):
-    """
-    Multiply an operator by a scalar coefficient::
+    """Multiply an operator by a scalar coefficient::
 
         ScalarTimesSuperOperator(coeff, term)
 
@@ -471,32 +433,24 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
     :type term: SuperOperator
     """
     signature = SuperOperator.scalar_types, SuperOperator
-    _rules = []
+    _rules = []  # see end of module
+    _simplifications = [match_replace, ]
 
     @property
-    def _space(self):
-        return self.operands[1].space
+    def space(self):
+        return self.term.space
 
     @property
     def coeff(self):
-        """
-        The scalar coefficient.
-
-        :type: :py:attr:`SuperOperator.scalar_types`
-        """
+        """The scalar coefficient."""
         return self.operands[0]
 
     @property
     def term(self):
-        """
-        The super-operator term.
-
-        :type: SuperOperator
-        """
+        """The super-operator term."""
         return self.operands[1]
 
-
-    def _tex(self):
+    def tex(self):
         coeff, term = self.operands
 
         if isinstance(coeff, Add):
@@ -545,7 +499,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
 #        c, t = self.operands
 #        return t.pseudo_inverse() / c
 
-
     def __complex__(self):
         if self.term is IdentitySuperOperator:
             return complex(self.coeff)
@@ -555,7 +508,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
         if self.term is IdentitySuperOperator:
             return float(self.coeff)
         return NotImplemented
-
 
     def _substitute(self, var_map):
         coeff, term = self.operands
@@ -569,11 +521,8 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
 
 
 
-@check_signature
-@match_replace
 class SuperAdjoint(SuperOperatorOperation):
-    r"""
-    The symbolic SuperAdjoint of a super-operator.
+    r"""The symbolic SuperAdjoint of a super-operator.
 
     For a super operator ``L`` use as::
 
@@ -584,7 +533,8 @@ class SuperAdjoint(SuperOperatorOperation):
     .. math::
         {\rm SuperAdjoint}(\mathcal{L}) =: \mathcal{L}^*
 
-    and for any super operator :math:`\mathcal{L}`, its super-adjoint :math:`\mathcal{L}^*` satisfies for any pair of operators :math:`M,N`:
+    and for any super operator :math:`\mathcal{L}`, its super-adjoint
+    :math:`\mathcal{L}^*` satisfies for any pair of operators :math:`M,N`:
 
     .. math::
         {\rm Tr}[M (\mathcal{L}N)] = Tr[(\mathcal{L}^*M)  N]
@@ -593,23 +543,21 @@ class SuperAdjoint(SuperOperatorOperation):
     :param L: The super-operator to take the adjoint of.
     :type L: SuperOperator
     """
-    _rules = []
+    _rules = []  # see end of module
+    _simplifications = [match_replace, ]
+
     @property
     def operand(self):
         return self.operands[0]
 
-    _rules = []
-
     def _expand(self):
         eo = self.operand.expand()
         if isinstance(eo, SuperOperatorPlus):
-            return sum((eoo.superadjoint() for eoo in eo.operands), ZeroSuperOperator)
+            return sum((eoo.superadjoint() for eoo in eo.operands),
+                       ZeroSuperOperator)
         return eo._superadjoint()
 
-#    def _pseudo_inverse(self):
-#        return self.operand.pseudo_inverse().superadjoint()
-
-    def _tex(self):
+    def tex(self):
         return "\left(" + self.operands[0].tex() + r"\right)^*"
 
     def __str__(self):
@@ -617,11 +565,9 @@ class SuperAdjoint(SuperOperatorOperation):
             return "{}^*".format(str(self.operand))
         return "({})^*".format(str(self.operand))
 
-@match_replace
-@check_signature
+
 class SPre(SuperOperator, Operation):
-    """
-    Linear pre-multiplication operator.
+    """Linear pre-multiplication operator.
 
     Use as::
 
@@ -630,14 +576,15 @@ class SPre(SuperOperator, Operation):
     Acting ``SPre(A)`` on an operator ``B`` just yields the product ``A * B``
     """
 
-    signature = Operator,
-    _rules = []
+    signature = (Operator, ), {}
+    _rules = []  # see end of module
+    _simplifications = [match_replace, ]
 
     @property
-    def _space(self):
+    def space(self):
         return self.operands[0].space
 
-    def _tex(self):
+    def tex(self):
         return r"{{\rm spre}}\left[{}\right]".format(self.operands[0].tex())
 
     def __str__(self):
@@ -653,27 +600,26 @@ class SPre(SuperOperator, Operation):
         return self.__class__.create(self.operands[0].simplify_scalar())
 
 
-@match_replace
-@check_signature
 class SPost(SuperOperator, Operation):
-    """
-        Linear post-multiplication operator.
+    """Linear post-multiplication operator.
 
         Use as::
 
             SPost(op)
 
-        Acting ``SPost(A)`` on an operator ``B`` just yields the reversed product ``B * A``.
+        Acting ``SPost(A)`` on an operator ``B`` just yields the reversed
+        product ``B * A``.
     """
 
-    signature = Operator,
-    _rules = []
+    signature = (Operator,), {}
+    _rules = []  # see end of module
+    _simplifications = [match_replace, ]
 
     @property
-    def _space(self):
+    def space(self):
         return self.operands[0].space
 
-    def _tex(self):
+    def tex(self):
         return r"{{\rm spost}}\left[{}\right]".format(self.operands[0].tex())
 
     def __str__(self):
@@ -689,11 +635,8 @@ class SPost(SuperOperator, Operation):
         return self.__class__.create(self.operands[0].simplify_scalar())
 
 
-@match_replace
-@check_signature
 class SuperOperatorTimesOperator(Operator, Operation):
-    """
-    Application of a super-operator to an operator (result is an Operator).
+    """Application of a super-operator to an operator (result is an Operator).
 
     Use as::
 
@@ -702,11 +645,12 @@ class SuperOperatorTimesOperator(Operator, Operation):
     :param SuperOperator sop: The super-operator to apply.
     :param Operator op: The operator it is applied to.
     """
-    signature = SuperOperator, Operator
-    _rules = []
+    signature = (SuperOperator, Operator), {}
+    _rules = []  # see end of module
+    _simplifications = [match_replace, ]
 
     @property
-    def _space(self):
+    def space(self):
         return self.sop.space * self.op.space
 
     @property
@@ -717,8 +661,7 @@ class SuperOperatorTimesOperator(Operator, Operation):
     def op(self):
         return self.operands[1]
 
-
-    def _tex(self):
+    def tex(self):
         sop, op = self.operands
 
         if isinstance(sop, SuperOperatorPlus):
@@ -732,7 +675,6 @@ class SuperOperatorTimesOperator(Operator, Operation):
             ct = r" {}".format(op.tex())
 
         return cs + ct
-
 
     def __str__(self):
         sop, op = self.operands
@@ -777,113 +719,22 @@ class SuperOperatorTimesOperator(Operator, Operation):
 #        return t.pseudo_inverse() / c
 
 
-#@check_signature
-#@match_replace
-#class PseudoInverse(OperatorOperation):
-#    """
-#    The symbolic pseudo-inverse of an operator.
-#        PseudoInverse(op)
-#    :param op: The operator to take the adjoint of.
-#    :type op: Operator
-#    """
-#    delegate_to_method = ScalarTimesOperator, Squeeze, Displace, ZeroOperator.__class__, IdentityOperator.__class__
-#
-#    @classmethod
-#    def create(cls, op):
-#        if isinstance(op, cls.delegate_to_method):
-#            return op._pseudo_inverse()
-#        return super(PseudoInverse, cls).create(op)
-#
-#    @property
-#    def operand(self):
-#        return self.operands[0]
-#
-#    _rules = []
-#
-#    def _expand(self):
-#        return self
-#
-#    def _pseudo_inverse(self):
-#        return self.operand
-#
-#    def _tex(self):
-#        return "\left(" + self.operands[0].tex() + r"\right)^+"
-#
-#    def __str__(self):
-#        if isinstance(self.operand, OperatorSymbol):
-#            return "{}^+".format(str(self.operand))
-#        return "({})^+".format(str(self.operand))
-#
-#PseudoInverse.delegate_to_method = PseudoInverse.delegate_to_method + (PseudoInverse,)
-#
-#
-#@check_signature
-#@match_replace
-#class NullSpaceProjector(OperatorOperation):
-#    """
-#    Returns a projection operator that projects onto the nullspace of its operand
-#        NullSpaceProjector(op)
-#    I.e. `op * NullSpaceProjector(op) == 0`
-#    :param op: Operator argument
-#    :type op: Operator
-#    """
-#
-#    _rules = []
-#
-#    @property
-#    def operand(self):
-#        return self.operands[0]
-#
-#    def _tex(self):
-#        return r"\mathcal{P}_{{\rm Ker}" + tex(self.operand) + "}"
-#
-#    def __str__(self):
-#        return "P_ker({})".format(str(self.operand))
-#
-#
-#
-#
-#@implied_local_space
-#@match_replace
-#@check_signature
-#class OperatorTrace(Operator, Operation):
-#    """
-#    Take the (partial) trace of an operator `op` over the degrees of freedom given by `space`.
-#        OperatorTrace(space, op)
-#    :param space: The degrees of freedom to trace over
-#    :type space: HilbertSpace
-#    :param op: The operator to take the trace of.
-#    :type op: Operator
-#    """
-#    signature = HilbertSpace, Operator
-#    _rules = []
-#
-#    def __init__(self, space, op):
-#        if isinstance(space, (int, str)):
-#            space = local_space(space)
-#        super(OperatorTrace, self).__init__(space, op)
-#
-#    @property
-#    def _space(self):
-#        over_space, op = self.operands
-#        return op.space / over_space
-#
-#    def _expand(self):
-#        s, o = self.operands
-#        return OperatorTrace.create(s, o.expand())
-#
-#    def _tex(self):
-#        s, o = self.operands
-#        return r"{{\rm Tr}}_{{{}}} \left[ {} \right]".format(tex(s), tex(o))
-#
-#    def _tex(self):
-#        s, o = self.operands
-#        return r"tr_{!s}[{!s}]".format(s, o)
-#
-#tr = OperatorTrace.create
-
-
 ## Expression rewriting _rules
+
+u = wc("u", head=Operator.scalar_types)
+v = wc("v", head=Operator.scalar_types)
+
+n = wc("n", head=(int, str))
+m = wc("m", head=(int, str))
+k = wc("k", head=(int, str))
+
+A = wc("A", head=Operator)
+A__ = wc("A__", head=Operator)
+A___ = wc("A___", head=Operator)
+B = wc("B", head=Operator)
+B__ = wc("B__", head=Operator)
+B___ = wc("B___", head=Operator)
+C = wc("C", head=Operator)
 
 sA = wc("sA", head=SuperOperator)
 sA__ = wc("sA__", head=SuperOperator)
@@ -898,69 +749,110 @@ sA_times = wc("sA", head=SuperOperatorTimes)
 
 
 ScalarTimesSuperOperator._rules += [
-    ((1, sA), lambda sA: sA),
-    ((0, sA), lambda sA: ZeroSuperOperator),
-    ((u, ZeroSuperOperator), lambda u: ZeroSuperOperator),
-    ((u, ScalarTimesSuperOperator(v, sA)), lambda u, v, sA: (u * v) * sA),
+    (pattern_head(1, sA),
+        lambda sA: sA),
+    (pattern_head(0, sA),
+        lambda sA: ZeroSuperOperator),
+    (pattern_head(u, ZeroSuperOperator),
+        lambda u: ZeroSuperOperator),
+    (pattern_head(u, pattern(ScalarTimesSuperOperator, v, sA)),
+        lambda u, v, sA: (u * v) * sA),
 ]
 
 SuperOperatorPlus._binary_rules += [
-    ((ScalarTimesSuperOperator(u, sA), ScalarTimesSuperOperator(v, sA)), lambda u, v, sA: (u + v) * sA),
-    ((ScalarTimesSuperOperator(u, sA), sA), lambda u, sA: (u + 1) * sA),
-    ((sA, ScalarTimesSuperOperator(v, sA)), lambda v, sA: (1 + v) * sA),
-    ((sA, sA), lambda sA: 2 * sA),
+    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA),
+                  pattern(ScalarTimesSuperOperator, v, sA)),
+        lambda u, v, sA: (u + v) * sA),
+    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), sA),
+        lambda u, sA: (u + 1) * sA),
+    (pattern_head(sA, pattern(ScalarTimesSuperOperator, v, sA)),
+        lambda v, sA: (1 + v) * sA),
+    (pattern_head(sA, sA),
+        lambda sA: 2 * sA),
 ]
 
 
 SuperOperatorTimes._binary_rules += [
-    ((ScalarTimesSuperOperator(u, sA), sB), lambda u, sA, sB: u * (sA * sB)),
-    ((sA, ScalarTimesSuperOperator(u, sB)), lambda sA, u, sB: u * (sA * sB)),
-    ((SPre(A), SPre(B)), lambda A, B: SPre.create(A*B)),
-    ((SPost(A), SPost(B)), lambda A, B: SPost.create(B*A)),
+    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), sB),
+        lambda u, sA, sB: u * (sA * sB)),
+    (pattern_head(sA, pattern(ScalarTimesSuperOperator, u, sB)),
+        lambda sA, u, sB: u * (sA * sB)),
+    (pattern_head(pattern(SPre, A), pattern(SPre, B)),
+        lambda A, B: SPre.create(A*B)),
+    (pattern_head(pattern(SPost, A), pattern(SPost, B)),
+        lambda A, B: SPost.create(B*A)),
 ]
 
 SuperAdjoint._rules += [
-    ((ScalarTimesSuperOperator(u, sA),), lambda u, sA: u * sA.superadjoint()),
-    ((sA_plus,), lambda sA: SuperOperatorPlus.create(*[o.superadjoint() for o in sA.operands])),
-    ((sA_times,), lambda sA: SuperOperatorTimes.create(*[o.superadjoint() for o in sA.operands[::-1]])),
-    ((SuperAdjoint(sA),), lambda sA: sA),
-    ((SPre(A),), lambda A: SPost.create(A)),
-    ((SPost(A),), lambda A: SPre.create(A)),
-    ((IdentitySuperOperator,), lambda : IdentitySuperOperator),
-    ((ZeroSuperOperator,), lambda : ZeroSuperOperator),
+    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA)),
+        lambda u, sA: u * sA.superadjoint()),
+    (pattern_head(sA_plus),
+        lambda sA: SuperOperatorPlus.create(*[o.superadjoint()
+                                              for o in sA.operands])),
+    (pattern_head(sA_times),
+        lambda sA: SuperOperatorTimes.create(*[o.superadjoint()
+                                               for o in sA.operands[::-1]])),
+    (pattern_head(pattern(SuperAdjoint, sA)),
+        lambda sA: sA),
+    (pattern_head(pattern(SPre, A)),
+        lambda A: SPost.create(A)),
+    (pattern_head(pattern(SPost, A)),
+        lambda A: SPre.create(A)),
+    (pattern_head(IdentitySuperOperator),
+        lambda: IdentitySuperOperator),
+    (pattern_head(ZeroSuperOperator),
+        lambda: ZeroSuperOperator),
 ]
 
 SPre._rules +=[
-    ((ScalarTimesOperator(u, A),), lambda u, A: u * SPre.create(A)),
-    ((IdentityOperator,), lambda : IdentitySuperOperator),
-    ((ZeroOperator,), lambda : ZeroSuperOperator),
+    (pattern_head(pattern(ScalarTimesOperator, u, A)),
+        lambda u, A: u * SPre.create(A)),
+    (pattern_head(IdentityOperator),
+        lambda: IdentitySuperOperator),
+    (pattern_head(ZeroOperator),
+        lambda: ZeroSuperOperator),
 ]
 
 SPost._rules +=[
-    ((ScalarTimesOperator(u, A),), lambda u, A: u * SPost.create(A)),
-    ((IdentityOperator,), lambda : IdentitySuperOperator),
-    ((ZeroOperator,), lambda : ZeroSuperOperator),
+    (pattern_head(pattern(ScalarTimesOperator, u, A)),
+        lambda u, A: u * SPost.create(A)),
+    (pattern_head(IdentityOperator),
+        lambda: IdentitySuperOperator),
+    (pattern_head(ZeroOperator),
+        lambda: ZeroSuperOperator),
 ]
 
 
 SuperOperatorTimesOperator._rules +=[
-    ((sA_plus, B), lambda sA, B: sum([o*B for o in sA.operands], ZeroOperator)),
-    ((IdentitySuperOperator, B), lambda B: B),
-    ((ZeroSuperOperator, B), lambda B: ZeroOperator),
-    ((ScalarTimesSuperOperator(u, sA), B), lambda u, sA, B: u * (sA * B)),
-    ((sA, ScalarTimesOperator(u, B)), lambda u, sA, B: u * (sA * B)),
-    ((sA, SuperOperatorTimesOperator(sB, C)), lambda sA, sB, C: (sA * sB) * C),
-    ((SPre(A), B), lambda A, B: A*B),
-    ((SuperOperatorTimes(sA__, SPre(B)), C), lambda sA, B, C: SuperOperatorTimes.create(*sA) * (SPre(B) * C)),
-    ((SPost(A), B), lambda A, B: B*A),
-    ((SuperOperatorTimes(sA__, SPost(B)), C), lambda sA, B, C: SuperOperatorTimes.create(*sA) * (SPost(B) * C)),
+    (pattern_head(sA_plus, B),
+        lambda sA, B: sum([o*B for o in sA.operands], ZeroOperator)),
+    (pattern_head(IdentitySuperOperator, B),
+        lambda B: B),
+    (pattern_head(ZeroSuperOperator, B),
+        lambda B: ZeroOperator),
+    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), B),
+        lambda u, sA, B: u * (sA * B)),
+    (pattern_head(sA, pattern(ScalarTimesOperator, u, B)),
+        lambda u, sA, B: u * (sA * B)),
+    (pattern_head(sA, pattern(SuperOperatorTimesOperator, sB, C)),
+        lambda sA, sB, C: (sA * sB) * C),
+    (pattern_head(pattern(SPre, A), B),
+        lambda A, B: A*B),
+    (pattern_head(pattern(SuperOperatorTimes, sA__, pattern(SPre, B)), C),
+        lambda sA, B, C: (SuperOperatorTimes.create(*sA) *
+                          (pattern(SPre, B) * C))),
+    (pattern_head(pattern(SPost, A), B),
+        lambda A, B: B*A),
+    (pattern_head(pattern(SuperOperatorTimes, sA__, pattern(SPost, B)), C),
+        lambda sA, B, C: (SuperOperatorTimes.create(*sA) *
+                          (pattern(SPost, B) * C))),
 ]
 
 
 def commutator(A, B = None):
-    """
-    If ``B != None``, return the commutator :math:`[A,B]`, otherwise return the super-operator :math:`[A,\cdot]`.
-    The super-operator :math:`[A,\cdot]` maps any other operator ``B`` to the commutator :math:`[A, B] = A B - B A`.
+    """If ``B != None``, return the commutator :math:`[A,B]`, otherwise return
+    the super-operator :math:`[A,\cdot]`.  The super-operator :math:`[A,\cdot]`
+    maps any other operator ``B`` to the commutator :math:`[A, B] = A B - B A`.
 
     :param Operator A: The first operator to form the commutator of.
     :param (Operator or None) B: The second operator to form the commutator of, or None.
@@ -972,9 +864,10 @@ def commutator(A, B = None):
     return SPre(A) - SPost(A)
 
 def anti_commutator(A, B = None):
-    """
-    If ``B != None``, return the anti-commutator :math:`\{A,B\}`, otherwise return the super-operator :math:`\{A,\cdot\}`.
-    The super-operator :math:`\{A,\cdot\}` maps any other operator ``B`` to the anti-commutator :math:`\{A, B\} = A B + B A`.
+    """If ``B != None``, return the anti-commutator :math:`\{A,B\}`, otherwise
+    return the super-operator :math:`\{A,\cdot\}`.  The super-operator
+    :math:`\{A,\cdot\}` maps any other operator ``B`` to the anti-commutator
+    :math:`\{A, B\} = A B + B A`.
 
     :param Operator A: The first operator to form all anti-commutators of.
     :param (Operator or None) B: The second operator to form the anti-commutator of, or None.
@@ -986,9 +879,9 @@ def anti_commutator(A, B = None):
     return SPre(A) + SPost(A)
 
 def lindblad(C):
-    """
-    Return ``SPre(C) * SPost(C.adjoint()) - (1/2) * santi_commutator(C.adjoint()*C)``.
-    These are the super-operators :math:`\mathcal{D}[C]` that form the collapse terms of a Master-Equation.
+    """Return ``SPre(C) * SPost(C.adjoint()) - (1/2) *
+    santi_commutator(C.adjoint()*C)``.  These are the super-operators
+    :math:`\mathcal{D}[C]` that form the collapse terms of a Master-Equation.
     Applied to an operator :math:`X` they yield
 
     .. math::
@@ -1005,10 +898,11 @@ def lindblad(C):
 
 
 def liouvillian(H, Ls = []):
-    r"""
-    Return the Liouvillian super-operator associated with a Hamilton operator ``H`` and a set of collapse-operators ``Ls = [L1, L2, ...]``.
+    r"""Return the Liouvillian super-operator associated with a Hamilton
+    operator ``H`` and a set of collapse-operators ``Ls = [L1, L2, ...]``.
 
-    The Liouvillian :math:`\mathcal{L}` generates the Markovian-dynamics of a system via the Master equation:
+    The Liouvillian :math:`\mathcal{L}` generates the Markovian-dynamics of a
+    system via the Master equation:
 
     .. math::
         \dot{\rho} = \mathcal{L}\rho = -i[H,\rho] + \sum_{j=1}^n \mathcal{D}[L_j] \rho
@@ -1026,9 +920,7 @@ def liouvillian(H, Ls = []):
 
 
 class BadLiouvillianError(AlgebraError):
-    """
-    Raise when a Liouvillian is not of standard Lindblad form.
-    """
+    """Raise when a Liouvillian is not of standard Lindblad form."""
     pass
 
 
@@ -1037,21 +929,26 @@ class CannotSymbolicallyDiagonalize(AlgebraException):
 
 
 def liouvillian_normal_form(L, symbolic = False):
-    r"""
-    Return a Hamilton operator ``H`` and a minimal list of collapse operators ``Ls`` that generate the liouvillian ``L``.
+    r"""Return a Hamilton operator ``H`` and a minimal list of collapse
+    operators ``Ls`` that generate the liouvillian ``L``.
 
-    A Liouvillian defined by a hermitian Hamilton operator :math:`H` and a vector of collapse operators
-    :math:`\mathbf{L} = (L_1, L_2, \dots L_n)^T` is invariant under the following two operations:
+    A Liouvillian defined by a hermitian Hamilton operator :math:`H` and a
+    vector of collapse operators
+    :math:`\mathbf{L} = (L_1, L_2, \dots L_n)^T` is invariant under the
+    following two operations:
 
     .. math::
         \left(H, \mathbf{L}\right) & \mapsto \left(H + {1\over 2i}\left(\mathbf{w}^\dagger \mathbf{L} - \mathbf{L}^\dagger \mathbf{w}\right), \mathbf{L} + \mathbf{w} \right) \\
         \left(H, \mathbf{L}\right) & \mapsto \left(H, \mathbf{U}\mathbf{L}\right)\\
 
-    where :math:`\mathbf{w}` is just a vector of complex numbers and :math:`\mathbf{U}` is a complex unitary matrix.
-    It turns out that for quantum optical circuit models the set of collapse operators is often linearly dependent.
-    This routine tries to find a representation of the Liouvillian in terms of a Hamilton operator ``H`` with
-    as few non-zero collapse operators ``Ls`` as possible.
-    Consider the following example, which results from a two-port linear cavity with a coherent input into the first port:
+    where :math:`\mathbf{w}` is just a vector of complex numbers and
+    :math:`\mathbf{U}` is a complex unitary matrix.  It turns out that for
+    quantum optical circuit models the set of collapse operators is often
+    linearly dependent.  This routine tries to find a representation of the
+    Liouvillian in terms of a Hamilton operator ``H`` with as few non-zero
+    collapse operators ``Ls`` as possible.  Consider the following example,
+    which results from a two-port linear cavity with a coherent input into the
+    first port:
 
     >>> kappa_1, kappa_2 = symbols('kappa_1, kappa_2', positive = True)
     >>> Delta = symbols('Delta', real = True)
@@ -1082,18 +979,23 @@ def liouvillian_normal_form(L, symbolic = False):
         sposts = []
         collapse_form = defaultdict(lambda : defaultdict(int))
         for s in L.operands:
-            coeff, term = s.operands if isinstance(s, ScalarTimesSuperOperator) else (sympyOne, s)
-
+            if isinstance(s, ScalarTimesSuperOperator):
+                coeff, term = s.operands
+            else:
+                coeff, term = sympyOne, s
             if isinstance(term, SPre):
                 spres.append(coeff * term.operands[0])
             elif isinstance(term, SPost):
                 sposts.append((coeff * term.operands[0]))
             else:
-                if (not isinstance(term, SuperOperatorTimes)
-                    or not len(term.operands) == 2
-                    or not (isinstance(term.operands[0], SPre) and isinstance(term.operands[1], SPost))):
-                    raise BadLiouvillianError("All terms of the Liouvillian need to be of form "
-                                              "SPre(X), SPost(X) or SPre(X)*SPost(X): This term is in violation {!s}".format(term))
+                if (not isinstance(term, SuperOperatorTimes) or not
+                        len(term.operands) == 2 or not
+                        (isinstance(term.operands[0], SPre) and
+                        isinstance(term.operands[1], SPost))):
+                    raise BadLiouvillianError(
+                            "All terms of the Liouvillian need to be of form "
+                            "SPre(X), SPost(X) or SPre(X)*SPost(X): This term "
+                            "is in violation {!s}".format(term))
                 spreL, spostL = term.operands
                 Li, Ljd = spreL.operands[0], spostL.operands[0]
 
@@ -1107,6 +1009,10 @@ def liouvillian_normal_form(L, symbolic = False):
 
         basis = sorted(collapse_form.keys())
 
+        warn_msg = ("Warning: the Liouvillian is probably malformed: "
+                    "The coefficients of SPre({!s})*SPost({!s}) and "
+                    "SPre({!s})*SPost({!s}) should be complex conjugates "
+                    "of each other")
         for ii, Li in enumerate(basis):
             for Lj in basis[ii:]:
                 cij = collapse_form[Li][Lj.adjoint()]
@@ -1116,13 +1022,13 @@ def liouvillian_normal_form(L, symbolic = False):
                     try:
                         diff = complex(diff)
                         if abs(diff) > 1e-6:
-                            print(("Warning: the Liouvillian is probably malformed: "
-                                   "The coefficients of SPre({!s})*SPost({!s}) and SPre({!s})*SPost({!s}) "
-                                   "should be complex conjugates of each other").format(Li, Lj.adjoint(), Lj, Li.adjoint()))
+                            print(warn_msg.format(Li, Lj.adjoint(), Lj,
+                                                  Li.adjoint()))
                     except ValueError:
                         symbolic = True
                         if diff.simplify():
-                            print("Warning: the Liouvillian my be malformed, convert to numerical representation")
+                            print("Warning: the Liouvillian my be malformed, "
+                                  "convert to numerical representation")
         final_Lis = []
         if symbolic:
             if len(basis) == 1:
@@ -1140,9 +1046,12 @@ def liouvillian_normal_form(L, symbolic = False):
 #                kappa_21 = collapse_form[l2][l1.adjoint()]
 ##                assert (kappa_12.conjugate() - kappa_21) == 0
             else:
-                M = SympyMatrix(len(basis), len(basis), lambda i,j: collapse_form[basis[i]][basis[j].adjoint()])
+                M = SympyMatrix(len(basis), len(basis),
+                                lambda i,j: collapse_form[basis[i]][basis[j]
+                                            .adjoint()])
 
-                # First check if M is already diagonal (sympy does not handle this well, for some reason)
+                # First check if M is already diagonal (sympy does not handle
+                # this well, for some reason)
                 diag = True
                 for i in range(len(basis)):
                     for j in range(i):
@@ -1153,8 +1062,10 @@ def liouvillian_normal_form(L, symbolic = False):
                         break
                 if diag:
                     for bj in basis:
-                        final_Lis.append(bj * sqrt(collapse_form[bj][bj.adjoint()]))
-                        sdiff = bj.adjoint() * bj * collapse_form[bj][bj.adjoint()]/2
+                        final_Lis.append(
+                                bj * sqrt(collapse_form[bj][bj.adjoint()]))
+                        sdiff = (bj.adjoint() * bj *
+                                 collapse_form[bj][bj.adjoint()]/2)
                         spres.append(sdiff)
                         sposts.append(sdiff)
 
@@ -1167,18 +1078,22 @@ def liouvillian_normal_form(L, symbolic = False):
                             if not evalue:
                                 continue
                             for b in ebasis:
-                                new_L = (sqrt(evalue) * sum(cj[0] * Lj for (cj, Lj) in zip(b.tolist(), basis))).expand()
+                                new_L = (sqrt(evalue) * sum(cj[0] * Lj
+                                         for (cj, Lj)
+                                         in zip(b.tolist(), basis))).expand()
                                 final_Lis.append(new_L)
                                 sdiff = (new_L.adjoint() * new_L / 2).expand()
                                 spres.append(sdiff)
                                 sposts.append(sdiff)
 
                     except NotImplementedError:
-                        raise CannotSymbolicallyDiagonalize(("The matrix {} is too hard to diagonalize symbolically. "
-                                                            "Please try converting to fully numerical representation.").format(M))
+                        raise CannotSymbolicallyDiagonalize((
+                            "The matrix {} is too hard to diagonalize "
+                            "symbolically. Please try converting to fully "
+                            "numerical representation.").format(M))
         else:
-            M = np_array([[complex(collapse_form[Li][Lj.adjoint()]) for Lj in basis] for Li in basis])
-
+            M = np_array([[complex(collapse_form[Li][Lj.adjoint()])
+                           for Lj in basis] for Li in basis])
 
             vals, vecs = eigh(M)
             for sv, vec in zip(np_sqrt(vals), vecs.transpose()):
@@ -1188,12 +1103,11 @@ def liouvillian_normal_form(L, symbolic = False):
                 spres.append(sdiff)
                 sposts.append(sdiff)
 
-
         miHspre = sum(spres)
         iHspost = sum(sposts)
 
-        if (not (miHspre + iHspost) is ZeroOperator
-            or not (miHspre.adjoint() + miHspre) is ZeroOperator):
+        if ((not (miHspre + iHspost) is ZeroOperator) or not
+                (miHspre.adjoint() + miHspre) is ZeroOperator):
             print("Warning, potentially malformed Liouvillian {!s}".format(L))
 
         final_H = (I*miHspre).expand()
@@ -1204,11 +1118,3 @@ def liouvillian_normal_form(L, symbolic = False):
             return ZeroOperator, []
 
         raise BadLiouvillianError(str(L))
-
-
-
-
-
-
-
-

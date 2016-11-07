@@ -124,7 +124,7 @@ class TestVisualizationPNG(unittest.TestCase):
 
     def testDrawComponent(self):
         from qnet.circuit_components import kerr_cavity_cc as kerr
-        K = kerr.KerrCavity()
+        K = kerr.KerrCavity('Kerr')
         self.assertCanBeDrawn(K)
         self.assertCanBeDrawn(K.creduce())
         self.assertCanBeDrawn(K.toSLH())
@@ -197,7 +197,7 @@ class TestVisualizationEPS(unittest.TestCase):
     def testDrawComponent(self):
         from qnet.circuit_components import kerr_cavity_cc as kerr
 
-        K = kerr.KerrCavity()
+        K = kerr.KerrCavity('Kerr')
         self.assertCanBeDrawn(K)
         self.assertCanBeDrawn(K.creduce())
         self.assertCanBeDrawn(K.toSLH())
@@ -270,7 +270,7 @@ class TestVisualizationPDF(unittest.TestCase):
     def testDrawComponent(self):
         from qnet.circuit_components import kerr_cavity_cc as kerr
 
-        K = kerr.KerrCavity()
+        K = kerr.KerrCavity('Kerr')
         self.assertCanBeDrawn(K)
         self.assertCanBeDrawn(K.creduce())
         self.assertCanBeDrawn(K.toSLH())

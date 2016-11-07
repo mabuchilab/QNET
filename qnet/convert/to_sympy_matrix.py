@@ -50,18 +50,18 @@ def convert_to_sympy_matrix(expr, full_space=None):
     if not expr.space.is_tensor_factor_of(full_space):
         raise ValueError("expr must be in full_space")
     if expr is IdentityOperator:
-        return sympy.eye(full_space.dimension)
+        return sympy.eye(full_space.get_dimension())
     elif expr is ZeroOperator:
         return 0
     elif isinstance(expr, LocalOperator):
-        n = full_space.dimension
+        n = full_space.get_dimension()
         if full_space != expr.space:
             all_spaces = full_space.local_factors()
             own_space_index = all_spaces.index(expr.space)
-            factors = [sympy.eye(s.dimension)
+            factors = [sympy.eye(s.get_dimension())
                        for s in all_spaces[:own_space_index]]
             factors.append(convert_to_sympy_matrix(expr, expr.space))
-            factors.extend([sympy.eye(s.dimension)
+            factors.extend([sympy.eye(s.get_dimension())
                             for s in all_spaces[own_space_index + 1:]])
             return tensor(*factors)
         if isinstance(expr, (Create, Jz, Jplus)):
@@ -69,25 +69,26 @@ def convert_to_sympy_matrix(expr, full_space=None):
         elif isinstance(expr, (Destroy, Jminus)):
             return SympyCreate(n).H
         elif isinstance(expr, Phase):
-            phi = expr.operands[1]
+            phi = expr.phi
             result = sympy.zeros(n)
             for i in range(n):
-                result[i,i] = sympy.exp(sympy.I * i * phi)
+                result[i, i] = sympy.exp(sympy.I * i * phi)
             return result
         elif isinstance(expr, Displace):
             alpha = expr.operands[1]
             a = SympyCreate(n)
-            return  (alpha * a - alpha.conjugate() * a.H).exp()
+            return (alpha * a - alpha.conjugate() * a.H).exp()
         elif isinstance(expr, Squeeze):
             eta = expr.operands[1]
             a = SympyCreate(n)
             return ((eta/2) * a**2 - (eta.conjugate()/2) * (a.H)**2).exp()
         elif isinstance(expr, LocalSigma):
-            k, j = expr.operands[1:]
-            k = expr.space.basis.index(k)
-            j = expr.space.basis.index(j)
-            ket = basis_state(k, n)
-            bra = basis_state(j, n).H
+            j = expr.j
+            k = expr.k
+            j = expr.space.get_basis().index(j)
+            k = expr.space.get_basis().index(k)
+            ket = basis_state(j, n)
+            bra = basis_state(k, n).H
             return ket * bra
         else:
             raise ValueError("Cannot convert '%s' of type %s"
@@ -121,7 +122,7 @@ def convert_to_sympy_matrix(expr, full_space=None):
                     ck += len(ls_ops)
                 else:
                     # if trivial action, take identity matrix
-                    by_space.append(sympy.eye(ls.dimension))
+                    by_space.append(sympy.eye(ls.get_dimension()))
             assert ck == len(expr.operands)
             # combine local factors in tensor product
             if len(by_space) == 1:

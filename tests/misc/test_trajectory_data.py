@@ -92,7 +92,7 @@ def test_init_validation():
                     ('Y', (np.zeros(3), np.zeros(3), np.zeros(3)))])
         TrajectoryData(ID=ID_ok, dt=dt_ok, seed=None, n_trajectories=None,
                     data=data)
-    assert 'need more than 3 values to unpack' in str(excinfo.value)
+    assert 'values to unpack' in str(excinfo.value)
     with pytest.raises(ValueError) as excinfo:
         data = OrderedDict([ ('X', ("a", "b", "c", "d")),
                              ('Y', ("a", "b", "c", "d"))])

@@ -21,19 +21,17 @@
 Component definition file for a Kerr-nonlinear cavity model with two ports.
 See documentation of :py:class:`ThreePortKerrCavity`.
 """
-import unittest
-
-from qnet.circuit_components.component import Component, SubComponent
-from qnet.circuit_components.library import make_namespace_string
-from qnet.algebra.circuit_algebra import HilbertSpace, Destroy, local_space, IdentityMatrix, Matrix, sqrt, SLH, tex, identity_matrix
+from sympy import sqrt
 from sympy.core.symbol import symbols
 
-
+from qnet.circuit_components.component import Component, SubComponent
+from qnet.algebra.circuit_algebra import (
+        Destroy, Matrix, SLH, identity_matrix)
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 
 class ThreePortKerrCavity(Component):
-    r"""
-    This model describes a Kerr cavity model with three ports.
+    r"""This model describes a Kerr cavity model with three ports.
 
     The model's SLH parameters are given by
 
@@ -45,16 +43,13 @@ class ThreePortKerrCavity(Component):
     This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
     I.e., it can be reduced into separate :py:class:`KerrPort` models for each port.
     """
-    
+
     CDIM = 3
-    
+
     PORTSIN = ['In1', 'In2', 'In3']
     PORTSOUT = ['Out1', 'Out2', 'Out3']
-    
-    sub_blockstructure = (1, 1, 1)
 
-    name = "K"
-    namespace = ""
+    sub_blockstructure = (1, 1, 1)
 
     Delta = symbols('Delta', real = True)       # Detuning from cavity
     chi = symbols('chi', real = True)           # Kerr-nonlinear coefficient
@@ -64,11 +59,9 @@ class ThreePortKerrCavity(Component):
     FOCK_DIM = 75
     _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', 'kappa_3', FOCK_DIM]
 
-
-
     @property
-    def _space(self):
-        return local_space(self.name, self.namespace, dimension = self.FOCK_DIM)
+    def space(self):
+        return LocalSpace(self.name, dimension=self.FOCK_DIM)
 
     @property
     def port1(self):
@@ -77,7 +70,7 @@ class ThreePortKerrCavity(Component):
     @property
     def port2(self):
         return KerrPort(self, 1)
-    
+
     @property
     def port3(self):
         return KerrPort(self, 2)
@@ -90,15 +83,14 @@ class ThreePortKerrCavity(Component):
 
     def _toABCD(self, linearize):
         return self.toSLH().toABCD(linearize)
-    
 
 
 class KerrPort(SubComponent):
+    """Sub component model for the individual ports of a
+    :py:class:`ThreePortKerrCavity`. The Hamiltonian is included with the first
+    port.
     """
-    Sub component model for the individual ports of a :py:class:`ThreePortKerrCavity`.
-    The Hamiltonian is included with the first port.
-    """
-    
+
     def _toSLH(self):
 
         a = Destroy(self.space)
@@ -106,44 +98,11 @@ class KerrPort(SubComponent):
         S = identity_matrix(1)
         kappas = [self.kappa_1, self.kappa_2, self.kappa_3]
         kappa = kappas[self.sub_index]
-        
+
         L = Matrix([[sqrt(kappa) * a]])
         # Include the Hamiltonian only with the first port of the kerr cavity circuit object
         H = self.Delta * (a_d * a) + self.chi * (a_d * a_d * a * a) if self.sub_index == 0 else 0
-                
+
         return SLH(S, L, H)
 
 
-
-
-
-# Test the circuit
-class _TestThreePortKerrCavity(unittest.TestCase):
-
-
-  def testCreation(self):
-      a = ThreePortKerrCavity()
-      self.assertIsInstance(a, ThreePortKerrCavity)
-
-  def testCReduce(self):
-      a = ThreePortKerrCavity().creduce()
-
-  def testParameters(self):
-      if len(ThreePortKerrCavity._parameters):
-          pname = ThreePortKerrCavity._parameters[0]
-          obj = ThreePortKerrCavity(name="TestName", namespace="TestNamespace", **{pname: 5})
-          self.assertEqual(getattr(obj, pname), 5)
-          self.assertEqual(obj.name, "TestName")
-          self.assertEqual(obj.namespace, "TestNamespace")
-
-      else:
-          obj = ThreePortKerrCavity(name="TestName", namespace="TestNamespace")
-          self.assertEqual(obj.name, "TestName")
-          self.assertEqual(obj.namespace, "TestNamespace")
-
-  def testToSLH(self):
-      aslh = ThreePortKerrCavity().toSLH()
-      self.assertIsInstance(aslh, SLH)
-
-if __name__ == "__main__":
-  unittest.main()

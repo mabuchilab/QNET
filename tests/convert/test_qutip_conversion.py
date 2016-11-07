@@ -21,120 +21,131 @@ from sympy import symbols
 import numpy as np
 from numpy import sqrt
 import qutip
-import unittest
 
 from qnet.algebra.operator_algebra import (
         Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol)
 from qnet.convert.to_qutip import _time_dependent_to_qutip, convert_to_qutip
-from qnet.algebra.hilbert_space_algebra import local_space
+from qnet.algebra.hilbert_space_algebra import LocalSpace
+
+_hs_counter = 0
 
 
-class TestQutipConversion(unittest.TestCase):
-
-    def testCreateDestoy(self):
-        H = local_space("H", dimension=5)
-        ad = Create(H)
-        a = Create(H).adjoint()
-        aq = convert_to_qutip(a)
-        for k in range(H.dimension - 1):
-            self.assertLess(abs(aq[k, k+1] - sqrt(k + 1)), 1e-10)
-        self.assertEqual(convert_to_qutip(ad), qutip.dag(convert_to_qutip(a)))
-
-    def testN(self):
-        H = local_space("H", dimension=5)
-        ad = Create(H)
-        a = Create(H).adjoint()
-        aq = qutip.dag(convert_to_qutip(a))
-        self.assertEqual(aq, qutip.create(5))
-        n = ad * a
-        nq = convert_to_qutip(n)
-        for k in range(H.dimension):
-            self.assertLess(abs(nq[k,k] - k), 1e-10)
-
-    def testSigma(self):
-        H = local_space("H", basis=("e","g","h"))
-        sigma = LocalSigma(H, 'g', 'e')
-        sq = convert_to_qutip(sigma)
-        self.assertEqual(sq[1, 0], 1)
-        self.assertEqual((sq**2).norm(), 0)
-
-    def testPi(self):
-        H = local_space("H", basis=("e", "g", "h"))
-        Pi_h = LocalProjector(H, 'h')
-        self.assertEqual(convert_to_qutip(Pi_h).tr(), 1)
-        self.assertEqual(convert_to_qutip(Pi_h)**2, convert_to_qutip(Pi_h))
-
-    def testTensorProduct(self):
-        H = local_space("H1", dimension=5)
-        a = Create(H).adjoint()
-        H2 = local_space("H2", basis=("e", "g", "h"))
-        sigma = LocalSigma(H2, 'g', 'e')
-        self.assertEqual(convert_to_qutip(sigma * a),
-                         qutip.tensor(convert_to_qutip(a),
-                                      convert_to_qutip(sigma)))
-
-    def testLocalSum(self):
-        H = local_space("H1", dimension=5)
-        ad = Create(H)
-        a = Create(H).adjoint()
-        self.assertEqual(convert_to_qutip(a + ad),
-                         convert_to_qutip(a) + convert_to_qutip(ad))
-
-    def testNonlocalSum(self):
-        H = local_space("H1", dimension=5)
-        a = Create(H).adjoint()
-        H2 = local_space("H2", basis=("e", "g", "h"))
-        sigma = LocalSigma(H2, 'g', 'e')
-        self.assertEqual(convert_to_qutip(a + sigma)**2,
-                         convert_to_qutip((a + sigma)*(a + sigma)))
-
-    def testScalarCoeffs(self):
-        H = local_space("H1", dimension=5)
-        a = Create(H).adjoint()
-        self.assertEqual(2 * convert_to_qutip(a), convert_to_qutip(2 * a))
+def hs_name():
+    global _hs_counter
+    _hs_counter += 1
+    return 'QT%d' % _hs_counter
 
 
-    def testSymbol(self):
-        expN = OperatorSymbol("expN", 1)
-        N = Create(1)*Destroy(1)
-        N.space.dimension = 10
+def test_create_destoy():
+    H = LocalSpace(hs_name(), dimension=5)
+    ad = Create(H)
+    a = Create(H).adjoint()
+    aq = convert_to_qutip(a)
+    for k in range(H.dimension - 1):
+        assert abs(aq[k, k+1] - sqrt(k + 1)) < 1e-10
+    assert convert_to_qutip(ad) == qutip.dag(convert_to_qutip(a))
 
-        M = Create(2)*Destroy(2)
-        M.space.dimension = 5
 
-        converter1 = {
-            expN: convert_to_qutip(N).expm()
-        }
-        expNq = convert_to_qutip(expN, mapping=converter1)
+def test_N():
+    H = LocalSpace(hs_name(), dimension=5)
+    ad = Create(H)
+    a = Create(H).adjoint()
+    aq = qutip.dag(convert_to_qutip(a))
+    assert aq == qutip.create(5)
+    n = ad * a
+    nq = convert_to_qutip(n)
+    for k in range(H.dimension):
+        assert abs(nq[k,k] - k) < 1e-10
 
-        assert np.linalg.norm(expNq.data.toarray()
-            - (convert_to_qutip(N).expm().data.toarray())) < 1e-8
 
-        expNMq = convert_to_qutip(expN*M,  mapping=converter1)
+def test_sigma():
+    H = LocalSpace(hs_name(), basis=("e","g","h"))
+    sigma = LocalSigma(H, 'g', 'e')
+    sq = convert_to_qutip(sigma)
+    assert sq[1, 0] == 1
+    assert (sq**2).norm() == 0
 
-        assert np.linalg.norm(expNMq.data.toarray()
-            - (qutip.tensor(convert_to_qutip(N).expm(),
-                            convert_to_qutip(M)).data.toarray())) < 1e-8
 
-        converter2 = {
-            expN: lambda expr: convert_to_qutip(N).expm()
-        }
-        expNq = convert_to_qutip(expN, mapping=converter2)
+def test_Pi():
+    H = LocalSpace(hs_name(), basis=("e", "g", "h"))
+    Pi_h = LocalProjector(H, 'h')
+    assert convert_to_qutip(Pi_h).tr() == 1
+    assert convert_to_qutip(Pi_h)**2 == convert_to_qutip(Pi_h)
 
-        assert np.linalg.norm(expNq.data.toarray()
-            - (convert_to_qutip(N).expm().data.toarray())) < 1e-8
 
-        expNMq = convert_to_qutip(expN*M,  mapping=converter1)
+def test_tensor_product():
+    H = LocalSpace(hs_name(), dimension=5)
+    a = Create(H).adjoint()
+    H2 = LocalSpace(hs_name(), basis=("e", "g", "h"))
+    sigma = LocalSigma(H2, 'g', 'e')
+    assert convert_to_qutip(sigma * a) == \
+                        qutip.tensor(convert_to_qutip(a),
+                                    convert_to_qutip(sigma))
 
-        assert np.linalg.norm(expNMq.data.toarray()
-            - (qutip.tensor(convert_to_qutip(N).expm(),
-                            convert_to_qutip(M)).data.toarray())) < 1e-8
 
+def test_local_sum():
+    H = LocalSpace(hs_name(), dimension=5)
+    ad = Create(H)
+    a = Create(H).adjoint()
+    assert convert_to_qutip(a + ad) == \
+                        convert_to_qutip(a) + convert_to_qutip(ad)
+
+
+def test_nonlocal_sum():
+    H = LocalSpace(hs_name(), dimension=5)
+    a = Create(H).adjoint()
+    H2 = LocalSpace(hs_name(), basis=("e", "g", "h"))
+    sigma = LocalSigma(H2, 'g', 'e')
+    assert convert_to_qutip(a + sigma)**2 == \
+                        convert_to_qutip((a + sigma)*(a + sigma))
+
+
+def test_scalar_coeffs():
+    H = LocalSpace(hs_name(), dimension=5)
+    a = Create(H).adjoint()
+    assert 2 * convert_to_qutip(a) == convert_to_qutip(2 * a)
+
+
+def test_symbol():
+    expN = OperatorSymbol("expN", 1)
+    N = Create(1)*Destroy(1)
+    N.space.dimension = 10
+
+    M = Create(2)*Destroy(2)
+    M.space.dimension = 5
+
+    converter1 = {
+        expN: convert_to_qutip(N).expm()
+    }
+    expNq = convert_to_qutip(expN, mapping=converter1)
+
+    assert np.linalg.norm(expNq.data.toarray()
+        - (convert_to_qutip(N).expm().data.toarray())) < 1e-8
+
+    expNMq = convert_to_qutip(expN*M,  mapping=converter1)
+
+    assert np.linalg.norm(expNMq.data.toarray()
+        - (qutip.tensor(convert_to_qutip(N).expm(),
+                        convert_to_qutip(M)).data.toarray())) < 1e-8
+
+    converter2 = {
+        expN: lambda expr: convert_to_qutip(N).expm()
+    }
+    expNq = convert_to_qutip(expN, mapping=converter2)
+
+    assert np.linalg.norm(expNq.data.toarray()
+        - (convert_to_qutip(N).expm().data.toarray())) < 1e-8
+
+    expNMq = convert_to_qutip(expN*M,  mapping=converter1)
+
+    assert np.linalg.norm(expNMq.data.toarray()
+        - (qutip.tensor(convert_to_qutip(N).expm(),
+                        convert_to_qutip(M)).data.toarray())) < 1e-8
 
 
 def test_time_dependent_to_qutip():
     """Test conversion of a time-dependent Hamiltonian"""
-    Hil = local_space("H", dimension=5)
+    Hil = LocalSpace(hs_name(), dimension=5)
     ad = Create(Hil)
     a = Create(Hil).adjoint()
 
@@ -149,7 +160,7 @@ def test_time_dependent_to_qutip():
     assert res[1](1, {}) == g
     assert res[1](1, {g: 2}) == 2
 
-    H =  ad*a + g* t * (a + ad)
+    H =  ad*a + g * t * (a + ad)
     res = _time_dependent_to_qutip(H, time_symbol=t)
     assert len(res) == 3
     assert res[0] == convert_to_qutip(ad*a)
@@ -165,6 +176,7 @@ def test_time_dependent_to_qutip():
     H =  (ad*a + t * (a + ad))**2
     res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
     assert len(res) == 9
-    terms = [term for H, term in res[1:]]
-    assert terms == ['t**2', 't', 't', 't**2', '2*t', '2*t**2 + 1', '2*t',
-                     't**2']
+    terms = sorted([term for H, term in res[1:]])
+    expected = sorted(['t**2', 't', 't', 't**2', '2*t', '2*t**2 + 1', '2*t',
+                       't**2'])
+    assert terms == expected

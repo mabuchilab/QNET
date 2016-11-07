@@ -23,49 +23,55 @@ State Algebra
 =============
 
 This module implements a basic Hilbert space state algebra.
-
-For more details see :ref:`state_algebra`.
-
 """
+from abc import ABCMeta, abstractmethod, abstractproperty
+from itertools import product as cartesian_product
+
+from sympy import (
+        Basic as SympyBasic, Add, series as sympy_series, sqrt, exp, I)
+from qnet.algebra.abstract_algebra import (
+        Operation, Expression, singleton, substitute, tex, AlgebraError,
+        assoc, orderby, filter_neutral, match_replace, match_replace_binary,
+        KeyTuple, CannotSimplify)
+from qnet.algebra.pattern_matching import wc, pattern_head, pattern
+from qnet.algebra.hilbert_space_algebra import (
+        HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)
+from qnet.algebra.operator_algebra import (
+        Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
+        IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
+        Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
+        Phase)
 
 
-from qnet.algebra.operator_algebra import *
+_TEX_BRA_FMT_SPACE = r'\left\langel{label}\right|_{{space}}'
+_STR_BRA_FMT_SPACE = r'<{label}|_{space}'
+_TEX_BRA_FMT_NOSPACE = r'\left\langel{label}\right|'
+_STR_BRA_FMT_NOSPACE = r'<{label}|'
+_TEX_KET_FMT_SPACE = r'\left|{label}\right\rangle_{{space}}'
+_STR_KET_FMT_SPACE = r'|{label}>_{space}'
+_TEX_KET_FMT_NOSPACE = r'\left|{label}\right\rangle'
+_STR_KET_FMT_NOSPACE = r'|{label}>'
 
-@six.add_metaclass(ABCMeta)
-class Ket(object):
-    """
-    Basic Ket algebra class to represent Hilbert Space states
-    """
+
+class Ket(metaclass=ABCMeta):
+    """Basic Ket algebra class to represent Hilbert Space states"""
 
     scalar_types = Operator.scalar_types
 
-    @property
-    def space(self):
-        """
-        The associated Hilbert space.
-
-        :rtype: HilbertSpace
-        """
-        return self._space
-
     @abstractproperty
-    def _space(self):
+    def space(self):
+        """The associated HilbertSpace"""
         raise NotImplementedError(self.__class__.__name__)
 
     def adjoint(self):
-        """
-        The adjoint of a Ket state, i.e., the corresponding Bra.
-
-        :rtype: Bra
-        """
+        """The adjoint of a Ket state, i.e., the corresponding Bra."""
         return Bra(self)
 
     dag = adjoint
 
-
     def expand(self):
-        """
-        Expand out distributively all products of sums. Note that this does not expand out sums of scalar coefficients.
+        """Expand out distributively all products of sums. Note that this does
+        not expand out sums of scalar coefficients.
 
         :return: A fully expanded sum of states.
         :rtype: Ket
@@ -75,23 +81,6 @@ class Ket(object):
     @abstractmethod
     def _expand(self):
         raise NotImplementedError(self.__class__.__name__)
-
-#    def series_expand(self, param, about, order):
-#        """
-#        Expand the state expression as a truncated power series in a scalar parameter.
-#
-#        :param param: Expansion parameter.
-#        :type param: sympy.core.symbol.Symbol
-#        :param about: Point about which to expand.
-#        :type about:  Any one of Operator.scalar_types
-#        :param order: Maximum order of expansion.
-#        :type order: int >= 0
-#        """
-#        return self._series_expand(param, about, order)
-#
-#    @abstractmethod
-#    def _series_expand(self, param, about, order):
-#        raise NotImplementedError(self.__class__.__name__)
 
     @abstractmethod
     def _str_ket(self):
@@ -112,7 +101,7 @@ class Ket(object):
     def __str__(self):
         return self._str_ket()
 
-    def _tex(self):
+    def tex(self):
         return self._tex_ket()
 
     def __add__(self, other):
@@ -155,47 +144,49 @@ class Ket(object):
     __truediv__ = __div__
 
 
+class KetSymbol(Ket, Expression):
+    """Ket symbol class, parametrized by an identifier string and an associated
+    Hilbert space.
 
-@check_signature
-class KetSymbol(Ket, Operation):
-    """
-    Ket symbol class, parametrized by an identifier string and an associated Hilbert space.
+        ``KetSymbol(label, hs)``
 
-        ``KetSymbol(name, hs)``
-
-    :param name: Symbol identifier
-    :type name: str
+    :param label: Symbol identifier
+    :type label: str
     :param hs: Associated Hilbert space.
     :type hs: HilbertSpace
-
     """
 
+    signature = (str, (HilbertSpace, str, int)), {}
 
-    signature = str, (HilbertSpace, str, int)
-
-    def __init__(self, name, hs):
+    def __init__(self, label, hs):
+        self.label = label
         if isinstance(hs, (str, int)):
-            hs = local_space(hs)
-        super(KetSymbol, self).__init__(name, hs)
-
-
-    def _str_ket(self):
-        return "|" + self.operands[0] + ">"
-
-    def _str_bra(self):
-        return "<" + self.operands[0] + "|"
-
-
-    def _tex_ket(self):
-        return "\left| "+identifier_to_tex(self.operands[0]) + r"\right\rangle_{" + self.space.tex() + "}"
-
-    def _tex_bra(self):
-        return "\left\langle "+identifier_to_tex(self.operands[0]) + r"\right|_{" + self.space.tex() + "}"
-
+            hs = LocalSpace(hs)
+        self._hs = hs
 
     @property
-    def _space(self):
-        return self.operands[1]
+    def args(self):
+        return (self.label, self._hs)
+
+    @property
+    def hs(self):
+        return self._has
+
+    def _str_ket(self):
+        return _STR_KET_FMT_SPACE.format(label=self.label, space=self.space)
+
+    def _str_bra(self):
+        return _STR_BRA_FMT_SPACE.format(label=self.label, space=self.space)
+
+    def _tex_ket(self):
+        return _TEX_KET_FMT_SPACE.format(label=self.label, space=self.space)
+
+    def _tex_bra(self):
+        return _TEX_BRA_FMT_SPACE.format(label=self.label, space=self.space)
+
+    @property
+    def space(self):
+        return self._hs
 
     def _expand(self):
         return self
@@ -203,26 +194,27 @@ class KetSymbol(Ket, Operation):
     def _series_expand(self, param, about, order):
         return (self,) + (0,)*(order - 1)
 
-    def _all_symbols(self):
+    def all_symbols(self):
         return set([self, ])
 
 
 @singleton
 class ZeroKet(Ket, Expression):
-    """
-    ZeroKet constant (singleton) object for the null-state.
-    """
+    """ZeroKet constant (singleton) object for the null-state."""
 
     @property
-    def _space(self):
+    def space(self):
         return FullSpace
+
+    @property
+    def args(self):
+        return tuple()
 
     def _expand(self):
         return self
 
     def _series_expand(self, param, about, order):
         return (self,) + (0,)*(order - 1)
-
 
     def _tex_ket(self):
         return "0"
@@ -237,18 +229,18 @@ class ZeroKet(Ket, Expression):
 
     _str_bra = _str_ket
 
-    def _all_symbols(self):
+    def all_symbols(self):
         return set([])
+
 
 @singleton
 class TrivialKet(Ket, Expression):
-    """
-    TrivialKet constant (singleton) object.
+    """TrivialKet constant (singleton) object.
     This is the neutral element under the state tensor-product.
     """
 
     @property
-    def _space(self):
+    def space(self):
         return TrivialSpace
 
     def _adjoint(self):
@@ -257,42 +249,49 @@ class TrivialKet(Ket, Expression):
     def _expand(self):
         return self
 
+    @property
+    def args(self):
+        return tuple()
+
     def _series_expand(self, param, about, order):
         return (self,) + (0,)*(order - 1)
 
-
     def _tex_ket(self):
-        return r"\left| {\rm id}\right \rangle"
+        return _TEX_KET_FMT_NOSPACE.format(label=r'{\rm id}')
 
     def _tex_bra(self):
-        return r"\left\langle {\rm id}\right |"
-
+        return _TEX_BRA_FMT_NOSPACE.format(label=r'{\rm id}')
 
     def __eq__(self, other):
         return self is other or other == 1
 
     def _str_ket(self):
-        return "|id>"
+        return _STR_KET_FMT_NOSPACE.format(label=r'id')
 
     def _str_bra(self):
-        return "<id|"
+        return _STR_BRA_FMT_NOSPACE.format(label=r'id')
 
-    def _all_symbols(self):
+    def all_symbols(self):
         return set([])
 
-class LocalKet(Ket, Operation):
-    """
-    Base class for atomic (non-composite) ket states of single degrees of freedom.
-    """
 
-    def __init__(self, hs, *args):
+class LocalKet(Ket, Expression):
+    """Base class for atomic (non-composite) ket states of single degrees of
+    freedom."""
+
+    def __init__(self, hs, label):
         if isinstance(hs, (str, int)):
-            hs = local_space(hs)
-        super(LocalKet, self).__init__(hs, *args)
+            hs = LocalSpace(hs)
+        self._hs = hs
+        self.label = label
 
     @property
-    def _space(self):
-        return self.operands[0]
+    def args(self):
+        return self._hs, self.label
+
+    @property
+    def space(self):
+        return self._hs
 
     def _expand(self):
         return self
@@ -300,43 +299,38 @@ class LocalKet(Ket, Operation):
     def _series_expand(self, param, about, order):
         return (self,) + (0,)*(order - 1)
 
-
-    def _all_symbols(self):
+    def all_symbols(self):
         return {}
 
+    def _tex_ket(self):
+        return _TEX_KET_FMT_SPACE.format(label=self.label, space=self.space)
 
-@check_signature
+    def _tex_bra(self):
+        return _TEX_BRA_FMT_SPACE.format(label=self.label, space=self.space)
+
+    def _str_ket(self):
+        return _STR_KET_FMT_SPACE.format(label=self.label, space=self.space)
+
+    def _str_bra(self):
+        return _STR_BRA_FMT_SPACE.format(label=self.label, space=self.space)
+
+
 class BasisKet(LocalKet):
-    """
-    Local basis state, labeled by an integer or a string.
+    """Local basis state, labeled by an integer or a string.
 
     Instantiate as::
 
-        BasisKet(hs, rep)
+        BasisKet(hs, label)
 
     :param LocalSpace hs: The local Hilbert space degree of freedom.
-    :param (str or int) rep: The basis state label.
+    :param (str or int) label: The basis state label.
     """
-    signature = (LocalSpace, str, int), (str, int, SympyBasic)
-
-    def _tex_ket(self):
-        return r"\left| {!s} \right\rangle_{{{}}}".format(self.operands[1], self.space.tex())
-
-    def _tex_bra(self):
-        return r"\left\langle {!s} \right|_{{{}}}".format(self.operands[1], self.space.tex())
-
-    def _str_ket(self):
-        return r"|{!s}>_{!s}".format(self.operands[1], self.space)
-
-    def _str_bra(self):
-        return r"<{!s}|_{!s}".format(self.operands[1], self.space)
+    signature = ((LocalSpace, str, int), (str, int, SympyBasic)), {}
 
 
 
-@check_signature
 class CoherentStateKet(LocalKet):
-    """
-    Local coherent state, labeled by a scalar amplitude.
+    """Local coherent state, labeled by a scalar amplitude.
 
     Instantiate as::
 
@@ -346,37 +340,43 @@ class CoherentStateKet(LocalKet):
     :param Ket.scalar_types amp: The coherent displacement amplitude.
     """
 
-    signature = (LocalSpace, str, int), Ket.scalar_types
+    signature = ((LocalSpace, str, int), Ket.scalar_types), {}
+
+    def __init__(self, hs, ampl):
+        self.ampl = ampl
+        self._str_label = r'D(%s)' % ampl
+        self._tex_label = r'D(%s)' % tex(ampl)
+        super(CoherentStateKet, self).__init__(hs=hs, label=self._str_label)
+
+    @property
+    def args(self):
+        return self._hs, self.ampl
 
     def _tex_ket(self):
-        return r"\left| D\left({!s}\right) \right\rangle_{{{}}}".format(tex(self.operands[1]), self.space.tex())
+        label = self._tex_label
+        return _TEX_KET_FMT_SPACE.format(label=label, space=self.space)
 
     def _tex_bra(self):
-        return r"\left\langle D\left({!s}\right) \right|_{{{}}}".format(tex(self.operands[1]), self.space.tex())
-
-    def _str_ket(self):
-        return r"|D({!s})>_{!s}".format(self.operands[1], self.space)
-
-    def _str_bra(self):
-        return r"<D({!s})|_{!s}".format(self.operands[1], self.space)
+        label = self._tex_label
+        return _TEX_BRA_FMT_SPACE.format(label=label, space=self.space)
 
     def _series_expand(self, param, about, order):
         return (self,) + (0,) * (order - 1)
 
     def _substitute(self, var_map):
-        hs, amp = self.operands
+        hs, amp = self.space, self.ampl
         if isinstance(amp, SympyBasic):
-            svar_map = {k:v for k,v in var_map.items() if not isinstance(k,Expression)}
+            svar_map = {k: v for (k, v) in var_map.items()
+                        if not isinstance(k, Expression)}
             ampc = amp.subs(svar_map)
         else:
             ampc = substitute(amp, var_map)
 
         return CoherentStateKet(hs, ampc)
 
-    def _all_symbols(self):
-        hs, amp = self.operands
-        if isinstance(amp, SympyBasic):
-            return set([amp, ])
+    def all_symbols(self):
+        if isinstance(self.ampl, SympyBasic):
+            return set([self.ampl, ])
         else:
             return set([])
 
@@ -384,27 +384,16 @@ class CoherentStateKet(LocalKet):
 class UnequalSpaces(AlgebraError):
     pass
 
-def _check_same_space_mtd(dcls, clsmtd, cls, *ops):
-    """
-    Check that all operands are from the same Hilbert space.
-    """
-    if not len({o.space for o in ops if not o is ZeroKet}) == 1:
+
+def check_kets_same_space(cls, ops, kwargs):
+    """Check that all operands are from the same Hilbert space."""
+    if not len({o.space for o in ops if o is not ZeroKet}) == 1:
         raise UnequalSpaces(str(ops))
-    return clsmtd(cls, *ops)
-
-check_same_space = preprocess_create_with(_check_same_space_mtd)
+    return ops, kwargs
 
 
-@assoc
-@orderby
-@filter_neutral
-@check_same_space
-@match_replace_binary
-@filter_neutral
-@check_signature_assoc
 class KetPlus(Ket, Operation):
-    """
-    A sum of Ket states.
+    """A sum of Ket states.
 
     Instantiate as::
 
@@ -413,31 +402,35 @@ class KetPlus(Ket, Operation):
     :param summands: State summands.
     :type summands: Ket
     """
-    signature = Ket,
+    signature = (Ket, ), {}
     neutral_element = ZeroKet
-    _binary_rules = []
+    _binary_rules = []  # see end of module
+    _simplifications = [assoc, orderby, filter_neutral, check_kets_same_space,
+                        match_replace_binary, filter_neutral]
 
     @classmethod
     def order_key(cls, a):
         if isinstance(a, ScalarTimesKet):
             c = a.coeff
             if isinstance(c, SympyBasic):
-                c = inf
-            return KeyTuple((Operation.order_key(a.term), c))
-        return KeyTuple((Operation.order_key(a), 1))
+                c = float('inf')
+            return KeyTuple((Expression.order_key(a.term), c))
+        return KeyTuple((Expression.order_key(a), 1))
 
     def _expand(self):
         return sum((o.expand() for o in self.operands), ZeroKet)
 
     def _series_expand(self, param, about, order):
-        res = sum((o.series_expand(param, about, order) for o in self.operands), ZeroKet)
+        res = sum((o.series_expand(param, about, order)
+                   for o in self.operands), ZeroKet)
         return res
 
-    def _tex_ketbra(self, bra = False):
+    def _tex_ketbra(self, bra=False):
         ret = self.operands[0].tex()
 
         for o in self.operands[1:]:
-            if isinstance(o, ScalarTimesKet) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
+            if (isinstance(o, ScalarTimesKet) and
+                    ScalarTimesOperator.has_minus_prefactor(o.coeff)):
                 if bra:
                     ret += " - " + (-o)._tex_bra()
                 else:
@@ -450,16 +443,17 @@ class KetPlus(Ket, Operation):
         return ret
 
     def _tex_ket(self):
-        return self._tex_ketbra(bra = False)
+        return self._tex_ketbra(bra=False)
 
     def _tex_bra(self):
-        return self._tex_ketbra(bra = True)
+        return self._tex_ketbra(bra=True)
 
-    def _str_ketbra(self, bra = False):
+    def _str_ketbra(self, bra=False):
         ret = str(self.operands[0])
 
         for o in self.operands[1:]:
-            if isinstance(o, ScalarTimesKet) and ScalarTimesOperator.has_minus_prefactor(o.coeff):
+            if (isinstance(o, ScalarTimesKet) and
+                    ScalarTimesOperator.has_minus_prefactor(o.coeff)):
                 if bra:
                     ret += " - " + (-o)._str_bra()
                 else:
@@ -478,21 +472,16 @@ class KetPlus(Ket, Operation):
         return self._str_ketbra(bra=True)
 
     @property
-    def _space(self):
+    def space(self):
         return self.operands[0].space
+
 
 class OverlappingSpaces(AlgebraError):
     pass
 
-@assoc
-@orderby
-@filter_neutral
-@match_replace_binary
-@filter_neutral
-@check_signature_assoc
+
 class TensorKet(Ket, Operation):
-    """
-    A tensor product of kets each belonging to different degrees of freedom.
+    """A tensor product of kets each belonging to different degrees of freedom.
     Instantiate as::
 
         TensorKet(*factors)
@@ -500,9 +489,11 @@ class TensorKet(Ket, Operation):
     :param factors: Ket factors.
     :type factors: Ket
     """
-    signature = Ket,
-    _binary_rules = []
+    signature = (Ket, '*'), {}
+    _binary_rules = []  # see end of module
     neutral_element = TrivialKet
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
+                        filter_neutral]
 
     order_key = OperatorTimes.order_key
 
@@ -515,10 +506,11 @@ class TensorKet(Ket, Operation):
             if o.space & spc > TrivialSpace:
                 raise OverlappingSpaces(str(ops))
             spc *= o.space
-
         return super(TensorKet, cls).create(*ops)
 
     def factor_for_space(self, space):
+        """Factor into a Ket defined on the given `space` and a Ket on the
+        remaining Hilbert space"""
         if not space <= self.space:
             raise SpaceTooLargeError(str((self, space)))
         if space == self.space:
@@ -527,24 +519,27 @@ class TensorKet(Ket, Operation):
             on_ops = [o for o in self.operands if o.space is TrivialSpace]
             off_ops = [o for o in self.operands if o.space > TrivialSpace]
         else:
-            on_ops = [o for o in self.operands if o.space & space > TrivialSpace]
-            off_ops = [o for o in self.operands if o.space & space is TrivialSpace]
+            on_ops = [o for o in self.operands
+                      if o.space & space > TrivialSpace]
+            off_ops = [o for o in self.operands
+                       if o.space & space is TrivialSpace]
         return TensorKet.create(*on_ops), TensorKet.create(*off_ops)
 
-
-
     @property
-    def _space(self):
-        return prod((o.space for o in self.operands), TrivialSpace)
+    def space(self):
+        return ProductSpace.create(*[o.space for o in self.operands])
 
     def _expand(self):
         eops = [o.expand() for o in self.operands]
         # store tuples of summands of all expanded factors
-        eopssummands = [eo.operands if isinstance(eo, KetPlus) else (eo,) for eo in eops]
-        # iterate over a cartesian product of all factor summands, form product of each tuple and sum over result
-        return sum((TensorKet.create(*combo) for combo in cartesian_product(*eopssummands)), ZeroKet)
+        eopssummands = [eo.operands if isinstance(eo, KetPlus) else (eo,)
+                        for eo in eops]
+        # iterate over a Cartesian product of all factor summands, form product
+        # of each tuple and sum over result
+        return sum((TensorKet.create(*combo)
+                    for combo in cartesian_product(*eopssummands)), ZeroKet)
 
-    def _tex_ketbra(self, bra = False):
+    def _tex_ketbra(self, bra=False):
         if bra:
             ret = self.operands[0]._tex_bra()
         else:
@@ -563,12 +558,12 @@ class TensorKet(Ket, Operation):
         return ret
 
     def _tex_ket(self):
-        return self._tex_ketbra(bra = False)
+        return self._tex_ketbra(bra=False)
 
     def _tex_bra(self):
-        return self._tex_ketbra(bra = True)
+        return self._tex_ketbra(bra=True)
 
-    def _str_ketbra(self, bra = False):
+    def _str_ketbra(self, bra=False):
         if bra:
             ret = self.operands[0]._str_bra()
         else:
@@ -587,16 +582,14 @@ class TensorKet(Ket, Operation):
         return ret
 
     def _str_ket(self):
-        return self._str_ketbra(bra = False)
+        return self._str_ketbra(bra=False)
 
     def _str_bra(self):
-        return self._str_ketbra(bra = True)
+        return self._str_ketbra(bra=True)
 
-@match_replace
-@check_signature
+
 class ScalarTimesKet(Ket, Operation):
-    """
-    Multiply a Ket by a scalar coefficient.
+    """Multiply a Ket by a scalar coefficient.
 
     Instantiate as::
         ScalarTimesKet(coefficient, term)
@@ -606,12 +599,12 @@ class ScalarTimesKet(Ket, Operation):
     :param term: The ket that is multiplied.
     :type term: Ket
     """
-    signature = Ket.scalar_types, Ket
-    _rules = []
-
+    signature = (Ket.scalar_types, Ket), {}
+    _rules = []  # see end of module
+    _simplifications = [match_replace, ]
 
     @property
-    def _space(self):
+    def space(self):
         return self.operands[1].space
 
     @property
@@ -622,8 +615,7 @@ class ScalarTimesKet(Ket, Operation):
     def term(self):
         return self.operands[1]
 
-
-    def _tex_ketbra(self, bra = False):
+    def _tex_ketbra(self, bra=False):
         coeff, term = self.operands
 
         if isinstance(coeff, Add):
@@ -651,13 +643,12 @@ class ScalarTimesKet(Ket, Operation):
         return cs + ct
 
     def _tex_ket(self):
-        return self._tex_ketbra(bra = False)
+        return self._tex_ketbra(bra=False)
 
     def _tex_bra(self):
-        return self._tex_ketbra(bra = True)
+        return self._tex_ketbra(bra=True)
 
-
-    def _str_ketbra(self, bra = False):
+    def _str_ketbra(self, bra=False):
         coeff, term = self.operands
 
         if isinstance(coeff, Add):
@@ -685,10 +676,10 @@ class ScalarTimesKet(Ket, Operation):
         return cs + ct
 
     def _str_ket(self):
-        return self._str_ketbra(bra = False)
+        return self._str_ketbra(bra=False)
 
     def _str_bra(self):
-        return self._str_ketbra(bra = True)
+        return self._str_ketbra(bra=True)
 
     def _expand(self):
         c, t = self.operands
@@ -702,12 +693,14 @@ class ScalarTimesKet(Ket, Operation):
         ce = tuple(ceo for ceo, k in zip(ceg, range(order + 1)))
         te = self.term.series_expand(param, about, order)
 
-        return tuple(ce[k] * te[n - k] for n in range(order + 1) for k in range(n + 1))
+        return tuple(ce[k] * te[n - k]
+                     for n in range(order + 1) for k in range(n + 1))
 
     def _substitute(self, var_map):
         st = self.term.substitute(var_map)
         if isinstance(self.coeff, SympyBasic):
-            svar_map = {k:v for k,v in var_map.items() if not isinstance(k, Expression)}
+            svar_map = {k: v for (k, v) in var_map.items()
+                        if not isinstance(k, Expression)}
             sc = self.coeff.subs(svar_map)
         else:
             sc = substitute(self.coeff, var_map)
@@ -718,11 +711,16 @@ class SpaceTooLargeError(AlgebraError):
     pass
 
 
-@match_replace
-@check_signature
+def check_op_ket_space(cls, ops, kwargs):
+    """Check that all operands are from the same Hilbert space."""
+    op, ket = ops
+    if not op.space <= ket.space:
+        raise SpaceTooLargeError(str(op.space) + " <!= " + str(ket.space))
+    return ops, kwargs
+
+
 class OperatorTimesKet(Ket, Operation):
-    """
-    Multiply an operator by a scalar coefficient.
+    """Multiply an operator by a scalar coefficient.
 
     Instantiate as::
 
@@ -732,17 +730,11 @@ class OperatorTimesKet(Ket, Operation):
     :param Ket ket: The ket that is multiplied.
     """
     signature = Operator, Ket
-    _rules = []
-
-    @classmethod
-    def create(cls, op, ket):
-        if not op.space <= ket.space:
-            raise SpaceTooLargeError(str(op.space) + " <!= " + str(ket.space))
-        return super(OperatorTimesKet, cls).create(op, ket)
-
+    _rules = []  # see end of module
+    _simplifications = [match_replace, check_op_ket_space]
 
     @property
-    def _space(self):
+    def space(self):
         return self.operands[1].space
 
     @property
@@ -753,8 +745,7 @@ class OperatorTimesKet(Ket, Operation):
     def term(self):
         return self.operands[1]
 
-
-    def _tex_ketbra(self, bra = False):
+    def _tex_ketbra(self, bra=False):
         coeff, term = self.operands
 
         if isinstance(coeff, OperatorPlus):
@@ -784,12 +775,12 @@ class OperatorTimesKet(Ket, Operation):
             return cs + ct
 
     def _tex_ket(self):
-        return self._tex_ketbra(bra = False)
+        return self._tex_ketbra(bra=False)
 
     def _tex_bra(self):
-        return self._tex_ketbra(bra = True)
+        return self._tex_ketbra(bra=True)
 
-    def _str_ketbra(self, bra = True):
+    def _str_ketbra(self, bra=True):
         coeff, term = self.operands
 
         if isinstance(coeff, OperatorPlus):
@@ -819,10 +810,10 @@ class OperatorTimesKet(Ket, Operation):
             return cs + ct
 
     def _str_ket(self):
-        return self._str_ketbra(bra = False)
+        return self._str_ketbra(bra=False)
 
     def _str_bra(self):
-        return self._str_ketbra(bra = True)
+        return self._str_ketbra(bra=True)
 
     def _expand(self):
         c, t = self.operands
@@ -830,7 +821,9 @@ class OperatorTimesKet(Ket, Operation):
         et = t.expand()
         if isinstance(et, KetPlus):
             if isinstance(ct, OperatorPlus):
-                return sum((cto * eto for eto in et.operands for cto in ct.operands), ZeroKet)
+                return sum((cto * eto
+                            for eto in et.operands
+                            for cto in ct.operands), ZeroKet)
             else:
                 return sum((c * eto for eto in et.operands), ZeroKet)
         elif isinstance(ct, OperatorPlus):
@@ -841,36 +834,37 @@ class OperatorTimesKet(Ket, Operation):
         ce = self.coeff.series_expand(param, about, order)
         te = self.term.series_expand(param, about, order)
 
-        return tuple(ce[k] * te[n - k] for n in range(order + 1) for k in range(n + 1))
+        return tuple(ce[k] * te[n - k]
+                     for n in range(order + 1) for k in range(n + 1))
 
-@check_signature
+
 class Bra(Operation):
-    """
-    The associated dual/adjoint state for any ``Ket`` object ``k`` is given by ``Bra(k)``.
+    """The associated dual/adjoint state for any ``Ket`` object ``k`` is given
+    by ``Bra(k)``.
 
     :param Ket k: The state to represent as Bra.
     """
 
-    signature = Ket,
+    signature = (Ket, ), {}
 
     @property
     def ket(self):
-        """
-        The state that is represented as a Bra.
+        """The state that is represented as a Bra.
 
         :rtype: Ket
         """
         return self.operands[0]
 
+    operand = ket
+
     def __str__(self):
         return self.ket._str_bra()
 
-    def _tex(self):
+    def tex(self):
         return self.ket._tex_bra()
 
     def adjoint(self):
-        """
-        The adjoint of a ``Bra`` is just the original ``Ket`` again.
+        """The adjoint of a ``Bra`` is just the original ``Ket`` again.
 
         :rtype: Ket
         """
@@ -909,12 +903,10 @@ class Bra(Operation):
         return NotImplemented
     __truediv__ = __div__
 
-@check_same_space
-@match_replace
-@check_signature
+
 class BraKet(Operator, Operation):
-    r"""
-    The symbolic inner product between two states, represented as Bra and Ket::
+    r"""The symbolic inner product between two states, represented as Bra and
+    Ket::
 
         BraKet(b, k)
 
@@ -923,16 +915,18 @@ class BraKet(Operator, Operation):
     .. math::
         \langle b | k \rangle
 
-    which we define to be linear in the state :math:`k` and anti-linear in :math:`b`.
+    which we define to be linear in the state :math:`k` and anti-linear in
+    :math:`b`.
 
     :param Ket b: The anti-linear state argument.
     :param Ket k: The linear state argument.
     """
 
 
-    signature = Ket, Ket
-    _rules = []
+    signature = (Ket, Ket), {}
+    _rules = []  # see end of module
     _space = TrivialSpace
+    _simplifications = [check_kets_same_space, match_replace]
 
     @property
     def ket(self):
@@ -950,9 +944,10 @@ class BraKet(Operator, Operation):
         be, ke = b.expand(), k.expand()
         besummands = be.operands if isinstance(be, KetPlus) else (be,)
         kesummands = ke.operands if isinstance(ke, KetPlus) else (ke,)
-        return sum(BraKet.create(bes, kes) for bes in besummands for kes in kesummands)
+        return sum(BraKet.create(bes, kes)
+                   for bes in besummands for kes in kesummands)
 
-    def _tex(self):
+    def tex(self):
         if isinstance(self.bra.ket, KetPlus):
             bs = r"\left({}\right)".format(self.bra.tex())
         else:
@@ -970,14 +965,8 @@ class BraKet(Operator, Operation):
                      for n in range(order + 1) for k in range(n + 1))
 
 
-
-
-@check_same_space
-@match_replace
-@check_signature
 class KetBra(Operator, Operation):
-    """
-    A symbolic operator formed by the outer product of two states::
+    """A symbolic operator formed by the outer product of two states::
 
         KetBra(k, b)
 
@@ -985,8 +974,9 @@ class KetBra(Operator, Operation):
     :param ket b: The second state that defines the Kernel of the operator.
     """
 
-    signature = Ket, Ket
-    _rules = []
+    signature = (Ket, Ket), {}
+    _rules = []  # see end of module
+    _simplifications = [check_kets_same_space, match_replace]
 
     @property
     def ket(self):
@@ -997,7 +987,7 @@ class KetBra(Operator, Operation):
         return Bra(self.operands[1])
 
     @property
-    def _space(self):
+    def space(self):
         return self.operands[0].space
 
     def _adjoint(self):
@@ -1011,7 +1001,7 @@ class KetBra(Operator, Operation):
         return sum(KetBra.create(kes, bes)
                    for bes in besummands for kes in kesummands)
 
-    def _tex(self):
+    def tex(self):
         if isinstance(self.bra.ket, KetPlus):
             bs = r"\left({}\right)".format(self.bra.tex())
         else:
@@ -1043,24 +1033,26 @@ def act_locally_times_tensor(op, ket):
             op_on, op_off = op.factor_for_space(spc)
             ket_on, ket_off = ket.factor_for_space(spc)
 
-            if op_on.space <= ket_on.space and op_off.space <= ket_off.space and ket_off != TrivialKet:
+            if (op_on.space <= ket_on.space and
+                    op_off.space <= ket_off.space and ket_off != TrivialKet):
                 return (op_on * ket_on) * (op_off * ket_off)
             else:
                 spc = op_on.space * ket_on.space
     raise CannotSimplify()
+
 
 def tensor_decompose_kets(a, b, operation):
     full_space = a.space * b.space
     local_spaces = full_space.local_factors()
     for spc in local_spaces:
         while spc < full_space:
-                a_on, a_off = a.factor_for_space(spc)
-                b_on, b_off = b.factor_for_space(spc)
-
-                if a_on.space == b_on.space and a_off.space == b_off.space and a_off != TrivialKet:
-                    return operation(a_on, b_on) * operation(a_off, b_off)
-                else:
-                    spc = a_on.space * b_on.space
+            a_on, a_off = a.factor_for_space(spc)
+            b_on, b_off = b.factor_for_space(spc)
+            if (a_on.space == b_on.space and a_off.space == b_off.space and
+                    a_off != TrivialKet):
+                return operation(a_on, b_on) * operation(a_off, b_off)
+            else:
+                spc = a_on.space * b_on.space
     raise CannotSimplify()
 
 
@@ -1068,12 +1060,24 @@ def tensor_decompose_kets(a, b, operation):
 
 
 ## Expression rewriting _rules
-#u = wc("u", head=Operator.scalar_types)
-#v = wc("v", head=Operator.scalar_types)
-#
-#n = wc("n", head=(int, str))
-#m = wc("m", head=(int, str))
+u = wc("u", head=Operator.scalar_types)
+v = wc("v", head=Operator.scalar_types)
+
+n = wc("n", head=(int, str))
+m = wc("m", head=(int, str))
 k = wc("k", head=(int, str))
+
+A = wc("A", head=Operator)
+A__ = wc("A__", head=Operator)
+A___ = wc("A___", head=Operator)
+B = wc("B", head=Operator)
+B__ = wc("B__", head=Operator)
+B___ = wc("B___", head=Operator)
+C = wc("C", head=Operator)
+
+A_times = wc("A", head=OperatorTimes)
+A_local = wc("A", head=LocalOperator)
+B_local = wc("B", head=LocalOperator)
 
 nsym = wc("nsym", head=(int, str, SympyBasic))
 
@@ -1084,21 +1088,22 @@ Psi_local = wc("Psi", head=LocalKet)
 Psi_tensor = wc("Psi", head=TensorKet)
 Phi_tensor = wc("Phi", head=TensorKet)
 
-#ls = wc("ls", head=LocalSpace)
-#h1 = wc("h1", head = HilbertSpace)
-#h2 = wc("h2", head = HilbertSpace)
-#H_ProductSpace = wc("H", head = ProductSpace)
+ls = wc("ls", head=LocalSpace)
 
-#ra = wc("ra", head=(int, str))
-#rb = wc("rb", head=(int, str))
-#rc = wc("rc", head=(int, str))
-#rd = wc("rd", head=(int, str))
+ra = wc("ra", head=(int, str))
+rb = wc("rb", head=(int, str))
+rc = wc("rc", head=(int, str))
+rd = wc("rd", head=(int, str))
 
 ScalarTimesKet._rules += [
-    ((1, Psi), lambda Psi: Psi),
-    ((0, Psi), lambda Psi: ZeroKet),
-    ((u, ZeroKet), lambda u: ZeroKet),
-    ((u, ScalarTimesKet(v, Psi)), lambda u, v, Psi: (u * v) * Psi)
+    (pattern_head(1, Psi),
+        lambda Psi: Psi),
+    (pattern_head(0, Psi),
+        lambda Psi: ZeroKet),
+    (pattern_head(u, ZeroKet),
+        lambda u: ZeroKet),
+    (pattern_head(u, pattern(ScalarTimesKet, v, Psi)),
+        lambda u, v, Psi: (u * v) * Psi)
 ]
 
 # local_rule = lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)
@@ -1107,74 +1112,117 @@ def local_rule(A, B, Psi):
     return OperatorTimes.create(*A) * (B * Psi)
 
 OperatorTimesKet._rules += [
-    ((IdentityOperator, Psi), lambda Psi: Psi),
-    ((ZeroOperator, Psi), lambda Psi: ZeroKet),
-    ((A, ZeroKet), lambda A: ZeroKet),
-    ((A, ScalarTimesKet(v, Psi)), lambda A, v, Psi:  v *(A* Psi)),
+    (pattern_head(IdentityOperator, Psi),
+        lambda Psi: Psi),
+    (pattern_head(ZeroOperator, Psi),
+        lambda Psi: ZeroKet),
+    (pattern_head(A, ZeroKet),
+        lambda A: ZeroKet),
+    (pattern_head(A, pattern(ScalarTimesKet, v, Psi)),
+        lambda A, v, Psi:  v *(A* Psi)),
 
-    ((LocalSigma(ls, n, m), BasisKet(ls, k)), lambda ls, n, m, k: BasisKet(ls, n) if m == k else ZeroKet),
+    (pattern_head(pattern(LocalSigma, ls, n, m), pattern(BasisKet, ls, k)),
+        lambda ls, n, m, k: BasisKet(ls, n) if m == k else ZeroKet),
 
     # harmonic oscillator
-    ((Create(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n+1) * BasisKet(ls, n + 1)),
-    ((Destroy(ls), BasisKet(ls, n)), lambda ls, n: sqrt(n) * BasisKet(ls, n - 1)),
-    ((Destroy(ls), CoherentStateKet(ls, u)), lambda ls, u: u * CoherentStateKet(ls, u)),
+    (pattern_head(pattern(Create, ls), pattern(BasisKet, ls, n)),
+        lambda ls, n: sqrt(n+1) * BasisKet(ls, n + 1)),
+    (pattern_head(pattern(Destroy, ls), pattern(BasisKet, ls, n)),
+        lambda ls, n: sqrt(n) * BasisKet(ls, n - 1)),
+    (pattern_head(pattern(Destroy, ls), pattern(CoherentStateKet, ls, u)),
+        lambda ls, u: u * CoherentStateKet(ls, u)),
 
     # spin
-    ((Jplus(ls), BasisKet(ls, n)), lambda ls, n: Jpjmcoeff(ls, n) * BasisKet(ls, n+1)),
-    ((Jminus(ls), BasisKet(ls, n)), lambda ls, n: Jmjmcoeff(ls, n) * BasisKet(ls, n-1)),
-    ((Jz(ls), BasisKet(ls, n)), lambda ls, n: Jzjmcoeff(ls, n) * BasisKet(ls, n)),
+    (pattern_head(pattern(Jplus, ls), pattern(BasisKet, ls, n)),
+        lambda ls, n: Jpjmcoeff(ls, n) * BasisKet(ls, n+1)),
+    (pattern_head(pattern(Jminus, ls), pattern(BasisKet, ls, n)),
+        lambda ls, n: Jmjmcoeff(ls, n) * BasisKet(ls, n-1)),
+    (pattern_head(pattern(Jz, ls), pattern(BasisKet, ls, n)),
+        lambda ls, n: Jzjmcoeff(ls, n) * BasisKet(ls, n)),
 
     # # harmonic oscillator
-    # ((Create(ls), BasisKet(ls, nsym)), lambda ls, nsym: sqrt(nsym+1) * BasisKet(ls, nsym + 1)),
-    # ((Destroy(ls), BasisKet(ls, nsym)), lambda ls, nsym: sqrt(nsym) * BasisKet(ls, nsym - 1)),
-    # ((Destroy(ls), CoherentStateKet(ls, u)), lambda ls, u: u * CoherentStateKet(ls, u)),
+    # (pattern_head(pattern(Create, ls), pattern(BasisKet, ls, nsym)), lambda ls, nsym: sqrt(nsym+1) * BasisKet(ls, nsym + 1)),
+    # (pattern_head(pattern(Destroy, ls), pattern(BasisKet, ls, nsym)), lambda ls, nsym: sqrt(nsym) * BasisKet(ls, nsym - 1)),
+    # (pattern_head(pattern(Destroy, ls), pattern(CoherentStateKet, ls, u)), lambda ls, u: u * CoherentStateKet(ls, u)),
     #
     # # spin
-    # ((Jplus(ls), BasisKet(ls, nsym)), lambda ls, nsym: Jpjmcoeff(ls, nsym) * BasisKet(ls, nsym+1)),
-    # ((Jminus(ls), BasisKet(ls, nsym)), lambda ls, nsym: Jmjmcoeff(ls, nsym) * BasisKet(ls, nsym-1)),
-    # ((Jz(ls), BasisKet(ls, nsym)), lambda ls, nsym: nsym * BasisKet(ls, nsym)),
+    # (pattern_head(pattern(Jplus, ls), pattern(BasisKet, ls, nsym)), lambda ls, nsym: Jpjmcoeff(ls, nsym) * BasisKet(ls, nsym+1)),
+    # (pattern_head(pattern(Jminus, ls), pattern(BasisKet, ls, nsym)), lambda ls, nsym: Jmjmcoeff(ls, nsym) * BasisKet(ls, nsym-1)),
+    # (pattern_head(pattern(Jz, ls), pattern(BasisKet, ls, nsym)), lambda ls, nsym: nsym * BasisKet(ls, nsym)),
 
-    ((A_local, Psi_tensor), lambda A, Psi: act_locally(A, Psi)),
-    ((A_times, Psi_tensor), lambda A, Psi: act_locally_times_tensor(A, Psi)),
-    ((A, OperatorTimesKet(B, Psi)), lambda A, B, Psi: (A * B) * Psi if (B * Psi) == OperatorTimesKet(B, Psi) else A * (B * Psi)),
-    ((OperatorTimes(A__, B_local), Psi_local), local_rule),
-    ((ScalarTimesOperator(u, A), Psi), lambda u, A, Psi: u * (A * Psi)),
-    ((Displace(ls, u), BasisKet(ls, 0)), lambda ls, u: CoherentStateKet(ls, u)),
-    ((Displace(ls, u), CoherentStateKet(ls, v)), lambda ls, u, v: (Displace(ls,u) * Displace(ls, v)) * BasisKet(ls, 0)),
-    ((Phase(ls, u), BasisKet(ls, m)), lambda ls, u, m: exp(I * u * m) * BasisKet(ls, m)),
-    ((Phase(ls, u), CoherentStateKet(ls, v)), lambda ls, u, v: CoherentStateKet(ls, v * exp(I * u))),
+    (pattern_head(A_local, Psi_tensor),
+        lambda A, Psi: act_locally(A, Psi)),
+    (pattern_head(A_times, Psi_tensor),
+        lambda A, Psi: act_locally_times_tensor(A, Psi)),
+    (pattern_head(A, pattern(OperatorTimesKet, B, Psi)),
+        lambda A, B, Psi: (A * B) * Psi if (B * Psi) == OperatorTimesKet(B, Psi) else A * (B * Psi)),
+    (pattern_head(pattern(OperatorTimes, A__, B_local), Psi_local),
+        local_rule),
+    (pattern_head(pattern(ScalarTimesOperator, u, A), Psi),
+        lambda u, A, Psi: u * (A * Psi)),
+    (pattern_head(pattern(Displace, ls, u), pattern(BasisKet, ls, 0)),
+        lambda ls, u: CoherentStateKet(ls, u)),
+    (pattern_head(pattern(Displace, ls, u), pattern(CoherentStateKet, ls, v)),
+        lambda ls, u, v: (Displace(ls,u) * Displace(ls, v)) * BasisKet(ls, 0)),
+    (pattern_head(pattern(Phase, ls, u), pattern(BasisKet, ls, m)),
+        lambda ls, u, m: exp(I * u * m) * BasisKet(ls, m)),
+    (pattern_head(pattern(Phase, ls, u), pattern(CoherentStateKet, ls, v)),
+        lambda ls, u, v: CoherentStateKet(ls, v * exp(I * u))),
 ]
 
 KetPlus._binary_rules += [
-    ((ScalarTimesKet(u, Psi), ScalarTimesKet(v, Psi)), lambda u, v, Psi: (u + v) * Psi),
-    ((ScalarTimesKet(u, Psi), Psi), lambda u, Psi: (u + 1) * Psi),
-    ((Psi, ScalarTimesOperator(v, Psi)), lambda v, Psi: (1 + v) * Psi),
-    ((Psi, Psi), lambda Psi: 2 * Psi),
+    (pattern_head(pattern(ScalarTimesKet, u, Psi),
+                  pattern(ScalarTimesKet, v, Psi)),
+        lambda u, v, Psi: (u + v) * Psi),
+    (pattern_head(pattern(ScalarTimesKet, u, Psi), Psi),
+        lambda u, Psi: (u + 1) * Psi),
+    (pattern_head(Psi, pattern(ScalarTimesOperator, v, Psi)),
+        lambda v, Psi: (1 + v) * Psi),
+    (pattern_head(Psi, Psi),
+        lambda Psi: 2 * Psi),
 ]
 
 TensorKet._binary_rules += [
-    ((ScalarTimesKet(u, Psi), Phi), lambda u, Psi, Phi: u * (Psi * Phi)),
-    ((Psi, ScalarTimesKet(u, Phi)), lambda Psi, u, Phi: u * (Psi * Phi)),
+    (pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
+        lambda u, Psi, Phi: u * (Psi * Phi)),
+    (pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
+        lambda Psi, u, Phi: u * (Psi * Phi)),
 ]
 
 BraKet._rules += [
-    ((Phi, ZeroKet), lambda Phi: ZeroOperator),
-    ((ZeroKet, Phi), lambda Phi: ZeroOperator),
-    ((BasisKet(ls, m), BasisKet(ls, n)), lambda ls, m, n: IdentityOperator if m == n else ZeroOperator),
-    ((BasisKet(ls, nsym), BasisKet(ls, nsym)), lambda ls, nsym: IdentityOperator),
-    ((Psi_tensor, Phi_tensor), lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create)),
-    ((ScalarTimesKet(u, Psi), Phi), lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi)),
-    ((OperatorTimesKet(A, Psi), Phi), lambda A, Psi, Phi: (Psi.adjoint() * (A.dag() * Phi))),
-    ((Psi, ScalarTimesKet(u,Phi)), lambda Psi, u, Phi: u * (Psi.adjoint() * Phi)),
+    (pattern_head(Phi, ZeroKet),
+        lambda Phi: ZeroOperator),
+    (pattern_head(ZeroKet, Phi),
+        lambda Phi: ZeroOperator),
+    (pattern_head(pattern(BasisKet, ls, m), pattern(BasisKet, ls, n)),
+        lambda ls, m, n: IdentityOperator if m == n else ZeroOperator),
+    (pattern_head(pattern(BasisKet, ls, nsym), pattern(BasisKet, ls, nsym)),
+        lambda ls, nsym: IdentityOperator),
+    (pattern_head(Psi_tensor, Phi_tensor),
+        lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create)),
+    (pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
+        lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi)),
+    (pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
+        lambda A, Psi, Phi: (Psi.adjoint() * (A.dag() * Phi))),
+    (pattern_head(Psi, pattern(ScalarTimesKet, u,Phi)),
+        lambda Psi, u, Phi: u * (Psi.adjoint() * Phi)),
 ]
 
 KetBra._rules += [
-    ((BasisKet(ls, m),BasisKet(ls, n)), lambda ls, m, n: LocalSigma(ls, m, n)),
-    ((CoherentStateKet(ls, u),Phi), lambda ls, u, Phi: Displace(ls, u) * (BasisKet(ls, 0) *  Phi.adjoint())),
-    ((Phi, CoherentStateKet(ls, u)), lambda ls, u, Phi: (Phi * BasisKet(ls, 0).adjoint()) * Displace(ls, -u)),
-    ((Psi_tensor,Phi_tensor), lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, KetBra.create)),
-    ((OperatorTimesKet(A,Psi),Phi), lambda A, Psi, Phi: A * (Psi * Phi.adjoint())),
-    ((Psi,OperatorTimesKet(A,Phi)), lambda Psi, A, Phi: (Psi * Phi.adjoint()) * A.adjoint()),
-    ((ScalarTimesKet(u,Psi), Phi), lambda u, Psi, Phi: u * (Psi * Phi.adjoint())),
-    ((Psi, ScalarTimesKet(u,Phi)), lambda Psi, u, Phi: u.conjugate() * (Psi * Phi.adjoint())),
+    (pattern_head(pattern(BasisKet, ls, m), pattern(BasisKet, ls, n)),
+        lambda ls, m, n: LocalSigma(ls, m, n)),
+    (pattern_head(pattern(CoherentStateKet, ls, u), Phi),
+        lambda ls, u, Phi: Displace(ls, u) * (BasisKet(ls, 0) *  Phi.adjoint())),
+    (pattern_head(Phi, pattern(CoherentStateKet, ls, u)),
+        lambda ls, u, Phi: (Phi * BasisKet(ls, 0).adjoint()) * Displace(ls, -u)),
+    (pattern_head(Psi_tensor,Phi_tensor),
+        lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, KetBra.create)),
+    (pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
+        lambda A, Psi, Phi: A * (Psi * Phi.adjoint())),
+    (pattern_head(Psi, pattern(OperatorTimesKet, A,Phi)),
+        lambda Psi, A, Phi: (Psi * Phi.adjoint()) * A.adjoint()),
+    (pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
+        lambda u, Psi, Phi: u * (Psi * Phi.adjoint())),
+    (pattern_head(Psi, pattern(ScalarTimesKet, u,Phi)),
+        lambda Psi, u, Phi: u.conjugate() * (Psi * Phi.adjoint())),
 ]

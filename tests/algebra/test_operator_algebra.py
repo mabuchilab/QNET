@@ -20,180 +20,164 @@
 
 import unittest
 
-from qnet.algebra.operator_algebra import *
+from numpy import array as np_array, conjugate as np_conjugate
+from sympy import symbols, sqrt, I, exp
+
+from qnet.algebra.operator_algebra import (
+        Displace, Create, Destroy, OperatorSymbol, IdentityOperator,
+        ZeroOperator, OperatorPlus, LocalSigma, LocalProjector, OperatorTrace,
+        Adjoint, X, Y, Z, Matrix, ScalarTimesOperator, OperatorTimes, Jz,
+        Jplus, Jminus, Phase, identity_matrix)
+from qnet.algebra.hilbert_space_algebra import (
+        LocalSpace, TrivialSpace, ProductSpace)
 
 
 class TestOperatorCreation(unittest.TestCase):
 
     def testIdentity(self):
-        self.assertEqual(Create("1"), Create("1"))
-        self.assertEqual(OperatorSymbol("a", 1), OperatorSymbol("a",1))
+        assert Create("1") == Create("1")
+        assert OperatorSymbol("a", 1) == OperatorSymbol("a",1)
 
     def testImplicitHilbertSpaceCreation(self):
-        hs = local_space("hs")
-        h2 = local_space("h2")
+        hs = LocalSpace("hs")
+        h2 = LocalSpace("h2")
         aa = OperatorSymbol("aa", hs)
         bb = OperatorSymbol("aa", hs * h2)
         a = Destroy(hs)
-        self.assertEqual(aa, OperatorSymbol("aa", "hs"))
-        self.assertEqual(bb, OperatorSymbol("aa", ("hs", "h2")))
-        self.assertEqual(a, Destroy("hs"))
-        self.assertEqual(Destroy(1), Destroy("1"))
-        self.assertEqual(OperatorSymbol("a", 1), OperatorSymbol("a","1"))
-
-    def testMatch(self):
-
-        A = wc("A", head = Operator)
-        a = Create("1")
-        c = Create("1")
-        b = OperatorSymbol("b","hs")
-        b2 = OperatorSymbol("b","hs")
-        n = wc("n", head = int)
-        m = wc("m", head = int)
-
-        self.assertEqual(a,c)
-        self.assertEqual(b,b2)
-        self.assertEqual(match(A, a),Match(A = a))
-        self.assertEqual(match(A, b),Match(A = b))
-        self.assertEqual(match(PatternTuple((A,A)), OperandsTuple((b, b))),Match(A = b))
-        self.assertEqual(match(PatternTuple((A,A)), OperandsTuple((b, b2))),Match(A = b))
-        self.assertEqual(match(PatternTuple((A,A)), OperandsTuple((a, c))),Match(A = a))
-        self.assertEqual(match(PatternTuple((Phase(ls, u), LocalSigma(ls, n, m))), OperandsTuple((Phase.create(1, 5),LocalSigma.create(1, 3, 4)))), Match(ls = local_space(1), u = 5, n = 3, m = 4))
+        assert aa == OperatorSymbol("aa", "hs")
+        assert bb == OperatorSymbol("aa", ("hs", "h2"))
+        assert a == Destroy("hs")
+        assert Destroy(1) == Destroy("1")
+        assert OperatorSymbol("a", 1) == OperatorSymbol("a","1")
 
 
 class TestOperatorAddition(unittest.TestCase):
 
     def testAdditionToScalar(self):
-        hs = local_space("hs")
+        hs = LocalSpace("hs")
         a = OperatorSymbol("a", hs)
         id = IdentityOperator
-        self.assertEqual(a+0, a)
-        self.assertEqual(0+a, a)
-        self.assertEqual(1 + a + 1, a + 2)
-        self.assertEqual(a + 2, OperatorPlus(ScalarTimesOperator(2, id), a))
+        assert a+0 == a
+        assert 0+a == a
+        assert 1 + a + 1 == a + 2
+        lhs = a + 2
+        rhs = OperatorPlus(ScalarTimesOperator(2, id), a)
+        assert lhs == rhs
 
     def testOperatorOrdering(self):
-        hs = local_space("1")
+        hs = LocalSpace("1")
         a = OperatorSymbol("a", hs)
         b = OperatorSymbol("b", hs)
         c = OperatorSymbol("c", hs)
-        self.assertEqual(c+b+a, OperatorPlus(a, b, c))
+        assert c+b+a == OperatorPlus(a, b, c)
 
     def testAdditionToOperator(self):
-        hs = local_space("hs")
+        hs = LocalSpace("hs")
         a = OperatorSymbol("a", hs)
         b = OperatorSymbol("b", hs)
-        self.assertEqual(a + b, b + a)
-        self.assertEqual(a + b, OperatorPlus(a, b))
+        assert a + b == b + a
+        assert a + b == OperatorPlus(a, b)
 
     def testAdditionToOperatorProduct(self):
-        hs = local_space("hs")
+        hs = LocalSpace("hs")
         a = OperatorSymbol("a", hs)
         b = OperatorSymbol("b", hs)
-        self.assertEqual(a + b*b*a, b*b*a + a)
-        self.assertEqual(a + b*b*a, OperatorPlus(a, OperatorTimes(b, b, a)))
+        assert a + b*b*a == b*b*a + a
+        assert a + b*b*a == OperatorPlus(a, OperatorTimes(b, b, a))
 
     def testSubtraction(self):
-        hs = local_space("hs")
+        hs = LocalSpace("hs")
         a = OperatorSymbol("a", hs)
         b = OperatorSymbol("b", hs)
         z = ZeroOperator
-        self.assertEqual(a-a, z)
-        self.assertEqual(a-b, OperatorPlus(a, ScalarTimesOperator(-1, b)))
+        assert a-a == z
+        assert a-b == OperatorPlus(a, ScalarTimesOperator(-1, b))
 
     def testHilbertSpace(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = OperatorSymbol("a", h1)
         b = OperatorSymbol("b", h2)
-        self.assertEqual(a.space, h1)
-        self.assertEqual((a + b).space, h1*h2)
+        assert a.space == h1
+        assert (a + b).space == h1*h2
 
     def testEquality(self):
-        self.assertEqual(Create(1)+Create(2), Create(2)+Create(1))
-
-
-
+        assert Create(1)+Create(2) == Create(2)+Create(1)
 
 
 class TestOperatorTimes(unittest.TestCase):
     def testIdentity(self):
-        h1 = local_space("h1")
+        h1 = LocalSpace("h1")
         a = OperatorSymbol("a", h1)
         id = IdentityOperator
-        self.assertEqual(a * id, a)
-        self.assertEqual(id * a, a)
+        assert a * id == a
+        assert id * a == a
 
     def testOrdering(self):
-         h1 = local_space("h1")
-         h2 = local_space("h2")
-         a = OperatorSymbol("a", h1)
-         b = OperatorSymbol("b", h2)
-         c = OperatorSymbol("c", h2)
-         self.assertEqual(a * b, OperatorTimes(a,b))
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
+        a = OperatorSymbol("a", h1)
+        b = OperatorSymbol("b", h2)
+        c = OperatorSymbol("c", h2)
+        assert a * b == OperatorTimes(a,b)
 
-         self.assertEqual(b * a, a * b)
-         self.assertEqual(c * a * b * c * a, OperatorTimes(a, a, c, b, c))
+        assert b * a == a * b
+        assert c * a * b * c * a == OperatorTimes(a, a, c, b, c)
 
 
     def testHilbertSpace(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = OperatorSymbol("a", h1)
         b = OperatorSymbol("b", h2)
-        self.assertEqual(a.space, h1)
-        self.assertEqual((a * b).space, h1*h2)
+        assert a.space == h1
+        assert (a * b).space == h1*h2
 
 
     def testEquality(self):
-        self.assertEqual(Create(1)*Create(2), Create(1)*Create(2))
-
-
-
+        assert Create(1)*Create(2) == Create(1)*Create(2)
 
 
 class TestScalarTimesOperator(unittest.TestCase):
     def testZeroOne(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = OperatorSymbol("a", h1)
-        b =  OperatorSymbol("b", h2)
+        b = OperatorSymbol("b", h2)
         z = ZeroOperator
 
-        self.assertEqual(a+a,2*a)
-        self.assertEqual(a*1,a)
-        self.assertEqual(1*a, a)
-        self.assertEqual(a*5,ScalarTimesOperator(5, a))
-        self.assertEqual(5*a,a*5)
-        self.assertEqual(2*a*3, 6*a)
-        self.assertEqual(a*5*b, ScalarTimesOperator(5, a*b))
-        self.assertEqual(a*(5*b), ScalarTimesOperator(5, a*b))
+        assert a+a == 2*a
+        assert a*1 == a
+        assert 1*a == a
+        assert a*5 == ScalarTimesOperator(5, a)
+        assert 5*a == a*5
+        assert 2*a*3 == 6*a
+        assert a*5*b == ScalarTimesOperator(5, a*b)
+        assert a*(5*b) == ScalarTimesOperator(5, a*b)
 
-        self.assertEqual(0 * a, z)
-        self.assertEqual(a*0, z)
-        self.assertEqual(10 * z, z)
+        assert 0 * a == z
+        assert a*0 == z
+        assert 10 * z == z
 
     def testHashability(self):
-        self.assertEqual(
-            hash(ScalarTimesOperator(1, Create(1))),
-            hash((ScalarTimesOperator, (1, Create(1))))
-        )
+        assert hash(ScalarTimesOperator(1, Create(1))) == \
+               hash(ScalarTimesOperator(1, Create(1)))
 
     def testEquality(self):
-        self.assertEqual(5*Create(1), (6-1)* Create(1))
+        assert 5 * Create(1) == (6-1) * Create(1)
 
     def testScalarCombination(self):
         a = OperatorSymbol("a", "h1")
-        self.assertEqual(a+a, 2*a)
-        self.assertEqual(3*a + 4*a, 7 * a)
-        self.assertEqual(Create("1") + Create("1"), 2 * Create("1"))
+        assert a+a == 2*a
+        assert 3*a + 4*a == 7 * a
+        assert Create("1") + Create("1") == 2 * Create("1")
 
     def testHilbertSpace(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = OperatorSymbol("a", h1)
         b = OperatorSymbol("b", h2)
-        self.assertEqual((5*(a * b)).space, h1*h2)
+        assert (5*(a * b)).space == h1*h2
 
 
 class TestDifferentiation(unittest.TestCase):
@@ -202,202 +186,227 @@ class TestDifferentiation(unittest.TestCase):
         x = symbols("x")
 
         X = OperatorSymbol("X", 1)
-        self.assertEqual(X.diff(x), ZeroOperator)
-        self.assertEqual((2*X).diff(x), ZeroOperator)
-        self.assertEqual(X.dag().diff(x), ZeroOperator)
+        assert X.diff(x) == ZeroOperator
+        assert (2*X).diff(x) == ZeroOperator
+        assert X.dag().diff(x) == ZeroOperator
 
         a = Destroy(1)
-        self.assertEqual(a.diff(x), ZeroOperator)
-        self.assertEqual(a.dag().diff(x), ZeroOperator)
-        self.assertEqual((a + a.dag()).diff(x), ZeroOperator)
-        self.assertEqual((a * a.dag()).diff(x), ZeroOperator)
+        assert a.diff(x) == ZeroOperator
+        assert a.dag().diff(x) == ZeroOperator
+        assert (a + a.dag()).diff(x) == ZeroOperator
+        assert (a * a.dag()).diff(x) == ZeroOperator
 
         s = LocalSigma(1,1,2)
-        self.assertEqual(s.diff(x), ZeroOperator)
+        assert s.diff(x) == ZeroOperator
 
     def testNonConstantOps(self):
         x = symbols("x", real=True)
 
         X = OperatorSymbol("X", 1)
         Y = OperatorSymbol("Y", 1)
-        self.assertEqual((x*X).diff(x), X)
-        self.assertEqual(((2*x**2)*X).diff(x), 4*x*X)
-        self.assertEqual((x*X).dag().diff(x), X.dag())
-        self.assertEqual((x*X + X).diff(x), X)
+        assert (x*X).diff(x) == X
+        assert ((2*x**2)*X).diff(x) == 4*x*X
+        assert (x*X).dag().diff(x) == X.dag()
+        assert (x*X + X).diff(x) == X
 
-        self.assertEqual((x*X + (x**2)*Y).diff(x), X + 2*x*Y)
-        self.assertEqual((x*X + (x**2)*Y).diff(x, 2), 2*Y)
+        assert (x*X + (x**2)*Y).diff(x) == X + 2*x*Y
+        assert (x*X + (x**2)*Y).diff(x, 2) == 2*Y
 
-        self.assertEqual(((x*X) * (x**2)*Y).diff(x), 3*x**2 * X * Y)
-        self.assertEqual(((x*X + Y) * (x**2)*Y).diff(x), 3*x**2 * X * Y + 2*x*Y*Y)
+        assert ((x*X) * (x**2)*Y).diff(x) == 3*x**2 * X * Y
+        assert ((x*X + Y) * (x**2)*Y).diff(x) == 3*x**2 * X * Y + 2*x*Y*Y
 
 
 
 
 class TestLocalOperatorRelations(unittest.TestCase):
     def testCommutatorAAdag(self):
-        h = local_space("h")
+        h = LocalSpace("h")
         ii = IdentityOperator
-        self.assertEqual(Destroy(h) * Create(h) - Create(h) * Destroy(h), ii )
+        dc = Destroy(h) * Create(h)
+        cd = Create(h) * Destroy(h)
+        lhs = dc - cd
+        assert lhs == ii
 
 
 
     def testSpin(self):
         j = 3
-        h = local_space("h", basis=range(-j,j+1))
+        h = LocalSpace("h", basis=range(-j,j+1))
         jz = Jz(h)
         jp = Jplus(h)
         jm = Jminus(h)
 
-        self.assertEqual((jp*jm-jm*jp).expand(), 2*jz)
-        self.assertEqual((jz*jm-jm*jz).expand(), -jm)
-        self.assertEqual((jz*jp-jp*jz).expand(), jp)
+        assert (jp*jm-jm*jp).expand() == 2*jz
+        assert (jz*jm-jm*jz).expand() == -jm
+        assert (jz*jp-jp*jz).expand() == jp
 
-        self.assertEqual(jp*LocalProjector(h,3), ZeroOperator)
-        self.assertEqual(jp*LocalProjector(h,2), sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, 3, 2))
+        assert jp*LocalProjector(h,3) == ZeroOperator
+        assert jp*LocalProjector(h,2) == sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, 3, 2)
 
-        self.assertEqual(jm*LocalProjector(h,-3), ZeroOperator)
-        self.assertEqual(jm*LocalProjector(h,-2), sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, -3, -2))
+        assert jm*LocalProjector(h,-3) == ZeroOperator
+        assert jm*LocalProjector(h,-2) == sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, -3, -2)
 
-        self.assertEqual(jz*LocalProjector(h,-3), -3*LocalProjector(h, -3))
+        assert jz*LocalProjector(h,-3) == -3*LocalProjector(h, -3)
 
-        self.assertEqual(LocalProjector(h,3)*jm, ZeroOperator)
-        self.assertEqual(LocalProjector(h,2)*jm, sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, 2, 3))
+        assert LocalProjector(h,3)*jm == ZeroOperator
+        assert LocalProjector(h,2)*jm == sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, 2, 3)
 
-        self.assertEqual(LocalProjector(h,-3)*jp, ZeroOperator)
-        self.assertEqual(LocalProjector(h,-2)*jp, sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, -2, -3))
+        assert LocalProjector(h,-3)*jp == ZeroOperator
+        assert LocalProjector(h,-2)*jp == sqrt(j*(j+1)-2*(2+1))*LocalSigma(h, -2, -3)
 
-        self.assertEqual(LocalProjector(h,-3)*jz, -3*LocalProjector(h, -3))
-
-
-
-
+        assert LocalProjector(h,-3)*jz == -3*LocalProjector(h, -3)
 
     def testPhase(self):
-        self.assertEqual(Phase(1, 5).adjoint(), Phase(1, -5))
-        self.assertEqual(Phase(1, 5) * Phase(1, -5), IdentityOperator)
-        self.assertEqual(Phase(1, 5) * Create(1) * Phase(1, -5), exp(I * 5) * Create(1))
-        self.assertEqual(Phase(1, 5) * LocalSigma(1, 3, 4), exp(15 * I) * LocalSigma(1,3,4))
-        self.assertEqual(LocalSigma(1,3,4) * Phase(1, 5), exp(20 * I) * LocalSigma(1,3,4))
-        self.assertEqual(Phase(1, 5) * LocalSigma(1,0,4), LocalSigma(1,0,4))
-        self.assertEqual(LocalSigma(1,3,0) * Phase(1, 5), LocalSigma(1,3,0))
+        assert Phase(1, 5).adjoint() == Phase(1, -5)
+        assert Phase(1, 5) * Phase(1, -5) == IdentityOperator
+        assert Phase(1, 5) * Create(1) * Phase(1, -5) == exp(I * 5) * Create(1)
+        assert Phase(1, 5) * LocalSigma(1, 3, 4) == exp(15 * I) * LocalSigma(1,3,4)
+        assert LocalSigma(1,3,4) * Phase(1, 5) == exp(20 * I) * LocalSigma(1,3,4)
+        assert Phase(1, 5) * LocalSigma(1,0,4) == LocalSigma(1,0,4)
+        assert LocalSigma(1,3,0) * Phase(1, 5) == LocalSigma(1,3,0)
 
     def testDisplace(self):
-        self.assertEqual(Displace(1, 5 + 6j).adjoint(), Displace(1, -5-6j))
-        self.assertEqual(Displace(1, 5+6j) * Displace(1, -5-6j), IdentityOperator)
-        self.assertEqual(Displace(1, 5+6j) * Create(1) * Displace(1, -5-6j), Create(1) - (5-6j))
+        assert Displace(1, 5 + 6j).adjoint() == Displace(1, -5-6j)
+        assert Displace(1, 5+6j) * Displace(1, -5-6j) == IdentityOperator
+        assert Displace(1, 5+6j) * Create(1) * Displace(1, -5-6j) == Create(1) - (5-6j)
 
 #    def testSqueeze(self):
 #        self.assertEqual(Squeeze(1, 5 + 6j).adjoint(), Squeeze(1, -5-6j))
 #        self.assertEqual(Squeeze(1, 5+6j) * Squeeze(1, -5-6j), 1)
 #        self.assertEqual(Squeeze(1, 1 + I) * Create(1) * Squeeze(1, -1 - I), cosh(sqrt(2)) * Create(1) - sinh(sqrt(2)) * exp(-I*pi/4)* Destroy(1))
 
-
     def testLocalSigmaPi(self):
-        h = local_space("h")
-        self.assertEqual(LocalSigma(h, 0, 1)* LocalSigma(h, 1, 2), LocalSigma(h, 0, 2))
-        self.assertEqual(LocalSigma(h, 0, 0), LocalProjector(h, 0))
+        h = LocalSpace("h")
+        assert LocalSigma(h, 0, 1)* LocalSigma(h, 1, 2) == LocalSigma(h, 0, 2)
+        assert LocalSigma(h, 0, 0) == LocalProjector(h, 0)
 
     def testAnnihilation(self):
-        h = local_space("h")
+        h = LocalSpace("h")
         z = ZeroOperator
-        self.assertEqual(Destroy(h) * LocalSigma(h, 0, 1), z)
-        self.assertEqual(LocalSigma(h, 1, 0) * Create(h), z)
-1
+        assert Destroy(h) * LocalSigma(h, 0, 1) == z
+        assert LocalSigma(h, 1, 0) * Create(h) == z
+
 
 class TestOperatorTrace(unittest.TestCase):
 
     def testConstruction(self):
         M = OperatorSymbol("M", 1)
-        N = OperatorSymbol("N", ProductSpace(local_space(1), local_space(2)))
-        self.assertEqual(OperatorTrace.create(1, M), OperatorTrace(1, M))
-        self.assertEqual(OperatorTrace(1, M).space, TrivialSpace)
-        self.assertEqual(OperatorTrace(1, N).space, local_space(2))
+        N = OperatorSymbol("N", ProductSpace(LocalSpace(1), LocalSpace(2)))
+        assert (OperatorTrace.create(M, over_space=1) ==
+                OperatorTrace(M, over_space=1))
+        assert OperatorTrace(M, over_space=1).space == TrivialSpace
+        assert OperatorTrace(N, over_space=1).space == LocalSpace(2)
 
     def testSimplificationPlus(self):
         M = OperatorSymbol("M", 1)
         N = OperatorSymbol("N", 1)
         O = OperatorSymbol("O", 1)
 
-        self.assertEqual(OperatorTrace.create(1, M+N), OperatorTrace(1, M) + OperatorTrace(1,N))
-        self.assertEqual(OperatorTrace.create(1, (M+N)*O).expand(), OperatorTrace(1, M*O) + OperatorTrace(1,N*O))
+        assert (OperatorTrace.create(M+N, over_space=1) ==
+                (OperatorTrace(M, over_space=1) +
+                 OperatorTrace(N, over_space=1)))
+        assert (OperatorTrace.create((M+N)*O, over_space=1).expand() ==
+                (OperatorTrace(M*O, over_space=1) +
+                 OperatorTrace(N*O, over_space=1)))
 
     def testSimplificationTimes(self):
         M = OperatorSymbol("M", 1)
         N = OperatorSymbol("N", 2)
-        O = OperatorSymbol("O", ProductSpace(local_space(1), local_space(2), local_space(3)))
-        self.assertEqual(OperatorTrace.create(1, M * N), OperatorTrace(1, M) * N)
-        self.assertEqual(OperatorTrace.create(ProductSpace(local_space(2),local_space(3)), M*N*O), M * OperatorTrace(2, N * OperatorTrace(3,O)))
-        self.assertEqual(match(PatternTuple((wc("h", head = LocalSpace), wc("A", head = Operator))), OperandsTuple((local_space(1),OperatorTrace.create(2, N) * M))), Match(h = local_space(1), A = (OperatorTrace.create(2, N) * M)))
-        self.assertEqual(OperatorTrace.create(1, OperatorTrace.create(2, N) * M), OperatorTrace(1, M) * OperatorTrace(2, N))
-        self.assertEqual(OperatorTrace.create(ProductSpace(local_space(1),local_space(2)), M * N), OperatorTrace(1, M) * OperatorTrace(2,N))
+        O = OperatorSymbol("O", ProductSpace(LocalSpace(1), LocalSpace(2),
+                                             LocalSpace(3)))
+        assert (OperatorTrace.create(M * N, over_space=1) ==
+                OperatorTrace(M, over_space=1) * N)
+        lhs = OperatorTrace.create(
+                     M*N*O,
+                     over_space=ProductSpace(LocalSpace(2), LocalSpace(3)))
+        rhs = M * OperatorTrace(N * OperatorTrace(O, over_space=3),
+                                over_space=2)
+        assert lhs == rhs
+        assert (OperatorTrace.create(
+                    OperatorTrace.create(N, over_space=2) * M,
+                    over_space=1
+                ) == (
+                    OperatorTrace(M, over_space=1) *
+                    OperatorTrace(N, over_space=2)
+                ))
+        assert (OperatorTrace.create(
+                    M * N,
+                    over_space=ProductSpace(LocalSpace(1),LocalSpace(2))
+                ) == (
+                    (OperatorTrace(M, over_space=1) *
+                     OperatorTrace(N, over_space=2))
+                ))
 
     def testSimplificationScalarTimesOperator(self):
         M = OperatorSymbol("M", 1)
-        self.assertEqual(OperatorTrace.create(1, 10 * M), 10 * OperatorTrace(1, M))
+        assert (OperatorTrace.create(10 * M, over_space=1) ==
+                10 * OperatorTrace(M, over_space=1))
 
     def testSimplificationAdjoint(self):
         M = OperatorSymbol("M", 1)
-        self.assertEqual(OperatorTrace.create(1, M.adjoint()), Adjoint(OperatorTrace(1, M)))
-
+        assert (OperatorTrace.create(M.adjoint(), over_space=1) ==
+                Adjoint(OperatorTrace(M, over_space=1)))
 
     def testLocalOps(self):
-        self.assertEqual(OperatorTrace.create(1, Create(1)), ZeroOperator)
-        self.assertEqual(OperatorTrace.create(1, Destroy(1)), ZeroOperator)
-        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 1,2)), ZeroOperator)
-        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 1,1)), IdentityOperator)
-        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 'e','g')), ZeroOperator)
-        self.assertEqual(OperatorTrace.create(1, LocalSigma(1, 'e','e')), IdentityOperator)
+        op = OperatorTrace.create(Create(1), over_space=1)
+        assert op == ZeroOperator
+        op = OperatorTrace.create(Destroy(1), over_space=1)
+        assert op == ZeroOperator
+        op = OperatorTrace.create(LocalSigma(1, 1, 2), over_space=1)
+        assert op == ZeroOperator
+        op = OperatorTrace.create(LocalSigma(1, 1, 1), over_space=1)
+        assert op == IdentityOperator
+        op = OperatorTrace.create(LocalSigma(1, 'e', 'g'), over_space=1)
+        assert op == ZeroOperator
+        op = OperatorTrace.create(LocalSigma(1, 'e', 'e'), over_space=1)
+        assert op == IdentityOperator
 
     def testSimplificationMaxwellBloch(self):
 
-        a = local_space("a", basis=('h','g'))
-        f = local_space("f")
-        from sympy import symbols
+        a = LocalSpace("a", basis=('h','g'))
+        f = LocalSpace("f")
         x,y,z = symbols("x,y,z", real = True)
         alpha = symbols("alpha")
         rho_a = (IdentityOperator + x * X(a) + y * Y(a) + z * Z(a)) / 2
         sigma = X(a) + I*Y(a)
         rho_f = Displace(f, alpha) * LocalProjector(f, 0) * Displace(f, -alpha)
         rho = rho_a * rho_f
-
-
-        self.assertEqual(OperatorTrace.create(ProductSpace(a, f), rho).expand(), IdentityOperator)
-
-
+        assert (OperatorTrace.create(
+                    rho, over_space=ProductSpace(a, f)
+                ).expand() == IdentityOperator)
 
     def testDimensionPrefactor(self):
-        h1 = local_space(1, dimension = 10)
+        h1 = LocalSpace(1, dimension=10)
         P = OperatorSymbol("P", 2)
-        self.assertEqual(OperatorTrace.create(h1, P), 10 * P)
+        lhs = OperatorTrace.create(P, over_space=h1)
+        rhs = 10 * P
+        assert lhs == rhs
+
 
 class TestOperatorMatrices(unittest.TestCase):
     def testConstruction(self):
-        h1, h2, h3 = local_space("h1"), local_space("h2"), local_space("h3")
+        h1, h2, h3 = LocalSpace("h1"), LocalSpace("h2"), LocalSpace("h3")
         a, b, c = Destroy(h1), Destroy(h2), Destroy(h3)
-        self.assertEqual(np_conjugate(a), a.dag())
+        assert np_conjugate(a) == a.dag()
 
         M = Matrix([[a,b],[c,a]])
 #        self.assertEqual(M.matrix, np_array([[a,b],[b,a]]))
-        self.assertEqual(M, Matrix(np_array([[a,b],[c,a]])))
-        self.assertEqual(M.T, Matrix(np_array([[a,c],[b,a]])))
-        self.assertEqual(M.conjugate(), Matrix(np_array([[a.dag(),b.dag()],[c.dag(),a.dag()]])))
-        self.assertEqual(M.H, Matrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]])))
-        self.assertEqual(M.H, Matrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]])))
+        assert M == Matrix(np_array([[a,b],[c,a]]))
+        assert M.T == Matrix(np_array([[a,c],[b,a]]))
+        assert M.conjugate() == Matrix(np_array([[a.dag(),b.dag()],[c.dag(),a.dag()]]))
+        assert M.H == Matrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]]))
+        assert M.H == Matrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]]))
 
     def testMathOperations(self):
         M = Matrix([[Create("1"), 0],[0, Destroy("1")]])
         N = Matrix([[Destroy("1"), Create("2")],[0, Destroy("1")]])
-        self.assertEqual(M+N, Matrix([[Create("1")+Destroy("1"), Create("2")],[0, 2*Destroy("1")]]))
-        self.assertEqual(M*N, Matrix([[Create("1")*Destroy("1"), Create("1")*Create("2")],[0, Destroy("1")*Destroy("1")]]))
-        self.assertEqual(IdentityOperator * M, M)
-        self.assertEqual(1 * M, M)
-        self.assertEqual(Create("1") * identity_matrix(2), Matrix([[Create("1"),0],[0,Create("1")]]))
-
+        assert M+N == Matrix([[Create("1")+Destroy("1"), Create("2")],[0, 2*Destroy("1")]])
+        assert M*N == Matrix([[Create("1")*Destroy("1"), Create("1")*Create("2")],[0, Destroy("1")*Destroy("1")]])
+        assert IdentityOperator * M == M
+        assert 1 * M == M
+        assert Create("1") * identity_matrix(2) == Matrix([[Create("1"),0],[0,Create("1")]])
 
     def testElementExpand(self):
-        self.assertEqual(Matrix([[(Create(1) + Create(2))*Create(3)]]).expand(), Matrix([[Create(1)*Create(3) + Create(2)*Create(3)]]))
-
-
+        assert Matrix([[(Create(1) + Create(2))*Create(3)]]).expand() == Matrix([[Create(1)*Create(3) + Create(2)*Create(3)]])
 
 
