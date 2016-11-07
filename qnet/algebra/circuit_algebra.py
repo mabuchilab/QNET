@@ -1902,7 +1902,11 @@ SeriesProduct._binary_rules += [
     (pattern_head(A_Circuit, B_Circuit),
         lambda A, B: _tensor_decompose_series(A, B)),
     (pattern_head(A_CPermutation, B_Circuit),
-        lambda A, B: _factor_permutation_for_blocks(A, B))
+        lambda A, B: _factor_permutation_for_blocks(A, B)),
+    (pattern_head(A_Circuit, pattern(SeriesInverse, A_Circuit)),
+        lambda A: cid(A.cdim)),
+    (pattern_head(pattern(SeriesInverse, A_Circuit), A_Circuit),
+        lambda A: cid(A.cdim)),
 ]
 
 

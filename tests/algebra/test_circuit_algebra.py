@@ -250,6 +250,16 @@ def test_ABCD():
     assert D[0, 0] == 1
 
 
+def test_inverse():
+    """Test that the series product of a circuit and its inverse gives the
+    identity"""
+    X = CircuitSymbol('X', cdim=3)
+    right = X << X.series_inverse()
+    left = X.series_inverse() << X
+    expected = cid(X.cdim)
+    assert left == right == expected
+
+
 def connect_data():
     A = CircuitSymbol('A', 1)
     B = CircuitSymbol('B', 1)
