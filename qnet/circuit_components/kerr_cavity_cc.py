@@ -21,16 +21,13 @@
 Component definition file for a Kerr-nonlinear cavity model with two ports.
 See documentation of :py:class:`KerrCavity`.
 """
-import unittest
+from sympy import sqrt
 
 from qnet.circuit_components.component import Component, SubComponent
 from qnet.algebra.circuit_algebra import SLH
 from qnet.algebra.operator_algebra import Destroy, Matrix, identity_matrix
-from qnet.algebra.hilbert_space_algebra import local_space
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 from sympy.core.symbol import symbols
-from sympy import sqrt
-
-
 
 
 class KerrCavity(Component):
@@ -47,16 +44,13 @@ class KerrCavity(Component):
     This particular component definition explicitly captures the reducibility of a trivial scattering matrix.
     I.e., it can be reduced into separate :py:class:`KerrPort` models for each port.
     """
-    
+
     CDIM = 2
-    
+
     PORTSIN = ['In1', 'In2']
     PORTSOUT = ['Out1', 'Out2']
-    
-    sub_blockstructure = (1, 1)
 
-    name = "K"
-    namespace = ""
+    sub_blockstructure = (1, 1)
 
     Delta = symbols('Delta', real = True)       # Detuning from cavity
     chi = symbols('chi', real = True)           # Kerr-nonlinear coefficient
@@ -65,13 +59,9 @@ class KerrCavity(Component):
     FOCK_DIM = 75
     _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', FOCK_DIM]
 
-
-
-
-
     @property
-    def _space(self):
-        return local_space(self.name, self.namespace, dimension = self.FOCK_DIM)
+    def space(self):
+        return LocalSpace(self.name, dimension=self.FOCK_DIM)
 
     @property
     def port1(self):
@@ -89,7 +79,7 @@ class KerrCavity(Component):
 
     def _toABCD(self, linearize):
         return self.toSLH().toABCD(linearize)
-    
+
 
 
 class KerrPort(SubComponent):
@@ -97,54 +87,19 @@ class KerrPort(SubComponent):
     Sub component model for the individual ports of a :py:class:`KerrCavity`.
     The Hamiltonian is included with the first port.
     """
-    
+
     def _toSLH(self):
 
         a = Destroy(self.space)
         a_d = a.adjoint()
         S = identity_matrix(1)
-        
-        if self.sub_index == 0: 
+
+        if self.sub_index == 0:
             # Include the Hamiltonian only with the first port of the kerr cavity circuit object
             H = self.Delta * (a_d * a) + self.chi * (a_d * a_d * a * a)
             L = Matrix([[sqrt(self.kappa_1) * a]])
         else:
             H = 0
             L = Matrix([[sqrt(self.kappa_2) * a]])
-        
+
         return SLH(S, L, H)
-
-
-
-
-
-# Test the circuit
-class _TestKerrCavity(unittest.TestCase):
-
-
-  def testCreation(self):
-      a = KerrCavity()
-      self.assertIsInstance(a, KerrCavity)
-
-  def testCReduce(self):
-      a = KerrCavity().creduce()
-
-  def testParameters(self):
-      if len(KerrCavity._parameters):
-          pname = KerrCavity._parameters[0]
-          obj = KerrCavity(name="TestName", namespace="TestNamespace", **{pname: 5})
-          self.assertEqual(getattr(obj, pname), 5)
-          self.assertEqual(obj.name, "TestName")
-          self.assertEqual(obj.namespace, "TestNamespace")
-
-      else:
-          obj = KerrCavity(name="TestName", namespace="TestNamespace")
-          self.assertEqual(obj.name, "TestName")
-          self.assertEqual(obj.namespace, "TestNamespace")
-
-  def testToSLH(self):
-      aslh = KerrCavity().toSLH()
-      self.assertIsInstance(aslh, SLH)
-
-if __name__ == "__main__":
-  unittest.main()

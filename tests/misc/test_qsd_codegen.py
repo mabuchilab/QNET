@@ -12,7 +12,7 @@ from qnet.algebra.operator_algebra import (IdentityOperator, Create, Destroy,
 from qnet.algebra.state_algebra import (
     BasisKet, LocalKet, TensorKet, CoherentStateKet
 )
-from qnet.algebra.hilbert_space_algebra import BasisRegistry, local_space
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 import os
 import shutil
 import stat
@@ -37,9 +37,12 @@ traj1    = pytest.fixture(qsd_traj(datadir, 'traj1', TRAJ1_SEED))
 TRAJ2_SEED = 18322321
 traj2_10 = pytest.fixture(qsd_traj(datadir, 'traj2_10', TRAJ2_SEED))
 
+hs0 = LocalSpace('s0', dimension=50)
+hs1 = LocalSpace('s1', dimension=50)
+hs2 = LocalSpace('s2', dimension=2)
 
 def test_local_ops():
-    psa = PseudoNAND()
+    psa = PseudoNAND('pNAND')
     assert isinstance(psa, Circuit)
     l_ops = local_ops(psa)
     a = Destroy(psa.space)
@@ -94,7 +97,7 @@ def test_operator_hilbert_space_check():
 def test_labeled_basis_op():
     """Check that in QSD code generation labeled basis states are translated
     into numbered basis states"""
-    hs = local_space('tls', namespace='sys', basis=('g', 'e'))
+    hs = LocalSpace('tls', basis=('g', 'e'))
     a = Destroy(hs)
     ad = a.dag()
     s = LocalSigma(hs, 'g', 'e')
@@ -105,11 +108,9 @@ def test_labeled_basis_op():
 
 
 def test_qsd_codegen_operator_basis():
-    a = Destroy(1)
-    a.space.dimension = 10
+    a = Destroy(hs1)
     ad = a.dag()
-    s = LocalSigma(2, 1, 0)
-    s.space.dimension = 2
+    s = LocalSigma(hs2, 1, 0)
     sd = s.dag()
     circuit = SLH(identity_matrix(0), [], a*ad + s + sd)
     codegen = QSDCodeGen(circuit)
@@ -139,7 +140,7 @@ def test_qsd_codegen_parameters():
     x = symbols(r'chi', real=True)
     c = symbols("c")
 
-    a = Destroy(1)
+    a = Destroy(hs1)
     H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
     L = sqrt(k) * a
     slh = SLH(identity_matrix(1), [L], H)
@@ -174,7 +175,7 @@ def test_latex_symbols(slh_Sec6):
     x = symbols(r'\chi^{(1)}_{\text{main}}', real=True)
     c = symbols("c")
 
-    a = Destroy(1)
+    a = Destroy(hs1)
     H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
     L = sqrt(k) * a
     slh = SLH(identity_matrix(1), [L], H)
@@ -193,7 +194,7 @@ def test_qsd_codegen_hamiltonian():
     x = symbols(r'\chi', real=True)
     c = symbols("c",real=True)
 
-    a = Destroy(1)
+    a = Destroy(hs1)
     H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
     L = sqrt(k) * a
     slh = SLH(identity_matrix(1), [L], H)
@@ -277,21 +278,12 @@ def slh_Sec6():
     gamma1 = symbols(r'\gamma_1', positive=True)
     gamma2 = symbols(r'\gamma_2', positive=True)
     kappa  = symbols(r'\kappa',   positive=True)
-    A1 = Destroy(0)
+    A1 = Destroy(hs0)
     Ac1 = A1.dag()
-    N1 = Ac1*A1
-    Id1 = identity_matrix(0)
-    A2 = Destroy(1)
+    A2 = Destroy(hs1)
     Ac2 = A2.dag()
-    N2 = Ac2*A2
-    Id2 = identity_matrix(1)
-    Sp = LocalSigma(2, 1, 0)
+    Sp = LocalSigma(hs2, j=1, k=0)
     Sm = Sp.dag()
-    Id3 = identity_matrix(3)
-
-    BasisRegistry.set_basis(A1.space, range(50))
-    BasisRegistry.set_basis(A2.space, range(50))
-    BasisRegistry.set_basis(Sp.space, range(2))
 
     H  = E*I*(Ac1-A1) + 0.5*chi*I*(Ac1*Ac1*A2 - A1*A1*Ac2) \
          + omega*Sp*Sm + eta*I*(A2*Sp-Ac2*Sm)
@@ -316,15 +308,15 @@ def slh_Sec6_vals():
 @pytest.fixture
 def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
     codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
-    A2 = Destroy(1)
-    Sp = LocalSigma(2, 1, 0)
+    A2 = Destroy(hs1)
+    Sp = LocalSigma(hs2, 1, 0)
     Sm = Sp.dag()
     codegen.add_observable(Sp*A2*Sm*Sp, name="X1")
     codegen.add_observable(Sm*Sp*A2*Sm, name="X2")
     codegen.add_observable(A2, name="A2")
-    psi0 = BasisKet(0, 0)
-    psi1 = BasisKet(1, 0)
-    psi2 = BasisKet(2, 0)
+    psi0 = BasisKet(hs0, 0)
+    psi1 = BasisKet(hs1, 0)
+    psi2 = BasisKet(hs2, 0)
     codegen.set_trajectories(psi_initial=psi0*psi1*psi2,
             stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
@@ -334,7 +326,7 @@ def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
 
 def test_operator_str(Sec6_codegen):
     gamma1 = symbols(r'\gamma_1', positive=True)
-    A0 = Destroy(0)
+    A0 = Destroy(hs0)
     Op = sqrt(gamma1)*A0
     assert Sec6_codegen._operator_str(Op) == '(sqrt(gamma_1)) * (A0)'
 
@@ -353,8 +345,8 @@ def test_qsd_codegen_lindblads(slh_Sec6):
 
 
 def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
-    A2 = Destroy(1)
-    Sp = LocalSigma(2, 1, 0)
+    A2 = Destroy(hs1)
+    Sp = LocalSigma(hs2, 1, 0)
     Sm = Sp.dag()
     codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
 
@@ -362,15 +354,15 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
         scode = codegen._observables_lines(indent=0)
     assert "Must register at least one observable" in str(excinfo.value)
 
-    codegen.add_observable(Sp*A2*Sm*Sp)
     name = 'a_1 sigma_10^[2]'
+    codegen.add_observable(Sp*A2*Sm*Sp, name=name)
     filename = codegen._observables[name][1]
     assert filename == 'a_1_sigma_10_2.out'
-    codegen.add_observable(Sp*A2*Sm*Sp)
+    codegen.add_observable(Sp*A2*Sm*Sp, name=name)
     assert 'Overwriting existing operator' in caplog.text()
 
     with pytest.raises(ValueError) as exc_info:
-        codegen.add_observable(Sp*A2*A2*Sm*Sp)
+        codegen.add_observable(Sp*A2*A2*Sm*Sp, name="xxxx"*20)
     assert "longer than limit" in str(exc_info.value)
     name = 'A2^2'
     codegen.add_observable(Sp*A2*A2*Sm*Sp, name=name)
@@ -418,7 +410,7 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
     assert codegen._operator_str(Sm*A2) == '(A1 * S2_0_1)'
     # If the oberservables introduce new operators or symbols, these should
     # extend the existing ones
-    P1 = LocalSigma(2, 1, 1)
+    P1 = LocalSigma(hs2, 1, 1)
     zeta = symbols("zeta", real=True)
     codegen.add_observable(zeta*P1, name="P1")
     assert P1 in codegen._local_ops
@@ -436,37 +428,29 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
 
 def test_ordered_tensor_operands(slh_Sec6):
     codegen = QSDCodeGen(circuit=slh_Sec6)
-    psi = BasisKet(0, 0) * BasisKet(1, 0)
+    psi = BasisKet(hs0, 0) * BasisKet(hs1, 0)
     assert (list(psi.operands) == list(codegen._ordered_tensor_operands(psi)))
-    psi = TensorKet(BasisKet(1, 0), BasisKet(0, 0))
+    psi = TensorKet(BasisKet(hs1, 0), BasisKet(hs0, 0))
     assert (list(reversed(psi.operands))
             == list(codegen._ordered_tensor_operands(psi)))
 
 
 def test_define_atomic_kets(slh_Sec6):
     codegen = QSDCodeGen(circuit=slh_Sec6)
-    psi_cav1 = lambda n:  BasisKet(0, n)
-    psi_cav2 = lambda n:  BasisKet(1, n)
-    psi_spin = lambda n:  BasisKet(2, n)
+    psi_cav1 = lambda n:  BasisKet(hs0, n)
+    psi_cav2 = lambda n:  BasisKet(hs1, n)
+    psi_spin = lambda n:  BasisKet(hs2, n)
     psi_tot = lambda n, m, l: psi_cav1(n) * psi_cav2(m) * psi_spin(l)
 
     with pytest.raises(QSDCodeGenError) as excinfo:
         lines = codegen._define_atomic_kets(psi_cav1(0))
     assert "not in the Hilbert space of the Hamiltonian" in str(excinfo.value)
-    BasisRegistry.registry = {} # reset
-    with pytest.raises(QSDCodeGenError) as excinfo:
-        lines = codegen._define_atomic_kets(psi_tot(0,0,0))
-    assert "Unknown dimension for Hilbert space" in str(excinfo.value)
-
-    psi_cav1(0).space.dimension = 10
-    psi_cav2(0).space.dimension = 10
-    psi_spin(0).space.dimension = 2
 
     lines = codegen._define_atomic_kets(psi_tot(0,0,0))
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phiL0(10,0,FIELD); // HS 0
-    State phiL1(10,0,FIELD); // HS 1
+    State phiL0(50,0,FIELD); // HS 0
+    State phiL1(50,0,FIELD); // HS 1
     State phiL2(2,0,FIELD); // HS 2
     State phiT0List[3] = {phiL0, phiL1, phiL2};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
@@ -478,11 +462,11 @@ def test_define_atomic_kets(slh_Sec6):
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phiL0(10,0,FIELD); // HS 0
-    State phiL1(10,0,FIELD); // HS 1
+    State phiL0(50,0,FIELD); // HS 0
+    State phiL1(50,0,FIELD); // HS 1
     State phiL2(2,0,FIELD); // HS 2
-    State phiL3(10,1,FIELD); // HS 0
-    State phiL4(10,1,FIELD); // HS 1
+    State phiL3(50,1,FIELD); // HS 0
+    State phiL4(50,1,FIELD); // HS 1
     State phiT0List[3] = {(phiL0 + phiL3), (phiL1 + phiL4), phiL2};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
     ''').strip()
@@ -493,7 +477,7 @@ def test_define_atomic_kets(slh_Sec6):
         assert phi in codegen._qsd_states
 
     alpha = symbols('alpha')
-    psi = CoherentStateKet(0, alpha) * psi_cav2(0) * psi_spin(0)
+    psi = CoherentStateKet(hs0, alpha) * psi_cav2(0) * psi_spin(0)
     with pytest.raises(TypeError) as excinfo:
         lines = codegen._define_atomic_kets(psi)
     assert "neither a known symbol nor a complex number" in str(excinfo.value)
@@ -502,9 +486,9 @@ def test_define_atomic_kets(slh_Sec6):
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phiL0(10,0,FIELD); // HS 1
+    State phiL0(50,0,FIELD); // HS 1
     State phiL1(2,0,FIELD); // HS 2
-    State phiL2(10,alpha,FIELD); // HS 0
+    State phiL2(50,alpha,FIELD); // HS 0
     State phiT0List[3] = {phiL2, phiL0, phiL1};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
     ''').strip()
@@ -514,14 +498,14 @@ def test_define_atomic_kets(slh_Sec6):
     ):
         assert phi in codegen._qsd_states
 
-    psi = CoherentStateKet(0, 1j) * psi_cav2(0) * psi_spin(0)
+    psi = CoherentStateKet(hs0, 1j) * psi_cav2(0) * psi_spin(0)
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phiL0(10,0,FIELD); // HS 1
+    State phiL0(50,0,FIELD); // HS 1
     State phiL1(2,0,FIELD); // HS 2
     Complex phiL2_alpha(0,1);
-    State phiL2(10,phiL2_alpha,FIELD); // HS 0
+    State phiL2(50,phiL2_alpha,FIELD); // HS 0
     State phiT0List[3] = {phiL2, phiL0, phiL1};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
     ''').strip()
@@ -535,11 +519,11 @@ def test_define_atomic_kets(slh_Sec6):
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
-    State phiL0(10,0,FIELD); // HS 0
-    State phiL1(10,0,FIELD); // HS 1
+    State phiL0(50,0,FIELD); // HS 0
+    State phiL1(50,0,FIELD); // HS 1
     State phiL2(2,0,FIELD); // HS 2
-    State phiL3(10,1,FIELD); // HS 0
-    State phiL4(10,1,FIELD); // HS 1
+    State phiL3(50,1,FIELD); // HS 0
+    State phiL4(50,1,FIELD); // HS 1
     State phiL5(2,1,FIELD); // HS 2
     State phiT0List[3] = {phiL0, phiL1, phiL5};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
@@ -557,18 +541,13 @@ def test_define_atomic_kets(slh_Sec6):
 
 def test_qsd_codegen_initial_state(slh_Sec6):
 
-    A2 = Destroy(1)
-    Sp = LocalSigma(2, 1, 0)
+    A2 = Destroy(hs1)
+    Sp = LocalSigma(hs2, 1, 0)
     Sm = Sp.dag()
-    psi_cav1 = lambda n:  BasisKet(0, n)
-    psi_cav2 = lambda n:  BasisKet(1, n)
-    psi_spin = lambda n:  BasisKet(2, n)
+    psi_cav1 = lambda n:  BasisKet(hs0, n)
+    psi_cav2 = lambda n:  BasisKet(hs1, n)
+    psi_spin = lambda n:  BasisKet(hs2, n)
     psi_tot = lambda n, m, l: psi_cav1(n) * psi_cav2(m) * psi_spin(l)
-
-    BasisRegistry.registry = {} # reset
-    psi_cav1(0).space.dimension = 10
-    psi_cav2(0).space.dimension = 10
-    psi_spin(0).space.dimension = 2
 
     codegen = QSDCodeGen(circuit=slh_Sec6)
     codegen.add_observable(Sp*A2*Sm*Sp, "X1.out")
@@ -584,11 +563,11 @@ def test_qsd_codegen_initial_state(slh_Sec6):
 
     scode = codegen._initial_state_lines(indent=0)
     assert scode == dedent(r'''
-    State phiL0(10,0,FIELD); // HS 0
-    State phiL1(10,0,FIELD); // HS 1
+    State phiL0(50,0,FIELD); // HS 0
+    State phiL1(50,0,FIELD); // HS 1
     State phiL2(2,0,FIELD); // HS 2
-    State phiL3(10,1,FIELD); // HS 0
-    State phiL4(10,1,FIELD); // HS 1
+    State phiL3(50,1,FIELD); // HS 0
+    State phiL4(50,1,FIELD); // HS 1
     State phiT0List[3] = {(phiL0 + phiL3), (phiL1 + phiL4), phiL2};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
 
@@ -597,15 +576,15 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     ''').strip()
 
     alpha = symbols('alpha')
-    psi = CoherentStateKet(0, alpha) * psi_cav2(0) * psi_spin(0)
+    psi = CoherentStateKet(hs0, alpha) * psi_cav2(0) * psi_spin(0)
     codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
             traj_save=10)
     scode = codegen._initial_state_lines(indent=0)
     assert scode == dedent(r'''
-    State phiL0(10,0,FIELD); // HS 1
+    State phiL0(50,0,FIELD); // HS 1
     State phiL1(2,0,FIELD); // HS 2
-    State phiL2(10,alpha,FIELD); // HS 0
+    State phiL2(50,alpha,FIELD); // HS 0
     State phiT0List[3] = {phiL2, phiL0, phiL1};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
 
@@ -619,11 +598,11 @@ def test_qsd_codegen_initial_state(slh_Sec6):
             traj_save=10)
     scode = codegen._initial_state_lines(indent=0)
     assert scode == dedent(r'''
-    State phiL0(10,0,FIELD); // HS 0
-    State phiL1(10,0,FIELD); // HS 1
+    State phiL0(50,0,FIELD); // HS 0
+    State phiL1(50,0,FIELD); // HS 1
     State phiL2(2,0,FIELD); // HS 2
-    State phiL3(10,1,FIELD); // HS 0
-    State phiL4(10,1,FIELD); // HS 1
+    State phiL3(50,1,FIELD); // HS 0
+    State phiL4(50,1,FIELD); // HS 1
     State phiT0List[3] = {phiL0, phiL4, phiL2};
     State phiT0(3, phiT0List); // HS 0 * HS 1 * HS 2
     State phiT1List[3] = {phiL3, phiL1, phiL2};
@@ -635,8 +614,8 @@ def test_qsd_codegen_initial_state(slh_Sec6):
 
 
 def test_qsd_codegen_traj(slh_Sec6):
-    A2 = Destroy(1)
-    Sp = LocalSigma(2, 1, 0)
+    A2 = Destroy(hs1)
+    Sp = LocalSigma(hs2, 1, 0)
     Sm = Sp.dag()
     codegen = QSDCodeGen(circuit=slh_Sec6)
     codegen.add_observable(Sp*A2*Sm*Sp, name="X1")
@@ -890,7 +869,7 @@ def test_compilation_worker(mock_compilation_worker, Sec6_codegen, traj1,
 def test_find_time_dependent_coeffs():
     E0, sigma, t, t0, a, b = sympy.symbols('E_0, sigma, t, t_0, a, b',
                                            real=True)
-    op_a = Destroy(0)
+    op_a = Destroy(hs0)
     op_n = op_a.dag() * op_a
     gaussian = E0 * sympy.exp(-(t-t0)**2/(2*sigma**2))
     linear = a * t

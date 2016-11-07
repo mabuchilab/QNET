@@ -27,25 +27,25 @@ class {entity_name}(Component):
 
     # total number of field channels
     CDIM = {CDIM}
-    
+
     # parameters on which the model depends
     {param_attributes}
     _parameters = {param_names}
 
     # list of input port names
     PORTSIN = {PORTSIN}
-    
+
     # list of output port names
     PORTSOUT = {PORTSOUT}
 
     # sub-components
     {sub_component_attributes}
     _sub_components = {sub_component_names}
-    
+
 
     def _toSLH(self):
         return self.creduce().toSLH()
-        
+
     def _creduce(self):
 
         {symbol_instantiation}
@@ -53,7 +53,7 @@ class {entity_name}(Component):
         return {symbolic_expression}
 
     @property
-    def _space(self):
+    def space(self):
         return self.creduce().space
 
 

@@ -21,13 +21,13 @@
 Component definition file for a simple linear cavity model with two ports.
 See documentation of :py:class:`LinearCavity`.
 """
-import unittest
+from sympy.core.symbol import symbols
+from sympy import sqrt
 
 from qnet.circuit_components.component import Component, SubComponent
-from qnet.algebra.circuit_algebra import  Destroy, local_space, Matrix, sqrt, SLH, identity_matrix
-from sympy.core.symbol import symbols
-
-
+from qnet.algebra.circuit_algebra import Matrix, SLH
+from qnet.algebra.operator_algebra import Destroy, identity_matrix
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 
 class LinearCavity(Component):
@@ -52,22 +52,15 @@ class LinearCavity(Component):
 
     sub_blockstructure = (1, 1)
 
-    name = "C"
-    namespace = ""
-
     Delta = symbols('Delta', real = True)       # Detuning from cavity
     kappa_1 = symbols('kappa_1', real = True)   # coupling through first port
     kappa_2 = symbols('kappa_2', real = True)   # coupling through second port
     FOCK_DIM = 75
     _parameters = ['Delta', 'kappa_1', 'kappa_2', FOCK_DIM]
 
-
-
-
-
     @property
-    def _space(self):
-        return local_space(self.name, self.namespace, dimension = self.FOCK_DIM)
+    def space(self):
+        return LocalSpace(self.name, dimension=self.FOCK_DIM)
 
     @property
     def port1(self):
@@ -87,7 +80,6 @@ class LinearCavity(Component):
         return self.toSLH().toABCD(linearize)
 
 
-
 class CavityPort(SubComponent):
     """
     Sub component model for the individual ports of a :py:class:`LinearCavity`.
@@ -101,7 +93,8 @@ class CavityPort(SubComponent):
         S = identity_matrix(1)
 
         if self.sub_index == 0:
-            # Include the Hamiltonian only with the first port of the kerr cavity circuit object
+            # Include the Hamiltonian only with the first port of the kerr
+            # cavity circuit object
             H = self.Delta * (a_d * a)
             L = Matrix([[sqrt(self.kappa_1) * a]])
         else:
@@ -109,37 +102,3 @@ class CavityPort(SubComponent):
             L = Matrix([[sqrt(self.kappa_2) * a]])
 
         return SLH(S, L, H)
-
-
-
-
-
-# Test the circuit
-class _TestLinearCavity(unittest.TestCase):
-
-  def testCreation(self):
-      a = LinearCavity()
-      self.assertIsInstance(a, LinearCavity)
-
-  def testCReduce(self):
-      a = LinearCavity().creduce()
-
-  def testParameters(self):
-      if len(LinearCavity._parameters):
-          pname = LinearCavity._parameters[0]
-          obj = LinearCavity(name="TestName", namespace="TestNamespace", **{pname: 5})
-          self.assertEqual(getattr(obj, pname), 5)
-          self.assertEqual(obj.name, "TestName")
-          self.assertEqual(obj.namespace, "TestNamespace")
-
-      else:
-          obj = LinearCavity(name="TestName", namespace="TestNamespace")
-          self.assertEqual(obj.name, "TestName")
-          self.assertEqual(obj.namespace, "TestNamespace")
-
-  def testToSLH(self):
-      aslh = LinearCavity().toSLH()
-      self.assertIsInstance(aslh, SLH)
-
-if __name__ == "__main__":
-  unittest.main()

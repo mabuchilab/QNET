@@ -16,10 +16,8 @@
 # Copyright (C) 2012-2013, Nikolas Tezak
 #
 ###########################################################################
-
-"""
-This module features some helper functions for automatically creating and managing a library of circuit component definition files.
-"""
+"""This module features some helper functions for automatically creating and
+managing a library of circuit component definition files."""
 import os
 import re
 
@@ -112,7 +110,7 @@ def write_component(entity, architectures, local = False):
     symbol_assignments = "".join(symbol_assignment_strings)
     symbol_instantiation = ", ".join(sorted(circuit_symbols.keys())) + " = " + ", ".join("self."+k for k in sorted(circuit_symbols.keys()))
     symbolic_expression = str(arch_circuit)
-    
+
     with open(MODULE_DIR + '/_template_cc.py', 'r') as template:
         file_template = template.read()
 
@@ -123,7 +121,7 @@ def write_component(entity, architectures, local = False):
     else:
 
         cc_file_path = MODULE_DIR + "/" + camelcase_to_underscore(entity.identifier) + "_cc.py"
-    
+
     # backup existing files
     # TODO add code to rescue doc-strings
     if os.path.exists(cc_file_path):
@@ -131,8 +129,8 @@ def write_component(entity, architectures, local = False):
         while(os.path.exists(cc_file_path + ".backup_%d" % j)):
             j += 1
         os.rename(cc_file_path, cc_file_path + ".backup_%d" % j)
-    
-    
+
+
     template_params = {
         "filename" : os.path.basename(cc_file_path),
         "entity_name": entity.identifier,
@@ -147,9 +145,9 @@ def write_component(entity, architectures, local = False):
         "symbolic_expression": symbolic_expression,
         "import_components":import_components,
     }
-    
+
     with open(cc_file_path, "w") as src_file:
         src_file.write(file_template.format(**template_params))
-        
+
     return cc_file_path
-    
+

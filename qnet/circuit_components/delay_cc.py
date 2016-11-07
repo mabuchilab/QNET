@@ -16,32 +16,26 @@
 # Copyright (C) 2012-2013, Nikolas Tezak
 #
 ###########################################################################
-
-"""
-Component definition file for a pseudo-delay model that works over a limited bandwidth.
-See documentation of :py:class:`Delay`.
+"""Component definition file for a pseudo-delay model that works over a limited
+bandwidth.  See documentation of :py:class:`Delay`.
 """
 
-
-
-import unittest
-from qnet.circuit_components.component import Component
-from qnet.algebra.circuit_algebra import *
-from sympy.core.symbol import symbols
-from numpy import array as np_array
-from qnet.circuit_components.library import make_namespace_string
 from functools import reduce as freduce
+
+from sympy.core.symbol import symbols
+from sympy import sqrt
+from numpy import array as np_array
+
+from qnet.circuit_components.component import Component
+from qnet.algebra.circuit_algebra import Matrix, SLH
+from qnet.algebra.operator_algebra import Create, Destroy, ZeroOperator
+from qnet.algebra.abstract_algebra import tex
 
 
 class Delay(Component):
-    r"""
-    Delay
-    """
-    
+    r"""Delay"""
+
     CDIM = 1
-    
-    name = "T"
-    namespace = ""
 
     tau = symbols('tau', positive = True) # positive valued delay
     N = 3
@@ -49,10 +43,10 @@ class Delay(Component):
 
     _parameters = ['alpha', 'N', 'FOCK_DIM']
 
-    
+
     PORTSIN = ["In1"]
     PORTSOUT = ["Out1"]
-    
+
     def _toSLH(self):
 
         # These numerically optimal solutions were obtained as outlined in
@@ -73,55 +67,16 @@ class Delay(Component):
         else:
             raise NotImplementedError("The number of cavities to realize the delay must be one of 1,3 or 5.")
 
-        h0 = make_namespace_string(self.name, 'C0')
-        hp =  [make_namespace_string(self.name, "C{:d}p".format(n+1)) for n in range((self.N-1)/2)]
-        hm =  [make_namespace_string(self.name, "C{:d}m".format(n+1)) for n in range((self.N-1)/2)]
-
+        h0 = self.name+'C0'
+        hp =  [self.name+".C{:d}p".format(n+1) for n in range((self.N-1)//2)]
+        hm =  [self.name+".C{:d}m".format(n+1) for n in range((self.N-1)//2)]
 
         S = Matrix([1.])
         slh0 = SLH(S, Matrix([[sqrt(kappa0) * Destroy(h0)]]), ZeroOperator)
         slhp = [SLH(S, Matrix([[sqrt(kj) * Destroy(hj)]]), Dj * Create(hj) * Destroy(hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hp)]
         slhm = [SLH(S, Matrix([[sqrt(kj) * Destroy(hj)]]), -Dj * Create(hj) * Destroy(hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hm)]
 
-        return freduce(lambda a, b: a << b, slhp + slhm, slh0)
+        return freduce(lambda a, b: a << b, slhp + slhm, slh0).toSLH()
 
-
-
-    _space = TrivialSpace
-        
-    def _tex(self):
-        return r"{T(%s)}" % tex(self.tau)
-
-
-
-
-# Test the circuit
-class _TestDelay(unittest.TestCase):
-
-    def testCreation(self):
-        a = Delay()
-        self.assertIsInstance(a, Delay)
-
-    def testCReduce(self):
-        a = Delay().creduce()
-
-    def testParameters(self):
-        if len(Delay._parameters):
-            pname = Delay._parameters[0]
-            obj = Delay(name="TestName", namespace="TestNamespace", **{pname: 5})
-            self.assertEqual(getattr(obj, pname), 5)
-            self.assertEqual(obj.name, "TestName")
-            self.assertEqual(obj.namespace, "TestNamespace")
-
-        else:
-            obj = Delay(name="TestName", namespace="TestNamespace")
-            self.assertEqual(obj.name, "TestName")
-            self.assertEqual(obj.namespace, "TestNamespace")
-
-    def testToSLH(self):
-        aslh = Delay().toSLH()
-        print(aslh)
-        self.assertIsInstance(aslh, SLH)
-
-if __name__ == "__main__":
-    unittest.main()
+    def tex(self):
+        return r"{%s(%s)}" % (tex(self.name), tex(self.tau))

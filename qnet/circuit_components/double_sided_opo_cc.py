@@ -21,18 +21,18 @@
 Component definition file for a degenerate OPO model with two signal beam ports.
 See documentation of :py:class:`DoubleSidedOPO`.
 """
-import unittest
+from sympy.core.symbol import symbols
+from sympy import I, sqrt
 
-from qnet.algebra.circuit_algebra import HilbertSpace, Destroy, Matrix, sqrt, SLH, LocalSigma, identity_matrix, local_space
+from qnet.algebra.circuit_algebra import Matrix, SLH
+from qnet.algebra.operator_algebra import Destroy, identity_matrix
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.circuit_components.component import Component, SubComponent
 
-from sympy.core.symbol import symbols
-from sympy import I
 
 class DoubleSidedOPO(Component):
-    r"""
-    This model describes a degenerate OPO with two signal beam ports
-    in the sub-threshold regime. I.e., the pump is modeled as a classical amplitude.
+    r"""This model describes a degenerate OPO with two signal beam ports in the
+    sub-threshold regime. I.e., the pump is modeled as a classical amplitude.
 
     The model's SLH parameters are given by
 
@@ -53,10 +53,8 @@ class DoubleSidedOPO(Component):
     which is just the threshold condition.
     In a feedback configuration the threshold condition is generally changed.
     """
-    
-    CDIM = 2
 
-    name = "OPO"
+    CDIM = 2
 
     kappa_1 = symbols('kappa_1', real = True) # decay of cavity mode through cavity mirror
     kappa_2 = symbols('kappa_2', real = True) # decay rate into transverse modes
@@ -65,28 +63,27 @@ class DoubleSidedOPO(Component):
     FOCK_DIM = 25
     _parameters = ['kappa_1', 'kappa_2', 'alpha', 'Delta', 'FOCK_DIM']
 
-    
+
     PORTSIN = ['In1', 'In2']
-    PORTSOUT = ['Out1', 'Out2']        
-    
+    PORTSOUT = ['Out1', 'Out2']
+
     sub_blockstructure = (1, 1)
 
     @property
-    def _space(self):
-        return local_space(self.name, self.namespace, dimension = self.FOCK_DIM)
-    
+    def space(self):
+        return LocalSpace(self.name, dimension=self.FOCK_DIM)
+
     def _creduce(self):
         return OPOPort(self, 0) + OPOPort(self, 1)
 
     def _toSLH(self):
         return self.creduce().toSLH()
-        
+
 
 class OPOPort(SubComponent):
-    """
-    Sub component model for the individual ports of a :py:class:`DoubleSidedOPO`.
-    The Hamiltonian is included with the first port.
-    """
+    """Sub component model for the individual ports of a
+    :py:class:`DoubleSidedOPO`.  The Hamiltonian is included with the first
+    port."""
 
     def _toSLH(self):
 
@@ -95,7 +92,7 @@ class OPOPort(SubComponent):
 
         S = identity_matrix(1)
 
-        if self.sub_index == 0: 
+        if self.sub_index == 0:
             # Include the Hamiltonian only with the first port of the kerr cavity circuit object
             H = self.Delta * a_d * a + (I/2) * (self.alpha * a_d * a_d - self.alpha.conjugate() * a * a)
             L = Matrix([[sqrt(self.kappa_1) * a]])
@@ -104,35 +101,3 @@ class OPOPort(SubComponent):
             L = Matrix([[sqrt(self.kappa_2) * a]])
 
         return SLH(S, L, H)
-
-
-
-# Test the circuit
-class _TestDoubleSidedOPO(unittest.TestCase):
-
-    def testCreation(self):
-        a = DoubleSidedOPO()
-        self.assertIsInstance(a, DoubleSidedOPO)
-
-    def testCReduce(self):
-        a = DoubleSidedOPO().creduce()
-
-    def testParameters(self):
-        if len(DoubleSidedOPO._parameters):
-            pname = DoubleSidedOPO._parameters[0]
-            obj = DoubleSidedOPO(name="TestName", namespace="TestNamespace", **{pname: 5})
-            self.assertEqual(getattr(obj, pname), 5)
-            self.assertEqual(obj.name, "TestName")
-            self.assertEqual(obj.namespace, "TestNamespace")
-
-        else:
-            obj = DoubleSidedOPO(name="TestName", namespace="TestNamespace")
-            self.assertEqual(obj.name, "TestName")
-            self.assertEqual(obj.namespace, "TestNamespace")
-
-    def testToSLH(self):
-        aslh = DoubleSidedOPO().toSLH()
-        self.assertIsInstance(aslh, SLH)
-
-if __name__ == "__main__":
-    unittest.main()

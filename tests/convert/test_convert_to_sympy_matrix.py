@@ -1,16 +1,16 @@
 import qnet.algebra.operator_algebra
 from qnet.convert.to_sympy_matrix import convert_to_sympy_matrix
-from qnet.algebra.hilbert_space_algebra import local_space
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 import sympy
 
 def test_convert_to_sympy_matrix():
     import pytest
     N = 4
-    Hil = local_space('full', basis=range(N))
+    Hil = LocalSpace('full', basis=range(N))
 
-    Hil_q1 = local_space('Q1', basis=range(2))
-    Hil_q2 = local_space('Q2', basis=range(2))
+    Hil_q1 = LocalSpace('Q1', basis=range(2))
+    Hil_q2 = LocalSpace('Q2', basis=range(2))
 
     expr =  qnet.algebra.operator_algebra.IdentityOperator
     assert convert_to_sympy_matrix(expr, Hil) == sympy.eye(N)

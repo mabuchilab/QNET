@@ -25,10 +25,12 @@ of sub components.
 
 2) They may be 'primitive', i.e. they cannot be specified via QHDL
 
-We write 'creducible' instead of 'reducible' in order to distinguish the meaning from the definition of Gough and James,
-who define reducible circuits as all circuits that can be decomposed into a concatenation of parts.
-Creducibility is more general than reducibility since we allow for an expansion into any sort of non-trivial algebraic expression,
-but in reverse, all reducible circuits are creducible.
+We write 'creducible' instead of 'reducible' in order to distinguish the
+meaning from the definition of Gough and James, who define reducible circuits
+as all circuits that can be decomposed into a concatenation of parts.
+Creducibility is more general than reducibility since we allow for an expansion
+into any sort of non-trivial algebraic expression, but in reverse, all
+reducible circuits are creducible.
 
 Examples of creducible but primitive Components are:
 KerrCavity, Relay, ...
@@ -43,32 +45,24 @@ non-creducible & non-primitive:
 None.
 
 """
+from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 
+
+from qnet.algebra.hilbert_space_algebra import TrivialSpace
 from qnet.algebra.circuit_algebra import Circuit, CannotConvertToABCD
-from qnet.algebra.abstract_algebra import Expression, substitute, tex
+from qnet.algebra.abstract_algebra import Expression, substitute
 
 
-#TODO update str insertion to str.format()
-
-
-
-
-class Component(Circuit, Expression):
-    """
-    Base class for all circuit components, 
-    both primitive components such as beamsplitters 
-    and cavity models and also composite circuit models 
+class Component(Circuit, Expression, metaclass=ABCMeta):
+    """Base class for all circuit components,
+    both primitive components such as beamsplitters
+    and cavity models and also composite circuit models
     that are built up from these.
     Via the creduce() method, an object can be decomposed into its parts.
     """
 
     CDIM = 0
-
-    # Name of the component, only necessary if it carries 
-    # its own physical degrees of freedom or if it is part of a circuit
-    name = 'C'
-
-    namespace = ''
 
     # ingoing port names
     PORTSIN = []
@@ -80,45 +74,42 @@ class Component(Circuit, Expression):
     _sub_components = []
 
     @property
-    def _cdim(self):
+    def cdim(self):
         return self.CDIM
 
     def _all_symbols(self):
         return set(())
 
-    def __init__(self, name = name, namespace = namespace, **kwparams):
+    def __init__(self, name, **kwargs):
         self.name = name
-        self.namespace = namespace
-        for pname, val in kwparams.items():
+        for pname, val in kwargs.items():
             if pname in self._parameters:
                 setattr(self, pname, val)
             else:
-                del kwparams[pname]
+                del kwargs[pname]
                 print("Unknown parameter!")
-        self._repr = "{}({!r},{!r}{})".format(self.__class__.__name__, self.name, self.namespace, "".join(", {}={!r}".format(k,v) for k,v in kwparams.items()))
-        self._hash = hash((self.__class__, name, namespace, tuple(sorted(kwparams.items()))))
 
+    @property
+    def args(self):
+        return (self.name, )
 
-    def __repr__(self):
-        return self._repr
+    @property
+    def kwargs(self):
+        res = OrderedDict()
+        for key in self._parameters:
+            try:
+                res[key] = self.key
+            except AttributeError:
+                pass
+        return res
 
+    @abstractmethod
+    def _toSLH(self):
+        raise NotImplementedError()
 
-    def __str__(self):
-        if self.namespace:
-            return "{}^{}".format(self.name, self.namespace)
-        return self.name
-
-
-    def _tex(self):
-        """
-        Return a tex representation of the component, including its parameters.
-        """
-        if self.namespace:
-            return "{{{}}}^{{{}}}".format(tex(self.name), tex(self.namespace))
-        return tex(self.name)
-
-    def __hash__(self):
-        return self._hash
+    @property
+    def space(self):
+        return TrivialSpace
 
     def _creduce(self):
         return self
@@ -127,22 +118,14 @@ class Component(Circuit, Expression):
         return self.toSLH().toABCD(linearize)
 
     def _substitute(self, var_map):
-        #TODO TEST
         all_names = self._parameters + self._sub_components
-        all_namesubvals = [(n, substitute(getattr(self, n), var_map)) for n in all_names]
+        all_namesubvals = [(n, substitute(getattr(self, n), var_map))
+                           for n in all_names]
         return self.__class__(**dict(all_namesubvals))
 
 
-
-
-        
-
-
-
-class SubComponent(Circuit, Expression):
-    """
-    Class for the subcomponents of a reducible (but primitive) Component.
-    """
+class SubComponent(Circuit, Expression, metaclass=ABCMeta):
+    """Class for the subcomponents of a reducible (but primitive) Component."""
 
     parent_component = None
     sub_index = 0
@@ -150,7 +133,6 @@ class SubComponent(Circuit, Expression):
     def __init__(self, parent_component, sub_index):
         self.parent_component = parent_component
         self.sub_index = sub_index
-
 
     def __getattr__(self, attrname):
         try:
@@ -161,17 +143,19 @@ class SubComponent(Circuit, Expression):
     @property
     def PORTSIN(self):
         "Names of ingoing ports."
-        offset = sum(self.parent_component.sub_blockstructure[:self.sub_index], 0)
+        offset = sum(self.parent_component.sub_blockstructure[:self.sub_index],
+                     0)
         return self.parent_component.PORTSIN[offset: offset + self.cdim]
 
     @property
     def PORTSOUT(self):
         "Names of outgoing ports."
-        offset = sum(self.parent_component.sub_blockstructure[:self.sub_index], 0)
+        offset = sum(self.parent_component.sub_blockstructure[:self.sub_index],
+                     0)
         return self.parent_component.PORTSOUT[offset: offset + self.cdim]
 
     @property
-    def _cdim(self):
+    def cdim(self):
         "Numbers of channels"
         return self.parent_component.sub_blockstructure[self.sub_index]
 
@@ -179,16 +163,19 @@ class SubComponent(Circuit, Expression):
         return str(self.parent_component) + "_" + str(self.sub_index)
 
     def __repr__(self):
-        return "%s(%r, %d)" % (self.__class__.__name__, self.parent_component, self.sub_index)
+        return "%s(%r, %d)" % (self.__class__.__name__, self.parent_component,
+                               self.sub_index)
 
+    @abstractmethod
     def _toSLH(self):
         raise NotImplementedError()
 
-    def _tex(self):
-        return "{%s}_{%d}" % (self.parent_component.tex(), self.sub_index)
+    @property
+    def args(self):
+        return self.parent_component, self.sub_index
 
-    def __hash__(self):
-        return hash((self.__class__, self.parent_component, self.sub_index))
+    def tex(self):
+        return "{%s}_{%d}" % (self.parent_component.tex(), self.sub_index)
 
     def _toABCD(self, linearize):
         raise CannotConvertToABCD()
@@ -196,12 +183,13 @@ class SubComponent(Circuit, Expression):
     def _creduce(self):
         return self
 
-    def _all_symbols(self):
+    def all_symbols(self):
         return self.parent_component.all_symbols()
 
     @property
-    def _space(self):
+    def space(self):
         return self.parent_component.space
 
     def _substitute(self, var_map):
-        raise NotImplementedError("Carry out substitution before calling creduce() or after converting to SLH")
+        raise NotImplementedError("Carry out substitution before calling "
+                                  "creduce() or after converting to SLH")

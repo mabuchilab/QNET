@@ -20,13 +20,21 @@
 
 import unittest
 
-from qnet.algebra.state_algebra import *
+from sympy import sqrt, exp, I, pi
+
+from qnet.algebra.operator_algebra import (
+        OperatorSymbol, Create, Destroy, Jplus, Jminus, Jz, Phase, Displace,
+        LocalSigma, IdentityOperator)
+from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.algebra.state_algebra import (
+        KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
+        TrivialKet, UnequalSpaces, TensorKet, BasisKet)
 
 
 class TestStateAddition(unittest.TestCase):
 
     def testAdditionToZero(self):
-        hs = local_space("hs")
+        hs = LocalSpace("hs")
         a = KetSymbol("a", hs)
         z = ZeroKet
         self.assertEqual(a+z, a)
@@ -36,30 +44,33 @@ class TestStateAddition(unittest.TestCase):
 
 
     def testAdditionToOperator(self):
-        hs = local_space("hs")
+        hs = LocalSpace("hs")
         a = KetSymbol("a", hs)
         b = KetSymbol("b", hs)
         self.assertEqual(a + b, b + a)
         self.assertEqual(a + b, KetPlus(a,b))
 
     def testSubtraction(self):
-        hs = local_space("hs")
+        hs = LocalSpace("hs")
         a = KetSymbol("a", hs)
         b = KetSymbol("b", hs)
         z = ZeroKet
-        self.assertEqual(a-a, z)
-        self.assertEqual(a-b, KetPlus(a, ScalarTimesKet(-1,b)))
+        lhs = a - a
+        self.assertEqual(lhs, z)
+        lhs = a - b
+        rhs = KetPlus(a, ScalarTimesKet(-1,b))
+        self.assertEqual(lhs, rhs)
 
     def testHilbertSpace(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = KetSymbol("a", h1)
         b = KetSymbol("b", h2)
         self.assertRaises(UnequalSpaces, a.__add__, b)
 
 
     def testEquality(self):
-        h1 = local_space("h1")
+        h1 = LocalSpace("h1")
         self.assertEqual(CoherentStateKet(h1, 10.)+CoherentStateKet(h1, 20.), CoherentStateKet(h1, 20.)+CoherentStateKet(h1, 10.))
 
 
@@ -69,15 +80,15 @@ class TestStateAddition(unittest.TestCase):
 class TestTensorKet(unittest.TestCase):
 
     def testIdentity(self):
-        h1 = local_space("h1")
+        h1 = LocalSpace("h1")
         a = KetSymbol("a", h1)
         id = TrivialKet
         self.assertEqual(a * id, a)
         self.assertEqual(id * a, a)
 
     def testOrdering(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = KetSymbol("a", h1)
         b = KetSymbol("b", h2)
         self.assertEqual(a * b,TensorKet(a,b))
@@ -85,8 +96,8 @@ class TestTensorKet(unittest.TestCase):
 
 
     def testHilbertSpace(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = KetSymbol("a", h1)
         b = KetSymbol("b", h2)
         self.assertEqual(a.space, h1)
@@ -94,16 +105,16 @@ class TestTensorKet(unittest.TestCase):
 
 
     def testEquality(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
 
         self.assertEqual(CoherentStateKet(h1, 1)*CoherentStateKet(h2, 2), CoherentStateKet(h2, 2) * CoherentStateKet(h1, 1))
 
 
 class TestScalarTimesKet(unittest.TestCase):
     def testZeroOne(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = KetSymbol("a", h1)
         b = KetSymbol("b", h2)
         z = ZeroKet
@@ -129,8 +140,8 @@ class TestScalarTimesKet(unittest.TestCase):
         self.assertEqual(CoherentStateKet(1, "1") + CoherentStateKet(1, "1"), 2 * CoherentStateKet(1, "1"))
 
     def testHilbertSpace(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = KetSymbol("a", h1)
         b = KetSymbol("b", h2)
         self.assertEqual((5*(a * b)).space, h1*h2)
@@ -139,8 +150,8 @@ class TestScalarTimesKet(unittest.TestCase):
 class TestOperatorTimesKet(unittest.TestCase):
 
     def testZeroOne(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = KetSymbol("a", h1)
         b = KetSymbol("b", h2)
         A = OperatorSymbol("A", h1)
@@ -160,8 +171,8 @@ class TestOperatorTimesKet(unittest.TestCase):
         self.assertEqual(CoherentStateKet(1, "1") + CoherentStateKet(1, "1"), 2 * CoherentStateKet(1, "1"))
 
     def testHilbertSpace(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
+        h1 = LocalSpace("h1")
+        h2 = LocalSpace("h2")
         a = KetSymbol("a", h1)
         b = KetSymbol("b", h2)
         self.assertEqual((5*(a * b)).space, h1*h2)
@@ -174,11 +185,13 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
         self.assertEqual(Create(1) * BasisKet(1, 2), sqrt(3) * BasisKet(1, 3))
         self.assertEqual(Destroy(1) * BasisKet(1, 2), sqrt(2) * BasisKet(1, 1))
         self.assertEqual(Destroy(1) * BasisKet(1, 0), ZeroKet)
-        self.assertEqual(Destroy(1) * CoherentStateKet(1, 10.), 10 * CoherentStateKet(1, 10.))
+        lhs = Destroy(1) * CoherentStateKet(1, 10.)
+        rhs = 10 * CoherentStateKet(1, 10.)
+        self.assertEqual(lhs, rhs)
 
     def testSpin(self):
         j = 3
-        h = local_space("j", basis=range(-j,j+1))
+        h = LocalSpace("j", basis=range(-j,j+1))
 
         self.assertEqual(Jplus(h) * BasisKet(h, 2), sqrt(j*(j+1)-2*(2+1)) * BasisKet(h, 3))
         self.assertEqual(Jminus(h) * BasisKet(h, 2), sqrt(j*(j+1)-2*(2-1)) * BasisKet(h, 1))

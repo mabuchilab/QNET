@@ -1,4 +1,4 @@
-from qnet.algebra.hilbert_space_algebra import local_space
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.operator_algebra import (LocalSigma, Destroy,
         identity_matrix)
 from qnet.algebra.circuit_algebra import SLH
@@ -22,7 +22,7 @@ def qutip_population(psi_of_t, state=0):
 
 
 def test_driven_tls(datadir):
-    hs = local_space('tls', namespace='sys', basis=('g', 'e'))
+    hs = LocalSpace('tls', basis=('g', 'e'))
     w =  symbols(r'\omega', real=True)
     pi = sympy.pi
     cos = sympy.cos
@@ -36,7 +36,8 @@ def test_driven_tls(datadir):
     num_vals = {w: 1.0, T:10.0, E0:1.0*2*np.pi}
 
     # test qutip conversion
-    H_qutip, Ls = SLH_to_qutip(circuit.substitute(num_vals), time_symbol=t)
+    num_circuit = circuit.substitute(num_vals)
+    H_qutip, Ls = SLH_to_qutip(num_circuit, time_symbol=t)
     assert len(Ls) == 0
     assert len(H_qutip) == 3
     times = np.linspace(0, num_vals[T], 201)

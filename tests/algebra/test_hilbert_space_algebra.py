@@ -17,70 +17,71 @@
 #
 ###########################################################################
 
-from qnet.algebra.hilbert_space_algebra import *
-import unittest
-
-class TestHilbertSpaces(unittest.TestCase):
-
-    def testProductSpace(self):
-
-        # create HilbertSpaces
-        h1 = local_space("h1")
-        h2 = local_space("h2")
-        h3 = local_space("h3")
-
-        # productspace
-        self.assertEqual(h1 * h2, ProductSpace(h1, h2))
-        self.assertEqual(h3 * h1 * h2, ProductSpace(h1, h2, h3))
-
-        # space "subtraction/division/cancellation"
-        self.assertEqual((h1 * h2) / h1, h2)
-        self.assertEqual((h1 * h2 * h3) / h1, h2 * h3)
-        self.assertEqual((h1 * h2 * h3) / (h1 * h3), h2)
-
-        # space "intersection"
-        self.assertEqual((h1 * h2) & h1, h1)
-        self.assertEqual((h1 * h2 * h3) & h1, h1)
-        self.assertEqual(h1 * h1, h1)
+from qnet.algebra.hilbert_space_algebra import (
+        LocalSpace, ProductSpace, TrivialSpace, FullSpace)
+import pytest
 
 
-    def testDimension(self):
-        h1 = local_space("h1", dimension = 10)
-        h2 = local_space("h2", dimension = 20)
-        h3 = local_space("h3")
-        h4 = local_space("h4", dimension = 100)
+def test_product_space():
 
-        self.assertEqual((h1*h2).dimension, h1.dimension * h2.dimension)
-        self.assertRaises(BasisNotSetError,lambda : h3.dimension)
-        self.assertEqual(h4.dimension, 100)
+    # create HilbertSpaces
+    h1 = LocalSpace("h1")
+    h2 = LocalSpace("h2")
+    h3 = LocalSpace("h3")
+
+    # productspace
+    assert h1 * h2 == ProductSpace(h1, h2)
+    assert h3 * h1 * h2 == ProductSpace(h1, h2, h3)
+
+    # space "subtraction/division/cancellation"
+    assert (h1 * h2) / h1 == h2
+    assert (h1 * h2 * h3) / h1 == h2 * h3
+    assert (h1 * h2 * h3) / (h1 * h3) == h2
+
+    # space "intersection"
+    assert (h1 * h2) & h1 == h1
+    assert (h1 * h2 * h3) & h1 == h1
+    assert h1 * h1 == h1
 
 
-    def testSpaceOrdering(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
-        h3 = local_space("h3")
+def test_dimension():
+    h1 = LocalSpace("h1", dimension = 10)
+    h2 = LocalSpace("h2", dimension = 20)
+    h3 = LocalSpace("h3")
+    h4 = LocalSpace("h4", dimension = 100)
 
-        self.assertTrue(h1 <= h1)
-        self.assertTrue(h1 <= (h1 * h2))
-        self.assertFalse(h1 <= h2)
-        self.assertFalse(h1 < h1)
-        self.assertTrue(TrivialSpace < h1 < FullSpace)
-        self.assertTrue(h1>= h1)
-        self.assertTrue(h1 * h2 > h2)
-        self.assertFalse(h1 * h2 > h3)
+    assert (h1*h2).dimension == h1.dimension * h2.dimension
+    assert h3.dimension is None
+    assert h4.dimension == 100
 
-    def testOperations(self):
-        h1 = local_space("h1")
-        h2 = local_space("h2")
-        h3 = local_space("h3")
 
-        h123 = h1 * h2 * h3
-        h12 = h1 * h2
-        h23 = h2 * h3
-        h13 = h1 * h3
-        self.assertEqual(h12 * h13, h123)
-        self.assertEqual(h12 / h13, h2)
-        self.assertEqual(h12 & h13, h1)
-        self.assertEqual((h12 / h13) * (h13 & h12), h12)
-        self.assertEqual(h1 & h12, h1)
+def test_space_ordering():
+    h1 = LocalSpace("h1")
+    h2 = LocalSpace("h2")
+    h3 = LocalSpace("h3")
+
+    assert h1 <= h1
+    assert h1 <= (h1 * h2)
+    assert not (h1 <= h2)
+    assert not (h1 < h1)
+    assert TrivialSpace < h1 < FullSpace
+    assert h1>= h1
+    assert h1 * h2 > h2
+    assert not (h1 * h2 > h3)
+
+
+def test_operations():
+    h1 = LocalSpace("h1")
+    h2 = LocalSpace("h2")
+    h3 = LocalSpace("h3")
+
+    h123 = h1 * h2 * h3
+    h12 = h1 * h2
+    h23 = h2 * h3
+    h13 = h1 * h3
+    assert h12 * h13 == h123
+    assert h12 / h13 == h2
+    assert h12 & h13 == h1
+    assert (h12 / h13) * (h13 & h12) == h12
+    assert h1 & h12 == h1
 
