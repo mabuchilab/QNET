@@ -2230,18 +2230,18 @@ def _cumsum(lst):
     return ret
 
 
-def connect(components, connections, force_SLH=True, expand_simplify=True):
+def connect(components, connections, force_SLH=False, expand_simplify=True):
     """Connect a list of components according to a list of connections.
 
-    :param components: sequence of circuit components
-    :param connections: sequence of nested tuples
-        ((c1_index, p1_index), (c2_index, p2_index)),
-        ((c3_index, p3_index), (c4_index, p4_index)), ...
-        specifying connections from component c1, port p1
-            to component c2, port c2, etc.
-    :param force_SLH: Enforce conversion to an SLH object before applying
-        feedback. Set to False if you are working with pure
-        CircuitSymbol objects.
+    Args:
+        components (list): List of Circuit instances
+        connections (list): List of pairs ``((c1, port1), (c2, port2))`` where
+            ``c1`` and ``c2`` are elements of `components` (or the index of the
+            element in `components`, and ``port1`` and ``port2`` are the
+            indices of the ports of the two components that should be connected
+        force_SLH (bool): If True, convert the result to an SLH object
+        expand_simplify (bool): If the result is an SLH object, expand and
+            simplify the circuit after each feedback connection is added
     """
     combined = Concatenation.create(*components)
     cdims = [c.cdim for c in components]
@@ -2249,6 +2249,10 @@ def connect(components, connections, force_SLH=True, expand_simplify=True):
     imap = []
     omap = []
     for (c1, op), (c2, ip) in connections:
+        if not isinstance(c1, int):
+            c1 = components.index(c1)
+        if not isinstance(c2, int):
+            c2 = components.index(c2)
         op_idx = offsets[c1] + op
         ip_idx = offsets[c2] + ip
         imap.append(ip_idx)
@@ -2269,7 +2273,7 @@ def connect(components, connections, force_SLH=True, expand_simplify=True):
 
     for k in range(nfb):
         combined = combined.feedback()
-        if force_SLH and expand_simplify:
+        if isinstance(combined, SLH) and expand_simplify:
             combined = combined.expand().simplify_scalar()
 
     return combined

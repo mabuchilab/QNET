@@ -264,8 +264,13 @@ def connect_data():
           ((1, 0), (2, 1))],     # connection 2
          (C << A + B)            # expected
         ),
+        ([A, B, C],              # components
+         [((A, 0), (C, 0)),      # connection 1
+          ((B, 0), (C, 1))],     # connection 2
+         (C << A + B)            # expected
+        ),
         ([A, C],                 # components
-         [((0, 0), (1, 0))],     # connections
+         [((A, 0), (C, 0))],     # connections
          C << (A + cid(1))       # expected
         ),
     ]
