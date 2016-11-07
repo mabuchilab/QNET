@@ -40,7 +40,7 @@ Dependencies
 
 In addition to these core components, the software uses the following existing software packages:
 
-0. Python_ version 2.6 or higher. QNET is still officially a Python 2 package, but migration to Python 3 should not be too hard to achieve.
+0. Python_ version 3.3 or higher.
 1. The gEDA_ toolsuite for its visual tool ``gschem`` for the creation of circuits end exporting these to QHDL ``gnetlist``. We have created device symbols for our primitive circuit components to be used with ``gschem`` and we have included our own ``gnetlist`` plugin for exporting to QHDL.
 2. The SymPy_ symbolic algebra Python package to implement symbolic 'scalar' algebra, i.e. the coefficients of state, operator or super-operator expressions can be symbolic SymPy expressions as well as pure python numbers.
 3. The QuTiP_ python package as an extremely useful, efficient and full featured numerical backend. Operator expressions where all symbolic scalar parameters have been replaced by numeric ones, can be converted to (sparse) numeric matrix representations, which are then used to solve for the system dynamics using the tools provided by QuTiP.
