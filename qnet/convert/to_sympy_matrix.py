@@ -6,9 +6,9 @@ import sympy
 from sympy.physics.quantum import TensorProduct as tensor
 from qnet.algebra.operator_algebra import (IdentityOperator, ZeroOperator,
         LocalOperator, Create, Destroy, Jz, Jplus, Jminus, Phase, Displace,
-        Squeeze, LocalSigma, OperatorOperation, OperatorPlus, OperatorTimes,
-        ScalarTimesOperator, Adjoint, PseudoInverse, OperatorTrace,
-        NullSpaceProjector)
+        Squeeze, LocalSigma, OperatorOperation, SingleOperatorOperation,
+        OperatorPlus, OperatorTimes, ScalarTimesOperator, Adjoint,
+        PseudoInverse, OperatorTrace, NullSpaceProjector)
 
 
 def basis_state(i, n):
@@ -93,7 +93,7 @@ def convert_to_sympy_matrix(expr, full_space=None):
         else:
             raise ValueError("Cannot convert '%s' of type %s"
                              % (str(expr), type(expr)))
-    elif isinstance(expr, OperatorOperation):
+    elif isinstance(expr, (OperatorOperation, SingleOperatorOperation)):
         if isinstance(expr, OperatorPlus):
             s = convert_to_sympy_matrix(expr.operands[0], full_space)
             for op in expr.operands[1:]:

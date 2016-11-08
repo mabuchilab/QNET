@@ -950,13 +950,19 @@ def Z(local_space, states=("h", "g")):
 
 
 class OperatorOperation(Operator, Operation):
-    """Base class for Operations acting only on Operator arguments."""
-    signature = (Operator, '*'), {}
+    """Base class for Operations acting only on Operator arguments, for when
+    the Hilbert space of the operation result is the product space of the
+    operands.
+    """
+
+    def __init__(self, *operands):
+        op_spaces = [o.space for o in operands]
+        self._space = ProductSpace.create(*op_spaces)
+        super().__init__(*operands)
 
     @property
     def space(self):
-        op_spaces = [o.space for o in self.operands]
-        return ProductSpace.create(*op_spaces)
+        return self._space
 
     def _simplify_scalar(self):
         return self.__class__.create(*[o.simplify_scalar()
@@ -966,10 +972,8 @@ class OperatorOperation(Operator, Operation):
 class OperatorPlus(OperatorOperation):
     """A sum of Operators
 
-        ``OperatorPlus(*summands)``
-
-    :param summands: Operator summands.
-    :type summands: Operator
+    Args:
+        operands (list): Operator summands
     """
     neutral_element = ZeroOperator
     _binary_rules = []
@@ -1109,10 +1113,8 @@ class OperatorTimes(OperatorOperation):
     """A product of Operators that serves both as a product within a Hilbert
     space as well as a tensor product.
 
-        ``OperatorTimes(*factors)``
-
-    :param factors: Operator factors.
-    :type factors: Operator
+    Args:
+        operands (list): Operator factors
     """
 
     neutral_element = IdentityOperator
@@ -1169,7 +1171,6 @@ class OperatorTimes(OperatorOperation):
         first = self.operands[0]
         rest = OperatorTimes.create(*self.operands[1:])
         return first._diff(sym) * rest + first * rest._diff(sym)
-
 
     def tex(self):
         """TeX representation of operator product"""
@@ -1373,9 +1374,24 @@ def identifier_to_tex(identifier):
     return ret
 
 
-class Adjoint(OperatorOperation):
-    """
-    The symbolic Adjoint of an operator.
+class SingleOperatorOperation(Operator, Operation):
+    """Base class for Operations that act on a single Operator"""
+
+    def __init__(self, op):
+        self._space = op.space
+        super().__init__(op)
+
+    @property
+    def space(self):
+        return self._space
+
+    @property
+    def operand(self):
+        return self.operands[0]
+
+
+class Adjoint(SingleOperatorOperation):
+    """The symbolic Adjoint of an operator.
 
         ``Adjoint(op)``
 
@@ -1385,9 +1401,6 @@ class Adjoint(OperatorOperation):
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
 
-    @property
-    def operand(self):
-        return self.operands[0]
 
     def _series_expand(self, param, about, order):
         ope = self.operand.series_expand(param, about, order)
@@ -1431,7 +1444,7 @@ def delegate_to_method(mtd):
     return _delegate_to_method
 
 
-class PseudoInverse(OperatorOperation):
+class PseudoInverse(SingleOperatorOperation):
     r"""The symbolic pseudo-inverse :math:`X^+` of an operator :math:`X`. It is
     defined via the relationship
 
@@ -1454,10 +1467,6 @@ class PseudoInverse(OperatorOperation):
                            ZeroOperator.__class__, IdentityOperator.__class__)
     _simplifications = [match_replace, delegate_to_method('pseudo_inverse')]
 
-    @property
-    def operand(self):
-        return self.operands[0]
-
     def _expand(self):
         return self
 
@@ -1476,7 +1485,7 @@ class PseudoInverse(OperatorOperation):
 PseudoInverse._delegate_to_method += (PseudoInverse, )
 
 
-class NullSpaceProjector(OperatorOperation):
+class NullSpaceProjector(SingleOperatorOperation):
     r"""Returns a projection operator :math:`\mathcal{P}_{{\rm Ker} X}` that
     projects onto the nullspace of its operand
 
@@ -1495,10 +1504,6 @@ class NullSpaceProjector(OperatorOperation):
 
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
-
-    @property
-    def operand(self):
-        return self.operands[0]
 
     def tex(self):
         return op_tex(r'\matchcal{P}', subscript=r'{\rm Ker}',
@@ -1536,6 +1541,7 @@ class OperatorTrace(Operator, Operation):
             over_space = LocalSpace(over_space)
         assert isinstance(over_space, HilbertSpace)
         self._over_space = over_space
+        self._space = None
         super().__init__(op)
 
     @property
@@ -1548,9 +1554,9 @@ class OperatorTrace(Operator, Operation):
 
     @property
     def space(self):
-        s = self._over_space
-        o = self.operand
-        return o.space / s
+        if self._space is None:
+            return self.operands[0].space / self._over_space
+        return self._space
 
     def _expand(self):
         s = self._over_space

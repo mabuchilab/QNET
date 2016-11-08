@@ -402,7 +402,6 @@ class KetPlus(Ket, Operation):
     :param summands: State summands.
     :type summands: Ket
     """
-    signature = (Ket, ), {}
     neutral_element = ZeroKet
     _binary_rules = []  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, check_kets_same_space,
@@ -489,13 +488,16 @@ class TensorKet(Ket, Operation):
     :param factors: Ket factors.
     :type factors: Ket
     """
-    signature = (Ket, '*'), {}
     _binary_rules = []  # see end of module
     neutral_element = TrivialKet
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
                         filter_neutral]
 
     order_key = OperatorTimes.order_key
+
+    def __init__(self, *operands):
+        self._space = None
+        super().__init__(*operands)
 
     @classmethod
     def create(cls, *ops):
@@ -527,7 +529,10 @@ class TensorKet(Ket, Operation):
 
     @property
     def space(self):
-        return ProductSpace.create(*[o.space for o in self.operands])
+        if self._space is None:
+            self._space = ProductSpace.create(*[o.space
+                                                for o in self.operands])
+        return self._space
 
     def _expand(self):
         eops = [o.expand() for o in self.operands]
@@ -845,8 +850,6 @@ class Bra(Operation):
     :param Ket k: The state to represent as Bra.
     """
 
-    signature = (Ket, ), {}
-
     @property
     def ket(self):
         """The state that is represented as a Bra.
@@ -870,6 +873,10 @@ class Bra(Operation):
         """
         return self.ket
     dag = adjoint
+
+    @property
+    def space(self):
+        return self.operands[0].space
 
     def __mul__(self, other):
         if isinstance(other, Ket.scalar_types):
@@ -935,6 +942,10 @@ class BraKet(Operator, Operation):
     @property
     def bra(self):
         return Bra(self.operands[0])
+
+    @property
+    def space(self):
+        return self.operands[0].space
 
     def _adjoint(self):
         return BraKet.create(*reversed(self.operands))

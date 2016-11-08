@@ -17,9 +17,98 @@
 #
 ###########################################################################
 
+import pytest
+
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, ProductSpace, TrivialSpace, FullSpace)
-import pytest
+from qnet.algebra.operator_algebra import Destroy
+from qnet.algebra.state_algebra import KetSymbol
+
+
+def test_instantiate_with_basis():
+    """Test that a local space can be instantiated with an explicit basis"""
+    hs1 = LocalSpace('1', basis=(0, 1))
+    assert hs1.dimension == 2
+    assert hs1.basis == (0, 1)
+    hs1 = LocalSpace('1', basis=['g', 'e'])
+    assert hs1.dimension == 2
+    assert hs1.basis == ('g', 'e')
+
+
+def test_basis_change():
+    """Test that we can change the basis of an Expression's Hilbert space
+    through substitution"""
+    a = Destroy(1)
+    assert a.space == LocalSpace('1')
+    assert a.space.basis is None
+    assert a.space.dimension is None
+    b = a.substitute({LocalSpace('1'): LocalSpace('1', basis=(-1, 0, 1))})
+    assert str(a) == str(b)
+    assert a != b
+    assert b.space.dimension == 3
+    assert b.space.basis == (-1, 0, 1)
+
+
+def test_op_product_space():
+    """Test that a product of operators has the correct Hilbert space"""
+    a = Destroy(1)
+    b = Destroy(2)
+    p = a * b
+    assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
+    assert p.space.dimension is None
+    assert p.space.basis is None
+
+    hs1 = LocalSpace(1, dimension=3)
+    a = a.substitute({LocalSpace(1): hs1})
+    p = a * b
+    assert p.space == ProductSpace(hs1, LocalSpace(2))
+    assert p.space.dimension is None
+    assert p.space.basis is None
+
+    hs2 = LocalSpace(2, dimension=2)
+    b = b.substitute({LocalSpace(2): hs2})
+    p = a * b
+    ps = ProductSpace(hs1, hs2)
+    assert p.space == ps
+    assert p.space.dimension == 6
+    assert p.space.basis == ('0,0', '0,1', '1,0', '1,1', '2,0', '2,1')
+
+    hs1_2 = LocalSpace(1, basis=('g', 'e'))
+    hs2_2 = LocalSpace(2, basis=('g', 'e'))
+    p = p.substitute({hs1: hs1_2, hs2: hs2_2})
+    assert p.space.dimension == 4
+    assert p.space.basis == ('g,g', 'g,e', 'e,g', 'e,e')
+
+    b = b.substitute({hs2: hs1})
+    p = a * b
+    assert p.space == hs1
+    assert p.space.dimension == 3
+    assert p.space.basis == (0, 1, 2)
+
+
+def test_ket_product_space():
+    """Test that the product of two kets has the correct Hilbert space"""
+    a = KetSymbol(0, hs=1)
+    b = KetSymbol(0, hs=2)
+    p = a * b
+    assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
+    assert p.space.dimension is None
+    assert p.space.basis is None
+
+    hs1 = LocalSpace(1, dimension=3)
+    a = a.substitute({LocalSpace(1): hs1})
+    p = a * b
+    assert p.space == ProductSpace(hs1, LocalSpace(2))
+    assert p.space.dimension is None
+    assert p.space.basis is None
+
+    hs2 = LocalSpace(2, dimension=2)
+    b = b.substitute({LocalSpace(2): hs2})
+    p = a * b
+    ps = ProductSpace(hs1, hs2)
+    assert p.space == ps
+    assert p.space.dimension == 6
+    assert p.space.basis == ('0,0', '0,1', '1,0', '1,1', '2,0', '2,1')
 
 
 def test_product_space():
