@@ -168,17 +168,18 @@ class Expression(metaclass=ABCMeta):
         """Substitute all_symbols for other expressions.
 
         Args:
-            var_map (dict): Dictionary with entries of the form ``{symbol:
-                            substitution}``
+            var_map (dict): Dictionary with entries of the form
+                ``{expr: substitution}``
         """
         return self._substitute(var_map)
 
     def _substitute(self, var_map):
         if self in var_map:
             return var_map[self]
-        return self.__class__.create(
-                *map(lambda o: substitute(o, var_map), self.args),
-                **self.kwargs)
+        new_args = [substitute(arg, var_map) for arg in self.args]
+        new_kwargs = {key: substitute(val, var_map)
+                      for (key, val) in self.kwargs.items()}
+        return self.__class__.create(*new_args, **new_kwargs)
 
     def tex(self):
         """Return a string containing a TeX-representation of self.
