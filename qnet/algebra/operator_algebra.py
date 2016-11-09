@@ -34,14 +34,14 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import defaultdict
 from itertools import product as cartesian_product
 
-from qnet.algebra.abstract_algebra import (
+from .abstract_algebra import (
         tex, singleton, Expression, Operation, assoc, orderby,
         filter_neutral, match_replace_binary, match_replace,
-        set_union, KeyTuple, substitute, CannotSimplify)
-from qnet.algebra.hilbert_space_algebra import (
+        set_union, KeyTuple, substitute, CannotSimplify, cache_attr)
+from .hilbert_space_algebra import (
         TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError,
         FullSpace)
-from qnet.algebra.pattern_matching import wc, pattern_head, pattern
+from .pattern_matching import wc, pattern_head, pattern
 
 
 from sympy import (
@@ -71,6 +71,7 @@ projector_str = 'Π'
 projector_tex = r'\Pi'
 sigma_str = 'σ'
 sigma_tex = r'\sigma'
+tensor_str = '⊗'
 
 
 def op_tex(name, hs_name=None, subscript=None, dagger=False, args=None):
@@ -341,14 +342,17 @@ class OperatorSymbol(Operator, Expression):
             self._hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
         else:
             self._hs = hs
+        super().__init__(name, hs)
 
     @property
     def args(self):
         return self.name, self._hs
 
+    @cache_attr('_str')
     def __str__(self):
         return op_str(self.name)
 
+    @cache_attr('_tex')
     def tex(self):
         return op_tex(self.name)
 
@@ -379,6 +383,9 @@ class IdentityOperator(Operator, Expression):
     def args(self):
         return tuple()
 
+    def create(self):
+        return self
+
     def adjoint(self):
         return self
 
@@ -394,6 +401,7 @@ class IdentityOperator(Operator, Expression):
     def tex(self):
         return identity_tex
 
+    @cache_attr('_str')
     def __str__(self):
         return identity_str
 
@@ -438,6 +446,7 @@ class ZeroOperator(Operator, Expression):
     def __eq__(self, other):
         return self is other or other == 0
 
+    @cache_attr('_str')
     def __str__(self):
         return "0"
 
@@ -500,11 +509,12 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
 
     _simplifications = [implied_local_space(arg_index=0), ]
 
-    def __init__(self, hs):
+    def __init__(self, hs, *args):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         assert isinstance(hs, LocalSpace)
         self._hs = hs
+        super().__init__(hs, *args)
 
     @property
     def space(self):
@@ -542,10 +552,12 @@ class Create(LocalOperator):
     :param space: Associated local Hilbert space.
     :type space: LocalSpace or str
     """
+    @cache_attr('_tex')
     def tex(self):
         hs_name = self.space.name
         return op_tex('a', hs_name=hs_name, dagger=True)
 
+    @cache_attr('_str')
     def __str__(self):
         hs_name = self.space.name
         return op_str('a', hs_name=hs_name, dagger=True)
@@ -569,10 +581,12 @@ class Destroy(LocalOperator):
     :param space: Associated local Hilbert space.
     :type space: LocalSpace or str
     """
+    @cache_attr('_tex')
     def tex(self):
         hs_name = self.space.name
         return op_tex('a', hs_name=hs_name, dagger=False)
 
+    @cache_attr('_str')
     def __str__(self):
         hs_name = self.space.name
         return op_str('a', hs_name=hs_name, dagger=False)
@@ -592,17 +606,19 @@ class Jz(LocalOperator):
         J_{+,(1)}
 
         >>> print((Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand())
-         -J_{-,(1)}
+        -J_{-,(1)}
 
         >>> print((Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand())
         2 * J_{z,(1)}
 
     where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
     """
+    @cache_attr('_tex')
     def tex(self):
         hs_name = self.space.name
         return op_tex('J', hs_name=hs_name, subscript='z', dagger=False)
 
+    @cache_attr('_str')
     def __str__(self):
         hs_name = self.space.name
         return op_str('J', hs_name=hs_name, subscript='z', dagger=False)
@@ -622,17 +638,19 @@ class Jplus(LocalOperator):
         J_{+,(1)}
 
         >>> print((Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand())
-         -J_{-,(1)}
+        -J_{-,(1)}
 
         >>> print((Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand())
         2 * J_{z,(1)}
 
     where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
     """
+    @cache_attr('_tex')
     def tex(self):
         hs_name = self.space.name
         return op_tex('J', hs_name=hs_name, subscript='+', dagger=False)
 
+    @cache_attr('_str')
     def __str__(self):
         hs_name = self.space.name
         return op_str('J', hs_name=hs_name, subscript='+', dagger=False)
@@ -652,17 +670,19 @@ class Jminus(LocalOperator):
         J_{+,(1)}
 
         >>> print((Jz(1) * Jminus(1) - Jminus(1)*Jz(1)).expand())
-         -J_{-,(1)}
+        -J_{-,(1)}
 
         >>> print((Jplus(1) * Jminus(1) - Jminus(1)*Jplus(1)).expand())
         2 * J_{z,(1)}
 
     where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
     """
+    @cache_attr('_tex')
     def tex(self):
         hs_name = self.space.name
         return op_tex('J', hs_name=hs_name, subscript='-', dagger=False)
 
+    @cache_attr('_str')
     def __str__(self):
         hs_name = self.space.name
         return op_str('J', hs_name=hs_name, subscript='-', dagger=False)
@@ -722,7 +742,7 @@ class Phase(LocalOperator):
 
     def __init__(self, hs, phi):
         self.phi = phi
-        super().__init__(hs)
+        super().__init__(hs, phi)
 
     @property
     def args(self):
@@ -737,10 +757,12 @@ class Phase(LocalOperator):
     def pseudo_inverse(self):
         return Phase(self.space, -self.phi)
 
+    @cache_attr('_tex')
     def tex(self):
         hs_name = self.space.name
         return op_tex('P', hs_name=hs_name, args=[self.phi, ])
 
+    @cache_attr('_str')
     def __str__(self):
         hs_name = self.space.name
         return op_str('P', hs_name=hs_name, args=[self.phi, ])
@@ -775,7 +797,7 @@ class Displace(LocalOperator):
 
     def __init__(self, hs, alpha):
         self.alpha = alpha
-        super().__init__(hs)
+        super().__init__(hs, alpha)
 
     @property
     def args(self):
@@ -789,10 +811,12 @@ class Displace(LocalOperator):
 
     pseudo_inverse = adjoint
 
+    @cache_attr('_tex')
     def tex(self):
         hs_name = self.space.name
         return op_tex('D', hs_name=hs_name, args=[self.alpha, ])
 
+    @cache_attr('_str')
     def __str__(self):
         hs_name = self.space.name
         return op_str('D', hs_name=hs_name, args=[self.alpha, ])
@@ -827,7 +851,7 @@ class Squeeze(LocalOperator):
 
     def __init__(self, hs, eta):
         self.eta = eta
-        super().__init__(hs)
+        super().__init__(hs, eta)
 
     @property
     def args(self):
@@ -841,10 +865,12 @@ class Squeeze(LocalOperator):
 
     pseudo_inverse = adjoint
 
+    @cache_attr('_tex')
     def tex(self):
         hs_name = self.space.name
         return op_tex('S', hs_name=hs_name, args=[self.eta, ])
 
+    @cache_attr('_str')
     def __str__(self):
         hs_name = self.space.name
         return op_str('S', hs_name=hs_name, args=[self.eta, ])
@@ -878,8 +904,9 @@ class LocalSigma(LocalOperator):
     def __init__(self, hs, j, k):
         self.j = j
         self.k = k
-        super().__init__(hs)
+        super().__init__(hs, j, k)
 
+    @cache_attr('_tex')
     def tex(self):
         j, k = self.j, self.k
         hs_name = self.space.name
@@ -894,6 +921,7 @@ class LocalSigma(LocalOperator):
     def args(self):
         return self._hs, self.j, self.k
 
+    @cache_attr('_str')
     def __str__(self):
         j, k = self.j, self.k
         hs_name = self.space.name
@@ -1002,43 +1030,37 @@ class OperatorPlus(OperatorOperation):
     def _diff(self, sym):
         return sum([o._diff(sym) for o in self.operands], ZeroOperator)
 
-    @staticmethod
-    def _conditional_wrap(op, istex=False):
-        if istex:
-            if isinstance(op, OperatorPlus):
-                return r"\left( " + tex(op) + r"\right)"
+    def _to_text(self, op_converter):
+        positive_summands = []
+        negative_summands = []
+        for o in self.operands:
+            is_negative = False
+            op_str = op_converter(o)
+            if op_str.startswith('-'):
+                is_negative = True
+                op_str = op_str[1:].strip()
+            if isinstance(o, OperatorPlus):
+                op_str = "(" + op_str + ")"
+            if is_negative:
+                negative_summands.append(op_str)
             else:
-                return tex(op)
-        else:
-            if isinstance(op, OperatorPlus):
-                return r"( " + str(op) + " )"
-            else:
-                return str(op)
+                positive_summands.append(op_str)
+        negative_str = " - ".join(negative_summands)
+        if len(negative_str) > 0:
+            negative_str = " - " + negative_str
+        return (" + ".join(positive_summands) + negative_str).strip()
 
+    @cache_attr('_tex')
     def tex(self):
-        "TeX representation of operator sum"""
-        _cw = OperatorPlus._conditional_wrap
-        ret = _cw(self.operands[0].tex(), istex=True)
+        """Tex representation of operator sums, ordered with all positive
+        summands first, then all negative summands"""
+        return self._to_text(op_converter=tex)
 
-        for o in self.operands[1:]:
-            if (isinstance(o, ScalarTimesOperator) and
-                    ScalarTimesOperator.has_minus_prefactor(o.coeff)):
-                ret += " - " + _cw(-o, istex=True)
-            else:
-                ret += " + " + _cw(o, istex=True)
-        return ret
-
+    @cache_attr('_str')
     def __str__(self):
-        _cw = OperatorPlus._conditional_wrap
-        ret = _cw(self.operands[0])
-
-        for o in self.operands[1:]:
-            if (isinstance(o, ScalarTimesOperator) and
-                    ScalarTimesOperator.has_minus_prefactor(o.coeff)):
-                ret += " - " + _cw(-o)
-            else:
-                ret += " + " + _cw(o)
-        return ret
+        """Sums are ordered with all positive summands first, then all negative
+        summands"""
+        return self._to_text(op_converter=str)
 
 
 def _coeff_term(op):
@@ -1172,24 +1194,39 @@ class OperatorTimes(OperatorOperation):
         rest = OperatorTimes.create(*self.operands[1:])
         return first._diff(sym) * rest + first * rest._diff(sym)
 
+    def _to_text(self, converter, par_left='(', par_right=')', prod_sym='*',
+                 tensor_prod_sym=tensor_str):
+
+        def str_o(o):
+            if isinstance(o, OperatorPlus):
+                return "(%s)" % o
+            else:
+                return str(o)
+
+        o = self.operands[0]
+        parts = [str_o(o), ]
+        hs_prev = o.space
+
+        for o in self.operands[1:]:
+            hs = o.space
+            if hs == hs_prev:
+                parts.append(prod_sym)
+            else:
+                parts.append(tensor_prod_sym)
+            parts.append(str_o(o))
+            hs_prev = hs
+        return " ".join(parts)
+
+    @cache_attr('_tex')
     def tex(self):
         """TeX representation of operator product"""
-        ret = ""
-        for o in self.operands:
-            if isinstance(o, OperatorPlus):
-                ret += r" \left({}\right) ".format(tex(o))
-            else:
-                ret += " {}".format(tex(o))
-        return ret.strip()
+        return self._to_text(tex, par_left=r'\left(', par_right=r'\right)',
+                             prod_sym='', tensor_prod_sym=r'\otimes')
 
+    @cache_attr('_str')
     def __str__(self):
-        ret = ""
-        for o in self.operands:
-            if isinstance(o, OperatorPlus):
-                ret += r" ({}) ".format(str(o))
-            else:
-                ret += " {}".format(str(o))
-        return ret.strip()
+        return self._to_text(str, par_left='(', par_right=')',
+                             prod_sym='*', tensor_prod_sym=tensor_str)
 
 
 class ScalarTimesOperator(Operator, Operation):
@@ -1226,41 +1263,37 @@ class ScalarTimesOperator(Operator, Operation):
     def term(self):
         return self.operands[1]
 
-    def tex(self):
-        """TeX representation of operator"""
+    def _to_text(self, converter, par_left='(', par_right=')', prod_sym='*'):
         coeff, term = self.operands
 
-        if ScalarTimesOperator.has_minus_prefactor(coeff):
-            return " -" + (-self).tex()
+        term_str = converter(term)
+        if isinstance(term, Operation):
+            term_str = par_left + term_str + par_right
 
-        if isinstance(coeff, Add):
-            cs = r" \left({}\right)".format(tex(coeff))
+        if coeff == -1:
+            if term_str.startswith(par_left):
+                return "- " + term_str
+            else:
+                return "-" + term_str
+        if isinstance(coeff, Operator.scalar_types):
+            coeff_str = converter(coeff)
         else:
-            cs = " {}".format(tex(coeff))
+            coeff_str = par_left + converter(coeff) + par_right
 
         if term is IdentityOperator:
-            ct = ""
-        elif isinstance(term, OperatorPlus):
-            ct = r" \left({}\right)".format(term.tex())
+            return coeff_str
         else:
-            ct = r" {}".format(term.tex())
-        return (cs + ct).strip()
+            return coeff_str.strip() + " " + prod_sym + " " + term_str.strip()
 
+    @cache_attr('_tex')
+    def tex(self):
+        """TeX representation of operator"""
+        return self._to_text(tex, par_left=r'\left(', par_right=r'\right)',
+                             prod_sym='')
+
+    @cache_attr('_str')
     def __str__(self):
-        coeff, term = self.operands
-        if isinstance(coeff, Add):
-            cs = r"({!s}) ".format(coeff)
-        else:
-            cs = " {!s} ".format(coeff)
-        if ScalarTimesOperator.has_minus_prefactor(coeff):
-            return " -" + str(-self)
-        if term == IdentityOperator:
-            ct = ""
-        if isinstance(term, OperatorPlus):
-            ct = r" ({!s})".format(term)
-        else:
-            ct = r" {!s}".format(term)
-        return cs.strip() + ' * ' + ct.strip()
+        return self._to_text(str, par_left=r'(', par_right=r')', prod_sym='*')
 
     def _expand(self):
         c, t = self.operands
@@ -1416,9 +1449,11 @@ class Adjoint(SingleOperatorOperation):
     def pseudo_inverse(self):
         return self.operand.pseudo_inverse().adjoint()
 
+    @cache_attr('_tex')
     def tex(self):
         return "{%s}%s" % (tex(self.operand), dagger_tex)
 
+    @cache_attr('_str')
     def __str__(self):
         if isinstance(self.operand, OperatorSymbol):
             return str(self.operand) + dagger_str
@@ -1473,9 +1508,11 @@ class PseudoInverse(SingleOperatorOperation):
     def pseudo_inverse(self):
         return self.operand
 
+    @cache_attr('_tex')
     def tex(self):
         return "{%s}%s" % (tex(self.operand), pseudo_dagger_tex)
 
+    @cache_attr('_str')
     def __str__(self):
         if isinstance(self.operand, OperatorSymbol):
             return str(self.operand) + pseudo_dagger_str
@@ -1505,10 +1542,12 @@ class NullSpaceProjector(SingleOperatorOperation):
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
 
+    @cache_attr('_tex')
     def tex(self):
         return op_tex(r'\matchcal{P}', subscript=r'{\rm Ker}',
                       args=[tex(self.operand), ])
 
+    @cache_attr('_str')
     def __str__(self):
         return op_str(r'P', subscript=r'Ker',
                       args=[tex(self.operand), ])
@@ -1542,7 +1581,7 @@ class OperatorTrace(Operator, Operation):
         assert isinstance(over_space, HilbertSpace)
         self._over_space = over_space
         self._space = None
-        super().__init__(op)
+        super().__init__(op, over_space=over_space)
 
     @property
     def kwargs(self):
@@ -1568,11 +1607,13 @@ class OperatorTrace(Operator, Operation):
         return tuple(OperatorTrace.create(opet, over_space=self._over_space)
                      for opet in ope)
 
+    @cache_attr('_tex')
     def tex(self):
         s = self._over_space
         o = self.operand
         return r"{{\rm Tr}}_{{{}}} \left[ {} \right]".format(tex(s), tex(o))
 
+    @cache_attr('_str')
     def __str__(self):
         s = self._over_space
         o = self.operand
@@ -1912,6 +1953,7 @@ class Matrix(Expression):
             self.matrix = self.matrix.reshape((self.matrix.shape[0], 1))
         if len(self.matrix.shape) > 2:
             raise ValueError()
+        super().__init__(self.matrix)
 
     @property
     def shape(self):
@@ -2031,9 +2073,11 @@ class Matrix(Expression):
 
     dag = adjoint
 
+    @cache_attr('_repr')
     def __repr__(self):
         return "{}({!r})".format(self.__class__.__name__, self.matrix.tolist())
 
+    @cache_attr('_str')
     def __str__(self):
         return "{}({!s})".format(self.__class__.__name__, self.matrix)
 
@@ -2115,6 +2159,7 @@ class Matrix(Expression):
                 ret = ret | scalar_free_symbols(o)
         return ret
 
+    @cache_attr('_tex')
     def tex(self):
         ret = r"\begin{pmatrix} "
         #        for row in self.matrix:

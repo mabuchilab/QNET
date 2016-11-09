@@ -48,7 +48,7 @@ class TestOperatorCreation(unittest.TestCase):
         assert bb == OperatorSymbol("aa", ("hs", "h2"))
         assert a == Destroy("hs")
         assert Destroy(1) == Destroy("1")
-        assert OperatorSymbol("a", 1) == OperatorSymbol("a","1")
+        assert OperatorSymbol("a", 1) == OperatorSymbol("a", "1")
 
 
 class TestOperatorAddition(unittest.TestCase):
@@ -216,8 +216,6 @@ class TestDifferentiation(unittest.TestCase):
         assert ((x*X + Y) * (x**2)*Y).diff(x) == 3*x**2 * X * Y + 2*x*Y*Y
 
 
-
-
 class TestLocalOperatorRelations(unittest.TestCase):
     def testCommutatorAAdag(self):
         h = LocalSpace("h")
@@ -371,9 +369,9 @@ class TestOperatorTrace(unittest.TestCase):
         sigma = X(a) + I*Y(a)
         rho_f = Displace(f, alpha) * LocalProjector(f, 0) * Displace(f, -alpha)
         rho = rho_a * rho_f
-        assert (OperatorTrace.create(
-                    rho, over_space=ProductSpace(a, f)
-                ).expand() == IdentityOperator)
+        lhs = OperatorTrace.create(rho, over_space=ProductSpace(a, f))
+        lhs = lhs.expand()
+        assert lhs == IdentityOperator
 
     def testDimensionPrefactor(self):
         h1 = LocalSpace(1, dimension=10)
@@ -410,3 +408,32 @@ class TestOperatorMatrices(unittest.TestCase):
         assert Matrix([[(Create(1) + Create(2))*Create(3)]]).expand() == Matrix([[Create(1)*Create(3) + Create(2)*Create(3)]])
 
 
+def test_op_expr_str():
+    A = OperatorSymbol('A', 1)
+    B = OperatorSymbol('B', 1)
+    C = OperatorSymbol('C', 1)
+    D = OperatorSymbol('D', 1)
+
+    a = OperatorSymbol('a', 2)
+    b = OperatorSymbol('b', 2)
+
+    gamma = symbols('\gamma', positive=True)
+    x, y = symbols('x y')
+
+    expr = A - (gamma/2) * B + 2*C - D
+    assert str(expr) == 'A + 2 * C - \\gamma/2 * B - D'
+
+    expr = A * B + 2*(C + D)
+    assert str(expr) == '2 * (C + D) + A * B'
+
+    expr =  A * A * a * b * B
+    assert str(expr) == 'A * A * B ⊗ a * b'
+
+    expr =  (A + B) * (a + b)
+    assert str(expr) == '(A + B) ⊗ (a + b)'
+
+    expr =  (A + B) * (C + D)
+    assert str(expr) == '(A + B) * (C + D)'
+
+    expr = ((x**2 + y**2) / sqrt(2)) * (A * B + C + b)
+    assert str(expr) == 'sqrt(2)*(x**2 + y**2)/2 * (C + b + A * B)'

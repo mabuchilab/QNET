@@ -66,7 +66,7 @@ class RelayOut(SubComponent):
     """
 
     def __init__(self, relay):
-        super(RelayOut, self).__init__(relay, 0)
+        super().__init__(relay, 0)
 
     def _toSLH(self):
 
@@ -82,7 +82,7 @@ class RelayControl(SubComponent):
     """
 
     def __init__(self, relay):
-        super(RelayControl, self).__init__(relay, 1)
+        super().__init__(relay, 1)
 
     def _toSLH(self):
         Pi_g = LocalProjector(self.space, 'g')

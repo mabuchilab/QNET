@@ -35,14 +35,14 @@ from numpy import (sqrt as np_sqrt, array as np_array)
 from sympy import (
         symbols, Basic as SympyBasic, Add, Matrix as SympyMatrix, sqrt, I)
 
-from qnet.algebra.abstract_algebra import (
+from .abstract_algebra import (
         Operation, Expression, singleton, tex, AlgebraError,
         assoc, orderby, filter_neutral, match_replace, match_replace_binary,
-        AlgebraException, KeyTuple)
-from qnet.algebra.pattern_matching import wc, pattern_head, pattern
-from qnet.algebra.hilbert_space_algebra import (
+        AlgebraException, KeyTuple, cache_attr)
+from .pattern_matching import wc, pattern_head, pattern
+from .hilbert_space_algebra import (
         HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)
-from qnet.algebra.operator_algebra import (
+from .operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
         IdentityOperator, identifier_to_tex, simplify_scalar, OperatorSymbol,
         Matrix, Create, Destroy)
@@ -159,6 +159,7 @@ class SuperOperatorSymbol(SuperOperator, Expression):
         elif isinstance(hs, tuple):
             hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
         self._hs = hs
+        super().__init__(label, hs)
 
     @property
     def args(self):
@@ -167,6 +168,7 @@ class SuperOperatorSymbol(SuperOperator, Expression):
     def __str__(self):
         return self.label
 
+    @cache_attr('_tex')
     def tex(self):
         return r"\hat{{{}}}".format(identifier_to_tex(self.label))
 
@@ -285,6 +287,7 @@ class SuperOperatorPlus(SuperOperatorOperation):
     def _expand(self):
         return sum((o.expand() for o in self.operands), ZeroSuperOperator)
 
+    @cache_attr('_tex')
     def tex(self):
         ret = self.operands[0].tex()
 
@@ -296,9 +299,9 @@ class SuperOperatorPlus(SuperOperatorOperation):
                 ret += " + " + tex(o)
         return ret
 
+    @cache_attr('_str')
     def __str__(self):
         ret = str(self.operands[0])
-
         for o in self.operands[1:]:
             if (isinstance(o, ScalarTimesSuperOperator) and
                     ScalarTimesOperator.has_minus_prefactor(o.coeff)):
@@ -405,6 +408,7 @@ class SuperOperatorTimes(SuperOperatorOperation):
                     for combo in cartesian_product(*eopssummands)),
                    ZeroSuperOperator)
 
+    @cache_attr('_tex')
     def tex(self):
         ret = self.operands[0].tex()
         for o in self.operands[1:]:
@@ -414,6 +418,7 @@ class SuperOperatorTimes(SuperOperatorOperation):
                 ret += " {}".format(tex(o))
         return ret
 
+    @cache_attr('_str')
     def __str__(self):
         ret = str(self.operands[0])
         for o in self.operands[1:]:
@@ -452,6 +457,7 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
         """The super-operator term."""
         return self.operands[1]
 
+    @cache_attr('_tex')
     def tex(self):
         coeff, term = self.operands
 
@@ -469,6 +475,7 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
 
         return cs + ct
 
+    @cache_attr('_str')
     def __str__(self):
         coeff, term = self.operands
 
@@ -559,9 +566,11 @@ class SuperAdjoint(SuperOperatorOperation):
                        ZeroSuperOperator)
         return eo._superadjoint()
 
+    @cache_attr('_tex')
     def tex(self):
         return "\left(" + self.operands[0].tex() + r"\right)^*"
 
+    @cache_attr('_str')
     def __str__(self):
         if isinstance(self.operand, OperatorSymbol):
             return "{}^*".format(str(self.operand))
@@ -586,9 +595,11 @@ class SPre(SuperOperator, Operation):
     def space(self):
         return self.operands[0].space
 
+    @cache_attr('_tex')
     def tex(self):
         return r"{{\rm spre}}\left[{}\right]".format(self.operands[0].tex())
 
+    @cache_attr('_str')
     def __str__(self):
         return r"spre({!s})".format(self.operands[0])
 
@@ -621,9 +632,11 @@ class SPost(SuperOperator, Operation):
     def space(self):
         return self.operands[0].space
 
+    @cache_attr('_tex')
     def tex(self):
         return r"{{\rm spost}}\left[{}\right]".format(self.operands[0].tex())
 
+    @cache_attr('_str')
     def __str__(self):
         return r"spost({!s})".format(self.operands[0])
 
@@ -663,6 +676,7 @@ class SuperOperatorTimesOperator(Operator, Operation):
     def op(self):
         return self.operands[1]
 
+    @cache_attr('_tex')
     def tex(self):
         sop, op = self.operands
 
@@ -678,20 +692,18 @@ class SuperOperatorTimesOperator(Operator, Operation):
 
         return cs + ct
 
+    @cache_attr('_str')
     def __str__(self):
         sop, op = self.operands
-
         if isinstance(sop, SuperOperatorPlus):
             cs = r"({!s})".format((sop))
         else:
             cs = "{}".format(tex(sop))
-
         if isinstance(op, OperatorPlus):
             ct = r" ({!s})".format(op)
         else:
             ct = r" {}".format(op)
-
-        return cs + ct
+        return (cs + ct).strip()
 
     def _expand(self):
         sop, op = self.operands
@@ -962,7 +974,7 @@ def liouvillian_normal_form(L, symbolic = False):
     >>> LL = liouvillian(H, Ls)
     >>> Hnf, Lsnf = liouvillian_normal_form(LL)
     >>> print(Hnf)
-     -I*alpha*sqrt(kappa_1) * a⁺₍₁₎ + I*sqrt(kappa_1)*conjugate(alpha) * a₍₁₎ + Delta * a⁺₍₁₎ a₍₁₎
+    I*sqrt(kappa_1)*conjugate(alpha) * a₍₁₎ + Delta * (a⁺₍₁₎ * a₍₁₎) - I*alpha*sqrt(kappa_1) * a⁺₍₁₎
     >>> len(Lsnf)
     1
     >>> print(Lsnf[0])

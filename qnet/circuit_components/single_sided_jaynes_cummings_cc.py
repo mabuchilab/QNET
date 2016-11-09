@@ -104,7 +104,7 @@ class CavityPort(SubComponent):
 
 
     def __init__(self, cavity):
-        super(CavityPort, self).__init__(cavity, 0)
+        super().__init__(cavity, 0)
 
     def _toSLH(self):
 
@@ -129,7 +129,7 @@ class DecayChannel(SubComponent):
     emission/decay."""
 
     def __init__(self, cavity):
-        super(DecayChannel, self).__init__(cavity, 1)
+        super().__init__(cavity, 1)
 
     def _toSLH(self):
 

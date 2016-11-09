@@ -191,6 +191,8 @@ class Pattern():
 
     def __init__(self, head=None, args=None, kwargs=None, *, mode=1,
                  wc_name=None, conditions=None):
+        self._str = None
+        self._repr = None
         if head is not None:
             if head == 'scalar':
                 head = self.scalar_types

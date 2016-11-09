@@ -72,7 +72,7 @@ class ProbePort(SubComponent):
     """
 
     def __init__(self, cavity):
-        super(ProbePort, self).__init__(cavity, 0)
+        super().__init__(cavity, 0)
 
     def _toSLH(self):
 

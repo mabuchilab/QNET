@@ -88,6 +88,7 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
             else:
                 del kwargs[pname]
                 print("Unknown parameter!")
+        super().__init__(name, **kwargs)
 
     @property
     def args(self):
@@ -133,6 +134,7 @@ class SubComponent(Circuit, Expression, metaclass=ABCMeta):
     def __init__(self, parent_component, sub_index):
         self.parent_component = parent_component
         self.sub_index = sub_index
+        super().__init__(parent_component, sub_index)
 
     def __getattr__(self, attrname):
         try:

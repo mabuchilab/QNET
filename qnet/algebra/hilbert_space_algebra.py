@@ -33,9 +33,9 @@ import functools
 from abc import ABCMeta, abstractmethod
 from itertools import product as cartesian_product
 
-from qnet.algebra.abstract_algebra import (
+from .abstract_algebra import (
         singleton, Expression, Operation, AlgebraError, tex, assoc, idem,
-        filter_neutral)
+        filter_neutral, cache_attr)
 
 
 class HilbertSpace(metaclass=ABCMeta):
@@ -276,7 +276,6 @@ class LocalSpace(HilbertSpace, Expression):
         self._basis = None
         self._dimension = None
         self._custom_basis = False
-        self._repr = None
         if basis is None:
             if dimension is not None:
                 self._basis = tuple(range(int(dimension)))
@@ -290,6 +289,7 @@ class LocalSpace(HilbertSpace, Expression):
             if basis != tuple(range(int(self._dimension))):
                 self._custom_basis = True
         self.name = name
+        super().__init__(name, basis=basis, dimension=dimension)
 
     @property
     def args(self):
@@ -307,6 +307,7 @@ class LocalSpace(HilbertSpace, Expression):
     def kwargs(self):
         return {'basis': self._basis, 'dimension': self._dimension}
 
+    @cache_attr('_repr')
     def __repr__(self):
         if self._repr is None:
             basis = self._basis
@@ -349,6 +350,7 @@ class LocalSpace(HilbertSpace, Expression):
             return True
         return False
 
+    @cache_attr('_tex')
     def tex(self):
         """TeX representation of the Local Hilbert space"""
         return "%s_{%s}" % (self._hilbert_tex_symbol, tex(self.name))
@@ -465,11 +467,13 @@ class ProductSpace(HilbertSpace, Operation):
             return True
         return False
 
+    @cache_attr('_tex')
     def tex(self):
         return r' \otimes '.join([tex(op) for op in self.operands])
 
+    @cache_attr('_str')
     def __str__(self):
-        return r' * '.join([str(op) for op in self.operands])
+        return r' ⊗ '.join([str(op) for op in self.operands])
 
 
 class BasisNotSetError(AlgebraError):

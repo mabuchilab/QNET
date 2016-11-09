@@ -135,7 +135,7 @@ class DecayChannel(SubComponent):
 
 
     def __init__(self, cavity):
-        super(DecayChannel, self).__init__(cavity, 2)
+        super().__init__(cavity, 2)
 
     def _toSLH(self):
 

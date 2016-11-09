@@ -46,23 +46,23 @@ from sympy import I
 
 import numpy as np
 
-from qnet.algebra.abstract_algebra import (
+from .abstract_algebra import (
         AlgebraException, AlgebraError, Operation, Expression, singleton,
-        assoc, filter_neutral, match_replace_binary,
+        assoc, filter_neutral, match_replace_binary, cache_attr,
         match_replace, CannotSimplify, tex, substitute, set_union)
-from qnet.algebra.operator_algebra import (
+from .operator_algebra import (
         Operator, ScalarTimesOperator, Matrix, IdentityOperator, Create,
         Destroy, block_matrix, zerosm, permutation_matrix, Im, ImAdjoint,
         get_coeffs, vstackm, ZeroOperator, OperatorSymbol,
         identity_matrix, adjoint, identifier_to_tex, LocalProjector,
         LocalSigma, OperatorPlus)
-from qnet.algebra.permutations import (
+from .permutations import (
         check_permutation, invert_permutation, BadPermutationError,
         permutation_to_block_permutations, block_perm_and_perms_within_blocks,
         full_block_perm, concatenate_permutations)
-from qnet.algebra.hilbert_space_algebra import (
+from .hilbert_space_algebra import (
         TrivialSpace, ProductSpace, FullSpace, LocalSpace, BasisNotSetError)
-from qnet.algebra.pattern_matching import wc, pattern_head, pattern
+from .pattern_matching import wc, pattern_head, pattern
 
 
 class CannotConvertToSLH(AlgebraException):
@@ -373,6 +373,7 @@ class SLH(Circuit, Expression):
         self.S = S
         self.L = L
         self.H = H
+        super().__init__(S, L, H)
 
     @property
     def args(self):
@@ -429,9 +430,11 @@ class SLH(Circuit, Expression):
 
         return SLH(new_S, new_L, new_H)
 
+    @cache_attr('_str')
     def __str__(self):
         return "({!s}, {!s}, {!s})".format(self.S, self.L, self.H)
 
+    @cache_attr('_tex')
     def tex(self):
         return r"\left( {}, {}, {} \right)".format(tex(self.S), tex(self.L),
                                                    tex(self.H))
@@ -638,6 +641,7 @@ class ABCD(Circuit, Expression):
         self.D = D
         self.w = w
         self._space = space
+        super.__init__(A, B, C, D, w, space)
 
     @property
     def space(self):
@@ -696,6 +700,7 @@ class CircuitSymbol(Circuit, Expression):
     def __init__(self, identifier, cdim):
         self.identifier = str(identifier)
         self._cdim = int(cdim)
+        super().__init__(identifier, cdim)
 
     @property
     def args(self):
@@ -707,6 +712,7 @@ class CircuitSymbol(Circuit, Expression):
     def __str__(self):
         return self.identifier
 
+    @cache_attr('_tex')
     def tex(self):
         return identifier_to_tex(self.identifier)
 
@@ -959,6 +965,7 @@ class SeriesProduct(Circuit, Operation):
         factors = [o.series_inverse() for o in reversed(self.operands)]
         return SeriesProduct.create(*factors)
 
+    @cache_attr('_tex')
     def tex(self):
         """TeX representation of series product (using infix notation)"""
         ret = " \lhd ".join(
@@ -967,6 +974,7 @@ class SeriesProduct(Circuit, Operation):
                 for o in self.operands)
         return ret
 
+    @cache_attr('_str')
     def __str__(self):
         return " << ".join(str(o) if not isinstance(o, Concatenation)
                            else r"({!s})".format(o) for o in self.operands)
@@ -993,8 +1001,6 @@ class Concatenation(Circuit, Operation):
     :param Circuit operands: Circuits in parallel configuration.
     """
 
-    signature = (Circuit, ), {}
-
     neutral_element = CircuitZero
 
     _simplifications = [assoc, filter_neutral, match_replace_binary,
@@ -1002,9 +1008,12 @@ class Concatenation(Circuit, Operation):
 
     _binary_rules = []  # see end of module
 
-    _space = None  # lazily evaluated
-    _cdim = None # lazily evaluated
+    def __init__(self, *operands):
+        self._space = None
+        self._cdim = None
+        super().__init__(*operands)
 
+    @cache_attr('_tex')
     def tex(self):
         """TeX representation of concatenation (using infix notation)"""
         ops_strs = []
@@ -1022,6 +1031,7 @@ class Concatenation(Circuit, Operation):
             ops_strs += [r"\mathbf{{1}}_{{{}}}".format(id_count)]
         return r" \boxplus ".join(ops_strs)
 
+    @cache_attr('_str')
     def __str__(self):
         ops_strs = []
         id_count = 0
@@ -1177,7 +1187,7 @@ class CPermutation(Circuit, Operation):
             raise BadPermutationError(str(permutation))
         if list(permutation) == list(range(len(permutation))):
             return cid(len(permutation))
-        return super(CPermutation, cls).create(permutation)
+        return super().create(permutation)
 
     _block_perms = None
 
@@ -1216,6 +1226,7 @@ class CPermutation(Circuit, Operation):
     def _creduce(self):
         return self
 
+    @cache_attr('_tex')
     def tex(self):
         """TeX representation of permutation"""
         return r'\mathbf{P}_{\sigma}\begin{pmatrix} %s \\ %s \end{pmatrix' % (
@@ -1595,7 +1606,7 @@ class Feedback(Circuit, Operation):
         if isinstance(circuit, cls.delegate_to_method):
             return circuit._feedback(out_index, in_index)
 
-        return super(Feedback, cls).create(circuit, out_index, in_index)
+        return super().create(circuit, out_index, in_index)
 
     def _toSLH(self):
         return self.operand.toSLH().feedback(*self.out_in_pair)
@@ -1606,12 +1617,14 @@ class Feedback(Circuit, Operation):
     def _creduce(self):
         return self.operand.creduce().feedback(*self.out_in_pair)
 
+    @cache_attr('_str')
     def __str__(self):
         if self.out_in_pair == (self.operand.cdim - 1, self.operand.cdim - 1):
             return "FB(%s)" % self.operand
         o, i = self.out_in_pair
         return "FB(%s, %d, %d)" % (self.operand, o, i)
 
+    @cache_attr('_tex')
     def tex(self):
         o, i = self.out_in_pair
         if self.out_in_pair == (self.cdim - 1, self.cdim - 1):
@@ -1685,7 +1698,7 @@ class SeriesInverse(Circuit, Operation):
             return circuit.operand
         elif isinstance(circuit, cls.delegate_to_method):
             return circuit._series_inverse()
-        return super(SeriesInverse, cls).create(circuit)
+        return super().create(circuit)
 
     @property
     def cdim(self):
@@ -1713,6 +1726,7 @@ class SeriesInverse(Circuit, Operation):
     def __str__(self):
         return "[{!s}]^(-1)".format(self.operand)
 
+    @cache_attr('_tex')
     def tex(self):
         return r"\left[ {} \right]^{{\lhd -1}}".format(tex(self.operand))
 

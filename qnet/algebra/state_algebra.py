@@ -29,14 +29,15 @@ from itertools import product as cartesian_product
 
 from sympy import (
         Basic as SympyBasic, Add, series as sympy_series, sqrt, exp, I)
-from qnet.algebra.abstract_algebra import (
+
+from .abstract_algebra import (
         Operation, Expression, singleton, substitute, tex, AlgebraError,
         assoc, orderby, filter_neutral, match_replace, match_replace_binary,
-        KeyTuple, CannotSimplify)
-from qnet.algebra.pattern_matching import wc, pattern_head, pattern
-from qnet.algebra.hilbert_space_algebra import (
-        HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)
-from qnet.algebra.operator_algebra import (
+        KeyTuple, CannotSimplify, cache_attr)
+from .pattern_matching import wc, pattern_head, pattern
+from .hilbert_space_algebra import (
+        FullSpace, TrivialSpace, LocalSpace, ProductSpace)
+from .operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
         IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
         Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
@@ -98,9 +99,11 @@ class Ket(metaclass=ABCMeta):
     def _tex_bra(self):
         raise NotImplementedError(self.__class__.__name__)
 
+    @cache_attr('_str')
     def __str__(self):
         return self._str_ket()
 
+    @cache_attr('_tex')
     def tex(self):
         return self._tex_ket()
 
@@ -156,13 +159,12 @@ class KetSymbol(Ket, Expression):
     :type hs: HilbertSpace
     """
 
-    signature = (str, (HilbertSpace, str, int)), {}
-
     def __init__(self, label, hs):
         self.label = label
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         self._hs = hs
+        super().__init__(label, hs)
 
     @property
     def args(self):
@@ -284,6 +286,7 @@ class LocalKet(Ket, Expression):
             hs = LocalSpace(hs)
         self._hs = hs
         self.label = label
+        super().__init__(hs, label)
 
     @property
     def args(self):
@@ -346,7 +349,7 @@ class CoherentStateKet(LocalKet):
         self.ampl = ampl
         self._str_label = r'D(%s)' % ampl
         self._tex_label = r'D(%s)' % tex(ampl)
-        super(CoherentStateKet, self).__init__(hs=hs, label=self._str_label)
+        super().__init__(hs, ampl)
 
     @property
     def args(self):
@@ -508,7 +511,7 @@ class TensorKet(Ket, Operation):
             if o.space & spc > TrivialSpace:
                 raise OverlappingSpaces(str(ops))
             spc *= o.space
-        return super(TensorKet, cls).create(*ops)
+        return super().create(*ops)
 
     def factor_for_space(self, space):
         """Factor into a Ket defined on the given `space` and a Ket on the
@@ -860,9 +863,11 @@ class Bra(Operation):
 
     operand = ket
 
+    @cache_attr('_str')
     def __str__(self):
         return self.ket._str_bra()
 
+    @cache_attr('_tex')
     def tex(self):
         return self.ket._tex_bra()
 
@@ -958,6 +963,7 @@ class BraKet(Operator, Operation):
         return sum(BraKet.create(bes, kes)
                    for bes in besummands for kes in kesummands)
 
+    @cache_attr('_tex')
     def tex(self):
         if isinstance(self.bra.ket, KetPlus):
             bs = r"\left({}\right)".format(self.bra.tex())
@@ -1012,6 +1018,7 @@ class KetBra(Operator, Operation):
         return sum(KetBra.create(kes, bes)
                    for bes in besummands for kes in kesummands)
 
+    @cache_attr('_tex')
     def tex(self):
         if isinstance(self.bra.ket, KetPlus):
             bs = r"\left({}\right)".format(self.bra.tex())
