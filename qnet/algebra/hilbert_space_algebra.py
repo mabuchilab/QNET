@@ -34,8 +34,8 @@ from abc import ABCMeta, abstractmethod
 from itertools import product as cartesian_product
 
 from .abstract_algebra import (
-        singleton, Expression, Operation, AlgebraError, tex, assoc, idem,
-        filter_neutral, cache_attr)
+        Expression, Operation, AlgebraError, tex, assoc, idem,
+        filter_neutral, cache_attr, singleton_object, Singleton)
 
 
 class HilbertSpace(metaclass=ABCMeta):
@@ -150,8 +150,8 @@ class HilbertSpace(metaclass=ABCMeta):
         return self == other or self > other
 
 
-@singleton
-class TrivialSpace(HilbertSpace, Expression):
+@singleton_object
+class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
     """The 'nullspace', i.e. a one dimensional Hilbert space, which is a factor
     space of every other Hilbert space."""
 
@@ -210,8 +210,8 @@ class TrivialSpace(HilbertSpace, Expression):
         return r"%s_{\rm null}" % self._hilbert_tex_symbol
 
 
-@singleton
-class FullSpace(HilbertSpace, Expression):
+@singleton_object
+class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
     """The 'full space', i.e. a Hilbert space that includes any other Hilbert
     space as a tensor factor."""
 
@@ -319,8 +319,8 @@ class LocalSpace(HilbertSpace, Expression):
                     kw_str = ', basis=%s' % repr(basis)
                 else:
                     kw_str = ', dimension=%d' % dim
-            self._repr = (str(self.__class__.__name__) + "(" + self.name +
-                          kw_str + ')')
+            self._repr = (str(self.__class__.__name__) + "("
+                          + repr(self.name) + kw_str + ')')
         return self._repr
 
     def all_symbols(self):

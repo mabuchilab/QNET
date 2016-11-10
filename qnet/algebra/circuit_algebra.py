@@ -47,9 +47,9 @@ from sympy import I
 import numpy as np
 
 from .abstract_algebra import (
-        AlgebraException, AlgebraError, Operation, Expression, singleton,
-        assoc, filter_neutral, match_replace_binary, cache_attr,
-        match_replace, CannotSimplify, tex, substitute, set_union)
+        AlgebraException, AlgebraError, Operation, Expression, Singleton,
+        singleton_object, assoc, filter_neutral, match_replace_binary,
+        cache_attr, match_replace, CannotSimplify, tex, substitute, set_union)
 from .operator_algebra import (
         Operator, ScalarTimesOperator, Matrix, IdentityOperator, Create,
         Destroy, block_matrix, zerosm, permutation_matrix, Im, ImAdjoint,
@@ -737,8 +737,8 @@ class CircuitSymbol(Circuit, Expression):
         return FullSpace
 
 
-@singleton
-class CIdentity(Circuit, Expression):
+@singleton_object
+class CIdentity(Circuit, Expression, metaclass=Singleton):
     """Single channel circuit identity system, the neutral element of single
     channel series products."""
 
@@ -795,8 +795,8 @@ class CIdentity(Circuit, Expression):
         return TrivialSpace
 
 
-@singleton
-class CircuitZero(Circuit, Expression):
+@singleton_object
+class CircuitZero(Circuit, Expression, metaclass=Singleton):
     """The zero circuit system, the neutral element of Concatenation. No ports,
     no internal dynamics."""
     _cdim = 0
@@ -939,8 +939,8 @@ class SeriesProduct(Circuit, Operation):
 
     _space = None  # lazily evaluated
 
-    @singleton
-    class neutral_element():
+    @singleton_object
+    class neutral_element(metaclass=Singleton):
         """Generic neutral element checker of the ``SeriesProduct``, it works
         for any channel dimension."""
 

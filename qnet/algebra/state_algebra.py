@@ -31,9 +31,9 @@ from sympy import (
         Basic as SympyBasic, Add, series as sympy_series, sqrt, exp, I)
 
 from .abstract_algebra import (
-        Operation, Expression, singleton, substitute, tex, AlgebraError,
-        assoc, orderby, filter_neutral, match_replace, match_replace_binary,
-        KeyTuple, CannotSimplify, cache_attr)
+        Operation, Expression, substitute, tex, AlgebraError, assoc, orderby,
+        filter_neutral, match_replace, match_replace_binary, KeyTuple,
+        CannotSimplify, cache_attr, singleton_object, Singleton)
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
         FullSpace, TrivialSpace, LocalSpace, ProductSpace)
@@ -200,8 +200,8 @@ class KetSymbol(Ket, Expression):
         return set([self, ])
 
 
-@singleton
-class ZeroKet(Ket, Expression):
+@singleton_object
+class ZeroKet(Ket, Expression, metaclass=Singleton):
     """ZeroKet constant (singleton) object for the null-state."""
 
     @property
@@ -235,8 +235,8 @@ class ZeroKet(Ket, Expression):
         return set([])
 
 
-@singleton
-class TrivialKet(Ket, Expression):
+@singleton_object
+class TrivialKet(Ket, Expression, metaclass=Singleton):
     """TrivialKet constant (singleton) object.
     This is the neutral element under the state tensor-product.
     """

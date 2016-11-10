@@ -548,44 +548,42 @@ def match_replace_binary(cls, ops, kwargs):
     return ops, kwargs
 
 
-# Store all singletons in a dict
-_singletons = {}
-def _get_singleton(name):
-    """Retrieve singletons by name."""
-    return _singletons[name]
-
-def singleton(cls):
-    """Singleton class decorator. Turns a class object into a unique instance.
-
-    :param cls: Class to decorate
-    :type cls: type
-    :return: The singleton instance of that class
-    :rtype: cls
+def singleton_object(cls):
+    """Class decorator that transforms (and replaces) a class definition (which
+    must have a Singleton metaclass) with the actual singleton object. Ensures
+    that the resulting object can still be "instantiated" (i.e., called),
+    returning the same object. Also ensures the object can be pickled, is
+    hashable, and has the correct string representation (the name of the
+    singleton)
     """
+    assert isinstance(cls, Singleton), \
+        cls.__name__ + " must use Singleton metaclass"
 
-    class S(cls):
-        __instance = None
+    def self_instantiate(self):
+        return self
 
-        def __hash__(self):
-            return hash(cls)
+    cls.__call__ = self_instantiate
+    cls.__hash__ = lambda self: hash(cls)
+    cls.__repr__ = lambda self: cls.__name__
+    cls.__reduce__ = lambda self: cls.__name__
+    return cls()
 
-        def _symbols(self):
-            return set(())
 
-        def __repr__(self):
-            return cls.__name__
+class Singleton(ABCMeta):
+    """Metaclass for singletons. Any instantiation of a Singleton class yields
+    the exact same object, e.g.:
 
-        def __call__(self):
-            return self.__instance
+    >>> class MyClass(metaclass=Singleton):
+    ...     pass
+    >>> a = MyClass()
+    >>> b = MyClass()
+    >>> a is b
+    True
+    """
+    _instances = {}
 
-        def __reduce__(self):
-            """This magic method ensures that singletons can be pickled.
-            See also https://docs.python.org/3.1/library/pickle.html#pickle.object.__reduce__
-            """
-            return (_get_singleton, (cls.__name__,))
-
-    S.__name__ = cls.__name__
-    S.__instance = s = S()
-    _singletons[S.__name__] = s
-
-    return s
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args,
+                                                                 **kwargs)
+        return cls._instances[cls]

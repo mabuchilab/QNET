@@ -36,9 +36,9 @@ from sympy import (
         symbols, Basic as SympyBasic, Add, Matrix as SympyMatrix, sqrt, I)
 
 from .abstract_algebra import (
-        Operation, Expression, singleton, tex, AlgebraError,
-        assoc, orderby, filter_neutral, match_replace, match_replace_binary,
-        AlgebraException, KeyTuple, cache_attr)
+        Operation, Expression, tex, AlgebraError, assoc, orderby,
+        filter_neutral, match_replace, match_replace_binary, AlgebraException,
+        KeyTuple, cache_attr, singleton_object, Singleton)
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
         HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)
@@ -183,8 +183,8 @@ class SuperOperatorSymbol(SuperOperator, Expression):
         return {self}
 
 
-@singleton
-class IdentitySuperOperator(SuperOperator, Expression):
+@singleton_object
+class IdentitySuperOperator(SuperOperator, Expression, metaclass=Singleton):
     """IdentitySuperOperator constant (singleton) object."""
 
     @property
@@ -214,8 +214,8 @@ class IdentitySuperOperator(SuperOperator, Expression):
         return set(())
 
 
-@singleton
-class ZeroSuperOperator(SuperOperator, Expression):
+@singleton_object
+class ZeroSuperOperator(SuperOperator, Expression, metaclass=Singleton):
     """ZeroSuperOperator constant (singleton) object."""
 
     @property

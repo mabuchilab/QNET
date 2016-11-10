@@ -35,9 +35,10 @@ from collections import defaultdict
 from itertools import product as cartesian_product
 
 from .abstract_algebra import (
-        tex, singleton, Expression, Operation, assoc, orderby,
+        tex, Expression, Operation, assoc, orderby,
         filter_neutral, match_replace_binary, match_replace,
-        set_union, KeyTuple, substitute, CannotSimplify, cache_attr)
+        singleton_object, Singleton, set_union, KeyTuple, substitute,
+        CannotSimplify, cache_attr)
 from .hilbert_space_algebra import (
         TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError,
         FullSpace)
@@ -370,8 +371,8 @@ class OperatorSymbol(Operator, Expression):
         return {self}
 
 
-@singleton
-class IdentityOperator(Operator, Expression):
+@singleton_object
+class IdentityOperator(Operator, Expression, metaclass=Singleton):
     """``IdentityOperator`` constant (singleton) object."""
 
     @property
@@ -415,8 +416,8 @@ class IdentityOperator(Operator, Expression):
 II = IdentityOperator
 
 
-@singleton
-class ZeroOperator(Operator, Expression):
+@singleton_object
+class ZeroOperator(Operator, Expression, metaclass=Singleton):
     """``ZeroOperator`` constant (singleton) object."""
 
     @property
