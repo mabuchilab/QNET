@@ -55,17 +55,19 @@ class TestOperationSimplifcations(unittest.TestCase):
         a_int = wc("a", head=int)
         a_negint = wc("a", head=int, conditions=[lambda a: a < 0, ])
         b_int = wc("b", head=int)
-        c_str = wc("c", head=str)
+        a_str = wc("a", head=str)
+        b_str = wc("b", head=str)
 
         class MatchReplaceBinary(Operation):
             _binary_rules = [
-                (pattern_head(a_int, b_int),
-                    lambda a,b: a + b),
-                (pattern_head(a_int, c_str),
-                    lambda c,a: mult_str_int_if_pos(c,a)),
-                (pattern_head(a_negint, c_str),
-                    lambda c,a: mult_inv_str_int_if_neg(c,a))
+                (pattern_head(a_int, b_str),
+                    lambda a, b: mult_str_int_if_pos(b,a)),
+                (pattern_head(a_negint, b_str),
+                    lambda a, b: mult_inv_str_int_if_neg(b,a)),
+                (pattern_head(a_str, b_str),
+                    lambda a, b: a + b)
             ]
+            neutral_element = 1
             _simplifications = [assoc, match_replace_binary]
 
 
@@ -80,38 +82,39 @@ class TestOperationSimplifcations(unittest.TestCase):
 
 
     def testFlat(self):
-        self.assertEqual(self.Flat.create(1,2,3, self.Flat(4,5,6),7,8),
-                         self.Flat(1,2,3,4,5,6,7,8))
+        assert self.Flat.create(1,2,3, self.Flat(4,5,6),7,8) == \
+                         self.Flat(1,2,3,4,5,6,7,8)
 
 
     def testOrderless(self):
-        self.assertEqual(self.Orderless.create(3,1,2), self.Orderless(1,2,3))
+        assert self.Orderless.create(3,1,2) == self.Orderless(1,2,3)
 
 
     def testFilterNeutral(self):
         one = self.FilterNeutral.neutral_element
-        self.assertEqual(self.FilterNeutral.create(1,2,3,one,4,5,one),
-                         self.FilterNeutral(1,2,3,4,5))
-        self.assertEqual(self.FilterNeutral.create(one), one)
+        assert self.FilterNeutral.create(1,2,3,one,4,5,one) == \
+                         self.FilterNeutral(1,2,3,4,5)
+        assert self.FilterNeutral.create(one) == one
 
 
     def testSimplifyBinary(self):
-        self.assertEqual(self.MatchReplaceBinary.create(1,2,"hallo"),
-                         self.MatchReplaceBinary("hallohallohallo"))
-        self.assertEqual(self.MatchReplaceBinary.create(-1,"hallo"),
-                         self.MatchReplaceBinary("ollah"))
-        self.assertEqual(self.MatchReplaceBinary.create(-3,"hallo"),
-                         self.MatchReplaceBinary("ollahollahollah"))
-        self.assertEqual(self.MatchReplaceBinary.create(1,2,3),
-                         self.MatchReplaceBinary(6))
+        assert self.MatchReplaceBinary.create(1,2,"hallo") == \
+                         self.MatchReplaceBinary("hallohallo")
+        assert self.MatchReplaceBinary.create(-1,"hallo") == \
+                         self.MatchReplaceBinary("ollah")
+        assert self.MatchReplaceBinary.create(-3,"hallo") == \
+                         self.MatchReplaceBinary("ollahollahollah")
+        assert self.MatchReplaceBinary.create(2,-2,"hallo") == \
+                         self.MatchReplaceBinary("ollahollahollahollah")
+        assert self.MatchReplaceBinary.create("1","2","3") == \
+                         self.MatchReplaceBinary("123")
 
 
     def testIdem(self):
-        self.assertEqual(self.Idem.create(2,3,3,1,2,3,4,1,2),
-                         self.Idem(1,2,3,4))
+        assert self.Idem.create(2,3,3,1,2,3,4,1,2) == \
+                         self.Idem(1,2,3,4)
 
 
-@pytest.mark.xfail
 def test_match_replace_binary_complete():
     """Test that replace_binary works correctly for a non-trivial case"""
     x, y, z, alpha = symbols('x y z alpha')

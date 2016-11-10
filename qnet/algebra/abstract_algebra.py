@@ -591,7 +591,6 @@ def match_replace(cls, ops, kwargs):
     # No matching rules
     return ops, kwargs
 
-
 def _get_binary_replacement(first, second, rules):
     """Helper function for match_replace_binary"""
     expr = ProtoExpr([first, second], {})
@@ -612,7 +611,8 @@ def match_replace_binary(cls, ops, kwargs):
         >>> A = wc("A")
         >>> class FilterDupes(Operation):
         ...     _binary_rules = [(pattern_head(A,A), lambda A: A), ]
-        ...     _simplifications = [match_replace_binary, ]
+        ...     _simplifications = [match_replace_binary, assoc]
+        ...     neutral_element = 0
         >>> FilterDupes.create(1,2,3,4)         # No duplicates
         FilterDupes(1, 2, 3, 4)
         >>> FilterDupes.create(1,2,2,3,4)       # Some duplicates
@@ -622,23 +622,47 @@ def match_replace_binary(cls, ops, kwargs):
 
         >>> FilterDupes.create(1,2,3,2,4)       # No *subsequent* duplicates
         FilterDupes(1, 2, 3, 2, 4)
+
+    Any operation that uses binary reduction must be associative and define a
+    neutral element. The binary rules must be compatible with associativity,
+    i.e. there is no specific order in which the rules are applied to pairs of
+    operands.
     """
-    ops = list(ops)
-    rules = cls._binary_rules
-    j = 1
-    while j < len(ops):
-        first, second = ops[j - 1], ops[j]
-        replacement = _get_binary_replacement(first, second, rules)
-        if replacement is not None:
-            if assoc in cls._simplifications and isinstance(replacement, cls):
-                ops = ops[:j - 1] + list(replacement.operands) + ops[j + 1:]
-            else:
-                ops = ops[:j - 1] + [replacement,] + ops[j + 1:]
-            if j > 1:
-                j -= 1
-        else:
-            j += 1
-    return ops, kwargs
+    assert assoc in cls._simplifications
+    assert hasattr(cls, 'neutral_element')
+    return _match_replace_binary(cls, list(ops)), kwargs
+
+
+def _match_replace_binary(cls, ops: list) -> list:
+    """Reduce list of `ops`"""
+    n = len(ops)
+    if n <= 1:
+        return ops
+    ops_left = ops[:n//2]
+    ops_right = ops[n//2:]
+    return _match_replace_binary_combine(
+            cls,
+            _match_replace_binary(cls, ops_left),
+            _match_replace_binary(cls, ops_right))
+
+
+def _match_replace_binary_combine(cls, a: list, b: list) -> list:
+    """combine two fully reduced lists a, b"""
+    if len(a) == 0 or len(b) == 0:
+        return a + b
+    r = _get_binary_replacement(a[-1], b[0], cls._binary_rules)
+    if r is None:
+        return a + b
+    if r == cls.neutral_element:
+        return _match_replace_binary_combine(cls, a[:-1], b[1:])
+    if isinstance(r, cls):
+        r = list(r.args)
+    else:
+        r = [r, ]
+    return _match_replace_binary_combine(
+            cls,
+            _match_replace_binary_combine(cls, a[:-1], r),
+            b[1:])
 
 
 def singleton_object(cls):
