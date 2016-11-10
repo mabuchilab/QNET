@@ -17,9 +17,15 @@
 #
 ###########################################################################
 
+from sympy import symbols
+
 from qnet.algebra.abstract_algebra import *
 from qnet.algebra.pattern_matching import pattern_head
+from qnet.algebra.operator_algebra import LocalSigma, OperatorTimes, Displace
+from qnet.algebra.hilbert_space_algebra import LocalSpace
+
 import unittest
+import pytest
 
 
 class TestOperationSimplifcations(unittest.TestCase):
@@ -105,4 +111,13 @@ class TestOperationSimplifcations(unittest.TestCase):
                          self.Idem(1,2,3,4))
 
 
-
+@pytest.mark.xfail
+def test_match_replace_binary_complete():
+    """Test that replace_binary works correctly for a non-trivial case"""
+    x, y, z, alpha = symbols('x y z alpha')
+    ops = [LocalSigma(LocalSpace('f'), 0, 0),
+           Displace(LocalSpace('f'), -alpha),
+           Displace(LocalSpace('f'), alpha),
+           LocalSigma(LocalSpace('f'), 0, 0)]
+    res = OperatorTimes.create(*ops)
+    assert res == LocalSigma(LocalSpace('f'), 0, 0)

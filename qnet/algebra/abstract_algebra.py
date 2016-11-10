@@ -80,7 +80,7 @@ class WrongSignatureError(AlgebraError):
 
 def cache_attr(attr):
     """A method decorator that caches the result of a method in an attribute,
-    indended for e.g. __str__
+    intended for e.g. __str__
 
     >>> class MyClass():
     ...     def __init__(self):
@@ -97,6 +97,7 @@ def cache_attr(attr):
     'MyClass'
     """
     def tie_to_attr_decorator(meth):
+        """Decorator that ties `meth` to the fixed `attr`"""
         def tied_method(self):
             if getattr(self, attr) is None:
                 setattr(self, attr, meth(self))
@@ -106,11 +107,39 @@ def cache_attr(attr):
 
 
 class Expression(metaclass=ABCMeta):
-    """Basic class defining the basic methods any Expression object should
-    implement."""
+    """Abstract class for QNET Expressions. All algebraic objects are either
+    scalars (numbers or Sympy expressions) or instances of Expression.
+
+    Expressions should generally be instantiated using the `create` class
+    method, which takes into account the algebraic properties of the Expression
+    and and applies simplifications. It also uses memoization to cache all
+    known (sub-)expression. This is possible because expressions are intended
+    to be immutable. Any changes to an expression should be made through e.g.
+    :meth:`substitute`, which returns a new modified expression.
+
+    Every expression has a well-defined list of positional and keyword
+    arguments that uniquely determine the expression and that may be accessed
+    through the `args` and `kwargs` property. That is,
+
+        expr.__class__(*expr.args, **expr.kwargs)
+
+    will return and object identical to `expr`.
+    """
+
+    # Note: all subclasses of Exresssion that override __init__ or create
+    # *must* call the corresponding superclass method *at the end*. Otherwise,
+    # caching will not work correctly
 
     _rules = []
     _simplifications = []
+
+    # we cache all instances of Expressions for fast construction
+    _instances = {}
+
+    # eventually, we should ensure that the create method is idempotent, i.e.
+    # expr.create(*expr.args, **expr.kwargs) == expr(*expr.args, **expr.kwargs)
+    _create_idempotent = False
+    # At this point, match_replace_binary does not yet guarantee this
 
     def __init__(self, *args, **kwargs):
         # hash, tex, and repr str, generated on demand (lazily)
@@ -127,6 +156,11 @@ class Expression(metaclass=ABCMeta):
         appropriate object (which may or may not be an instance of the original
         class)
         """
+        key = cls._instance_key(args, kwargs)
+        try:
+            return cls._instances[key]
+        except KeyError:
+            pass
         for simplification in cls._simplifications:
             simplified = simplification(cls, args, kwargs)
             try:
@@ -134,10 +168,39 @@ class Expression(metaclass=ABCMeta):
             except (TypeError, ValueError):
                 # We assume that if the simplification didn't return a tuple,
                 # the result is a fully instantiated object
+                cls._instances[key] = simplified
+                if cls._create_idempotent:
+                    try:
+                        key2 = simplified._instance_key(simplified.args,
+                                                        simplified.kwargs)
+                        if key2 != key:
+                            cls._instances[key2] = simplified  # simplified key
+                    except AttributeError:
+                        #  simplified might e.g. be a scalar and not have
+                        #  _instance_key
+                        pass
                 return simplified
         if len(kwargs) > 0:
             cls._has_kwargs = True
-        return cls(*args, **kwargs)
+        instance = cls(*args, **kwargs)
+        cls._instances[key] = instance
+        if cls._create_idempotent:
+            key2 = cls._instance_key(args, kwargs)
+            if key2 != key:
+                cls._instances[key2] = instance  # instantiated key
+        return instance
+
+    @classmethod
+    def _instance_key(cls, args, kwargs):
+        """Function that calculates a unique "key" (a nested tuple) for the
+        given args and kwargs. It is the basis of the hash of an Expression,
+        and is used for the internal caching of instances.
+
+        Two expressions for which `expr._instance_key(expr.args, expr.kwargs)`
+        gives the same result are identical by definition (although `expr1 is
+        expr2` is not guaranteed to hold)
+        """
+        return (cls, tuple(args), tuple(sorted(kwargs.items())))
 
     @abstractproperty
     def args(self):
@@ -156,14 +219,11 @@ class Expression(metaclass=ABCMeta):
         return {}
 
     def __eq__(self, other):
-        return (type(self) == type(other) and self.args == other.args and
-                self.kwargs == other.kwargs)
+        return (self is other) or hash(self) == hash(other)
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = expr_hash(self)
-            if self._hash is None:
-                raise TypeError("Cannot create hash")
+            self._hash = hash(self._instance_key(self.args, self.kwargs))
         return self._hash
 
     @cache_attr('_repr')
@@ -257,19 +317,52 @@ class Expression(metaclass=ABCMeta):
         return d
 
 
-def expr_hash(expr):
-    """Return a hash for an expression"""
-    h = hash((expr.__class__, tuple(expr.args), tuple(expr.kwargs.items())))
-    return h
+def _str_instance_key(key):
+    """Format the key (Expression_instance_key result) as a slightly more
+    readable string corresponding to the "create" call.
+    """
+    args_str = ", ".join([str(arg) for arg in key[1]])
+    kw_str = ''
+    if len(key[2]) > 0:
+        kw_str = ', ' + ", ".join(["%s=%s" % (k, v) for (k, v) in key[2]])
+    return key[0].__name__ + ".create(" + args_str + kw_str + ')'
+
+
+def _print_debug_cache(prefix, color, key, instance, level=0):
+    """Routine that can be useful for debugging the Expression instance cache,
+    e.g.
+
+        _print_debug_cache('HIT', 'green', key, cls._instances[key])
+        _print_debug_cache('store.b', 'red', key, simplified)
+    """
+    import click
+    msg = (click.style("%s: %17x" % (prefix, hash(key)), fg=color) +
+           " " + _str_instance_key(key) +
+           click.style(" -> %s" % hash(instance), fg=color) +
+           " %s" % str(instance))
+    click.echo("  " * (level+1) + msg)
+
+
+def check_idempotent_create(expr):
+    """Check that an expression is 'idempotent'"""
+    print("*** CHECKING IDEMPOTENCY of %s" % expr)
+    if isinstance(expr, Expression):
+        new_expr = expr.create(*expr.args, **expr.kwargs)
+        if new_expr != expr:
+            from IPython.core.debugger import Tracer
+            Tracer()()
+            print(expr)
+            print(new_expr)
+    print("*** IDEMPOTENCY OK")
 
 
 def substitute(expr, var_map):
-    """(Safe) substitute, substitute objects for all symbols.
+    """Substitute symbols or (sub-)expressions with the given replacements and
+    re-evalute the result
 
     Args:
         expr: The expression in which to perform the substitution
-        var_map (dict): The substitution dictionary. See
-            meth:`qnet.algebra.abstract_algebra.substitute` documentation
+        var_map (dict): The substitution dictionary.
     """
     try:
         return expr.substitute(var_map)

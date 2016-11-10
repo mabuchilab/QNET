@@ -49,6 +49,23 @@ def get_symbols(*cdim):
 #qnet.algebra.abstract_algebra.PRINT_PRETTY = True
 
 
+def test_circuit_symbol_hashing():
+    """Check that CircuitSymbol have the same have value if and only if they
+    are the same"""
+    A1 = CircuitSymbol('A', 1)
+    A2 = CircuitSymbol('A', 2)
+    B1 = CircuitSymbol('B', 1)
+    a1 = CircuitSymbol('A', '1')
+    assert A1 == a1
+    assert hash(A1) == hash(a1)
+    assert A1 is not B1
+    assert A1 != B1
+    assert hash(A1) != hash(B1)
+    assert A1 is not A2
+    assert A1 != A2
+    assert hash(A1) != hash(A2)
+
+
 def test_permutation():
     n = 5
     assert CPermutation.create(()) == circuit_identity(0)

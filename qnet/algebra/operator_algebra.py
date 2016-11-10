@@ -1790,7 +1790,7 @@ OperatorTimes._binary_rules += [
     (pattern_head(pattern(LocalSigma, ls, ra, rb),
                   pattern(LocalSigma, ls, rc, rd)),
         lambda ls, ra, rb, rc, rd: LocalSigma(ls, ra, rd)
-     if rb == rc else ZeroOperator),
+                                   if rb == rc else ZeroOperator),
 
 
     # Harmonic oscillator rules
@@ -1819,14 +1819,14 @@ OperatorTimes._binary_rules += [
                           Displace.create(ls, u + v))),
 
     (pattern_head(pattern(Destroy, ls), pattern(Phase, ls, u)),
-        lambda ls, u: exp(I * u) * Phase(ls, u) * Destroy(ls)),
+        lambda ls, u: exp(I * u) * Phase.create(ls, u) * Destroy(ls)),
     (pattern_head(pattern(Destroy, ls), pattern(Displace, ls, u)),
-        lambda ls, u: Displace(ls, u) * (Destroy(ls) + u)),
+        lambda ls, u: Displace.create(ls, u) * (Destroy(ls) + u)),
 
     (pattern_head(pattern(Phase, ls, u), pattern(Create, ls)),
-        lambda ls, u: exp(I * u) * Create(ls) * Phase(ls, u)),
+        lambda ls, u: exp(I * u) * Create(ls) * Phase.create(ls, u)),
     (pattern_head(pattern(Displace, ls, u), pattern(Create, ls)),
-        lambda ls, u: (Create(ls) - u.conjugate()) * Displace(ls, u)),
+        lambda ls, u: ((Create(ls) - u.conjugate()) * Displace.create(ls, u))),
 
     (pattern_head(pattern(Phase, ls, u), pattern(LocalSigma, ls, n, m)),
             lambda ls, u, n, m: exp(I * u * n) * LocalSigma(ls, n, m)),
@@ -1836,19 +1836,23 @@ OperatorTimes._binary_rules += [
 
     # Spin rules
      (pattern_head(pattern(Jplus, ls), pattern(LocalSigma, ls, rc, rd)),
-        lambda ls, rc, rd: Jpjmcoeff(ls, rc) * LocalSigma(ls, rc + 1, rd)),
+        lambda ls, rc, rd: (Jpjmcoeff(ls, rc) *
+                            LocalSigma(ls, rc + 1, rd))),
 
      (pattern_head(pattern(Jminus, ls), pattern(LocalSigma, ls, rc, rd)),
-        lambda ls, rc, rd: Jmjmcoeff(ls, rc) * LocalSigma(ls, rc - 1, rd)),
+        lambda ls, rc, rd: (Jmjmcoeff(ls, rc) *
+                            LocalSigma(ls, rc - 1, rd))),
 
     (pattern_head(pattern(Jz, ls), pattern(LocalSigma, ls, rc, rd)),
         lambda ls, rc, rd: rc * LocalSigma(ls, rc , rd)),
 
     (pattern_head(pattern(LocalSigma, ls, rc, rd), pattern(Jplus, ls)),
-        lambda ls, rc, rd: Jmjmcoeff(ls, rd) * LocalSigma(ls, rc, rd - 1)),
+        lambda ls, rc, rd: (Jmjmcoeff(ls, rd) *
+                            LocalSigma(ls, rc, rd - 1))),
 
     (pattern_head(pattern(LocalSigma, ls, rc, rd), pattern(Jminus, ls)),
-        lambda ls, rc, rd: Jpjmcoeff(ls, rd) * LocalSigma(ls, rc, rd + 1)),
+        lambda ls, rc, rd: (Jpjmcoeff(ls, rd) *
+                            LocalSigma(ls, rc, rd + 1))),
 
     (pattern_head(pattern(LocalSigma, ls, rc, rd), pattern(Jz, ls)),
         lambda ls, rc, rd: rd * LocalSigma(ls, rc, rd)),
@@ -2000,6 +2004,11 @@ class Matrix(Expression):
     @property
     def args(self):
         return (self.matrix, )
+
+    @classmethod
+    def _instance_key(cls, args, kwargs):
+        matrix = args[0]
+        return (cls, tuple(matrix.flatten()), tuple(matrix.shape))
 
     def __hash__(self):
         if not self._hash:
