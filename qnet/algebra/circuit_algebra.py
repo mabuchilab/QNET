@@ -932,9 +932,8 @@ class SeriesProduct(Circuit, Operation):
     :param operands: Circuits in feedforward configuration.
 
     """
-    signature = (Circuit, ), {}
     _simplifications = [assoc, filter_neutral, check_cdims,
-                        match_replace_binary, filter_neutral]
+                        match_replace_binary]
     _binary_rules = []  # see end of module
 
     _space = None  # lazily evaluated
@@ -1003,8 +1002,7 @@ class Concatenation(Circuit, Operation):
 
     neutral_element = CircuitZero
 
-    _simplifications = [assoc, filter_neutral, match_replace_binary,
-                        filter_neutral]
+    _simplifications = [assoc, filter_neutral, match_replace_binary]
 
     _binary_rules = []  # see end of module
 
@@ -1568,7 +1566,6 @@ class Feedback(Circuit, Operation):
     :type in_index: int
     """
     delegate_to_method = (Concatenation, SLH, CPermutation)
-    signature = (Circuit, int, int), {}
 
     _simplifications = [match_replace, ]
 
@@ -1682,7 +1679,6 @@ class SeriesInverse(Circuit, Operation):
 
     :param Circuit circuit: The circuit system to invert.
     """
-    signature = (Circuit, ), {}
     _simplifications = []
     delegate_to_method = (SeriesProduct, Concatenation, Feedback, SLH,
                           CPermutation, CIdentity.__class__)

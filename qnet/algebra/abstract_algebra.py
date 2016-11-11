@@ -591,6 +591,7 @@ def match_replace(cls, ops, kwargs):
     # No matching rules
     return ops, kwargs
 
+
 def _get_binary_replacement(first, second, rules):
     """Helper function for match_replace_binary"""
     expr = ProtoExpr([first, second], {})
@@ -628,9 +629,18 @@ def match_replace_binary(cls, ops, kwargs):
     i.e. there is no specific order in which the rules are applied to pairs of
     operands.
     """
-    assert assoc in cls._simplifications
-    assert hasattr(cls, 'neutral_element')
-    return _match_replace_binary(cls, list(ops)), kwargs
+    assert assoc in cls._simplifications, (
+            cls.__name__ + " must be associative to use match_replace_binary")
+    assert hasattr(cls, 'neutral_element'), (
+            cls.__name__ + " must define a neutral element to use "
+            "match_replace_binary")
+    fops = _match_replace_binary(cls, list(ops))
+    if len(fops) == 1:
+        return fops[0]
+    elif len(fops) == 0:
+        return cls.neutral_element
+    else:
+        return fops, kwargs
 
 
 def _match_replace_binary(cls, ops: list) -> list:

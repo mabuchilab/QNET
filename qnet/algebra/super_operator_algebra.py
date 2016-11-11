@@ -272,8 +272,7 @@ class SuperOperatorPlus(SuperOperatorOperation):
     """
     neutral_element = ZeroSuperOperator
     _binary_rules = []  # see end of module
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
-                        filter_neutral]
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
     @classmethod
     def order_key(cls, a):
@@ -385,8 +384,7 @@ class SuperOperatorTimes(SuperOperatorOperation):
     """
     neutral_element = IdentitySuperOperator
     _binary_rules = []  # see end of module
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
-                        filter_neutral]
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = SuperOperatorOrderKey
 

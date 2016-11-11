@@ -98,16 +98,12 @@ class TestOperationSimplifcations(unittest.TestCase):
 
 
     def testSimplifyBinary(self):
-        assert self.MatchReplaceBinary.create(1,2,"hallo") == \
-                         self.MatchReplaceBinary("hallohallo")
-        assert self.MatchReplaceBinary.create(-1,"hallo") == \
-                         self.MatchReplaceBinary("ollah")
-        assert self.MatchReplaceBinary.create(-3,"hallo") == \
-                         self.MatchReplaceBinary("ollahollahollah")
+        assert self.MatchReplaceBinary.create(1,2,"hallo") == "hallohallo"
+        assert self.MatchReplaceBinary.create(-1,"hallo") == "ollah"
+        assert self.MatchReplaceBinary.create(-3,"hallo") == "ollahollahollah"
         assert self.MatchReplaceBinary.create(2,-2,"hallo") == \
-                         self.MatchReplaceBinary("ollahollahollahollah")
-        assert self.MatchReplaceBinary.create("1","2","3") == \
-                         self.MatchReplaceBinary("123")
+                         "ollahollahollahollah"
+        assert self.MatchReplaceBinary.create("1","2","3") == "123"
 
 
     def testIdem(self):

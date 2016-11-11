@@ -1006,8 +1006,7 @@ class OperatorPlus(OperatorOperation):
     """
     neutral_element = ZeroOperator
     _binary_rules = []
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
-                        filter_neutral]
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
     @classmethod
     def order_key(cls, a):
@@ -1142,8 +1141,7 @@ class OperatorTimes(OperatorOperation):
 
     neutral_element = IdentityOperator
     _binary_rules = []  # see end of module
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
-                        filter_neutral]
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = OperatorOrderKey
 

@@ -408,7 +408,7 @@ class KetPlus(Ket, Operation):
     neutral_element = ZeroKet
     _binary_rules = []  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, check_kets_same_space,
-                        match_replace_binary, filter_neutral]
+                        match_replace_binary]
 
     @classmethod
     def order_key(cls, a):
@@ -493,8 +493,7 @@ class TensorKet(Ket, Operation):
     """
     _binary_rules = []  # see end of module
     neutral_element = TrivialKet
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary,
-                        filter_neutral]
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = OperatorTimes.order_key
 
