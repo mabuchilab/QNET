@@ -660,6 +660,8 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
     """combine two fully reduced lists a, b"""
     if len(a) == 0 or len(b) == 0:
         return a + b
+    if len(a) == 1 and len(b) == 1:
+        return a + b
     r = _get_binary_replacement(a[-1], b[0], cls._binary_rules)
     if r is None:
         return a + b
