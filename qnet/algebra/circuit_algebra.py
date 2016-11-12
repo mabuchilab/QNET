@@ -47,9 +47,10 @@ from sympy import I
 import numpy as np
 
 from .abstract_algebra import (
-        AlgebraException, AlgebraError, Operation, Expression, Singleton,
-        singleton_object, assoc, filter_neutral, match_replace_binary,
-        cache_attr, match_replace, CannotSimplify, tex, substitute, set_union)
+        AlgebraException, AlgebraError, Operation, Expression, assoc,
+        filter_neutral, match_replace_binary, cache_attr, match_replace,
+        CannotSimplify, tex, substitute, set_union)
+from .singleton import Singleton, singleton_object
 from .operator_algebra import (
         Operator, ScalarTimesOperator, Matrix, IdentityOperator, Create,
         Destroy, block_matrix, zerosm, permutation_matrix, Im, ImAdjoint,

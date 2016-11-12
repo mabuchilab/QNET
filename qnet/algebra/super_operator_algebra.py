@@ -38,7 +38,8 @@ from sympy import (
 from .abstract_algebra import (
         Operation, Expression, tex, AlgebraError, assoc, orderby,
         filter_neutral, match_replace, match_replace_binary, AlgebraException,
-        KeyTuple, cache_attr, singleton_object, Singleton)
+        KeyTuple, cache_attr)
+from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
         HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)

@@ -35,10 +35,10 @@ from collections import defaultdict
 from itertools import product as cartesian_product
 
 from .abstract_algebra import (
-        tex, Expression, Operation, assoc, orderby,
-        filter_neutral, match_replace_binary, match_replace,
-        singleton_object, Singleton, set_union, KeyTuple, substitute,
+        tex, Expression, Operation, assoc, orderby, filter_neutral,
+        match_replace_binary, match_replace, set_union, KeyTuple, substitute,
         CannotSimplify, cache_attr)
+from .singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
         TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError,
         FullSpace)

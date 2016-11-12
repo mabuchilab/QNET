@@ -35,7 +35,8 @@ from itertools import product as cartesian_product
 
 from .abstract_algebra import (
         Expression, Operation, AlgebraError, tex, assoc, idem,
-        filter_neutral, cache_attr, singleton_object, Singleton)
+        filter_neutral, cache_attr)
+from .singleton import Singleton, singleton_object
 
 
 class HilbertSpace(metaclass=ABCMeta):
