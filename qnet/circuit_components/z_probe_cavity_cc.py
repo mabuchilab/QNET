@@ -25,10 +25,11 @@ See documentation of :py:class:`ZProbeCavity`.
 from sympy.core.symbol import symbols
 from sympy import sqrt
 
-from qnet.algebra.circuit_algebra import SLH, Matrix
+from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.operator_algebra import (
-        identity_matrix, LocalProjector, Z, LocalSigma)
+        LocalProjector, Z, LocalSigma)
 from qnet.circuit_components.component import Component, SubComponent
 
 

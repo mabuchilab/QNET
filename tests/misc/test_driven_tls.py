@@ -1,9 +1,9 @@
 from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import (LocalSigma, Destroy,
-        identity_matrix)
+from qnet.algebra.operator_algebra import LocalSigma, Destroy
+from qnet.algebra.matrix_algebra import identity_matrix
 from qnet.algebra.circuit_algebra import SLH
-from qnet.misc.qsd_codegen import QSDCodeGen, _cmd_list_to_str
 from qnet.algebra.state_algebra import BasisKet
+from qnet.misc.qsd_codegen import QSDCodeGen, _cmd_list_to_str
 from qnet.misc.testing_tools import datadir
 from qnet.convert.to_qutip import SLH_to_qutip
 

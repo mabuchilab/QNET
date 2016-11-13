@@ -26,7 +26,8 @@ from sympy.core.symbol import symbols
 
 from qnet.circuit_components.component import Component, SubComponent
 from qnet.algebra.circuit_algebra import (
-        Destroy, Matrix, SLH, identity_matrix)
+        Destroy, SLH)
+from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 

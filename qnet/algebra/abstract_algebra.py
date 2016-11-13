@@ -27,15 +27,18 @@ The abstract algebra package provides a basic interface
 See :ref:`abstract_algebra` for more details.
 
 """
-from __future__ import division
-
 from abc import ABCMeta, abstractproperty
 from functools import reduce
+
 from sympy import (Basic as SympyBasic, Matrix as SympyMatrix)
 from sympy.printing import latex as sympy_latex
+from numpy import int64, complex128, float64
 
 from .pattern_matching import (
         ProtoExpr, match_pattern, wc, pattern_head, pattern)
+
+
+SCALAR_TYPES = (int, float, complex, SympyBasic, int64, complex128, float64)
 
 
 def _trace(fn):

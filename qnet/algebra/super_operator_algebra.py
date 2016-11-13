@@ -38,7 +38,7 @@ from sympy import (
 from .abstract_algebra import (
         Operation, Expression, tex, AlgebraError, assoc, orderby,
         filter_neutral, match_replace, match_replace_binary, AlgebraException,
-        KeyTuple, cache_attr)
+        KeyTuple, cache_attr, SCALAR_TYPES)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
@@ -46,7 +46,8 @@ from .hilbert_space_algebra import (
 from .operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
         IdentityOperator, identifier_to_tex, simplify_scalar, OperatorSymbol,
-        Matrix, Create, Destroy)
+        Create, Destroy)
+from .matrix_algebra import Matrix
 
 
 class SuperOperator(metaclass=ABCMeta):
@@ -55,9 +56,6 @@ class SuperOperator(metaclass=ABCMeta):
     Any super-operator contains an associated HilbertSpace object,
     on which it is taken to act non-trivially.
     """
-
-    # which data types may serve as scalar coefficients
-    scalar_types = Operator.scalar_types
 
     @abstractproperty
     def space(self):
@@ -100,7 +98,7 @@ class SuperOperator(metaclass=ABCMeta):
         raise NotImplementedError(self.__class__.__name__)
 
     def __add__(self, other):
-        if isinstance(other, SuperOperator.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return SuperOperatorPlus.create(self,
                                             other * IdentitySuperOperator)
         elif isinstance(other, SuperOperator):
@@ -110,7 +108,7 @@ class SuperOperator(metaclass=ABCMeta):
     __radd__ = __add__
 
     def __mul__(self, other):
-        if isinstance(other, SuperOperator.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return ScalarTimesSuperOperator.create(other, self)
         elif isinstance(other, Operator):
             return SuperOperatorTimesOperator.create(self, other)
@@ -119,7 +117,7 @@ class SuperOperator(metaclass=ABCMeta):
         return NotImplemented
 
     def __rmul__(self, other):
-        if isinstance(other, SuperOperator.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return ScalarTimesSuperOperator.create(other, self)
         return NotImplemented
 
@@ -133,7 +131,7 @@ class SuperOperator(metaclass=ABCMeta):
         return (-1) * self
 
     def __div__(self, other):
-        if isinstance(other, SuperOperator.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return self * (sympyOne / other)
         return NotImplemented
 
@@ -434,11 +432,10 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
         ScalarTimesSuperOperator(coeff, term)
 
     :param coeff: Scalar coefficient.
-    :type coeff: :py:attr:`SuperOperator.scalar_types`
+    :type coeff: SCALAR_TYPES
     :param term: The super-operator that is multiplied.
     :type term: SuperOperator
     """
-    signature = SuperOperator.scalar_types, SuperOperator
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
 
@@ -734,8 +731,8 @@ class SuperOperatorTimesOperator(Operator, Operation):
 
 ## Expression rewriting _rules
 
-u = wc("u", head=Operator.scalar_types)
-v = wc("v", head=Operator.scalar_types)
+u = wc("u", head=SCALAR_TYPES)
+v = wc("v", head=SCALAR_TYPES)
 
 n = wc("n", head=(int, str))
 m = wc("m", head=(int, str))
@@ -905,7 +902,7 @@ def lindblad(C):
     :return: The Lindblad collapse generator.
     :rtype: SuperOperator
     """
-    if isinstance(C, Operator.scalar_types):
+    if isinstance(C, SCALAR_TYPES):
         return ZeroSuperOperator
     return SPre(C) * SPost(C.adjoint()) - (sympyOne/2) * anti_commutator(C.adjoint() * C)
 

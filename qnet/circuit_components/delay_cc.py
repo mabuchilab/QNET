@@ -27,7 +27,8 @@ from sympy import sqrt
 from numpy import array as np_array
 
 from qnet.circuit_components.component import Component
-from qnet.algebra.circuit_algebra import Matrix, SLH
+from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.matrix_algebra import Matrix
 from qnet.algebra.operator_algebra import Create, Destroy, ZeroOperator
 from qnet.algebra.abstract_algebra import tex
 

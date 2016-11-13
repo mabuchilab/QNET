@@ -32,12 +32,8 @@ or failure of the match (or alternatively, through the `success` attribute).
 The :class:`MatchDict` object also maps any wildcard names to the expression
 that the corresponding wildcard Pattern matches.
 '''
-
 import re
 from collections import namedtuple, OrderedDict
-
-from sympy import Basic as SympyBasic
-from numpy import int64, complex128, float64
 
 
 class MatchDict(OrderedDict):
@@ -115,9 +111,9 @@ class Pattern():
     """Pattern for matching an expression
 
     Args:
-        head (class, type, 'scalar', or None):  The type (or tuple of types) of
-            the expression that can be matched. If 'scalar', the `scalar_types`
-            class attribute is used. If None, any type of Expression matches
+        head (type or None):  The type (or tuple of types) of the expression
+            that can be matched. If None, any type of Expression
+            matches
         args (list or None): List or tuple of positional arguments of the
             matched Expression (cf. `Expression.args`). Each element is an
             expression (to be matched exactly) or another Pattern instance
@@ -186,22 +182,16 @@ class Pattern():
     one_or_more = 2
     zero_or_more = 3
 
-    scalar_types = (int, float, complex, SympyBasic, int64, complex128,
-                    float64)
-
     def __init__(self, head=None, args=None, kwargs=None, *, mode=1,
                  wc_name=None, conditions=None):
         self._str = None
         self._repr = None
         if head is not None:
-            if head == 'scalar':
-                head = self.scalar_types
-            else:
-                if not hasattr(head, '__name__'):
-                    for sub_head in head:
-                        if not hasattr(sub_head, '__name__'):
-                            raise TypeError("'head' must be class or tuple of "
-                                            "classes")
+            if not hasattr(head, '__name__'):
+                for sub_head in head:
+                    if not hasattr(sub_head, '__name__'):
+                        raise TypeError("'head' must be class or tuple of "
+                                        "classes")
         self.head = head
         if args is not None:
             args = tuple(args)
@@ -446,7 +436,7 @@ def wc(name_mode="_", head=None, args=None, kwargs=None, *, conditions=None) \
     Args:
         name_mode (str): Combined wc_name and mode for `Pattern` constructor
             argument. See below for syntax
-        head (type, 'scalar', or None): See `Pattern`
+        head (type, or None): See `Pattern`
         args (list or None): See `Pattern`
         kwargs (dict or None): See `Pattern`
         conditions (list or None): See `Pattern`

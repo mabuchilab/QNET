@@ -24,7 +24,8 @@ See documentation of :py:class:`Relay`.
 from qnet.circuit_components.component import Component, SubComponent
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.operator_algebra import LocalProjector, LocalSigma
-from qnet.algebra.circuit_algebra import SLH, Matrix
+from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.matrix_algebra import Matrix
 
 
 class Relay(Component):

@@ -26,8 +26,9 @@ from sympy import symbols, sqrt, I, exp
 from qnet.algebra.operator_algebra import (
         Displace, Create, Destroy, OperatorSymbol, IdentityOperator,
         ZeroOperator, OperatorPlus, LocalSigma, LocalProjector, OperatorTrace,
-        Adjoint, X, Y, Z, Matrix, ScalarTimesOperator, OperatorTimes, Jz,
-        Jplus, Jminus, Phase, identity_matrix)
+        Adjoint, X, Y, Z, ScalarTimesOperator, OperatorTimes, Jz,
+        Jplus, Jminus, Phase)
+from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, ProductSpace)
 

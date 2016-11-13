@@ -25,7 +25,8 @@ See documentation of :py:class:`SingleSidedJaynesCummings`.
 from sympy.core.symbol import symbols
 from sympy import sqrt, I
 
-from qnet.algebra.circuit_algebra import Matrix, SLH
+from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.matrix_algebra import Matrix
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.operator_algebra import Destroy, LocalSigma
 from qnet.circuit_components.library import make_namespace_string

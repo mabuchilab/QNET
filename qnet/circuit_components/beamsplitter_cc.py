@@ -23,7 +23,7 @@ variable mixing angle.  See :py:class:`Beamsplitter`
 from sympy import pi, sin, cos
 
 from qnet.algebra.circuit_algebra import SLH
-from qnet.algebra.operator_algebra import Matrix
+from qnet.algebra.matrix_algebra import Matrix
 from qnet.circuit_components.component import Component
 
 

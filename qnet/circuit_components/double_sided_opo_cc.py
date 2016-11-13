@@ -24,8 +24,9 @@ See documentation of :py:class:`DoubleSidedOPO`.
 from sympy.core.symbol import symbols
 from sympy import I, sqrt
 
-from qnet.algebra.circuit_algebra import Matrix, SLH
-from qnet.algebra.operator_algebra import Destroy, identity_matrix
+from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.matrix_algebra import Matrix, identity_matrix
+from qnet.algebra.operator_algebra import Destroy
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.circuit_components.component import Component, SubComponent
 

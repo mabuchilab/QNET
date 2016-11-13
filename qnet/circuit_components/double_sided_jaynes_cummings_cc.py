@@ -26,7 +26,8 @@ from sympy.core.symbol import symbols
 from sympy import sqrt
 
 from qnet.algebra.circuit_algebra import (
-        Destroy, Matrix, SLH, LocalSigma, LocalSpace, I, ZeroOperator)
+        Destroy, SLH, LocalSigma, LocalSpace, I, ZeroOperator)
+from qnet.algebra.matrix_algebra import Matrix
 from qnet.circuit_components.component import Component, SubComponent
 
 

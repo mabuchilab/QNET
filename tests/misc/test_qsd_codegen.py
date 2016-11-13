@@ -1,32 +1,34 @@
-import sympy
-from sympy import symbols, sqrt, I
-from qnet.misc.qsd_codegen import (local_ops, find_kets, QSDCodeGen,
-    QSDOperator, QSDCodeGenError, UNSIGNED_MAXINT, expand_cmd,
-    compilation_worker, qsd_run_worker, _find_time_dependent_coeffs)
-from qnet.algebra.abstract_algebra import set_union
-from qnet.algebra.circuit_algebra import Circuit, SLH
-from qnet.algebra.operator_algebra import (IdentityOperator, Create, Destroy,
-        LocalOperator, Operator, Operation, TrivialSpace, LocalSigma,
-        identity_matrix,
-)
-from qnet.algebra.state_algebra import (
-    BasisKet, LocalKet, TensorKet, CoherentStateKet
-)
-from qnet.algebra.hilbert_space_algebra import LocalSpace
 import os
 import shutil
 import stat
 import re
 from textwrap import dedent
 from collections import OrderedDict
-from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
-from qnet.misc.testing_tools import datadir, qsd_traj, fake_traj
 import numpy as np
 import pytest
 try:
     import unittest.mock as mock
 except ImportError:
     import mock
+
+import sympy
+from sympy import symbols, sqrt, I
+
+from qnet.circuit_components.pseudo_nand_cc import PseudoNAND
+from qnet.misc.testing_tools import datadir, qsd_traj, fake_traj
+from qnet.algebra.matrix_algebra import identity_matrix
+from qnet.algebra.circuit_algebra import Circuit, SLH
+from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.misc.qsd_codegen import (
+    local_ops, find_kets, QSDCodeGen, QSDOperator, QSDCodeGenError, expand_cmd,
+    compilation_worker, qsd_run_worker, _find_time_dependent_coeffs)
+from qnet.algebra.operator_algebra import (
+        IdentityOperator, Create, Destroy, LocalOperator, Operator, Operation,
+        TrivialSpace, LocalSigma)
+from qnet.algebra.state_algebra import (
+    BasisKet, LocalKet, TensorKet, CoherentStateKet
+)
+
 # built-in fixtures: tmpdir, request, monkeypatch
 # pytest-capturelog fixtures: caplog
 

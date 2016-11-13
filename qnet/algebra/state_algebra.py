@@ -33,7 +33,7 @@ from sympy import (
 from .abstract_algebra import (
         Operation, Expression, substitute, tex, AlgebraError, assoc, orderby,
         filter_neutral, match_replace, match_replace_binary, KeyTuple,
-        CannotSimplify, cache_attr)
+        CannotSimplify, cache_attr, SCALAR_TYPES)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
@@ -57,8 +57,6 @@ _STR_KET_FMT_NOSPACE = r'|{label}>'
 
 class Ket(metaclass=ABCMeta):
     """Basic Ket algebra class to represent Hilbert Space states"""
-
-    scalar_types = Operator.scalar_types
 
     @abstractproperty
     def space(self):
@@ -116,7 +114,7 @@ class Ket(metaclass=ABCMeta):
     __radd__ = __add__
 
     def __mul__(self, other):
-        if isinstance(other, Ket.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return ScalarTimesKet.create(other, self)
         elif isinstance(other, Ket):
             return TensorKet.create(self, other)
@@ -127,7 +125,7 @@ class Ket(metaclass=ABCMeta):
     def __rmul__(self, other):
         if isinstance(other, Operator):
             return OperatorTimesKet.create(other, self)
-        elif isinstance(other, Ket.scalar_types):
+        elif isinstance(other, SCALAR_TYPES):
             return ScalarTimesKet.create(other, self)
         return NotImplemented
 
@@ -141,7 +139,7 @@ class Ket(metaclass=ABCMeta):
         return (-1) * self
 
     def __div__(self, other):
-        if isinstance(other, Ket.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return self * (sympyOne / other)
         return NotImplemented
 
@@ -341,10 +339,8 @@ class CoherentStateKet(LocalKet):
         CoherentStateKet(hs, amp)
 
     :param LocalSpace hs: The local Hilbert space degree of freedom.
-    :param Ket.scalar_types amp: The coherent displacement amplitude.
+    :param SCALAR_TYPES amp: The coherent displacement amplitude.
     """
-
-    signature = ((LocalSpace, str, int), Ket.scalar_types), {}
 
     def __init__(self, hs, ampl):
         self.ampl = ampl
@@ -603,11 +599,10 @@ class ScalarTimesKet(Ket, Operation):
         ScalarTimesKet(coefficient, term)
 
     :param coefficient: Scalar coefficient.
-    :type coefficient: Operator.scalar_types
+    :type coefficient: SCALAR_TYPES
     :param term: The ket that is multiplied.
     :type term: Ket
     """
-    signature = (Ket.scalar_types, Ket), {}
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
 
@@ -884,7 +879,7 @@ class Bra(Operation):
         return self.operands[0].space
 
     def __mul__(self, other):
-        if isinstance(other, Ket.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return Bra.create(self.ket * other.conjugate())
         elif isinstance(other, Operator):
             return Bra.create(other.adjoint() * self.ket)
@@ -894,7 +889,7 @@ class Bra(Operation):
             return NotImplemented
 
     def __rmul__(self, other):
-        if isinstance(other, Ket.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return Bra.create(self.ket * other.conjugate())
         else:
             return NotImplemented
@@ -910,7 +905,7 @@ class Bra(Operation):
         return NotImplemented
 
     def __div__(self, other):
-        if isinstance(other, Ket.scalar_types):
+        if isinstance(other, SCALAR_TYPES):
             return Bra.create(self.ket/other.conjugate())
         return NotImplemented
     __truediv__ = __div__
@@ -1074,12 +1069,9 @@ def tensor_decompose_kets(a, b, operation):
     raise CannotSimplify()
 
 
-
-
-
 ## Expression rewriting _rules
-u = wc("u", head=Operator.scalar_types)
-v = wc("v", head=Operator.scalar_types)
+u = wc("u", head=SCALAR_TYPES)
+v = wc("v", head=SCALAR_TYPES)
 
 n = wc("n", head=(int, str))
 m = wc("m", head=(int, str))

@@ -28,7 +28,8 @@ from qnet.algebra.circuit_algebra import (
         pad_with_identity)
 from qnet.algebra.permutations import (
         permute, full_block_perm, block_perm_and_perms_within_blocks)
-from qnet.algebra.operator_algebra import identity_matrix, sympyOne, Destroy
+from qnet.algebra.operator_algebra import sympyOne, Destroy
+from qnet.algebra.matrix_algebra import identity_matrix
 
 
 symbol_counter = 0

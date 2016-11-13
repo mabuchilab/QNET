@@ -9,7 +9,8 @@ from collections import OrderedDict
 from functools import partial
 import subprocess as sp
 
-from qnet.algebra.abstract_algebra import Operation, Expression, set_union
+from qnet.algebra.abstract_algebra import (
+        Operation, Expression, set_union, SCALAR_TYPES)
 from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
 from qnet.algebra.circuit_algebra import Circuit
 from qnet.algebra.state_algebra import (
@@ -52,7 +53,7 @@ def local_ops(expr):
     in that expression. The set is "atomic" in the sense that the
     operators are not algebraic combinations of other operators.
     """
-    if isinstance(expr, Operator.scalar_types + (str,)):
+    if isinstance(expr, SCALAR_TYPES + (str,)):
         return set()
     elif isinstance(expr, (LocalOperator, IdentityOperator.__class__)):
         return set([expr])
@@ -72,7 +73,7 @@ def find_kets(expr, cls=LocalKet):
     return the set of :class:`~qnet.algebra.state_algebra.LocalKet`
     instances contained in it.
     """
-    if isinstance(expr, Operator.scalar_types + (str,)):
+    if isinstance(expr, SCALAR_TYPES + (str,)):
         return set()
     elif isinstance(expr, cls):
         return set([expr])

@@ -52,11 +52,12 @@ from .abstract_algebra import (
         CannotSimplify, tex, substitute, set_union)
 from .singleton import Singleton, singleton_object
 from .operator_algebra import (
-        Operator, ScalarTimesOperator, Matrix, IdentityOperator, Create,
-        Destroy, block_matrix, zerosm, permutation_matrix, Im, ImAdjoint,
-        get_coeffs, vstackm, ZeroOperator, OperatorSymbol,
-        identity_matrix, adjoint, identifier_to_tex, LocalProjector,
-        LocalSigma, OperatorPlus)
+        Operator, ScalarTimesOperator, IdentityOperator, Create,
+        Destroy, get_coeffs, ZeroOperator, OperatorSymbol,
+        adjoint, identifier_to_tex, LocalProjector, LocalSigma, OperatorPlus)
+from .matrix_algebra import (
+        Matrix, block_matrix, zerosm, permutation_matrix, Im, ImAdjoint,
+        vstackm, identity_matrix)
 from .permutations import (
         check_permutation, invert_permutation, BadPermutationError,
         permutation_to_block_permutations, block_perm_and_perms_within_blocks,
@@ -304,7 +305,7 @@ class Circuit(metaclass=ABCMeta):
         input amplitude of zero into the first and one into the second port.
 
         :param input_amps: The coherent input amplitude for each port
-        :type input_amps: any of :py:attr:`qnet.algebra.operator_algebra.Operator.scalar_types`
+        :type input_amps: SCALAR_TYPES
         :return: The circuit including the coherent inputs.
         :rtype: Circuit
         :raise: WrongCDimError
