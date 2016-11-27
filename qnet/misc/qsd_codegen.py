@@ -333,7 +333,7 @@ class QSDCodeGen(object):
         # set
 
         self._full_space = self.circuit.space
-        self._local_spaces = self._full_space.local_factors()
+        self._local_spaces = self._full_space.local_factors
         self._hilbert_space_index = {space: index
                                     for (index, space)
                                     in enumerate(self._local_spaces)}
@@ -450,7 +450,7 @@ class QSDCodeGen(object):
             if isinstance(op, IdentityOperator.__class__):
                 continue
             elif isinstance(op, (Create, Destroy)):
-                a = Destroy(op.space)
+                a = Destroy(hs=op.space)
                 k = self._hilbert_space_index[op.space]
                 self._qsd_ops[a] = QSDOperator(
                     qsd_type='AnnihilationOperator',
@@ -464,8 +464,8 @@ class QSDCodeGen(object):
             elif isinstance(op, LocalSigma):
                 k = self._hilbert_space_index[op.space]
                 try:
-                    i = op.space.basis.index(op.args[1])
-                    j = op.space.basis.index(op.args[2])
+                    i = op.space.basis.index(op.j)
+                    j = op.space.basis.index(op.k)
                 except ValueError:
                     raise ValueError(("The states %s in %s are not elements "
                         "of the basis of the Hilbert space %s")

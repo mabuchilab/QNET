@@ -38,8 +38,8 @@ def hs_name():
 
 def test_create_destoy():
     H = LocalSpace(hs_name(), dimension=5)
-    ad = Create(H)
-    a = Create(H).adjoint()
+    ad = Create(hs=H)
+    a = Create(hs=H).adjoint()
     aq = convert_to_qutip(a)
     for k in range(H.dimension - 1):
         assert abs(aq[k, k+1] - sqrt(k + 1)) < 1e-10
@@ -48,8 +48,8 @@ def test_create_destoy():
 
 def test_N():
     H = LocalSpace(hs_name(), dimension=5)
-    ad = Create(H)
-    a = Create(H).adjoint()
+    ad = Create(hs=H)
+    a = Create(hs=H).adjoint()
     aq = qutip.dag(convert_to_qutip(a))
     assert aq == qutip.create(5)
     n = ad * a
@@ -60,7 +60,7 @@ def test_N():
 
 def test_sigma():
     H = LocalSpace(hs_name(), basis=("e","g","h"))
-    sigma = LocalSigma(H, 'g', 'e')
+    sigma = LocalSigma('g', 'e', hs=H)
     sq = convert_to_qutip(sigma)
     assert sq[1, 0] == 1
     assert (sq**2).norm() == 0
@@ -68,16 +68,16 @@ def test_sigma():
 
 def test_Pi():
     H = LocalSpace(hs_name(), basis=("e", "g", "h"))
-    Pi_h = LocalProjector(H, 'h')
+    Pi_h = LocalProjector('h', hs=H)
     assert convert_to_qutip(Pi_h).tr() == 1
     assert convert_to_qutip(Pi_h)**2 == convert_to_qutip(Pi_h)
 
 
 def test_tensor_product():
     H = LocalSpace(hs_name(), dimension=5)
-    a = Create(H).adjoint()
+    a = Create(hs=H).adjoint()
     H2 = LocalSpace(hs_name(), basis=("e", "g", "h"))
-    sigma = LocalSigma(H2, 'g', 'e')
+    sigma = LocalSigma('g', 'e', hs=H2)
     assert convert_to_qutip(sigma * a) == \
                         qutip.tensor(convert_to_qutip(a),
                                     convert_to_qutip(sigma))
@@ -85,34 +85,34 @@ def test_tensor_product():
 
 def test_local_sum():
     H = LocalSpace(hs_name(), dimension=5)
-    ad = Create(H)
-    a = Create(H).adjoint()
+    ad = Create(hs=H)
+    a = Create(hs=H).adjoint()
     assert convert_to_qutip(a + ad) == \
                         convert_to_qutip(a) + convert_to_qutip(ad)
 
 
 def test_nonlocal_sum():
     H = LocalSpace(hs_name(), dimension=5)
-    a = Create(H).adjoint()
+    a = Create(hs=H).adjoint()
     H2 = LocalSpace(hs_name(), basis=("e", "g", "h"))
-    sigma = LocalSigma(H2, 'g', 'e')
+    sigma = LocalSigma('g', 'e', hs=H2)
     assert convert_to_qutip(a + sigma)**2 == \
                         convert_to_qutip((a + sigma)*(a + sigma))
 
 
 def test_scalar_coeffs():
     H = LocalSpace(hs_name(), dimension=5)
-    a = Create(H).adjoint()
+    a = Create(hs=H).adjoint()
     assert 2 * convert_to_qutip(a) == convert_to_qutip(2 * a)
 
 
 def test_symbol():
-    expN = OperatorSymbol("expN", 1)
+    expN = OperatorSymbol("expN", hs=1)
     hs1 = LocalSpace("sym1", dimension=10)
     hs2 = LocalSpace("sym2", dimension=5)
-    N = Create(hs1)*Destroy(hs1)
+    N = Create(hs=hs1)*Destroy(hs=hs1)
 
-    M = Create(hs2)*Destroy(hs2)
+    M = Create(hs=hs2)*Destroy(hs=hs2)
 
     converter1 = {
         expN: convert_to_qutip(N).expm()
@@ -146,8 +146,8 @@ def test_symbol():
 def test_time_dependent_to_qutip():
     """Test conversion of a time-dependent Hamiltonian"""
     Hil = LocalSpace(hs_name(), dimension=5)
-    ad = Create(Hil)
-    a = Create(Hil).adjoint()
+    ad = Create(hs=Hil)
+    a = Create(hs=Hil).adjoint()
 
     w, g, t = symbols('w, g, t', real=True)
 

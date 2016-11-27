@@ -79,7 +79,7 @@ class ProbePort(SubComponent):
 
         S = Matrix([[Z(self.space)]])
         L = Matrix([[0]])
-        H = self.Delta * LocalProjector(self.space, 'r')
+        H = self.Delta * LocalProjector('r', hs=self.space)
 
         return SLH(S, L, H)
 
@@ -94,9 +94,9 @@ class FeedbackPort(SubComponent):
         S =  identity_matrix(1)
 
         if self.sub_index == 1:
-            L = sqrt(self.gamma) * Matrix([[LocalSigma(self.space, 'g', 'r')]])
+            L = sqrt(self.gamma) * Matrix([[LocalSigma('g', 'r', hs=self.space)]])
         elif self.sub_index == 2:
-            L = sqrt(self.gamma) * Matrix([[LocalSigma(self.space, 'h', 'r')]])
+            L = sqrt(self.gamma) * Matrix([[LocalSigma('h', 'r', hs=self.space)]])
         else:
             raise Exception(str(self.sub_index))
 
@@ -111,9 +111,9 @@ class LossPort(SubComponent):
     def _toSLH(self):
         S = identity_matrix(1)
         if self.sub_index == 1:
-            L = sqrt(self.gamma_p) * Matrix([[LocalSigma(self.space, 'g', 'r')]])
+            L = sqrt(self.gamma_p) * Matrix([[LocalSigma('g', 'r', hs=self.space)]])
         elif self.sub_index == 2:
-            L = sqrt(self.gamma_p) * Matrix([[LocalSigma(self.space, 'h', 'r')]])
+            L = sqrt(self.gamma_p) * Matrix([[LocalSigma('h', 'r', hs=self.space)]])
         else:
             raise Exception(str(self.sub_index))
 

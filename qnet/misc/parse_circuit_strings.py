@@ -23,6 +23,7 @@ Parse strings into Circuit expressions. See documentation for :py:func:`parse_ci
 
 import qnet.algebra.circuit_algebra as ca
 from qnet.misc.parser import Parser, ParsingError
+from qnet.printing import srepr
 
 def parse_circuit_strings(circuit_string):
     """
@@ -35,32 +36,32 @@ def parse_circuit_strings(circuit_string):
     Examples:
         1) A circuit symbol can be instantiated via:
 
-            >>> parse_circuit_strings('a_nice_name(3)')
-            CircuitSymbol('a_nice_name', 3)
+            >>> print(srepr(parse_circuit_strings('name(3)')))
+            CircuitSymbol('name', 3)
 
         2) A concatenation can be instantiated by using the infix '+' operator
 
-            >>> parse_circuit_strings('a(3) + b(5)')
+            >>> print(srepr(parse_circuit_strings('a(3) + b(5)')))
             Concatenation(CircuitSymbol('a', 3), CircuitSymbol('b', 5))
 
         3) A series product can be instantiated by using the infix '<<' operator
 
-            >>> parse_circuit_strings('a(3) << b(3)')
+            >>> print(srepr(parse_circuit_strings('a(3) << b(3)')))
             SeriesProduct(CircuitSymbol('a', 3), CircuitSymbol('b', 3))
 
         4) Circuit identity objects for ``n`` channels can be instantiated via ``cid(n)``:
 
-            >>> parse_circuit_strings('(a(3) + cid(1)) << b(4)')
+            >>> print(srepr(parse_circuit_strings('(a(3) + cid(1)) << b(4)')))
             SeriesProduct(Concatenation(CircuitSymbol('a', 3), CIdentity), CircuitSymbol('b', 4))
 
         5) Feedback operations are specified as
 
-            >>> parse_circuit_strings('[a(5)]_(1->2)')
+            >>> print(srepr(parse_circuit_strings('[a(5)]_(1->2)')))
             Feedback(CircuitSymbol('a', 5), 1, 2)
 
         6) Permutation objects are specified as
 
-            >>> parse_circuit_strings('P_sigma(1,2,3,0)')
+            >>> print(srepr(parse_circuit_strings('P_sigma(1,2,3,0)')))
             CPermutation((1, 2, 3, 0))
 
     """

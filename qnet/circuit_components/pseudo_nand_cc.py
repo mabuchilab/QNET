@@ -53,7 +53,7 @@ class PseudoNAND(Component):
 
     @property
     def W_beta(self):
-        return Displace(make_namespace_string(self.name, 'W_beta'), alpha = self.beta)
+        return Displace(make_namespace_string(self.name, 'W'), alpha = self.beta)
 
     _sub_components = ['BS1', 'BS2', 'K', 'P', 'W_beta']
 

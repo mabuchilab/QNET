@@ -10,7 +10,7 @@ from qnet.algebra.circuit_algebra import *
 
 def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True, epsilon = 0., return_eoms=False):
     """
-    Return the matrices necessary to carry out a semi-classical simulation 
+    Return the matrices necessary to carry out a semi-classical simulation
     of the SLH system driven by some dynamic inputs.
 
     Params
@@ -19,14 +19,14 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
 
     dynamic_input_ports: python dict {port_index: input_name_str,...}
 
-    apply_kerr_diagonal_correction: bool that specifies whether there should be an 
+    apply_kerr_diagonal_correction: bool that specifies whether there should be an
                                     effective detuning of 2 \chi for every kerr-cavity.
 
-    epsilon: for non-zero epsilon (and a numerical coefficient slh) remove 
+    epsilon: for non-zero epsilon (and a numerical coefficient slh) remove
              expressions with coefficents smaller than epsilon.
 
     return_eoms: Whether to also return the symbolic e.o.m.'s as well as the output processes.
-    
+
     Returns
     -------
     A tuple (A, B, C, D, A_kerr, B_input, D_input, u_c, U_c[, eoms, dA'])
@@ -61,12 +61,12 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
 
     # the different degrees of freedom
     modes = sorted(slh.space.local_factors())
-    
+
     # various dimensions
     ncav = len(modes)
     cdim = slh.cdim
     ninputs = len(dynamic_input_ports)
-    
+
     # initialize the matrices
     A = np.zeros((ncav, ncav), dtype=object)
     B = np.zeros((ncav, cdim), dtype=object)
@@ -83,33 +83,33 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
     D_input = np.zeros((cdim, ninputs), dtype=object)
     u_c = np.zeros(ncav, dtype=object)
     U_c = np.zeros(cdim, dtype=object)
-    
+
     # make symbols for the external field modes
     noises = [OperatorSymbol('b_{{{}}}'.format(n), "ext({})".format(n)) for n in range(cdim)]
-    
+
     # make symbols for the dynamic inputs
-    inputs = [OperatorSymbol('u_{{{}}}'.format(u_name), TrivialSpace) for  
+    inputs = [OperatorSymbol('u_{{{}}}'.format(u_name), TrivialSpace) for
                n, u_name in sorted(dynamic_input_ports.items())]
-    
+
     inputs_extended = [0] * cdim
     for ii, n in zip(inputs, sorted(dynamic_input_ports.keys())):
         inputs_extended[n] = ii
 
     # feed in the dynamic inputs
     slh_input = slh.coherent_input(*inputs_extended).expand().simplify_scalar()
-    
+
     print("computing QSDEs")
     # compute the QSDEs for the internal operators
-    eoms = [slh_input.symbolic_heisenberg_eom(Destroy(s), noises=noises) for s in modes]
-    
-    
+    eoms = [slh_input.symbolic_heisenberg_eom(Destroy(hs=s), noises=noises) for s in modes]
+
+
     print("Extracting matrices")
     # use the coefficients to generate A, B matrices
     for jj, sjj in enumerate(modes):
         coeffsjj = get_coeffs(eoms[jj], epsilon=epsilon)
         for kk, skk in enumerate(modes):
-            A[jj, kk] = coeffsjj[Destroy(skk)]
-            chi_jjkk = coeffsjj[Create(skk) * Destroy(skk) * Destroy(sjj)]
+            A[jj, kk] = coeffsjj[Destroy(hs=skk)]
+            chi_jjkk = coeffsjj[Create(hs=skk) * Destroy(hs=skk) * Destroy(hs=sjj)]
             if apply_kerr_diagonal_correction:
                 A[jj, kk] += -(1 + int(jj==kk)) * chi_jjkk / 2
             A_kerr[jj, kk] = chi_jjkk
@@ -120,25 +120,25 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
                 continue
             B_input[jj,kk] = coeffsjj[u_kk]
         u_c[jj] = coeffsjj[IdentityOperator]
-    
-    
+
+
     # use the coefficients in the L vector to generate the C, D
     # matrices
     for jj, Ljj in enumerate(slh_input.L.matrix[:,0]):
         coeffsjj = get_coeffs(Ljj)
         for kk, skk in enumerate(modes):
-            C[jj,kk] = coeffsjj[Destroy(skk)]
+            C[jj,kk] = coeffsjj[Destroy(hs=skk)]
         U_c[jj] = coeffsjj[IdentityOperator]
-        
+
         for kk, u_kk in enumerate(inputs):
             D_input[jj, kk] = coeffsjj[u_kk]
-    
+
 
     if return_eoms:
         # compute output processes
         dAps =  (slh_input.S * Matrix([noises]).T + slh_input.L).expand().simplify_scalar()
         return A, B, C, D, A_kerr, B_input, D_input, u_c, U_c, eoms, dAps
-    
+
     return A, B, C, D, A_kerr, B_input, D_input, u_c, U_c
 
 
@@ -160,18 +160,18 @@ def model_matrices_symbolic(*args, **kwargs):
     else:
         return [Matrix(arr) for arr in matrices[:9]] + list(matrices[9:])
 model_matrices_symbolic.__doc__ += "\n--\ndoc of model_matrices():\n" + model_matrices.__doc__
-        
+
 
 
 def substitute_into_symbolic_model_matrices(model_matrices, params):
-    
+
     return [m.substitute(params).matrix.astype(complex) for m in model_matrices[:9]] + list(model_matrices[9:])
 
 
 def prepare_sde(numeric_model_matrices, input_fn, return_jac=False):
     """
     Compute the SDE functions f, g and (optionally) the Jacobian of f (see euler_mayurama docs) for the model matrices.
-    
+
     Returns f, g[, Jf]
 
     The overall SDE is:
@@ -185,13 +185,13 @@ def prepare_sde(numeric_model_matrices, input_fn, return_jac=False):
     def f(a, t):
         "Return A.dot(a) +  (A_kerr.dot(a.conjugate() * a)) * a + u_c + B_input.dot(input_fn(t))."
         return A.dot(a) +  (A_kerr.dot(a.conjugate() * a)) * a + u_c + B_input.dot(input_fn(t))
-    
+
     def g(a, t):
         return B_over_2
 
-    if not return_jac:    
+    if not return_jac:
         return f, g
-    
+
     def Jf(a, t):
         AA, BB = A + np.diag(A_kerr.dot(a * a.conjugate())) + A_kerr * np.outer(a, a.conjugate()), A_kerr*np.outer(a, a)
         return np.vstack([

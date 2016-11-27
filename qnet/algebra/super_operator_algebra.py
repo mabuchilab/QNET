@@ -1,5 +1,5 @@
 # coding=utf-8
-#This file is part of QNET.
+# This file is part of QNET.
 #
 #    QNET is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ Super-Operator Algebra
 The specification of a quantum mechanics symbolic super-operator algebra.
 See :ref:`super_operator_algebra` for more details.
 """
+import re
 from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
 from collections import defaultdict
@@ -33,21 +34,40 @@ from numpy.linalg import eigh
 from numpy import (sqrt as np_sqrt, array as np_array)
 
 from sympy import (
-        symbols, Basic as SympyBasic, Add, Matrix as SympyMatrix, sqrt, I)
+        symbols, Basic as SympyBasic, Matrix as SympyMatrix, sqrt, I)
 
 from .abstract_algebra import (
-        Operation, Expression, tex, AlgebraError, assoc, orderby,
+        Operation, Expression, AlgebraError, assoc, orderby,
         filter_neutral, match_replace, match_replace_binary, AlgebraException,
-        KeyTuple, cache_attr, SCALAR_TYPES)
+        KeyTuple, SCALAR_TYPES)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
         HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)
 from .operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
-        IdentityOperator, identifier_to_tex, simplify_scalar, OperatorSymbol,
-        Create, Destroy)
+        IdentityOperator, simplify_scalar, OperatorSymbol, Create, Destroy)
 from .matrix_algebra import Matrix
+from ..printing import ascii  # for docstring
+
+
+###############################################################################
+# Exceptions
+###############################################################################
+
+
+class CannotSymbolicallyDiagonalize(AlgebraException):
+    pass
+
+
+class BadLiouvillianError(AlgebraError):
+    """Raise when a Liouvillian is not of standard Lindblad form."""
+    pass
+
+
+###############################################################################
+# Abstract base classes
+###############################################################################
 
 
 class SuperOperator(metaclass=ABCMeta):
@@ -136,6 +156,27 @@ class SuperOperator(metaclass=ABCMeta):
         return NotImplemented
 
 
+class SuperOperatorOperation(SuperOperator, Operation, metaclass=ABCMeta):
+    """Base class for Operations acting only on SuperOperator arguments."""
+
+    @property
+    def space(self):
+        return ProductSpace.create(*(o.space for o in self.operands))
+
+    def _simplify_scalar(self):
+        return self.__class__.create(*[o.simplify_scalar()
+                                       for o in self.operands])
+
+    @abstractmethod
+    def _expand(self):
+        raise NotImplementedError()
+
+
+###############################################################################
+# Superoperator algebra elements
+###############################################################################
+
+
 class SuperOperatorSymbol(SuperOperator, Expression):
     """Super-operator symbol class, parametrized by an identifier string and an
     associated Hilbert space.
@@ -149,27 +190,36 @@ class SuperOperatorSymbol(SuperOperator, Expression):
     :param hs: Associated Hilbert space.
     :type hs: HilbertSpace
     """
-    signature = (str, (HilbertSpace, str, int, tuple)), {}
+    _rx_label = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
-    def __init__(self, label, hs):
-        self.label = label
+    def __init__(self, label, *, hs):
+        if not self._rx_label.match(label):
+            raise ValueError("label '%s' does not match pattern '%s'"
+                                % (label, self._rx_label.pattern))
+        self._label = label
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         elif isinstance(hs, tuple):
             hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
         self._hs = hs
-        super().__init__(label, hs)
+        super().__init__(label, hs=hs)
+
+    @property
+    def label(self):
+        return self._label
 
     @property
     def args(self):
-        return self.label, self._hs
+        return (self.label, )
 
-    def __str__(self):
-        return self.label
+    @property
+    def kwargs(self):
+        return {'hs': self._hs}
 
-    @cache_attr('_tex')
-    def tex(self):
-        return r"\hat{{{}}}".format(identifier_to_tex(self.label))
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.render_op(self.label, self._hs, dagger=adjoint,
+                                 superop=True)
 
     @property
     def space(self):
@@ -200,11 +250,9 @@ class IdentitySuperOperator(SuperOperator, Expression, metaclass=Singleton):
     def _expand(self):
         return self
 
-    def tex(self):
-        return r"\hat{1}"
-
-    def __str__(self):
-        return "_1_"
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.identity_sym
 
     def __eq__(self, other):
         return self is other or other == 1
@@ -231,82 +279,20 @@ class ZeroSuperOperator(SuperOperator, Expression, metaclass=Singleton):
     def _expand(self):
         return self
 
-    def tex(self):
-        return r"\hat{0}"
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.zero_sym
 
     def __eq__(self, other):
         return self is other or other == 0
-
-    def __str__(self):
-        return "_0_"
 
     def all_symbols(self):
         return set(())
 
 
-class SuperOperatorOperation(SuperOperator, Operation):
-    """Base class for Operations acting only on SuperOperator arguments."""
-    signature = (SuperOperator, {})
-
-    @property
-    def space(self):
-        return ProductSpace.create(*(o.space for o in self.operands))
-
-    def _simplify_scalar(self):
-        return self.__class__.create(*[o.simplify_scalar()
-                                       for o in self.operands])
-
-    def _expand(self):
-        raise NotImplementedError()
-
-
-class SuperOperatorPlus(SuperOperatorOperation):
-    """A sum of super-operators.
-
-    Instantiate as::
-
-        OperatorPlus(*summands)
-
-    :param SuperOperator summands: super-operator summands.
-    """
-    neutral_element = ZeroSuperOperator
-    _binary_rules = []  # see end of module
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
-
-    @classmethod
-    def order_key(cls, a):
-        if isinstance(a, ScalarTimesSuperOperator):
-            c = a.coeff
-            if isinstance(c, SympyBasic):
-                c = str(c)
-            return KeyTuple((Expression.order_key(a.term), c))
-        return KeyTuple((Expression.order_key(a), 1))
-
-    def _expand(self):
-        return sum((o.expand() for o in self.operands), ZeroSuperOperator)
-
-    @cache_attr('_tex')
-    def tex(self):
-        ret = self.operands[0].tex()
-
-        for o in self.operands[1:]:
-            if (isinstance(o, ScalarTimesSuperOperator) and
-                    ScalarTimesOperator.has_minus_prefactor(o.coeff)):
-                ret += " - " + tex(-o)
-            else:
-                ret += " + " + tex(o)
-        return ret
-
-    @cache_attr('_str')
-    def __str__(self):
-        ret = str(self.operands[0])
-        for o in self.operands[1:]:
-            if (isinstance(o, ScalarTimesSuperOperator) and
-                    ScalarTimesOperator.has_minus_prefactor(o.coeff)):
-                ret += " - " + str(-o)
-            else:
-                ret += " + " + str(o)
-        return ret
+###############################################################################
+# Operator ordering
+###############################################################################
 
 
 class SuperOperatorOrderKey(object):
@@ -373,6 +359,60 @@ class SuperOperatorOrderKey(object):
         return self.full or len(self.local_spaces & other.local_spaces) > 0
 
 
+###############################################################################
+# Algebra Operations
+###############################################################################
+
+
+class SuperOperatorPlus(SuperOperatorOperation):
+    """A sum of super-operators.
+
+    Instantiate as::
+
+        OperatorPlus(*summands)
+
+    :param SuperOperator summands: super-operator summands.
+    """
+    neutral_element = ZeroSuperOperator
+    _binary_rules = []  # see end of module
+    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+
+    @classmethod
+    def order_key(cls, a):
+        if isinstance(a, ScalarTimesSuperOperator):
+            c = a.coeff
+            if isinstance(c, SympyBasic):
+                c = str(c)
+            return KeyTuple((Expression.order_key(a.term), c))
+        return KeyTuple((Expression.order_key(a), 1))
+
+    def _expand(self):
+        return sum((o.expand() for o in self.operands), ZeroSuperOperator)
+        # Note that `SuperOperatorPlus(*[o.expand() for o in self.operands])`
+        # does not give a sufficiently simplified result in this case
+
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        positive_summands = []
+        negative_summands = []
+        for o in self.operands:
+            is_negative = False
+            op_str = printer.render(o, adjoint=adjoint)
+            if op_str.startswith('-'):
+                is_negative = True
+                op_str = op_str[1:].strip()
+            if isinstance(o, SuperOperatorPlus):
+                op_str = printer.par_left + op_str + printer.par_right
+            if is_negative:
+                negative_summands.append(op_str)
+            else:
+                positive_summands.append(op_str)
+        negative_str = " - ".join(negative_summands)
+        if len(negative_str) > 0:
+            negative_str = " - " + negative_str
+        return (" + ".join(positive_summands) + negative_str).strip()
+
+
 class SuperOperatorTimes(SuperOperatorOperation):
     """A product of super-operators that denotes order of application of
     super-operators (right to left)::
@@ -405,25 +445,36 @@ class SuperOperatorTimes(SuperOperatorOperation):
                     for combo in cartesian_product(*eopssummands)),
                    ZeroSuperOperator)
 
-    @cache_attr('_tex')
-    def tex(self):
-        ret = self.operands[0].tex()
-        for o in self.operands[1:]:
-            if isinstance(o, SuperOperatorPlus):
-                ret += r" \left({}\right) ".format(tex(o))
-            else:
-                ret += " {}".format(tex(o))
-        return ret
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
 
-    @cache_attr('_str')
-    def __str__(self):
-        ret = str(self.operands[0])
-        for o in self.operands[1:]:
+        def str_o(o):
             if isinstance(o, SuperOperatorPlus):
-                ret += r" ({})".format(str(o))
+                return (printer.par_left +
+                        printer.render(o, adjoint=adjoint) +
+                        printer.par_right)
             else:
-                ret += " {}".format(str(o))
-        return ret
+                return printer.render(o, adjoint=adjoint)
+
+        if adjoint:
+            operands = tuple(reversed(self.operands))
+        else:
+            operands = self.operands
+        o = operands[0]
+        parts = [str_o(o), ]
+        hs_prev = o.space
+
+        for o in operands[1:]:
+            hs = o.space
+            if hs == hs_prev:
+                if len(printer.op_product_sym) > 0:
+                    parts.append(printer.op_product_sym)
+            else:
+                if len(printer.tensor_sym) > 0:
+                    parts.append(printer.tensor_sym)
+            parts.append(str_o(o))
+            hs_prev = hs
+        return " ".join(parts)
 
 
 class ScalarTimesSuperOperator(SuperOperator, Operation):
@@ -453,44 +504,31 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
         """The super-operator term."""
         return self.operands[1]
 
-    @cache_attr('_tex')
-    def tex(self):
-        coeff, term = self.operands
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        coeff, term = self.coeff, self.term
+        term_str = printer.render(term, adjoint=adjoint)
+        if isinstance(term, Operation):
+            term_str = printer.par_left + term_str + printer.par_right
 
-        if isinstance(coeff, Add):
-            cs = r"\left({}\right)".format(tex(coeff))
+        if coeff == -1:
+            if term_str.startswith(printer.par_left):
+                return "- " + term_str
+            else:
+                return "-" + term_str
+        coeff_str = printer.render_scalar(coeff, adjoint=adjoint)
+
+        if term is IdentityOperator:
+            return coeff_str
         else:
-            cs = "{}".format(tex(coeff))
-
-        if term == IdentitySuperOperator:
-            ct = ""
-        if isinstance(term, SuperOperatorPlus):
-            ct = r" \left({}\right)".format(term.tex())
-        else:
-            ct = r" {}".format(term.tex())
-
-        return cs + ct
-
-    @cache_attr('_str')
-    def __str__(self):
-        coeff, term = self.operands
-
-        if isinstance(coeff, Add):
-            cs = r"({!s})".format(coeff)
-        else:
-            cs = "{!s}".format(coeff)
-
-        if term == IdentitySuperOperator:
-            ct = ""
-        if isinstance(term, SuperOperatorPlus):
-            ct = r" ({!s})".format(term)
-        else:
-            ct = r" {!s}".format(term)
-
-        return cs + ct
+            if len(printer.scalar_product_sym) > 0:
+                product_sym = " " + printer.scalar_product_sym + " "
+            else:
+                product_sym = " "
+            return coeff_str.strip() + product_sym + term_str.strip()
 
     def _expand(self):
-        c, t = self.operands
+        c, t = self.coeff, self.term
         et = t.expand()
         if isinstance(et, SuperOperatorPlus):
             return sum((c * eto for eto in et.operands), ZeroSuperOperator)
@@ -523,7 +561,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
         else:
             sc = substitute(coeff, var_map)
         return sc * st
-
 
 
 class SuperAdjoint(SuperOperatorOperation):
@@ -562,15 +599,18 @@ class SuperAdjoint(SuperOperatorOperation):
                        ZeroSuperOperator)
         return eo._superadjoint()
 
-    @cache_attr('_tex')
-    def tex(self):
-        return "\left(" + self.operands[0].tex() + r"\right)^*"
-
-    @cache_attr('_str')
-    def __str__(self):
-        if isinstance(self.operand, OperatorSymbol):
-            return "{}^*".format(str(self.operand))
-        return "({})^*".format(str(self.operand))
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        o = self.operand
+        if isinstance(o, SuperOperatorSymbol):
+            return printer.render_op(o.label, hs=o.space,
+                                     dagger=(not adjoint), superop=True)
+        else:
+            if adjoint:
+                return printer.render(o)
+            else:
+                return (printer.par_left + printer.render(o) +
+                        printer.par_right + printer.daggered_sym)
 
 
 class SPre(SuperOperator, Operation):
@@ -583,21 +623,12 @@ class SPre(SuperOperator, Operation):
     Acting ``SPre(A)`` on an operator ``B`` just yields the product ``A * B``
     """
 
-    signature = (Operator, ), {}
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
 
     @property
     def space(self):
         return self.operands[0].space
-
-    @cache_attr('_tex')
-    def tex(self):
-        return r"{{\rm spre}}\left[{}\right]".format(self.operands[0].tex())
-
-    @cache_attr('_str')
-    def __str__(self):
-        return r"spre({!s})".format(self.operands[0])
 
     def _expand(self):
         oe = self.operands[0].expand()
@@ -620,21 +651,12 @@ class SPost(SuperOperator, Operation):
         product ``B * A``.
     """
 
-    signature = (Operator,), {}
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
 
     @property
     def space(self):
         return self.operands[0].space
-
-    @cache_attr('_tex')
-    def tex(self):
-        return r"{{\rm spost}}\left[{}\right]".format(self.operands[0].tex())
-
-    @cache_attr('_str')
-    def __str__(self):
-        return r"spost({!s})".format(self.operands[0])
 
     def _expand(self):
         oe = self.operands[0].expand()
@@ -656,7 +678,6 @@ class SuperOperatorTimesOperator(Operator, Operation):
     :param SuperOperator sop: The super-operator to apply.
     :param Operator op: The operator it is applied to.
     """
-    signature = (SuperOperator, Operator), {}
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
 
@@ -672,34 +693,16 @@ class SuperOperatorTimesOperator(Operator, Operation):
     def op(self):
         return self.operands[1]
 
-    @cache_attr('_tex')
-    def tex(self):
-        sop, op = self.operands
-
+    def _render(self, fmt, adjoint=False):
+        assert not adjoint, "adjoint not defined"
+        printer = getattr(self, "_"+fmt+"_printer")
+        sop, op = self.sop, self.op
         if isinstance(sop, SuperOperatorPlus):
-            cs = r" \left({}\right)".format(tex(sop))
+            cs = printer.par_left + printer.render(sop) + printer.par_right
         else:
-            cs = " {}".format(tex(sop))
-
-        if isinstance(op, SuperOperatorPlus):
-            ct = r" \left({}\right)".format(op.tex())
-        else:
-            ct = r" {}".format(op.tex())
-
-        return cs + ct
-
-    @cache_attr('_str')
-    def __str__(self):
-        sop, op = self.operands
-        if isinstance(sop, SuperOperatorPlus):
-            cs = r"({!s})".format((sop))
-        else:
-            cs = "{}".format(tex(sop))
-        if isinstance(op, OperatorPlus):
-            ct = r" ({!s})".format(op)
-        else:
-            ct = r" {}".format(op)
-        return (cs + ct).strip()
+            cs = printer.render(sop)
+        ct = printer.render(op)
+        return cs + printer.brak_left + ct + printer.brak_right
 
     def _expand(self):
         sop, op = self.operands
@@ -707,156 +710,27 @@ class SuperOperatorTimesOperator(Operator, Operation):
         if isinstance(sope, SuperOperatorPlus):
             sopet = sope.operands
         else:
-            sopet = sope,
+            sopet = (sope, )
         if isinstance(ope, OperatorPlus):
             opet = ope.operands
         else:
-            opet = ope,
+            opet = (ope, )
 
         return sum(st * ot for st in sopet for ot in opet)
 
     def _series_expand(self, param, about, order):
-        sop, op = self.operands
+        sop, op = self.sop, self.op
         ope = op.series_expand(param, about, order)
         return tuple(sop * opet for opet in ope)
 
     def _simplify_scalar(self):
-        SOp, Op = self.operands
-        return SOp.simplify_scalar() * Op.simplify_scalar()
-
-#    def _pseudo_inverse(self):
-#        c, t = self.operands
-#        return t.pseudo_inverse() / c
+        sop, op = self.sop, self.op
+        return sop.simplify_scalar() * op.simplify_scalar()
 
 
-## Expression rewriting _rules
-
-u = wc("u", head=SCALAR_TYPES)
-v = wc("v", head=SCALAR_TYPES)
-
-n = wc("n", head=(int, str))
-m = wc("m", head=(int, str))
-k = wc("k", head=(int, str))
-
-A = wc("A", head=Operator)
-A__ = wc("A__", head=Operator)
-A___ = wc("A___", head=Operator)
-B = wc("B", head=Operator)
-B__ = wc("B__", head=Operator)
-B___ = wc("B___", head=Operator)
-C = wc("C", head=Operator)
-
-sA = wc("sA", head=SuperOperator)
-sA__ = wc("sA__", head=SuperOperator)
-sA___ = wc("sA___", head=SuperOperator)
-sB = wc("sB", head=SuperOperator)
-sB__ = wc("sB__", head=SuperOperator)
-sB___ = wc("sB___", head=SuperOperator)
-
-
-sA_plus = wc("sA", head=SuperOperatorPlus)
-sA_times = wc("sA", head=SuperOperatorTimes)
-
-
-ScalarTimesSuperOperator._rules += [
-    (pattern_head(1, sA),
-        lambda sA: sA),
-    (pattern_head(0, sA),
-        lambda sA: ZeroSuperOperator),
-    (pattern_head(u, ZeroSuperOperator),
-        lambda u: ZeroSuperOperator),
-    (pattern_head(u, pattern(ScalarTimesSuperOperator, v, sA)),
-        lambda u, v, sA: (u * v) * sA),
-]
-
-SuperOperatorPlus._binary_rules += [
-    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA),
-                  pattern(ScalarTimesSuperOperator, v, sA)),
-        lambda u, v, sA: (u + v) * sA),
-    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), sA),
-        lambda u, sA: (u + 1) * sA),
-    (pattern_head(sA, pattern(ScalarTimesSuperOperator, v, sA)),
-        lambda v, sA: (1 + v) * sA),
-    (pattern_head(sA, sA),
-        lambda sA: 2 * sA),
-]
-
-
-SuperOperatorTimes._binary_rules += [
-    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), sB),
-        lambda u, sA, sB: u * (sA * sB)),
-    (pattern_head(sA, pattern(ScalarTimesSuperOperator, u, sB)),
-        lambda sA, u, sB: u * (sA * sB)),
-    (pattern_head(pattern(SPre, A), pattern(SPre, B)),
-        lambda A, B: SPre.create(A*B)),
-    (pattern_head(pattern(SPost, A), pattern(SPost, B)),
-        lambda A, B: SPost.create(B*A)),
-]
-
-SuperAdjoint._rules += [
-    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA)),
-        lambda u, sA: u * sA.superadjoint()),
-    (pattern_head(sA_plus),
-        lambda sA: SuperOperatorPlus.create(*[o.superadjoint()
-                                              for o in sA.operands])),
-    (pattern_head(sA_times),
-        lambda sA: SuperOperatorTimes.create(*[o.superadjoint()
-                                               for o in sA.operands[::-1]])),
-    (pattern_head(pattern(SuperAdjoint, sA)),
-        lambda sA: sA),
-    (pattern_head(pattern(SPre, A)),
-        lambda A: SPost.create(A)),
-    (pattern_head(pattern(SPost, A)),
-        lambda A: SPre.create(A)),
-    (pattern_head(IdentitySuperOperator),
-        lambda: IdentitySuperOperator),
-    (pattern_head(ZeroSuperOperator),
-        lambda: ZeroSuperOperator),
-]
-
-SPre._rules +=[
-    (pattern_head(pattern(ScalarTimesOperator, u, A)),
-        lambda u, A: u * SPre.create(A)),
-    (pattern_head(IdentityOperator),
-        lambda: IdentitySuperOperator),
-    (pattern_head(ZeroOperator),
-        lambda: ZeroSuperOperator),
-]
-
-SPost._rules +=[
-    (pattern_head(pattern(ScalarTimesOperator, u, A)),
-        lambda u, A: u * SPost.create(A)),
-    (pattern_head(IdentityOperator),
-        lambda: IdentitySuperOperator),
-    (pattern_head(ZeroOperator),
-        lambda: ZeroSuperOperator),
-]
-
-
-SuperOperatorTimesOperator._rules +=[
-    (pattern_head(sA_plus, B),
-        lambda sA, B: sum([o*B for o in sA.operands], ZeroOperator)),
-    (pattern_head(IdentitySuperOperator, B),
-        lambda B: B),
-    (pattern_head(ZeroSuperOperator, B),
-        lambda B: ZeroOperator),
-    (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), B),
-        lambda u, sA, B: u * (sA * B)),
-    (pattern_head(sA, pattern(ScalarTimesOperator, u, B)),
-        lambda u, sA, B: u * (sA * B)),
-    (pattern_head(sA, pattern(SuperOperatorTimesOperator, sB, C)),
-        lambda sA, sB, C: (sA * sB) * C),
-    (pattern_head(pattern(SPre, A), B),
-        lambda A, B: A*B),
-    (pattern_head(pattern(SuperOperatorTimes, sA__, pattern(SPre, B)), C),
-        lambda sA, B, C: (SuperOperatorTimes.create(*sA) *
-                          (pattern(SPre, B) * C))),
-    (pattern_head(pattern(SPost, A), B),
-        lambda A, B: B*A),
-    (pattern_head(pattern(SuperOperatorTimes, sA__, pattern(SPost, B)), C),
-        lambda sA, B, C: (SuperOperatorTimes.create(*sA) *
-                          (pattern(SPost, B) * C))),
-]
+###############################################################################
+# Constructor Routines
+###############################################################################
 
 
 def commutator(A, B = None):
@@ -926,16 +800,14 @@ def liouvillian(H, Ls = []):
     """
     if isinstance(Ls, Matrix):
         Ls = Ls.matrix.flatten().tolist()
-    return -I * commutator(H) + sum((lindblad(L) for L in Ls), ZeroSuperOperator)
+    summands = [-I * commutator(H), ]
+    summands.extend([lindblad(L) for L in Ls])
+    return SuperOperatorPlus.create(*summands)
 
 
-class BadLiouvillianError(AlgebraError):
-    """Raise when a Liouvillian is not of standard Lindblad form."""
-    pass
-
-
-class CannotSymbolicallyDiagonalize(AlgebraException):
-    pass
+###############################################################################
+# Auxilliary routines
+###############################################################################
 
 
 def liouvillian_normal_form(L, symbolic = False):
@@ -963,18 +835,19 @@ def liouvillian_normal_form(L, symbolic = False):
     >>> kappa_1, kappa_2 = symbols('kappa_1, kappa_2', positive = True)
     >>> Delta = symbols('Delta', real = True)
     >>> alpha = symbols('alpha')
-    >>> H = (Delta * Create(1) * Destroy(1) +
+    >>> H = (Delta * Create(hs=1) * Destroy(hs=1) +
     ...      (sqrt(kappa_1) / (2 * I)) *
-    ...      (alpha * Create(1) - alpha.conjugate() * Destroy(1)))
-    >>> Ls = [sqrt(kappa_1) * Destroy(1) + alpha, sqrt(kappa_2) * Destroy(1)]
+    ...      (alpha * Create(hs=1) - alpha.conjugate() * Destroy(hs=1)))
+    >>> Ls = [sqrt(kappa_1) * Destroy(hs=1) + alpha,
+    ...       sqrt(kappa_2) * Destroy(hs=1)]
     >>> LL = liouvillian(H, Ls)
     >>> Hnf, Lsnf = liouvillian_normal_form(LL)
-    >>> print(Hnf)
-    I*sqrt(kappa_1)*conjugate(alpha) * a₍₁₎ + Delta * (a⁺₍₁₎ * a₍₁₎) - I*alpha*sqrt(kappa_1) * a⁺₍₁₎
+    >>> print(ascii(Hnf))
+    I*sqrt(kappa_1)*conjugate(alpha) * a^(1) + Delta * (a^(1)H * a^(1)) - I*alpha*sqrt(kappa_1) * a^(1)H
     >>> len(Lsnf)
     1
-    >>> print(Lsnf[0])
-    sqrt(kappa_1 + kappa_2) * a₍₁₎
+    >>> print(ascii(Lsnf[0]))
+    (sqrt(kappa_1 + kappa_2)) * a^(1)
 
     In terms of the ensemble dynamics this final system is equivalent.
     Note that this function will only work for proper Liouvillians.
@@ -988,7 +861,6 @@ def liouvillian_normal_form(L, symbolic = False):
     L = L.expand()
 
     if isinstance(L, SuperOperatorPlus):
-        Ls = []
         spres = []
         sposts = []
         collapse_form = defaultdict(lambda : defaultdict(int))
@@ -1132,3 +1004,126 @@ def liouvillian_normal_form(L, symbolic = False):
             return ZeroOperator, []
 
         raise BadLiouvillianError(str(L))
+
+
+###############################################################################
+# Algebraic rules
+###############################################################################
+
+
+def _algebraic_rules():
+    u = wc("u", head=SCALAR_TYPES)
+    v = wc("v", head=SCALAR_TYPES)
+
+    A = wc("A", head=Operator)
+    B = wc("B", head=Operator)
+    C = wc("C", head=Operator)
+
+    sA = wc("sA", head=SuperOperator)
+    sA__ = wc("sA__", head=SuperOperator)
+    sB = wc("sB", head=SuperOperator)
+
+    sA_plus = wc("sA", head=SuperOperatorPlus)
+    sA_times = wc("sA", head=SuperOperatorTimes)
+
+    ScalarTimesSuperOperator._rules += [
+        (pattern_head(1, sA),
+            lambda sA: sA),
+        (pattern_head(0, sA),
+            lambda sA: ZeroSuperOperator),
+        (pattern_head(u, ZeroSuperOperator),
+            lambda u: ZeroSuperOperator),
+        (pattern_head(u, pattern(ScalarTimesSuperOperator, v, sA)),
+            lambda u, v, sA: (u * v) * sA),
+    ]
+
+    SuperOperatorPlus._binary_rules += [
+        (pattern_head(pattern(ScalarTimesSuperOperator, u, sA),
+                      pattern(ScalarTimesSuperOperator, v, sA)),
+            lambda u, v, sA: (u + v) * sA),
+        (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), sA),
+            lambda u, sA: (u + 1) * sA),
+        (pattern_head(sA, pattern(ScalarTimesSuperOperator, v, sA)),
+            lambda v, sA: (1 + v) * sA),
+        (pattern_head(sA, sA),
+            lambda sA: 2 * sA),
+    ]
+
+    SuperOperatorTimes._binary_rules += [
+        (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), sB),
+            lambda u, sA, sB: u * (sA * sB)),
+        (pattern_head(sA, pattern(ScalarTimesSuperOperator, u, sB)),
+            lambda sA, u, sB: u * (sA * sB)),
+        (pattern_head(pattern(SPre, A), pattern(SPre, B)),
+            lambda A, B: SPre.create(A*B)),
+        (pattern_head(pattern(SPost, A), pattern(SPost, B)),
+            lambda A, B: SPost.create(B*A)),
+    ]
+
+    SuperAdjoint._rules += [
+        (pattern_head(pattern(ScalarTimesSuperOperator, u, sA)),
+            lambda u, sA: u * sA.superadjoint()),
+        (pattern_head(sA_plus),
+            lambda sA: SuperOperatorPlus.create(
+                *[o.superadjoint() for o in sA.operands])),
+        (pattern_head(sA_times),
+            lambda sA: SuperOperatorTimes.create(
+                *[o.superadjoint() for o in sA.operands[::-1]])),
+        (pattern_head(pattern(SuperAdjoint, sA)),
+            lambda sA: sA),
+        (pattern_head(pattern(SPre, A)),
+            lambda A: SPost.create(A)),
+        (pattern_head(pattern(SPost, A)),
+            lambda A: SPre.create(A)),
+        (pattern_head(IdentitySuperOperator),
+            lambda: IdentitySuperOperator),
+        (pattern_head(ZeroSuperOperator),
+            lambda: ZeroSuperOperator),
+    ]
+
+    SPre._rules += [
+        (pattern_head(pattern(ScalarTimesOperator, u, A)),
+            lambda u, A: u * SPre.create(A)),
+        (pattern_head(IdentityOperator),
+            lambda: IdentitySuperOperator),
+        (pattern_head(ZeroOperator),
+            lambda: ZeroSuperOperator),
+    ]
+
+    SPost._rules += [
+        (pattern_head(pattern(ScalarTimesOperator, u, A)),
+            lambda u, A: u * SPost.create(A)),
+        (pattern_head(IdentityOperator),
+            lambda: IdentitySuperOperator),
+        (pattern_head(ZeroOperator),
+            lambda: ZeroSuperOperator),
+    ]
+
+    SuperOperatorTimesOperator._rules += [
+        (pattern_head(sA_plus, B),
+            lambda sA, B:
+                SuperOperatorPlus.create(*[o*B for o in sA.operands])),
+        (pattern_head(IdentitySuperOperator, B),
+            lambda B: B),
+        (pattern_head(ZeroSuperOperator, B),
+            lambda B: ZeroOperator),
+        (pattern_head(pattern(ScalarTimesSuperOperator, u, sA), B),
+            lambda u, sA, B: u * (sA * B)),
+        (pattern_head(sA, pattern(ScalarTimesOperator, u, B)),
+            lambda u, sA, B: u * (sA * B)),
+        (pattern_head(sA, pattern(SuperOperatorTimesOperator, sB, C)),
+            lambda sA, sB, C: (sA * sB) * C),
+        (pattern_head(pattern(SPre, A), B),
+            lambda A, B: A*B),
+        (pattern_head(pattern(SuperOperatorTimes, sA__, pattern(SPre, B)), C),
+            lambda sA, B, C: (SuperOperatorTimes.create(*sA) *
+                              (pattern(SPre, B) * C))),
+        (pattern_head(pattern(SPost, A), B),
+            lambda A, B: B*A),
+        (pattern_head(pattern(SuperOperatorTimes, sA__, pattern(SPost, B)), C),
+            lambda sA, B, C: (SuperOperatorTimes.create(*sA) *
+                              (pattern(SPost, B) * C))),
+    ]
+
+
+_algebraic_rules()

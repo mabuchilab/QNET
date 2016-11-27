@@ -27,8 +27,6 @@ from sympy.core.symbol import symbols
 from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import SLH
 from qnet.algebra.matrix_algebra import Matrix
-from qnet.algebra.abstract_algebra import tex
-
 
 class Displace(Component):
     r"""Coherent displacement of the input field (usually vacuum) by a complex
@@ -52,5 +50,8 @@ class Displace(Component):
 
         return SLH(S, L, H)
 
-    def tex(self):
-        return r"{W(%s)}" % tex(self.alpha)
+    def _render(self, fmt, adjoint=False):
+        assert not adjoint, "adjoint not defined"
+        printer = getattr(self, "_"+fmt+"_printer")
+        return (printer.render_string(self.name) + printer.par_left +
+                printer.render(self.alpha) + printer.par_right)

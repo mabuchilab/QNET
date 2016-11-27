@@ -38,11 +38,12 @@ def test_instantiate_with_basis():
 def test_basis_change():
     """Test that we can change the basis of an Expression's Hilbert space
     through substitution"""
-    a = Destroy(1)
+    a = Destroy(hs=1)
     assert a.space == LocalSpace('1')
     assert a.space.basis is None
     assert a.space.dimension is None
-    b = a.substitute({LocalSpace('1'): LocalSpace('1', basis=(-1, 0, 1))})
+    subs = {LocalSpace('1'): LocalSpace('1', basis=(-1, 0, 1))}
+    b = a.substitute(subs)
     assert str(a) == str(b)
     assert a != b
     assert b.space.dimension == 3
@@ -51,8 +52,8 @@ def test_basis_change():
 
 def test_op_product_space():
     """Test that a product of operators has the correct Hilbert space"""
-    a = Destroy(1)
-    b = Destroy(2)
+    a = Destroy(hs=1)
+    b = Destroy(hs=2)
     p = a * b
     assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
     assert p.space.dimension is None

@@ -1,5 +1,4 @@
-# coding=utf-8
-#This file is part of QNET.
+# This file is part of QNET.
 #
 #    QNET is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,32 +27,67 @@ Hilbert spaces of quantum systems.
 
 For more details see :ref:`hilbert_space_algebra`.
 """
+import re
 import operator
 import functools
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
 
 from .abstract_algebra import (
-        Expression, Operation, AlgebraError, tex, assoc, idem,
-        filter_neutral, cache_attr)
+        Expression, Operation, AlgebraError, assoc, idem, filter_neutral,
+        cache_attr)
 from .singleton import Singleton, singleton_object
+
+
+###############################################################################
+# Exceptions
+###############################################################################
+
+
+class BasisNotSetError(AlgebraError):
+    """Raised if the basis or a Hilbert space dimension is requested but is not
+    available"""
+
+
+###############################################################################
+# Algebraic properties
+###############################################################################
+
+
+def convert_to_spaces(cls, ops, kwargs):
+    """For all operands that are merely of type str or int, substitute
+    LocalSpace objects with corresponding labels:
+    For a string, just itself, for an int, a string version of that int.
+    """
+    cops = [o if isinstance(o, HilbertSpace) else LocalSpace(o) for o in ops]
+    return cops, kwargs
+
+
+def empty_trivial(cls, ops, kwargs):
+    """A ProductSpace of zero Hilbert spaces should yield the TrivialSpace"""
+    if len(ops) == 0:
+        return TrivialSpace
+    else:
+        return ops, kwargs
+
+
+###############################################################################
+# Abstract base classes
+###############################################################################
 
 
 class HilbertSpace(metaclass=ABCMeta):
     """Basic Hilbert space class from which concrete classes are derived."""
 
-    _hilbert_tex_symbol = '\mathcal{H}'
-    _hilbert_str_symbol = 'ℌ'
-
-    def tensor(self, other):
+    def tensor(self, *others):
         """Tensor product between Hilbert spaces
 
-        :param other: Other Hilbert space
-        :type other: HilbertSpace
+        :param others: Other Hilbert space(s)
+        :type others: HilbertSpace
         :return: Tensor product space.
         :rtype: HilbertSpace
         """
-        return ProductSpace.create(self, other)
+        return ProductSpace.create(self, *others)
 
     @abstractmethod
     def remove(self, other):
@@ -65,9 +99,9 @@ class HilbertSpace(metaclass=ABCMeta):
         """Find the mutual tensor factors of two Hilbert spaces."""
         raise NotImplementedError(self.__class__.__name__)
 
-    @abstractmethod
+    @abstractproperty
     def local_factors(self):
-        """Return tupe of LocalSpace objects that tensored together yield this
+        """Return tuple of LocalSpace objects that tensored together yield this
         Hilbert space."""
         raise NotImplementedError(self.__class__.__name__)
 
@@ -123,9 +157,15 @@ class HilbertSpace(metaclass=ABCMeta):
         (larger) Hilbert space"""
         raise NotImplementedError(self.__class__.__name__)
 
+    def _render(self, fmt, adjoint=False):
+        assert not adjoint, "adjoint not defined"
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.hilbert_space_fmt.format(
+                label=printer.render_hs_label(self))
+
     def __len__(self):
         """The number of LocalSpace factors / degrees of freedom."""
-        return len(self.local_factors())
+        return len(self.local_factors)
 
     def __mul__(self, other):
         return self.tensor(other)
@@ -151,6 +191,97 @@ class HilbertSpace(metaclass=ABCMeta):
         return self == other or self > other
 
 
+###############################################################################
+# Hilbert space algebra elements
+###############################################################################
+
+
+class LocalSpace(HilbertSpace, Expression):
+    """A local Hilbert space, i.e., for a single degree of freedom.
+
+    Args:
+        label (str): label (subscript) of the Hilbert space
+        basis (tuple or None): Set an explicit basis for the Hilbert space
+            (tuple of labels for the basis states)
+        dimension (int or None): Specify the dimension $n$ of the Hilbert
+            space.  This implies a basis numbered from 0  to $n-1$.
+
+    If no `basis` or `dimension` is specified during initialization, it may be
+    set later by assigning to the corresponding properties. Note that the
+    `basis` and `dimension` arguments are mutually exclusive.
+    """
+    _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
+
+    def __init__(self, label, *, basis=None, dimension=None):
+        label = str(label)
+        if not self._rx_label.match(label):
+            raise ValueError("label '%s' does not match pattern '%s'"
+                             % (label, self._rx_label.pattern))
+        self._basis = None
+        self._dimension = None
+        if basis is None:
+            if dimension is not None:
+                self._basis = tuple(range(int(dimension)))
+                self._dimension = int(dimension)
+        else:
+            if dimension is not None:
+                if dimension != len(basis):
+                    raise ValueError("basis and dimension are incompatible")
+            self._basis = tuple(basis)
+            self._dimension = len(basis)
+        self._label = label
+        super().__init__(label, basis=basis, dimension=dimension)
+
+    @property
+    def args(self):
+        return (self._label, )
+
+    @property
+    def label(self):
+        """Label of the Hilbert space"""
+        return self._label
+
+    @property
+    def basis(self):
+        return self._basis
+
+    @property
+    def dimension(self):
+        return self._dimension
+
+    @property
+    def kwargs(self):
+        return {'basis': self._basis, 'dimension': self._dimension}
+
+    def all_symbols(self):
+        return {}
+
+    def _order_key(self):
+        return self._label
+
+    def remove(self, other):
+        if other == self:
+            return TrivialSpace
+        return self
+
+    def intersect(self, other):
+        if self in other.local_factors:
+            return self
+        return TrivialSpace
+
+    @property
+    def local_factors(self):
+        return (self, )
+
+    def is_strict_subfactor_of(self, other):
+        if isinstance(other, ProductSpace) and self in other.operands:
+            assert len(other.operands) > 1
+            return True
+        if other is FullSpace:
+            return True
+        return False
+
+
 @singleton_object
 class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
     """The 'nullspace', i.e. a one dimensional Hilbert space, which is a factor
@@ -164,7 +295,7 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
         """Empty tuple (no arguments)"""
         return ()
 
-    def order_key(self):
+    def _order_key(self):
         return "____"
 
     @property
@@ -189,6 +320,7 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
         the trivial space"""
         return self
 
+    @property
     def local_factors(self):
         """Empty list (the trivial space has no factors)"""
         return ()
@@ -203,12 +335,14 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
     def __eq__(self, other):
         return self is other
 
-    def __str__(self):
-        return r'%s_null' % self._hilbert_str_symbol
+    @property
+    def label(self):
+        return "null"
 
-    def tex(self):
-        """Latex Representation of the trivial space"""
-        return r"%s_{\rm null}" % self._hilbert_tex_symbol
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.hilbert_space_fmt.format(
+                label=printer.render_string(self.label))
 
 
 @singleton_object
@@ -224,7 +358,7 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
     def __hash__(self):
         return hash(self.__class__)
 
-    def order_key(self, a):
+    def _order_key(self, a):
         return "____"
 
     def all_symbols(self):
@@ -233,12 +367,13 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
 
     def remove(self, other):
         """Raise AlgebraError, as the remaining space is undefined"""
-        raise AlgebraError()
+        raise AlgebraError("Cannot remove anything from FullSpace")
 
+    @property
     def local_factors(self):
         """Raise AlgebraError, as the the factors of the full space are
         undefined"""
-        raise AlgebraError()
+        raise AlgebraError("FullSpace has no local_factors")
 
     def intersect(self, other):
         """Return `other`"""
@@ -252,129 +387,19 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
     def __eq__(self, other):
         return self is other
 
-    def tex(self):
-        """Latex Representation of the full space"""
-        return r"%s_{\rm total}" % self._hilbert_tex_symbol
-
-
-class LocalSpace(HilbertSpace, Expression):
-    """A local Hilbert space, i.e., for a single degree of freedom.
-
-    Args:
-        name (str): Name (subscript) of the Hilbert space
-        basis (tuple or None): Set an explicit basis for the Hilbert space
-            (tuple of labels for the basis states)
-        dimension (int or None): Specify the dimension $n$ of the Hilbert
-            space.  This implies a basis numbered from 0  to $n-1$.
-
-    If no `basis` or `dimension` is specified during initialization, it may be
-    set later by assigning to the corresponding properties. Note that the
-    `basis` and `dimension` arguments are mutually exclusive.
-    """
-
-    def __init__(self, name, *, basis=None, dimension=None):
-        name = str(name)
-        self._basis = None
-        self._dimension = None
-        self._custom_basis = False
-        if basis is None:
-            if dimension is not None:
-                self._basis = tuple(range(int(dimension)))
-                self._dimension = int(dimension)
-        else:
-            if dimension is not None:
-                if dimension != len(basis):
-                    raise ValueError("basis and dimension are incompatible")
-            self._basis = tuple(basis)
-            self._dimension = len(basis)
-            if basis != tuple(range(int(self._dimension))):
-                self._custom_basis = True
-        self.name = name
-        super().__init__(name, basis=basis, dimension=dimension)
-
     @property
-    def args(self):
-        return (self.name, )
+    def label(self):
+        return "total"
 
-    @property
-    def basis(self):
-        return self._basis
-
-    @property
-    def dimension(self):
-        return self._dimension
-
-    @property
-    def kwargs(self):
-        return {'basis': self._basis, 'dimension': self._dimension}
-
-    @cache_attr('_repr')
-    def __repr__(self):
-        if self._repr is None:
-            basis = self._basis
-            dim = self._dimension
-            if basis is None:
-                kw_str = ''
-            else:
-                if self._custom_basis:
-                    kw_str = ', basis=%s' % repr(basis)
-                else:
-                    kw_str = ', dimension=%d' % dim
-            self._repr = (str(self.__class__.__name__) + "("
-                          + repr(self.name) + kw_str + ')')
-        return self._repr
-
-    def all_symbols(self):
-        return {}
-
-    def order_key(self):
-        return self.name
-
-    def remove(self, other):
-        if other == self:
-            return TrivialSpace
-        return self
-
-    def intersect(self, other):
-        if self in other.local_factors():
-            return self
-        return TrivialSpace
-
-    def local_factors(self):
-        return self,
-
-    def is_strict_subfactor_of(self, other):
-        if isinstance(other, ProductSpace) and self in other.operands:
-            assert len(other.operands) > 1
-            return True
-        if other is FullSpace:
-            return True
-        return False
-
-    @cache_attr('_tex')
-    def tex(self):
-        """TeX representation of the Local Hilbert space"""
-        return "%s_{%s}" % (self._hilbert_tex_symbol, tex(self.name))
-
-    def __str__(self):
-        return "%s_%s" % (self._hilbert_str_symbol, self.name)
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.hilbert_space_fmt.format(
+                label=printer.render_string(self.label))
 
 
-def convert_to_spaces(cls, ops, kwargs):
-    """For all operands that are merely of type str or int, substitute
-    LocalSpace objects with corresponding labels:
-    For a string, just itself, for an int, a string version of that int.
-    """
-    cops = [o if isinstance(o, HilbertSpace) else LocalSpace(o) for o in ops]
-    return cops, kwargs
-
-
-def empty_trivial(cls, ops, kwargs):
-    """A ProductSpace of zero Hilbert spaces should yield the TrivialSpace"""
-    if len(ops) == 0:
-        return TrivialSpace
-    else:
-        return ops, kwargs
+###############################################################################
+# Algebra Operations
+###############################################################################
 
 
 class ProductSpace(HilbertSpace, Operation):
@@ -421,8 +446,7 @@ class ProductSpace(HilbertSpace, Operation):
 
     @property
     def basis(self):
-        """Basis of the ProductSpace, from the bases of the operands (unless an
-        explicit basis was set during instantiation)"""
+        """Basis of the ProductSpace, from the bases of the operands"""
         return self._basis
 
     @property
@@ -442,6 +466,7 @@ class ProductSpace(HilbertSpace, Operation):
         return ProductSpace.create(
                 *sorted(set(self.operands).difference(oops)))
 
+    @property
     def local_factors(self):
         """The LocalSpace instances that make up the product"""
         return self.operands
@@ -468,15 +493,7 @@ class ProductSpace(HilbertSpace, Operation):
             return True
         return False
 
-    @cache_attr('_tex')
-    def tex(self):
-        return r' \otimes '.join([tex(op) for op in self.operands])
-
-    @cache_attr('_str')
-    def __str__(self):
-        return r' ⊗ '.join([str(op) for op in self.operands])
-
-
-class BasisNotSetError(AlgebraError):
-    """Raised if the basis or a Hilbert space dimension is requested but is not
-    available"""
+    def _render(self, fmt, adjoint=False):
+        assert not adjoint, "adjoint not defined"
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.render_infix(self.operands, 'tensor_sym')

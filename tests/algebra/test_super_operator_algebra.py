@@ -37,14 +37,14 @@ from qnet.algebra.operator_algebra import (
 class TestSuperOperatorCreation(unittest.TestCase):
 
     def testIdentity(self):
-        assert SuperOperatorSymbol("a", 1) == SuperOperatorSymbol("a", 1)
+        assert SuperOperatorSymbol("a", hs=1) == SuperOperatorSymbol("a", hs=1)
 
     def testMatch(self):
 
         A = wc("A", head=SuperOperator)
-        a = SuperOperatorSymbol("a", "hs")
-        b = SuperOperatorSymbol("b","hs")
-        b2 = SuperOperatorSymbol("b","hs")
+        a = SuperOperatorSymbol("a", hs="hs")
+        b = SuperOperatorSymbol("b", hs="hs")
+        b2 = SuperOperatorSymbol("b", hs="hs")
 
         assert b == b2
         assert A.match(a)
@@ -67,7 +67,7 @@ class TestSuperOperatorAddition(unittest.TestCase):
 
     def testAdditionToScalar(self):
         hs = LocalSpace("hs")
-        a = SuperOperatorSymbol("a", hs)
+        a = SuperOperatorSymbol("a", hs=hs)
         id = IdentitySuperOperator
         assert a+0 == a
         assert 0+a == a
@@ -78,16 +78,16 @@ class TestSuperOperatorAddition(unittest.TestCase):
     def testAdditionToSuperOperator(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = SuperOperatorSymbol("a", h1)
-        b = SuperOperatorSymbol("b", h2)
+        a = SuperOperatorSymbol("a", hs=h1)
+        b = SuperOperatorSymbol("b", hs=h2)
         assert a + b == b + a
         assert a + b == SuperOperatorPlus(a,b)
         assert (a+b).space == h1 * h2
 
     def testSubtraction(self):
         hs = LocalSpace("hs")
-        a = SuperOperatorSymbol("a", hs)
-        b = SuperOperatorSymbol("b", hs)
+        a = SuperOperatorSymbol("a", hs=hs)
+        b = SuperOperatorSymbol("b", hs=hs)
         z = ZeroSuperOperator
         assert a-a == z
         assert a-b == SuperOperatorPlus(a, ScalarTimesSuperOperator(-1,b))
@@ -95,15 +95,17 @@ class TestSuperOperatorAddition(unittest.TestCase):
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = SuperOperatorSymbol("a", h1)
-        b = SuperOperatorSymbol("b", h2)
+        a = SuperOperatorSymbol("a", hs=h1)
+        b = SuperOperatorSymbol("b", hs=h2)
         assert (a+b).space == h1 * h2
 
 
     def testCommutativity(self):
         h1 = LocalSpace("h1")
-        assert SuperOperatorSymbol("A", h1) + SuperOperatorSymbol("B", h1) == \
-                            SuperOperatorSymbol("B", h1) + SuperOperatorSymbol("A", h1)
+        assert (SuperOperatorSymbol("A", hs=h1) +
+                SuperOperatorSymbol("B", hs=h1) ==
+               (SuperOperatorSymbol("B", hs=h1) +
+                SuperOperatorSymbol("A", hs=h1)))
 
 
 
@@ -112,7 +114,7 @@ class TestSuperOperatorTimes(unittest.TestCase):
 
     def testIdentity(self):
         h1 = LocalSpace("h1")
-        a = SuperOperatorSymbol("a", h1)
+        a = SuperOperatorSymbol("a", hs=h1)
         id = IdentitySuperOperator
         assert a * id == a
         assert id * a == a
@@ -120,13 +122,13 @@ class TestSuperOperatorTimes(unittest.TestCase):
     def testOrdering(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = SuperOperatorSymbol("a", h1)
-        b = SuperOperatorSymbol("b", h2)
-        c = SuperOperatorSymbol("c", h2)
-        dpre = SPre(SuperOperatorSymbol("d", h1))
-        epre = SPre(SuperOperatorSymbol("e", h1))
-        dpost = SPost(SuperOperatorSymbol("d", h1))
-        epost = SPost(SuperOperatorSymbol("e", h1))
+        a = SuperOperatorSymbol("a", hs=h1)
+        b = SuperOperatorSymbol("b", hs=h2)
+        c = SuperOperatorSymbol("c", hs=h2)
+        dpre = SPre(SuperOperatorSymbol("d", hs=h1))
+        epre = SPre(SuperOperatorSymbol("e", hs=h1))
+        dpost = SPost(SuperOperatorSymbol("d", hs=h1))
+        epost = SPost(SuperOperatorSymbol("e", hs=h1))
 
         assert a * b == SuperOperatorTimes(a,b)
         assert b * a == a * b
@@ -135,8 +137,8 @@ class TestSuperOperatorTimes(unittest.TestCase):
     def testSPreSPostRules(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        d = OperatorSymbol("d", h1)
-        e = OperatorSymbol("e", h1)
+        d = OperatorSymbol("d", hs=h1)
+        e = OperatorSymbol("e", hs=h1)
         dpre = SPre(d)
         epre = SPre(e)
         dpost = SPost(d)
@@ -148,8 +150,8 @@ class TestSuperOperatorTimes(unittest.TestCase):
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = SuperOperatorSymbol("a", h1)
-        b = SuperOperatorSymbol("b", h2)
+        a = SuperOperatorSymbol("a", hs=h1)
+        b = SuperOperatorSymbol("b", hs=h2)
         assert a.space == h1
         assert (a * b).space == h1*h2
 
@@ -157,8 +159,8 @@ class TestSuperOperatorTimes(unittest.TestCase):
     def testCommutativity(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = SuperOperatorSymbol("a", h1)
-        b = SuperOperatorSymbol("b", h2)
+        a = SuperOperatorSymbol("a", hs=h1)
+        b = SuperOperatorSymbol("b", hs=h2)
         assert a*b == b*a
 
 
@@ -169,8 +171,8 @@ class TestScalarTimesSuperOperator(unittest.TestCase):
     def testZeroOne(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = SuperOperatorSymbol("a", h1)
-        b =  SuperOperatorSymbol("b", h2)
+        a = SuperOperatorSymbol("a", hs=h1)
+        b = SuperOperatorSymbol("b", hs=h2)
         z = ZeroSuperOperator
 
         assert a+a == 2*a
@@ -188,19 +190,19 @@ class TestScalarTimesSuperOperator(unittest.TestCase):
 
     def testEquality(self):
         h1 = LocalSpace("h1")
-        a = SuperOperatorSymbol("a", h1)
+        a = SuperOperatorSymbol("a", hs=h1)
         assert 5*a == ScalarTimesSuperOperator(5, a)
 
     def testScalarCombination(self):
-        a = SuperOperatorSymbol("a", "h1")
+        a = SuperOperatorSymbol("a", hs="h1")
         assert a+a == 2*a
         assert 3*a + 4*a == 7 * a
 
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = SuperOperatorSymbol("a", h1)
-        b = SuperOperatorSymbol("b", h2)
+        a = SuperOperatorSymbol("a", hs=h1)
+        b = SuperOperatorSymbol("b", hs=h2)
         assert (5*(a * b)).space == h1*h2
 
 
@@ -208,8 +210,8 @@ class TestSuperOperatorTimesOperator(unittest.TestCase):
     def testZeroOne(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = OperatorSymbol("a", h1)
-        B = SuperOperatorSymbol("B", h2)
+        a = OperatorSymbol("a", hs=h1)
+        B = SuperOperatorSymbol("B", hs=h2)
         z = ZeroSuperOperator
         one = IdentitySuperOperator
 
@@ -219,8 +221,8 @@ class TestSuperOperatorTimesOperator(unittest.TestCase):
 
     def testEqual2(self):
         h1 = LocalSpace("h1")
-        A = SuperOperatorSymbol("A", h1)
-        a = OperatorSymbol("a", h1)
+        A = SuperOperatorSymbol("A", hs=h1)
+        a = OperatorSymbol("a", hs=h1)
 
         OTO = SuperOperatorTimesOperator(A, a)
         assert A * a == OTO
@@ -228,9 +230,9 @@ class TestSuperOperatorTimesOperator(unittest.TestCase):
     def testCombination(self):
 
         h1 = LocalSpace("h1")
-        a = OperatorSymbol("a", h1)
-        A = SuperOperatorSymbol("A", h1)
-        B = SuperOperatorSymbol("B", h1)
+        a = OperatorSymbol("a", hs=h1)
+        A = SuperOperatorSymbol("A", hs=h1)
+        B = SuperOperatorSymbol("B", hs=h1)
         assert A * (B * a) == (A * B) * a
 
 
@@ -238,8 +240,8 @@ class TestSuperOperatorTimesOperator(unittest.TestCase):
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = SuperOperatorSymbol("a", h1)
-        b = SuperOperatorSymbol("b", h2)
+        a = SuperOperatorSymbol("a", hs=h1)
+        b = SuperOperatorSymbol("b", hs=h2)
         assert (5 * (a * b)).space == h1 * h2
 
 
@@ -247,20 +249,20 @@ def test_liouvillian_normal_form():
     kappa_1, kappa_2 = symbols('kappa_1, kappa_2', positive=True)
     Delta = symbols('Delta', real=True)
     alpha = symbols('alpha')
-    H = (Delta * Create(1) * Destroy(1) +
+    H = (Delta * Create(hs=1) * Destroy(hs=1) +
          (sqrt(kappa_1) / (2 * I)) *
-         (alpha * Create(1) - alpha.conjugate() * Destroy(1)))
-    Ls = [sqrt(kappa_1) * Destroy(1) + alpha, sqrt(kappa_2) * Destroy(1)]
+         (alpha * Create(hs=1) - alpha.conjugate() * Destroy(hs=1)))
+    Ls = [sqrt(kappa_1) * Destroy(hs=1) + alpha, sqrt(kappa_2) * Destroy(hs=1)]
     LL = liouvillian(H, Ls)
     Hnf, Lsnf = liouvillian_normal_form(LL)
     Hnf_expected = OperatorPlus(
             ScalarTimesOperator(-I*alpha*sqrt(kappa_1),
-                                Create(LocalSpace('1'))),
+                                Create(hs=1)),
             ScalarTimesOperator(I*sqrt(kappa_1)*conjugate(alpha),
-                                Destroy(LocalSpace('1'))),
-            ScalarTimesOperator(Delta, OperatorTimes(Create(LocalSpace('1')),
-                                Destroy(LocalSpace('1')))))
+                                Destroy(hs=1)),
+            ScalarTimesOperator(Delta,
+                                OperatorTimes(Create(hs=1), Destroy(hs=1))))
     assert Hnf == Hnf_expected
     Lsnf_expected = [ScalarTimesOperator(sqrt(kappa_1 + kappa_2),
-                                         Destroy(LocalSpace('1')))]
+                                         Destroy(hs=1))]
     assert Lsnf == Lsnf_expected

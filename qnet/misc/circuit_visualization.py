@@ -30,6 +30,7 @@ except ImportError as e:
 import six
 import qnet.misc.parse_circuit_strings as parse_circuit_strings
 import qnet.algebra.circuit_algebra as ca
+from qnet.printing import tex
 from qnet.circuit_components.component import Component, SubComponent
 
 if six.PY2:
@@ -37,6 +38,7 @@ if six.PY2:
     texrunner = pyx.text.texrunner(mode='latex')
 else:
     pyx.text.set(pyx.text.LatexRunner)
+    pyx.text.preamble(r'\usepackage{amsmath}')
 
 
 HUNIT = +4      # Basic unit for the width of a single Circuit object
@@ -118,7 +120,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         b = pyx.path.rect(rhmargin * hunit, rvmargin * vunit, hunit - 2 * rhmargin * hunit, nc * vunit - 2 * rvmargin * vunit)
         c.stroke(b)
         
-        texstr = "${}$".format(circuit.tex() if not isinstance(circuit, ca.SLH) else r"{{\rm SLH}}_{{{}}}".format(circuit.space.tex()))
+        texstr = "${}$".format(tex(circuit) if not isinstance(circuit, ca.SLH) else r"{{\rm SLH}}_{{{}}}".format(tex(circuit.space)))
 
         # draw symbol name
         c.text(hunit/2., nc * vunit/2., texstr , [pyx.text.halign.boxcenter, pyx.text.valign.middle])

@@ -45,6 +45,7 @@ non-creducible & non-primitive:
 None.
 
 """
+import re
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 
@@ -73,15 +74,13 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
     _parameters = []
     _sub_components = []
 
-    @property
-    def cdim(self):
-        return self.CDIM
-
-    def _all_symbols(self):
-        return set(())
+    _rx_name = re.compile('^[A-Za-z][A-Za-z0-9.]*$')
 
     def __init__(self, name, **kwargs):
-        self.name = name
+        self._name = str(name)
+        if not self._rx_name.match(name):
+            raise ValueError("name '%s' does not match pattern '%s'"
+                             % (self.name, self._rx_name.pattern))
         for pname, val in kwargs.items():
             if pname in self._parameters:
                 setattr(self, pname, val)
@@ -91,8 +90,12 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
         super().__init__(name, **kwargs)
 
     @property
+    def name(self):
+        return self._name
+
+    @property
     def args(self):
-        return (self.name, )
+        return (self._name, )
 
     @property
     def kwargs(self):
@@ -103,6 +106,18 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
             except AttributeError:
                 pass
         return res
+
+    @property
+    def cdim(self):
+        return self.CDIM
+
+    def _all_symbols(self):
+        return set(())
+
+    def _render(self, fmt, adjoint=False):
+        assert not adjoint, "adjoint not defined"
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.render_string(self.name)
 
     @abstractmethod
     def _toSLH(self):
@@ -161,23 +176,17 @@ class SubComponent(Circuit, Expression, metaclass=ABCMeta):
         "Numbers of channels"
         return self.parent_component.sub_blockstructure[self.sub_index]
 
-    def __str__(self):
-        return str(self.parent_component) + "_" + str(self.sub_index)
-
-    def __repr__(self):
-        return "%s(%r, %d)" % (self.__class__.__name__, self.parent_component,
-                               self.sub_index)
-
-    @abstractmethod
-    def _toSLH(self):
-        raise NotImplementedError()
+    @property
+    def name(self):
+        return self.parent_component.name + '_' + str(self.sub_index)
 
     @property
     def args(self):
         return self.parent_component, self.sub_index
 
-    def tex(self):
-        return "{%s}_{%d}" % (self.parent_component.tex(), self.sub_index)
+    @abstractmethod
+    def _toSLH(self):
+        raise NotImplementedError()
 
     def _toABCD(self, linearize):
         raise CannotConvertToABCD()

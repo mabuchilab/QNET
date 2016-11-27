@@ -18,14 +18,15 @@
 ###########################################################################
 
 from sympy import symbols
-
-from qnet.algebra.abstract_algebra import *
-from qnet.algebra.pattern_matching import pattern_head
-from qnet.algebra.operator_algebra import LocalSigma, OperatorTimes, Displace
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-
 import unittest
 import pytest
+
+from qnet.algebra.abstract_algebra import (
+        Operation, assoc, orderby, filter_neutral, CannotSimplify,
+        match_replace_binary, idem)
+from qnet.algebra.pattern_matching import pattern_head, wc
+from qnet.algebra.operator_algebra import LocalSigma, OperatorTimes, Displace
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 
 class TestOperationSimplifcations(unittest.TestCase):
@@ -54,7 +55,6 @@ class TestOperationSimplifcations(unittest.TestCase):
 
         a_int = wc("a", head=int)
         a_negint = wc("a", head=int, conditions=[lambda a: a < 0, ])
-        b_int = wc("b", head=int)
         a_str = wc("a", head=str)
         b_str = wc("b", head=str)
 
@@ -114,9 +114,10 @@ class TestOperationSimplifcations(unittest.TestCase):
 def test_match_replace_binary_complete():
     """Test that replace_binary works correctly for a non-trivial case"""
     x, y, z, alpha = symbols('x y z alpha')
-    ops = [LocalSigma(LocalSpace('f'), 0, 0),
-           Displace(LocalSpace('f'), -alpha),
-           Displace(LocalSpace('f'), alpha),
-           LocalSigma(LocalSpace('f'), 0, 0)]
+    hs = LocalSpace('f')
+    ops = [LocalSigma(0, 0, hs=hs),
+           Displace(-alpha, hs=hs),
+           Displace(alpha, hs=hs),
+           LocalSigma(0, 0, hs=hs)]
     res = OperatorTimes.create(*ops)
-    assert res == LocalSigma(LocalSpace('f'), 0, 0)
+    assert res == LocalSigma(0, 0, hs=hs)

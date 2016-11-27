@@ -62,7 +62,7 @@ setup(
         'ply',
         'six',
         'numpy',
-    ],
+    ] + (['typing', ] if sys.version_info < (3, 5) else []),
     extras_require={
         'dev': (['pytest', 'sphinx', 'nose', 'cython', 'coverage',
                  'pytest-cov', 'pytest-capturelog'] + mock_package),

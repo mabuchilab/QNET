@@ -36,7 +36,7 @@ class TestStateAddition(unittest.TestCase):
 
     def testAdditionToZero(self):
         hs = LocalSpace("hs")
-        a = KetSymbol("a", hs)
+        a = KetSymbol("a", hs=hs)
         z = ZeroKet
         assert a+z == a
         assert z+a == a
@@ -46,15 +46,15 @@ class TestStateAddition(unittest.TestCase):
 
     def testAdditionToOperator(self):
         hs = LocalSpace("hs")
-        a = KetSymbol("a", hs)
-        b = KetSymbol("b", hs)
+        a = KetSymbol("a", hs=hs)
+        b = KetSymbol("b", hs=hs)
         assert a + b == b + a
         assert a + b == KetPlus(a,b)
 
     def testSubtraction(self):
         hs = LocalSpace("hs")
-        a = KetSymbol("a", hs)
-        b = KetSymbol("b", hs)
+        a = KetSymbol("a", hs=hs)
+        b = KetSymbol("b", hs=hs)
         z = ZeroKet
         lhs = a - a
         assert lhs == z
@@ -65,25 +65,23 @@ class TestStateAddition(unittest.TestCase):
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = KetSymbol("a", h1)
-        b = KetSymbol("b", h2)
+        a = KetSymbol("a", hs=h1)
+        b = KetSymbol("b", hs=h2)
         with pytest.raises(UnequalSpaces):
             a.__add__(b)
 
 
     def testEquality(self):
         h1 = LocalSpace("h1")
-        assert CoherentStateKet(h1, 10.)+CoherentStateKet(h1, 20.) == CoherentStateKet(h1, 20.)+CoherentStateKet(h1, 10.)
-
-
-
+        assert (CoherentStateKet(10., hs=h1) + CoherentStateKet(20., hs=h1) ==
+                CoherentStateKet(20., hs=h1) + CoherentStateKet(10., hs=h1))
 
 
 class TestTensorKet(unittest.TestCase):
 
     def testIdentity(self):
         h1 = LocalSpace("h1")
-        a = KetSymbol("a", h1)
+        a = KetSymbol("a", hs=h1)
         id = TrivialKet
         assert a * id == a
         assert id * a == a
@@ -91,8 +89,8 @@ class TestTensorKet(unittest.TestCase):
     def testOrdering(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = KetSymbol("a", h1)
-        b = KetSymbol("b", h2)
+        a = KetSymbol("a", hs=h1)
+        b = KetSymbol("b", hs=h2)
         assert a * b == TensorKet(a,b)
         assert a * b == b * a
 
@@ -100,8 +98,8 @@ class TestTensorKet(unittest.TestCase):
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = KetSymbol("a", h1)
-        b = KetSymbol("b", h2)
+        a = KetSymbol("a", hs=h1)
+        b = KetSymbol("b", hs=h2)
         assert a.space == h1
         assert (a * b).space == h1*h2
 
@@ -110,15 +108,16 @@ class TestTensorKet(unittest.TestCase):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
 
-        assert CoherentStateKet(h1, 1)*CoherentStateKet(h2, 2) == CoherentStateKet(h2, 2) * CoherentStateKet(h1, 1)
+        assert (CoherentStateKet(1, hs=h1) * CoherentStateKet(2, hs=h2) ==
+                CoherentStateKet(2, hs=h2) * CoherentStateKet(1, hs=h1))
 
 
 class TestScalarTimesKet(unittest.TestCase):
     def testZeroOne(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = KetSymbol("a", h1)
-        b = KetSymbol("b", h2)
+        a = KetSymbol("a", hs=h1)
+        b = KetSymbol("b", hs=h2)
         z = ZeroKet
 
         assert a+a == 2*a
@@ -136,16 +135,17 @@ class TestScalarTimesKet(unittest.TestCase):
 
 
     def testScalarCombination(self):
-        a = KetSymbol("a", "h1")
+        a = KetSymbol("a", hs="h1")
         assert a+a == 2*a
         assert 3 * a + 4 * a == 7 * a
-        assert CoherentStateKet(1, "1") + CoherentStateKet(1, "1") == 2 * CoherentStateKet(1, "1")
+        assert (CoherentStateKet("1", hs=1) + CoherentStateKet("1", hs=1) ==
+                2 * CoherentStateKet("1", hs=1))
 
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = KetSymbol("a", h1)
-        b = KetSymbol("b", h2)
+        a = KetSymbol("a", hs=h1)
+        b = KetSymbol("b", hs=h2)
         assert (5*(a * b)).space == h1*h2
 
 
@@ -154,11 +154,11 @@ class TestOperatorTimesKet(unittest.TestCase):
     def testZeroOne(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = KetSymbol("a", h1)
-        b = KetSymbol("b", h2)
-        A = OperatorSymbol("A", h1)
-        Ap = OperatorSymbol("Ap", h1)
-        B = OperatorSymbol("B", h2)
+        a = KetSymbol("a", hs=h1)
+        b = KetSymbol("b", hs=h2)
+        A = OperatorSymbol("A", hs=h1)
+        Ap = OperatorSymbol("Ap", hs=h1)
+        B = OperatorSymbol("B", hs=h2)
 
         assert IdentityOperator*a == a
         assert A * (Ap * a) == (A * Ap) * a
@@ -167,66 +167,84 @@ class TestOperatorTimesKet(unittest.TestCase):
 
 
     def testScalarCombination(self):
-        a = KetSymbol("a", "h1")
+        a = KetSymbol("a", hs="h1")
         assert a+a == 2*a
         assert 3 * a + 4 * a == 7 * a
-        assert CoherentStateKet(1, "1") + CoherentStateKet(1, "1") == 2 * CoherentStateKet(1, "1")
+        assert (CoherentStateKet("1", hs=1) + CoherentStateKet("1", hs=1) ==
+                2 * CoherentStateKet("1", hs=1))
 
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
-        a = KetSymbol("a", h1)
-        b = KetSymbol("b", h2)
+        a = KetSymbol("a", hs=h1)
+        b = KetSymbol("b", hs=h2)
         assert (5*(a * b)).space == h1*h2
-
 
 
 class TestLocalOperatorKetRelations(unittest.TestCase):
 
     def testCreateDestroy(self):
-        assert Create(1) * BasisKet(1, 2) == sqrt(3) * BasisKet(1, 3)
-        assert Destroy(1) * BasisKet(1, 2) == sqrt(2) * BasisKet(1, 1)
-        assert Destroy(1) * BasisKet(1, 0) == ZeroKet
-        lhs = Destroy(1) * CoherentStateKet(1, 10.)
-        rhs = 10 * CoherentStateKet(1, 10.)
+        assert Create(hs=1) * BasisKet(2, hs=1) == sqrt(3) * BasisKet(3, hs=1)
+        assert Destroy(hs=1) * BasisKet(2, hs=1) == sqrt(2) * BasisKet(1, hs=1)
+        assert Destroy(hs=1) * BasisKet(0, hs=1) == ZeroKet
+        lhs = Destroy(hs=1) * CoherentStateKet(10., hs=1)
+        rhs = 10 * CoherentStateKet(10., hs=1)
         assert lhs == rhs
 
     def testSpin(self):
         j = 3
         h = LocalSpace("j", basis=range(-j,j+1))
 
-        assert Jplus(h) * BasisKet(h, 2) == sqrt(j*(j+1)-2*(2+1)) * BasisKet(h, 3)
-        assert Jminus(h) * BasisKet(h, 2) == sqrt(j*(j+1)-2*(2-1)) * BasisKet(h, 1)
-        assert Jz(h) * BasisKet(h, 2) == 2 * BasisKet(h, 2)
+        assert (Jplus(hs=h) * BasisKet(2, hs=h) ==
+                sqrt(j*(j+1)-2*(2+1)) * BasisKet(3, hs=h))
+        assert (Jminus(hs=h) * BasisKet(2, hs=h) ==
+                sqrt(j*(j+1)-2*(2-1)) * BasisKet(1, hs=h))
+        assert Jz(hs=h) * BasisKet(2, hs=h) == 2 * BasisKet(2, hs=h)
 
 
     def testPhase(self):
-        assert Phase(1, 5) * BasisKet(1, 3) == exp(I * 15) * BasisKet(1, 3)
-        lhs = Phase(1, pi) * CoherentStateKet(1, 3.)
-        rhs = CoherentStateKet(1, -3.)
+        assert (Phase(5, hs=1) * BasisKet(3, hs=1) ==
+                exp(I * 15) * BasisKet(3, hs=1))
+        lhs = Phase(pi, hs=1) * CoherentStateKet(3., hs=1)
+        rhs = CoherentStateKet(-3., hs=1)
         assert lhs.__class__ == rhs.__class__
         assert lhs.space == rhs.space
         assert abs(lhs.ampl - rhs.ampl) < 1e-14
 
     def testDisplace(self):
-        assert Displace(1, 5 + 6j) * CoherentStateKet(1, 3.) == exp(I * ((5+6j)*3).imag) * CoherentStateKet(1, 8 + 6j)
-        assert Displace(1, 5 + 6j) * BasisKet(1,0) == CoherentStateKet(1, 5+6j)
+        assert (Displace(5 + 6j, hs=1) * CoherentStateKet(3., hs=1) ==
+                exp(I * ((5+6j)*3).imag) * CoherentStateKet(8 + 6j, hs=1))
+        assert (Displace(5 + 6j, hs=1) * BasisKet(0, hs=1) ==
+                CoherentStateKet(5+6j, hs=1))
 
     def testLocalSigmaPi(self):
-        assert LocalSigma(1, 0, 1) * BasisKet(1, 1) == BasisKet(1, 0)
-        assert LocalSigma(1, 0, 0) * BasisKet(1, 1) == ZeroKet
+        assert (LocalSigma(0, 1, hs = 1) * BasisKet(1, hs=1) ==
+                BasisKet(0, hs=1))
+        assert (LocalSigma(0, 0, hs = 1) * BasisKet(1, hs=1) ==
+                ZeroKet)
 
     def testActLocally(self):
-        assert (Create(1) * Destroy(2)) * (BasisKet(1, 2) * BasisKet(2, 1)) == sqrt(3) * BasisKet(1, 3) * BasisKet(2,0)
+        assert ((Create(hs=1) * Destroy(hs=2)) *
+                (BasisKet(2, hs=1) * BasisKet(1, hs=2)) ==
+                sqrt(3) * BasisKet(3, hs=1) * BasisKet(0, hs=2))
 
 
     def testOperatorTensorProduct(self):
-        assert (Create(1)*Destroy(2))*(BasisKet(1,0)*BasisKet(2,1)) == BasisKet(1,1)*BasisKet(2,0)
+        assert ((Create(hs=1)*Destroy(hs=2)) *
+                (BasisKet(0, hs=1) * BasisKet(1, hs=2)) ==
+                BasisKet(1, hs=1) * BasisKet(0, hs=2))
 
     def testOperatorProduct(self):
-        assert (Create(1)*Destroy(1))*(BasisKet(1,1)*BasisKet(2,1)) == BasisKet(1,1)*BasisKet(2,1)
-        assert (Create(1)*Destroy(1)*Destroy(1))*(BasisKet(1,2)*BasisKet(2,1)) == sqrt(2)*BasisKet(1,1)*BasisKet(2,1)
-        assert (Create(1)*Destroy(1)*Destroy(1))*BasisKet(1,2) == sqrt(2)*BasisKet(1,1)
-        assert (Create(1)*Destroy(1))*BasisKet(1,1) == BasisKet(1,1)
-        assert (Create(1) * Destroy(1)) * BasisKet(1,0) == ZeroKet
+        assert ((Create(hs=1) * Destroy(hs=1)) *
+                (BasisKet(1, hs=1) * BasisKet(1, hs=2)) ==
+                BasisKet(1, hs=1) * BasisKet(1, hs=2))
+        assert ((Create(hs=1) * Destroy(hs=1) * Destroy(hs=1)) *
+                (BasisKet(2, hs=1)*BasisKet(1, hs=2)) ==
+                sqrt(2) * BasisKet(1, hs=1) * BasisKet(1, hs=2))
+        assert ((Create(hs=1) * Destroy(hs=1) * Destroy(hs=1)) *
+                BasisKet(2, hs=1) ==
+                sqrt(2) * BasisKet(1, hs=1))
+        assert ((Create(hs=1) * Destroy(hs=1)) * BasisKet(1, hs=1) ==
+                BasisKet(1, hs=1))
+        assert ((Create(hs=1) * Destroy(hs=1)) * BasisKet(0, hs=1) == ZeroKet)
 

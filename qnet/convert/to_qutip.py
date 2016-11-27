@@ -67,7 +67,7 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
                 assert callable(ret)
                 return ret(expr)
     if expr is IdentityOperator:
-        local_spaces = full_space.local_factors()
+        local_spaces = full_space.local_factors
         if len(local_spaces) == 0:
             raise ValueError("full_space %s does not have local factors"
                              % full_space)
@@ -77,7 +77,7 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
     elif expr is ZeroOperator:
         return qutip.tensor(
             *[qutip.Qobj(csr_matrix((s.get_dimension(), s.get_dimension())))
-              for s in full_space.local_factors()]
+              for s in full_space.local_factors]
         )
     elif isinstance(expr, LocalOperator):
         return _convert_local_operator_to_qutip(expr, full_space, mapping)
@@ -153,7 +153,7 @@ def _convert_local_operator_to_qutip(expr, full_space, mapping):
     """Convert a LocalOperator instance to qutip"""
     n = full_space.get_dimension()
     if full_space != expr.space:
-        all_spaces = full_space.local_factors()
+        all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
         return qutip.tensor(
             *([qutip.qeye(s.get_dimension())
@@ -205,7 +205,7 @@ def _convert_operator_operation_to_qutip(expr, full_space, mapping):
                 raise ValueError("Cannot represent as QuTiP object: {!s}"
                                  .format(expr))
             return convert_to_qutip(se, full_space, mapping=mapping)
-        all_spaces = full_space.local_factors()
+        all_spaces = full_space.local_factors
         by_space = []
         ck = 0
         for ls in all_spaces:
@@ -266,7 +266,7 @@ def _convert_operator_operation_to_qutip(expr, full_space, mapping):
 def _convert_state_operation_to_qutip(expr, full_space, mapping):
     n = full_space.get_dimension()
     if full_space != expr.space:
-        all_spaces = full_space.local_factors()
+        all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
         return qutip.tensor(
             *([qutip.qeye(s.get_dimension())
@@ -291,7 +291,7 @@ def _convert_state_operation_to_qutip(expr, full_space, mapping):
 def _convert_ket_to_qutip(expr, full_space, mapping):
     n = full_space.get_dimension()
     if full_space != expr.space:
-        all_spaces = full_space.local_factors()
+        all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
         return qutip.tensor(
             *([qutip.qeye(s.get_dimension())
@@ -329,7 +329,7 @@ def _convert_ket_to_qutip(expr, full_space, mapping):
 
 def _convert_superoperator_to_qutip(expr, full_space, mapping):
     if full_space != expr.space:
-        all_spaces = full_space.local_factors()
+        all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
         return qutip.tensor(
             *([qutip.qeye(s.get_dimension())
@@ -340,7 +340,7 @@ def _convert_superoperator_to_qutip(expr, full_space, mapping):
         )
     if isinstance(expr, IdentitySuperOperator):
         return qutip.spre(qutip.tensor(*[qutip.qeye(s.get_dimension())
-                                         for s in full_space.local_factors()]))
+                                         for s in full_space.local_factors]))
     elif isinstance(expr, SuperOperatorPlus):
         return sum((convert_to_qutip(op, full_space, mapping=mapping)
                     for op in expr.operands), 0)
