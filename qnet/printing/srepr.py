@@ -16,19 +16,21 @@
 # Copyright (C) 2016, Michael Goerz
 #
 ###########################################################################
-from .base import Printer
-from ..algebra.singleton import Singleton, singleton_object
+from typing import Any, Tuple
 
 from sympy import Basic as SympyBasic
 from sympy.printing import srepr as sympy_srepr
 from numpy import ndarray
+
+from .base import Printer
+from ..algebra.singleton import Singleton, singleton_object
 
 
 @singleton_object
 class SReprPrinter(Printer, metaclass=Singleton):
     """Printer for rendering an expression in such a way that the resulting
     string can be evaluated in an appropriate context to re-instantiate an
-    identical object
+    identical object (implementing (``srepr(expr, indented=False)``)
     """
 
     @classmethod
@@ -52,8 +54,97 @@ class SReprPrinter(Printer, metaclass=Singleton):
             return repr(expr)
 
 
-def srepr(expr):
-    """Render the given expression into a string that can be evaluated in an
-    appropriate context to re-instantiate an identical expression
+class IndentedSReprPrinter(Printer):
+    """Printer for rendering an expression in such a way that the resulting
+    string can be evaluated in an appropriate context to re-instantiate an
+    identical object, using nested indentation (implementing
+    ``srepr(expr, indented=True)``
     """
-    return SReprPrinter.render(expr)
+
+    def __init__(self, indent=0):
+        self.indent = int(indent)
+        self._key_name = None
+
+    def render(self, expr, adjoint=False):
+        """Render the given expression. Not that `adjoint` must be False"""
+        assert not adjoint, "adjoint not supported for SReprPrinter"
+        if isinstance(expr, SympyBasic):
+            return "    " * self.indent + sympy_srepr(expr)
+        elif isinstance(expr, ndarray):
+            if len(expr.shape) == 2:
+                lines = ["    " * self.indent + "array([", ]
+                self.indent += 1
+                for row in expr:
+                    lines.append("    " * self.indent + '[')
+                    self.indent += 1
+                    for val in row:
+                        lines.append(self.render(val) + ",")
+                    self.indent -= 1
+                    lines.append("    " * self.indent + '],')
+                self.indent -= 1
+                lines.append("    " * self.indent +
+                             "], dtype=%s)" % str(expr.dtype))
+                return "\n".join(lines)
+        try:
+            return self.render_head_repr(expr)
+        except AttributeError:
+            if self._key_name is not None:
+                return "    " * self.indent + self._key_name + "=" + repr(expr)
+            else:
+                return "    " * self.indent + repr(expr)
+
+    def render_head_repr(self, expr: Any, sub_render=None) -> str:
+        """Render a multiline textual representation of `expr`
+
+        Raises:
+            AttributeError: if `expr` is not an instance of
+                :class:`Expression`, or more specifically, if `expr` does not
+                have `args` and `kwargs` properties
+        """
+        lines = []
+        if sub_render is None:
+            sub_render = self.render
+        if isinstance(expr.__class__, Singleton):
+            # We exploit that Singletons override __expr__ to directly return
+            # their name
+            return "    " * self.indent + repr(expr)
+        args = expr.args
+        keys = sorted(expr.kwargs.keys())
+        if self._key_name is not None:
+            lines.append("    " * self.indent + self._key_name + '=' +
+                         expr.__class__.__name__ + "(")
+        else:
+            lines.append("    " * self.indent + expr.__class__.__name__ + "(")
+        self._key_name = None
+        self.indent += 1
+        for arg in args:
+            lines.append(self.render(arg) + ",")
+        for key in keys:
+            arg = expr.kwargs[key]
+            self._key_name = key
+            lines.append(self.render(arg) + ",")
+            self._key_name = None
+        self.indent -= 1
+        lines.append("    " * self.indent + ")")
+        return "\n".join(lines)
+
+
+def srepr(expr, indented=False):
+    """Render the given expression into a string that can be evaluated in an
+    appropriate context to re-instantiate an identical expression. If
+    `indented` is False (default), the resulting string is a single line.
+    Otherwise, the result is a multiline string, and each positional and
+    keyword argument of each `Expression` is on a separate line, recursively
+    indented to produce a tree-like output.
+
+    See also:
+        `qnet.printing.tree_str` produces an output similar to `srepr` with
+        ``indented=True``. Unlike `srepr`, however, `tree_str` uses line
+        drawings for the tree, shows arguments directly on the same line as the
+        expression they belong to, and cannot be evaluated.
+    """
+    if indented:
+        printer = IndentedSReprPrinter(indent=0)
+        return printer.render(expr)
+    else:
+        return SReprPrinter.render(expr)

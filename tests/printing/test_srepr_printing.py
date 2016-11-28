@@ -17,6 +17,8 @@
 #
 ###########################################################################
 
+from textwrap import dedent
+
 import pytest
 
 from sympy import symbols, sqrt, exp, I, Pow, Mul, Integer, Symbol, Rational
@@ -74,7 +76,52 @@ def test_foreign_srepr():
     expected = "Matrix(array([[ScalarTimesOperator(exp(Mul(Integer(-1), Rational(1, 2), I, Symbol('gamma'))), OperatorSymbol('A', hs=LocalSpace('1', basis=None, dimension=None))), OperatorSymbol('B', hs=LocalSpace('1', basis=None, dimension=None))], [OperatorSymbol('C', hs=LocalSpace('1', basis=None, dimension=None)), ScalarTimesOperator(exp(Mul(Rational(1, 2), I, conjugate(Symbol('gamma')))), OperatorSymbol('D', hs=LocalSpace('1', basis=None, dimension=None)))]], dtype=object))"
     assert res == expected
     expected = "ScalarTimesKet(Mul(Rational(1, 2), Pow(Integer(2), Rational(1, 2))), KetPlus(TensorKet(BasisKet('e', hs=LocalSpace('q_1', basis=('g', 'e'), dimension=2)), BasisKet('g', hs=LocalSpace('q_2', basis=('g', 'e'), dimension=2))), ScalarTimesKet(Mul(Integer(-1), I), TensorKet(BasisKet('g', hs=LocalSpace('q_1', basis=('g', 'e'), dimension=2)), BasisKet('e', hs=LocalSpace('q_2', basis=('g', 'e'), dimension=2))))))"
-    assert (srepr(bell1) == expected)
+    assert srepr(bell1) == expected
+    assert srepr(bell1, indented=True) == dedent(r'''
+    ScalarTimesKet(
+        Mul(Rational(1, 2), Pow(Integer(2), Rational(1, 2))),
+        KetPlus(
+            TensorKet(
+                BasisKet(
+                    'e',
+                    hs=LocalSpace(
+                        'q_1',
+                        basis=('g', 'e'),
+                        dimension=2,
+                    ),
+                ),
+                BasisKet(
+                    'g',
+                    hs=LocalSpace(
+                        'q_2',
+                        basis=('g', 'e'),
+                        dimension=2,
+                    ),
+                ),
+            ),
+            ScalarTimesKet(
+                Mul(Integer(-1), I),
+                TensorKet(
+                    BasisKet(
+                        'g',
+                        hs=LocalSpace(
+                            'q_1',
+                            basis=('g', 'e'),
+                            dimension=2,
+                        ),
+                    ),
+                    BasisKet(
+                        'e',
+                        hs=LocalSpace(
+                            'q_2',
+                            basis=('g', 'e'),
+                            dimension=2,
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )''').strip()
 
 
 def circuit_exprs():
@@ -283,4 +330,6 @@ def sop_exprs():
      state_exprs() + sop_exprs()))
 def test_self_eval(expr):
     s = srepr(expr)
+    assert eval(s) == expr
+    s = srepr(expr, indented=True)
     assert eval(s) == expr

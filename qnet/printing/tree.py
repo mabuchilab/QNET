@@ -113,5 +113,13 @@ def tree(expr, attr='operands', padding='', to_str=HeadStrPrinter.render,
 
 
 def tree_str(expr, **kwargs):
-    """Give the output of `tree` as a multiline string"""
+    """Give the output of `tree` as a multiline string, using line drawings to
+    visualize the hierarchy of expressions (similar to the ``tree`` unix
+    command line program for showing directory trees)
+
+    See also:
+        `qnet.printing.srepr` with ``indented=True` produces a similar
+        tree-like rendering of the given expression that can be re-evaluated to
+        the original expression.
+    """
     return "\n".join(tree(expr, _print=False, **kwargs))
