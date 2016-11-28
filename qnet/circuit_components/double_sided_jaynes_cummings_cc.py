@@ -108,11 +108,11 @@ class CavityPort(SubComponent):
 
         if self.sub_index == 0:
 
-            sigma_p = LocalSigma(self.tls_space, 'h','g')
+            sigma_p = LocalSigma('h','g', hs=self.tls_space)
             sigma_m = sigma_p.adjoint()
 
 
-            a = Destroy(self.fock_space)
+            a = Destroy(hs=self.fock_space)
             a_d = a.adjoint()
 
             #coupling to external mode
@@ -121,7 +121,7 @@ class CavityPort(SubComponent):
             H = self.Delta_f * a_d * a + self.Delta_a * sigma_p * sigma_m + I * self.g * (sigma_p * a - sigma_m * a_d)
 
         elif self.sub_index == 1:
-            a = Destroy(self.fock_space)
+            a = Destroy(hs=self.fock_space)
             L = sqrt(self.kappa_2) * a
             H = ZeroOperator
 
@@ -140,7 +140,7 @@ class DecayChannel(SubComponent):
 
     def _toSLH(self):
 
-        sigma_p = LocalSigma(self.tls_space, 'h','g')
+        sigma_p = LocalSigma('h','g', hs=self.tls_space)
         sigma_m = sigma_p.adjoint()
 
         # vacuum coupling / spontaneous decay

@@ -29,8 +29,8 @@ def test_driven_tls(datadir):
     t, T, E0 = symbols('t, T, E_0', real=True)
     a = 0.16
     blackman = 0.5 * (1 - a - cos(2*pi * t/T) + a*cos(4*pi*t/T))
-    H0 =  Destroy(hs).dag() * Destroy(hs)
-    H1 = LocalSigma(hs, 'g', 'e') + LocalSigma(hs, 'e', 'g')
+    H0 =  Destroy(hs=hs).dag() * Destroy(hs=hs)
+    H1 = LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs)
     H = w*H0 + 0.5 * E0 * blackman * H1
     circuit = SLH(identity_matrix(0), [], H)
     num_vals = {w: 1.0, T:10.0, E0:1.0*2*np.pi}
@@ -55,8 +55,8 @@ def test_driven_tls(datadir):
 
     # Test QSD conversion
     codegen = QSDCodeGen(circuit, num_vals=num_vals, time_symbol=t)
-    codegen.add_observable(LocalSigma(hs, 'e', 'e'), name='P_e')
-    psi0 = BasisKet(hs, 'e')
+    codegen.add_observable(LocalSigma('e', 'e', hs=hs), name='P_e')
+    psi0 = BasisKet('e', hs=hs)
     codegen.set_trajectories(psi_initial=psi0,
             stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=5, n_plot_steps=200, n_trajectories=1)

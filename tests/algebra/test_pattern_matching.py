@@ -126,17 +126,18 @@ def test_pattern():
     instance"""
     true_cond = lambda expr: True
     patterns = [
-        (pattern(OperatorSymbol, 'O', FullSpace),
-         Pattern(head=OperatorSymbol, args=['O', FullSpace], kwargs=None)
+        (pattern(OperatorSymbol, 'O', hs=FullSpace),
+         Pattern(head=OperatorSymbol, args=['O', ], kwargs={'hs': FullSpace})
          ),
-        (pattern(OperatorSymbol, 'O', FullSpace, a=1, b=2),
-         Pattern(head=OperatorSymbol, args=['O', FullSpace],
-                 kwargs={'a': 1, 'b': 2})
+        (pattern(OperatorSymbol, 'O', a=1, b=2, hs=FullSpace),
+         Pattern(head=OperatorSymbol, args=['O', ],
+                 kwargs={'a': 1, 'b': 2, 'hs': FullSpace})
          ),
-        (pattern(OperatorSymbol, 'O', FullSpace, a=1, b=2,
+        (pattern(OperatorSymbol, 'O', a=1, b=2, hs=FullSpace,
                  conditions=[true_cond, ]),
-         Pattern(head=OperatorSymbol, args=['O', FullSpace],
-                 kwargs={'a': 1, 'b': 2}, conditions=[true_cond, ])
+         Pattern(head=OperatorSymbol, args=['O', ],
+                 kwargs={'a': 1, 'b': 2, 'hs': FullSpace},
+                 conditions=[true_cond, ])
          ),
     ]
     for pat1, pat2 in patterns:
@@ -217,16 +218,17 @@ wc_name_str = wc('name', head=str)
 wc_hs = wc('space', head=HilbertSpace)
 pattern_two_O = pattern(ScalarTimesOperator,
                         wc_a_int_2,
-                        pattern(OperatorSymbol, wc_name_str, wc_hs))
+                        pattern(OperatorSymbol, wc_name_str, hs=wc_hs))
 pattern_two_O_head = pattern_head(wc_a_int_2,
-                                  pattern(OperatorSymbol, wc_name_str, wc_hs))
+                                  pattern(OperatorSymbol, wc_name_str,
+                                          hs=wc_hs))
 pattern_two_O_expr = pattern(ScalarTimesOperator,
                              wc_a_int_2, OperatorSymbol('O', hs=FullSpace))
 pattern_kwargs = pattern_head(wc('i1', head=int), wc('i2', head=int),
                               a=wc('a', head=str), b=wc('b', head=int))
 pattern_kw_only = pattern_head(a=pattern(int), b=pattern(int))
 
-conditions = [lambda c: c.cdim == 3, lambda c: c.identifier[0] == 'C']
+conditions = [lambda c: c.cdim == 3, lambda c: c.name[0] == 'C']
 A__Circuit = wc("A__", head=CircuitSymbol, conditions=conditions)
 C__Circuit = wc("C__", head=CircuitSymbol, conditions=conditions)
 B_CPermutation = wc("B", head=CPermutation)

@@ -35,7 +35,7 @@ class TestCircuitParsing(unittest.TestCase):
     def testSymbol(self):
         self.assertEqual(parse_circuit_strings('a(2)'), CircuitSymbol('a', 2))
         self.assertEqual(parse_circuit_strings('a(5)'), CircuitSymbol('a', 5))
-        self.assertEqual(parse_circuit_strings('a_longer_string(5)'), CircuitSymbol('a_longer_string', 5))
+        self.assertEqual(parse_circuit_strings('longerstring(5)'), CircuitSymbol('longerstring', 5))
 
     def testCPermutation(self):
         self.assertEqual(parse_circuit_strings('P_sigma(0,2,1)'), CPermutation((0,2,1)))
@@ -122,14 +122,15 @@ class TestVisualizationPNG(unittest.TestCase):
         self.assertCanBeDrawn(Feedback(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))),2,0))
 
     def testDrawSLH(self):
-        self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(1)]]), Create(1)*Destroy(1)))
+        self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1)*Destroy(hs=1)))
 
     def testDrawComponent(self):
         from qnet.circuit_components import kerr_cavity_cc as kerr
         K = kerr.KerrCavity('Kerr')
         self.assertCanBeDrawn(K)
         self.assertCanBeDrawn(K.creduce())
-        self.assertCanBeDrawn(K.toSLH())
+        slh = K.toSLH()
+        self.assertCanBeDrawn(slh)
 
 
 class TestVisualizationEPS(unittest.TestCase):
@@ -194,7 +195,7 @@ class TestVisualizationEPS(unittest.TestCase):
                 2, 0))
 
     def testDrawSLH(self):
-        self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(1)]]), Create(1) * Destroy(1)))
+        self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1) * Destroy(hs=1)))
 
     def testDrawComponent(self):
         from qnet.circuit_components import kerr_cavity_cc as kerr
@@ -267,7 +268,7 @@ class TestVisualizationPDF(unittest.TestCase):
                 2, 0))
 
     def testDrawSLH(self):
-        self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(1)]]), Create(1) * Destroy(1)))
+        self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1) * Destroy(hs=1)))
 
     def testDrawComponent(self):
         from qnet.circuit_components import kerr_cavity_cc as kerr

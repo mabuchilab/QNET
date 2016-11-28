@@ -28,17 +28,13 @@ See :ref:`abstract_algebra` for more details.
 
 """
 from abc import ABCMeta, abstractproperty
+from collections import OrderedDict
 from functools import reduce
-
-from sympy import (Basic as SympyBasic, Matrix as SympyMatrix)
-from sympy.printing import latex as sympy_latex
-from numpy import int64, complex128, float64
 
 from .pattern_matching import (
         ProtoExpr, match_pattern, wc, pattern_head, pattern)
-
-
-SCALAR_TYPES = (int, float, complex, SympyBasic, int64, complex128, float64)
+from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter, SReprPrinter
+from ..printing import SCALAR_TYPES, srepr
 
 
 def _trace(fn):
@@ -128,10 +124,21 @@ class Expression(metaclass=ABCMeta):
 
     will return and object identical to `expr`.
     """
-
-    # Note: all subclasses of Exresssion that override __init__ or create
+    # Note: all subclasses of Exression that override `__init__` or `create`
     # *must* call the corresponding superclass method *at the end*. Otherwise,
     # caching will not work correctly
+
+    # Printer instances handling __str__, __repr__, etc.
+    _str_printer = UnicodePrinter      # for __str__()
+    _repr_printer = UnicodePrinter     # for __repr__()
+    _tex_printer = LaTeXPrinter        # for _tex_()
+    _ascii_printer = AsciiPrinter      # for _ascii_()
+    _unicode_printer = UnicodePrinter  # for _unicode_()
+
+    # should _ascii_, _unicode_, _tex_ be returned from cache?
+    _cached_rendering = True
+    # should we fore re-rendering of the cached representation?
+    _force_cache = False
 
     _rules = []
     _simplifications = []
@@ -145,11 +152,12 @@ class Expression(metaclass=ABCMeta):
     # At this point, match_replace_binary does not yet guarantee this
 
     def __init__(self, *args, **kwargs):
-        # hash, tex, and repr str, generated on demand (lazily)
+        # hash, tex, and repr str, generated on demand (lazily) -- see also
+        # _cached_rendering class attribute
         self._hash = None
         self._tex = None
-        self._repr = None
-        self._str = None
+        self._ascii = None
+        self._unicode = None
 
     @classmethod
     def create(cls, *args, **kwargs):
@@ -195,7 +203,7 @@ class Expression(metaclass=ABCMeta):
 
     @classmethod
     def _instance_key(cls, args, kwargs):
-        """Function that calculates a unique "key" (a nested tuple) for the
+        """Function that calculates a unique "key" (as a tuple) for the
         given args and kwargs. It is the basis of the hash of an Expression,
         and is used for the internal caching of instances.
 
@@ -203,7 +211,7 @@ class Expression(metaclass=ABCMeta):
         gives the same result are identical by definition (although `expr1 is
         expr2` is not guaranteed to hold)
         """
-        return (cls, tuple(args), tuple(sorted(kwargs.items())))
+        return (cls, ) + tuple(args) + tuple(sorted(kwargs.items()))
 
     @abstractproperty
     def args(self):
@@ -213,8 +221,10 @@ class Expression(metaclass=ABCMeta):
 
     @property
     def kwargs(self):
-        """The dictionary of keyword arguments for the instantiation of the
-        Expression"""
+        """The dictionary of keyword-only arguments for the instantiation of
+        the Expression"""
+        # Subclasses must override this property if and only if they define
+        # keyword-only arguments in their __init__ method
         if hasattr(self, '_has_kwargs') and self._has_kwargs:
             raise NotImplementedError(
                 "Class %s does not provide a kwargs property"
@@ -229,21 +239,11 @@ class Expression(metaclass=ABCMeta):
             self._hash = hash(self._instance_key(self.args, self.kwargs))
         return self._hash
 
-    @cache_attr('_repr')
     def __repr__(self):
-        args = self.args
-        keys = sorted(self.kwargs.keys())
-        kwargs_sep = ''
-        if len(self.kwargs) > 0:
-            kwargs_sep = ', '
-        return (str(self.__class__.__name__) + "(" +
-                ", ".join([repr(arg) for arg in args]) + kwargs_sep +
-                ", ".join(["%s=%s" % (key, repr(self.kwargs[key]))
-                           for key in keys]) + ")")
+        return self._repr_printer.render(self)
 
-    @cache_attr('_str')
     def __str__(self):
-        return repr(self)
+        return self._str_printer.render(self)
 
     def substitute(self, var_map):
         """Substitute all_symbols for other expressions.
@@ -262,28 +262,41 @@ class Expression(metaclass=ABCMeta):
                       for (key, val) in self.kwargs.items()}
         return self.__class__.create(*new_args, **new_kwargs)
 
-    @cache_attr('_tex')
-    def tex(self):
-        """Return a string containing a TeX-representation of self.
-        Note that this needs to be wrapped by '$' characters for 'inline' LaTeX
-        use.
-        """
-        if self._tex is None:
-            args = self.args
-            keys = sorted(self.kwargs.keys())
-            self._repr = (r'{\rm %s}' % str(self.__class__.__name__) +
-                          r'\left(' +
-                          ", ".join([tex(arg) for arg in args]) +
-                          ", ".join(["%s=%s" % (key, tex(self.kwargs[key]))
-                                     for key in keys]) +
-                          r'\right)')
-        return self._tex
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        if adjoint:
+            raise NotImplementedError("_render is defined for adjoint=True")
+            # Any _render that falls back to head_repr should never be called
+            # in a context that would require the adjoint
+        return printer.render_head_repr(self)
+
+    def _cached_render(self, fmt, adjoint=False):
+        if adjoint:
+            return self._render(fmt, adjoint=True)
+        if self._cached_rendering:
+            attr = '_' + fmt
+            if self._force_cache:
+                setattr(self, attr, None)
+            if getattr(self, attr) is None:
+                setattr(self, attr, self._render(fmt))
+            return getattr(self, attr)
+        else:
+            return self._render(fmt)
+
+    def _tex_(self, adjoint=False):
+        return self._cached_render('tex', adjoint=adjoint)
+
+    def _ascii_(self, adjoint=False):
+        return self._cached_render('ascii', adjoint=adjoint)
+
+    def _unicode_(self, adjoint=False):
+        return self._cached_render('unicode', adjoint=adjoint)
 
     def _repr_latex_(self):
         """For compatibility with the IPython notebook, generate TeX expression
         and surround it with $'s.
         """
-        return "${}$".format(self.tex())
+        return "$" + self._tex_() + "$"
 
     def all_symbols(self):
         """Set of all_symbols contained within the expression."""
@@ -309,8 +322,17 @@ class Expression(metaclass=ABCMeta):
             return str(obj)
 
     def _order_key(self):
-        return (KeyTuple((self.__class__.__name__,) +
-                tuple(map(Expression.order_key, self.args))))
+        if isinstance(self.kwargs, OrderedDict):
+            key_vals = self.kwargs.values()
+        else:
+            key_vals = [self.kwargs[key] for key in sorted(self.kwargs)]
+        # It just happens that the keyword arguments (which include the Hilbert
+        # space for Operator, Kets, and SuperOperators) are usually more
+        # relevant to the orderding than the positional arguments, hence the
+        # expression below
+        return KeyTuple((self.__class__.__name__, ) +
+                        tuple(map(Expression.order_key, key_vals)) +
+                        tuple(map(Expression.order_key, self.args)))
 
     def __getstate__(self):
         """state to be pickled"""
@@ -375,40 +397,6 @@ def substitute(expr, var_map):
         return expr
 
 
-def tex(obj):
-    """Return a LaTeX string representation of the given `obj`"""
-    if isinstance(obj, (int, float, complex)):
-        return format_number_for_tex(obj)
-    if isinstance(obj, (SympyBasic, SympyMatrix)):
-        return sympy_latex(obj).strip('$')
-    try:
-        return obj.tex()
-    except AttributeError:
-        return r"{\rm " + str(obj) + "}"
-
-
-def format_number_for_tex(num):
-    """Format a floating or complex number of tex"""
-    if num == 0:  #also True for 0., 0j
-        return "0"
-    if isinstance(num, complex):
-        if num.real == 0:
-            if num.imag == 1:
-                return "i"
-            if num.imag == -1:
-                return "(-i)"
-            if num.imag < 0:
-                return "(-%si)" % format_number_for_tex(-num.imag)
-            return "%si" % format_number_for_tex(num.imag)
-        if num.imag == 0:
-            return format_number_for_tex(num.real)
-        return "(%s + %si)" % (format_number_for_tex(num.real),
-                            format_number_for_tex(num.imag))
-    if num < 0:
-        return "(%g)" % num
-    return "%g" % num
-
-
 class KeyTuple(tuple):
     """A tuple that allows for ordering, facilitating the default ordering of
     Operations"""
@@ -466,7 +454,6 @@ class Operation(Expression, metaclass=ABCMeta):
     def args(self):
         """Alias for operands"""
         return self._operands
-
 
 
 ###############################################################################
@@ -563,11 +550,11 @@ def match_replace(cls, ops, kwargs):
 
     Check rule application::
 
-        >>> Invert.create("hallo")              # matches no rule
+        >>> print(srepr(Invert.create("hallo")))  # matches no rule
         Invert('hallo')
-        >>> Invert.create(Invert("hallo"))      # matches first rule
+        >>> Invert.create(Invert("hallo"))        # matches first rule
         'hallo'
-        >>> Invert.create(.2)                   # matches second rule
+        >>> Invert.create(.2)                     # matches second rule
         5.0
 
     A pattern can also have the same wildcard appear twice::

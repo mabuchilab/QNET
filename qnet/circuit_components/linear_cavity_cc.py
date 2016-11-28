@@ -89,7 +89,7 @@ class CavityPort(SubComponent):
 
     def _toSLH(self):
 
-        a = Destroy(self.space)
+        a = Destroy(hs=self.space)
         a_d = a.adjoint()
         S = identity_matrix(1)
 

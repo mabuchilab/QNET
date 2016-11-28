@@ -257,7 +257,7 @@ def test_feedback():
 
 
 def test_ABCD():
-    a = Destroy(1)
+    a = Destroy(hs=1)
     H = 2 * a.dag() * a
     slh1 = SLH(identity_matrix(1), [a], H)
     slh = slh1.coherent_input(3)

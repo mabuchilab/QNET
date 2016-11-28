@@ -30,8 +30,6 @@ from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import SLH
 from qnet.algebra.matrix_algebra import Matrix
 from qnet.algebra.operator_algebra import Create, Destroy, ZeroOperator
-from qnet.algebra.abstract_algebra import tex
-
 
 class Delay(Component):
     r"""Delay"""
@@ -43,7 +41,6 @@ class Delay(Component):
     FOCK_DIM = 25
 
     _parameters = ['alpha', 'N', 'FOCK_DIM']
-
 
     PORTSIN = ["In1"]
     PORTSOUT = ["Out1"]
@@ -73,11 +70,14 @@ class Delay(Component):
         hm =  [self.name+".C{:d}m".format(n+1) for n in range((self.N-1)//2)]
 
         S = Matrix([1.])
-        slh0 = SLH(S, Matrix([[sqrt(kappa0) * Destroy(h0)]]), ZeroOperator)
-        slhp = [SLH(S, Matrix([[sqrt(kj) * Destroy(hj)]]), Dj * Create(hj) * Destroy(hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hp)]
-        slhm = [SLH(S, Matrix([[sqrt(kj) * Destroy(hj)]]), -Dj * Create(hj) * Destroy(hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hm)]
+        slh0 = SLH(S, Matrix([[sqrt(kappa0) * Destroy(hs=h0)]]), ZeroOperator)
+        slhp = [SLH(S, Matrix([[sqrt(kj) * Destroy(hs=hj)]]), Dj * Create(hs=hj) * Destroy(hs=hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hp)]
+        slhm = [SLH(S, Matrix([[sqrt(kj) * Destroy(hs=hj)]]), -Dj * Create(hs=hj) * Destroy(hs=hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hm)]
 
         return freduce(lambda a, b: a << b, slhp + slhm, slh0).toSLH()
 
-    def tex(self):
-        return r"{%s(%s)}" % (tex(self.name), tex(self.tau))
+    def _render(self, fmt, adjoint=False):
+        assert not adjoint, "adjoint not defined"
+        printer = getattr(self, "_"+fmt+"_printer")
+        return (printer.render_string(self.name) + printer.par_left +
+                printer.render(self.tau) + printer.par_right)

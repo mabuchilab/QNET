@@ -25,7 +25,7 @@ from numpy import (
 from sympy import Basic as SympyBasic, I, sympify
 
 from .abstract_algebra import (
-        Expression, Operation, SCALAR_TYPES, cache_attr, tex, substitute)
+        Expression, Operation, SCALAR_TYPES, cache_attr, substitute)
 from .operator_algebra import Operator, scalar_free_symbols, simplify_scalar
 from .hilbert_space_algebra import TrivialSpace, ProductSpace
 from .permutations import check_permutation
@@ -185,13 +185,27 @@ class Matrix(Expression):
 
     dag = adjoint
 
-    @cache_attr('_repr')
-    def __repr__(self):
-        return "{}({!r})".format(self.__class__.__name__, self.matrix.tolist())
-
-    @cache_attr('_str')
-    def __str__(self):
-        return "{}({!s})".format(self.__class__.__name__, self.matrix)
+    def _render(self, fmt, adjoint=False):
+        assert not adjoint, "adjoint not defined"
+        printer = getattr(self, "_"+fmt+"_printer")
+        row_strs = []
+        if len(self.matrix) == 0:
+            row_strs.append(
+                    printer.matrix_row_left_sym +
+                    printer.matrix_row_right_sym)
+            row_strs.append(
+                    printer.matrix_row_left_sym +
+                    printer.matrix_row_right_sym)
+        else:
+            for row in self.matrix:
+                row_strs.append(
+                        printer.matrix_row_left_sym +
+                        printer.matrix_col_sep_sym.join(
+                            [printer.render(entry) for entry in row]) +
+                        printer.matrix_row_right_sym)
+        return (printer.matrix_left_sym +
+                printer.matrix_row_sep_sym.join(row_strs) +
+                printer.matrix_right_sym)
 
     def trace(self):
         if self.shape[0] == self.shape[1]:
@@ -271,15 +285,6 @@ class Matrix(Expression):
                 ret = ret | scalar_free_symbols(o)
         return ret
 
-    @cache_attr('_tex')
-    def tex(self):
-        ret = r"\begin{pmatrix} "
-        #        for row in self.matrix:
-        ret += r""" \\ """.join([" & ".join([tex(o) for o in row])
-                                 for row in self.matrix])
-        ret += r"\end{pmatrix}"
-
-        return ret
 
     @property
     def space(self):
@@ -388,11 +393,6 @@ def permutation_matrix(permutation):
     for i, j in enumerate(permutation):
         op_matrix[j, i] = 1
     return Matrix(op_matrix)
-
-# :deprecated:
-# for backwards compatibility
-OperatorMatrixInstance = Matrix
-IdentityMatrix = identity_matrix
 
 
 def Im(op):

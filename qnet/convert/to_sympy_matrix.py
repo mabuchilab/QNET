@@ -56,7 +56,7 @@ def convert_to_sympy_matrix(expr, full_space=None):
     elif isinstance(expr, LocalOperator):
         n = full_space.get_dimension()
         if full_space != expr.space:
-            all_spaces = full_space.local_factors()
+            all_spaces = full_space.local_factors
             own_space_index = all_spaces.index(expr.space)
             factors = [sympy.eye(s.get_dimension())
                        for s in all_spaces[:own_space_index]]
@@ -107,7 +107,7 @@ def convert_to_sympy_matrix(expr, full_space=None):
                     raise ValueError("Cannot represent as sympy matrix: %s"
                                      % expr)
                 return convert_to_sympy_matrix(se, full_space)
-            all_spaces = full_space.local_factors()
+            all_spaces = full_space.local_factors
             by_space = []
             ck = 0
             for ls in all_spaces:

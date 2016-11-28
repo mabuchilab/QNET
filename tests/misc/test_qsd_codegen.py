@@ -47,7 +47,7 @@ def test_local_ops():
     psa = PseudoNAND('pNAND')
     assert isinstance(psa, Circuit)
     l_ops = local_ops(psa)
-    a = Destroy(psa.space)
+    a = Destroy(hs=psa.space)
     assert type(local_ops(a)) is set
     assert set([IdentityOperator, a, a.dag()]) == l_ops
     assert local_ops(a) == set([a])
@@ -59,11 +59,10 @@ def test_local_ops():
 
 
 def test_find_kets():
-    #                  hs n
-    psi_A_0 = BasisKet(0, 0)
-    psi_A_1 = BasisKet(0, 1)
-    psi_B_0 = BasisKet(1, 0)
-    psi_B_1 = BasisKet(1, 1)
+    psi_A_0 = BasisKet(0, hs=0)
+    psi_A_1 = BasisKet(1, hs=0)
+    psi_B_0 = BasisKet(0, hs=1)
+    psi_B_1 = BasisKet(1, hs=1)
     local_psi = [psi_A_0, psi_A_1, psi_B_0, psi_B_1]
 
     psi_00 = psi_A_0 * psi_B_0
@@ -71,7 +70,7 @@ def test_find_kets():
     psi_10 = psi_A_1 * psi_B_0
     psi_11 = psi_A_1 * psi_B_1
     tensor_psi = [psi_00, psi_01, psi_10, psi_11]
-    a1 = Destroy(psi_A_1.space)
+    a1 = Destroy(hs=psi_A_1.space)
 
     assert set((psi_A_0, )) == find_kets(psi_A_0, LocalKet)
 
@@ -89,7 +88,7 @@ def test_find_kets():
 
 def test_operator_hilbert_space_check():
     circuit = SLH(identity_matrix(0), [], 1)
-    s = LocalSigma("sys", 'g', 'e')
+    s = LocalSigma('g', 'e', hs="sys")
     codegen = QSDCodeGen(circuit)
     with pytest.raises(ValueError) as exc_info:
         codegen._update_qsd_ops([s, ])
@@ -100,9 +99,9 @@ def test_labeled_basis_op():
     """Check that in QSD code generation labeled basis states are translated
     into numbered basis states"""
     hs = LocalSpace('tls', basis=('g', 'e'))
-    a = Destroy(hs)
+    a = Destroy(hs=hs)
     ad = a.dag()
-    s = LocalSigma(hs, 'g', 'e')
+    s = LocalSigma('g', 'e', hs=hs)
     circuit = SLH(identity_matrix(0), [], a*ad)
     codegen = QSDCodeGen(circuit)
     codegen._update_qsd_ops([s, ])
@@ -110,9 +109,9 @@ def test_labeled_basis_op():
 
 
 def test_qsd_codegen_operator_basis():
-    a = Destroy(hs1)
+    a = Destroy(hs=hs1)
     ad = a.dag()
-    s = LocalSigma(hs2, 1, 0)
+    s = LocalSigma(1, 0, hs=hs2)
     sd = s.dag()
     circuit = SLH(identity_matrix(0), [], a*ad + s + sd)
     codegen = QSDCodeGen(circuit)
@@ -142,7 +141,7 @@ def test_qsd_codegen_parameters():
     x = symbols(r'chi', real=True)
     c = symbols("c")
 
-    a = Destroy(hs1)
+    a = Destroy(hs=hs1)
     H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
     L = sqrt(k) * a
     slh = SLH(identity_matrix(1), [L], H)
@@ -177,7 +176,7 @@ def test_latex_symbols(slh_Sec6):
     x = symbols(r'\chi^{(1)}_{\text{main}}', real=True)
     c = symbols("c")
 
-    a = Destroy(hs1)
+    a = Destroy(hs=hs1)
     H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
     L = sqrt(k) * a
     slh = SLH(identity_matrix(1), [L], H)
@@ -196,7 +195,7 @@ def test_qsd_codegen_hamiltonian():
     x = symbols(r'\chi', real=True)
     c = symbols("c",real=True)
 
-    a = Destroy(hs1)
+    a = Destroy(hs=hs1)
     H = x * (a * a + a.dag() * a.dag()) + (c * a.dag() + c.conjugate() * a)
     L = sqrt(k) * a
     slh = SLH(identity_matrix(1), [L], H)
@@ -244,15 +243,6 @@ def test_QSDOperator():
     s = set([Ad0, ])
     assert Ad0_2 in s
 
-    # Changing an attribute is a change in __key()
-    Ad0.name = 'Adagger0'
-    assert Ad0 != Ad0_2
-    with pytest.raises(KeyError):
-        v = d[Ad0]
-    assert Ad0 not in s
-    d[Ad0] = 2
-    assert len(d) == 2
-
     with pytest.raises(ValueError) as excinfo:
         Ad0 = QSDOperator('CreationOperator', 'Ad0', '(0)')
     assert "Type 'CreationOperator' must be one of" in str(excinfo.value)
@@ -280,11 +270,11 @@ def slh_Sec6():
     gamma1 = symbols(r'\gamma_1', positive=True)
     gamma2 = symbols(r'\gamma_2', positive=True)
     kappa  = symbols(r'\kappa',   positive=True)
-    A1 = Destroy(hs0)
+    A1 = Destroy(hs=hs0)
     Ac1 = A1.dag()
-    A2 = Destroy(hs1)
+    A2 = Destroy(hs=hs1)
     Ac2 = A2.dag()
-    Sp = LocalSigma(hs2, j=1, k=0)
+    Sp = LocalSigma(j=1, k=0, hs=hs2)
     Sm = Sp.dag()
 
     H  = E*I*(Ac1-A1) + 0.5*chi*I*(Ac1*Ac1*A2 - A1*A1*Ac2) \
@@ -310,15 +300,15 @@ def slh_Sec6_vals():
 @pytest.fixture
 def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
     codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
-    A2 = Destroy(hs1)
-    Sp = LocalSigma(hs2, 1, 0)
+    A2 = Destroy(hs=hs1)
+    Sp = LocalSigma(1, 0, hs=hs2)
     Sm = Sp.dag()
     codegen.add_observable(Sp*A2*Sm*Sp, name="X1")
     codegen.add_observable(Sm*Sp*A2*Sm, name="X2")
     codegen.add_observable(A2, name="A2")
-    psi0 = BasisKet(hs0, 0)
-    psi1 = BasisKet(hs1, 0)
-    psi2 = BasisKet(hs2, 0)
+    psi0 = BasisKet(0, hs=hs0)
+    psi1 = BasisKet(0, hs=hs1)
+    psi2 = BasisKet(0, hs=hs2)
     codegen.set_trajectories(psi_initial=psi0*psi1*psi2,
             stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
@@ -328,7 +318,7 @@ def Sec6_codegen(slh_Sec6, slh_Sec6_vals):
 
 def test_operator_str(Sec6_codegen):
     gamma1 = symbols(r'\gamma_1', positive=True)
-    A0 = Destroy(hs0)
+    A0 = Destroy(hs=hs0)
     Op = sqrt(gamma1)*A0
     assert Sec6_codegen._operator_str(Op) == '(sqrt(gamma_1)) * (A0)'
 
@@ -347,8 +337,8 @@ def test_qsd_codegen_lindblads(slh_Sec6):
 
 
 def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
-    A2 = Destroy(hs1)
-    Sp = LocalSigma(hs2, 1, 0)
+    A2 = Destroy(hs=hs1)
+    Sp = LocalSigma(1, 0, hs=hs2)
     Sm = Sp.dag()
     codegen = QSDCodeGen(circuit=slh_Sec6, num_vals=slh_Sec6_vals)
 
@@ -412,7 +402,7 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
     assert codegen._operator_str(Sm*A2) == '(A1 * S2_0_1)'
     # If the oberservables introduce new operators or symbols, these should
     # extend the existing ones
-    P1 = LocalSigma(hs2, 1, 1)
+    P1 = LocalSigma(1, 1, hs=hs2)
     zeta = symbols("zeta", real=True)
     codegen.add_observable(zeta*P1, name="P1")
     assert P1 in codegen._local_ops
@@ -430,18 +420,18 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
 
 def test_ordered_tensor_operands(slh_Sec6):
     codegen = QSDCodeGen(circuit=slh_Sec6)
-    psi = BasisKet(hs0, 0) * BasisKet(hs1, 0)
+    psi = BasisKet(0, hs=hs0) * BasisKet(0, hs=hs1)
     assert (list(psi.operands) == list(codegen._ordered_tensor_operands(psi)))
-    psi = TensorKet(BasisKet(hs1, 0), BasisKet(hs0, 0))
+    psi = TensorKet(BasisKet(0, hs=hs1), BasisKet(0, hs=hs0))
     assert (list(reversed(psi.operands))
             == list(codegen._ordered_tensor_operands(psi)))
 
 
 def test_define_atomic_kets(slh_Sec6):
     codegen = QSDCodeGen(circuit=slh_Sec6)
-    psi_cav1 = lambda n:  BasisKet(hs0, n)
-    psi_cav2 = lambda n:  BasisKet(hs1, n)
-    psi_spin = lambda n:  BasisKet(hs2, n)
+    psi_cav1 = lambda n:  BasisKet(n, hs=hs0)
+    psi_cav2 = lambda n:  BasisKet(n, hs=hs1)
+    psi_spin = lambda n:  BasisKet(n, hs=hs2)
     psi_tot = lambda n, m, l: psi_cav1(n) * psi_cav2(m) * psi_spin(l)
 
     with pytest.raises(QSDCodeGenError) as excinfo:
@@ -479,7 +469,7 @@ def test_define_atomic_kets(slh_Sec6):
         assert phi in codegen._qsd_states
 
     alpha = symbols('alpha')
-    psi = CoherentStateKet(hs0, alpha) * psi_cav2(0) * psi_spin(0)
+    psi = CoherentStateKet(alpha, hs=hs0) * psi_cav2(0) * psi_spin(0)
     with pytest.raises(TypeError) as excinfo:
         lines = codegen._define_atomic_kets(psi)
     assert "neither a known symbol nor a complex number" in str(excinfo.value)
@@ -500,7 +490,7 @@ def test_define_atomic_kets(slh_Sec6):
     ):
         assert phi in codegen._qsd_states
 
-    psi = CoherentStateKet(hs0, 1j) * psi_cav2(0) * psi_spin(0)
+    psi = CoherentStateKet(1j, hs=hs0) * psi_cav2(0) * psi_spin(0)
     lines = codegen._define_atomic_kets(psi)
     scode = "\n".join(lines)
     assert scode == dedent(r'''
@@ -543,12 +533,12 @@ def test_define_atomic_kets(slh_Sec6):
 
 def test_qsd_codegen_initial_state(slh_Sec6):
 
-    A2 = Destroy(hs1)
-    Sp = LocalSigma(hs2, 1, 0)
+    A2 = Destroy(hs=hs1)
+    Sp = LocalSigma(1, 0, hs=hs2)
     Sm = Sp.dag()
-    psi_cav1 = lambda n:  BasisKet(hs0, n)
-    psi_cav2 = lambda n:  BasisKet(hs1, n)
-    psi_spin = lambda n:  BasisKet(hs2, n)
+    psi_cav1 = lambda n:  BasisKet(n, hs=hs0)
+    psi_cav2 = lambda n:  BasisKet(n, hs=hs1)
+    psi_spin = lambda n:  BasisKet(n, hs=hs2)
     psi_tot = lambda n, m, l: psi_cav1(n) * psi_cav2(m) * psi_spin(l)
 
     codegen = QSDCodeGen(circuit=slh_Sec6)
@@ -578,7 +568,7 @@ def test_qsd_codegen_initial_state(slh_Sec6):
     ''').strip()
 
     alpha = symbols('alpha')
-    psi = CoherentStateKet(hs0, alpha) * psi_cav2(0) * psi_spin(0)
+    psi = CoherentStateKet(alpha, hs=hs0) * psi_cav2(0) * psi_spin(0)
     codegen.set_trajectories(psi_initial=psi, stepper='AdaptiveStep', dt=0.01,
             nt_plot_step=100, n_plot_steps=5, n_trajectories=1,
             traj_save=10)
@@ -616,8 +606,8 @@ def test_qsd_codegen_initial_state(slh_Sec6):
 
 
 def test_qsd_codegen_traj(slh_Sec6):
-    A2 = Destroy(hs1)
-    Sp = LocalSigma(hs2, 1, 0)
+    A2 = Destroy(hs=hs1)
+    Sp = LocalSigma(1, 0, hs=hs2)
     Sm = Sp.dag()
     codegen = QSDCodeGen(circuit=slh_Sec6)
     codegen.add_observable(Sp*A2*Sm*Sp, name="X1")
@@ -871,7 +861,7 @@ def test_compilation_worker(mock_compilation_worker, Sec6_codegen, traj1,
 def test_find_time_dependent_coeffs():
     E0, sigma, t, t0, a, b = sympy.symbols('E_0, sigma, t, t_0, a, b',
                                            real=True)
-    op_a = Destroy(hs0)
+    op_a = Destroy(hs=hs0)
     op_n = op_a.dag() * op_a
     gaussian = E0 * sympy.exp(-(t-t0)**2/(2*sigma**2))
     linear = a * t

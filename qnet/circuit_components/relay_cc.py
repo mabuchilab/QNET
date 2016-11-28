@@ -71,8 +71,8 @@ class RelayOut(SubComponent):
 
     def _toSLH(self):
 
-        Pi_g = LocalProjector(self.space, 'g')
-        Pi_h = LocalProjector(self.space, 'h')
+        Pi_g = LocalProjector('g', hs=self.space)
+        Pi_h = LocalProjector('h', hs=self.space)
 
         S = Matrix([[Pi_g, -Pi_h ], [-Pi_h, Pi_g]])
         return SLH(S, Matrix([[0]]*2), 0)
@@ -86,11 +86,11 @@ class RelayControl(SubComponent):
         super().__init__(relay, 1)
 
     def _toSLH(self):
-        Pi_g = LocalProjector(self.space, 'g')
-        Pi_h = LocalProjector(self.space, 'h')
+        Pi_g = LocalProjector('g', hs=self.space)
+        Pi_h = LocalProjector('h', hs=self.space)
 
-        sigma_gh = LocalSigma(self.space, 'g', 'h')
-        sigma_hg = LocalSigma(self.space, 'h', 'g')
+        sigma_gh = LocalSigma('g', 'h', hs=self.space)
+        sigma_hg = LocalSigma('h', 'g', hs=self.space)
 
         S = Matrix([[Pi_g, - sigma_hg ], [-sigma_gh, Pi_h]])
         return SLH(S, Matrix([[0]]*2), 0)

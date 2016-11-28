@@ -50,15 +50,19 @@ class OpenLossy(Component):
 
     @property
     def BS(self):
-        return Beamsplitter(make_namespace_string(self.name, 'BS'), theta = self.theta)
+        return Beamsplitter(make_namespace_string(self.name, 'BS'),
+                            theta=self.theta)
 
     @property
     def KC(self):
-        return KerrCavity(make_namespace_string(self.name, 'KC'), kappa_2 = self.kappa, chi = self.chi, kappa_1 = self.kappa, Delta = self.Delta)
+        return KerrCavity(make_namespace_string(self.name, 'KC'),
+                          kappa_2=self.kappa, chi=self.chi,
+                          kappa_1=self.kappa, Delta=self.Delta)
 
     @property
     def LSS_ci_ls(self):
-        return Beamsplitter(make_namespace_string(self.name, 'LSS_ci_ls'), theta = self.theta_LS0)
+        return Beamsplitter(make_namespace_string(self.name, 'LSS'),
+                            theta=self.theta_LS0)
 
     _sub_components = ['BS', 'KC', 'LSS_ci_ls']
 

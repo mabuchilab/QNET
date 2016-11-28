@@ -158,7 +158,7 @@ class Pattern():
 
         We may match this with the following pattern::
         >>> conditions = [lambda c: c.cdim == 3,
-        ...               lambda c: c.identifier[0] == 'C']
+        ...               lambda c: c.name[0] == 'C']
         >>> A__Circuit = wc("A__", head=CircuitSymbol, conditions=conditions)
         >>> C__Circuit = wc("C__", head=CircuitSymbol, conditions=conditions)
         >>> B_CPermutation = wc("B", head=CPermutation)
