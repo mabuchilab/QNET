@@ -55,7 +55,7 @@ def test_custom_str_repr_printer():
 
 def test_no_cached_rendering():
     """Test that we can temporarily suspend caching"""
-    expr = Feedback(CircuitSymbol("Xi_2", 2), 1, 0)
+    expr = Feedback(CircuitSymbol("Xi_2", 2), out_port=1, in_port=0)
     assert ascii(expr) == '[Xi_2]_{1->0}'
     orig_circuit_fb_fmt = AsciiPrinter.circuit_fb_fmt
     AsciiPrinter.circuit_fb_fmt = r'FB[{operand}]'

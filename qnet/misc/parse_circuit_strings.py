@@ -57,7 +57,7 @@ def parse_circuit_strings(circuit_string):
         5) Feedback operations are specified as
 
             >>> print(srepr(parse_circuit_strings('[a(5)]_(1->2)')))
-            Feedback(CircuitSymbol('a', 5), 1, 2)
+            Feedback(CircuitSymbol('a', 5), out_port=1, in_port=2)
 
         6) Permutation objects are specified as
 
@@ -231,7 +231,7 @@ class _CircuitExpressionParser(Parser):
         circuit_feedback : LBRACKET circuit_expression RBRACKET UNDER LPAREN int RARROW int RPAREN
         """
 
-        p[0] = ca.Feedback(p[2], p[6], p[8])
+        p[0] = ca.Feedback(p[2], out_port=p[6], in_port=p[8])
 
     def p_circuit_feedback_2(self, p):
         """
@@ -239,7 +239,7 @@ class _CircuitExpressionParser(Parser):
                      | FB LPAREN circuit_expression COMMA int COMMA int RPAREN
         """
         if len(p) == 9:
-            p[0] = ca.Feedback(p[3], p[5], p[7])
+            p[0] = ca.Feedback(p[3], out_port=p[5], in_port=p[7])
         else:
             p[0] = ca.Feedback(p[3])
 

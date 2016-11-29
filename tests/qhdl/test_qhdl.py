@@ -84,7 +84,7 @@ entity redheffer is
 end redheffer;
 
 architecture redheffer_structure of redheffer is
-	
+
 	component Beamsplitter
 		port (s1, s2: in fieldmode; s3, s4: out fieldmode);
 	end component;
@@ -106,7 +106,7 @@ entity redheffer is
 end redheffer;
 
 architecture redheffer_structure of redheffer is
-    
+
     component Beamsplitter
         port (s1, s2: in fieldmode; s3, s4: out fieldmode);
     end component;
@@ -128,7 +128,7 @@ entity redheffer is
 end redheffer;
 
 architecture redheffer_structure of redheffer is
-    
+
     component Beamsplitter
         port (a, b: in fieldmode; c, d: out fieldmode);
     end component;
@@ -150,7 +150,7 @@ entity redheffer is
 end redheffer;
 
 architecture redheffer_structure of redheffer is
-    
+
     component Beamsplitter
         port (a, b: in fieldmode; c, d: out fieldmode);
     end component;
@@ -164,42 +164,42 @@ begin
         port map (a=>n,b=>OPEN,c=>t,d=>c);
 end redheffer_structure;
 """
-    
+
 
 class TestQHDLtoCircuit(unittest.TestCase):
     def testFeedback1(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_simplest_feedback)
         self.assertEqual(circuit, FB(symbols['BS']) )
-    
+
     def testFeedback2(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_feedback_2)
-        self.assertEqual(circuit, symbols['BS'].feedback(0 , 1))
-        #print(circuit, all_symbols['BS'].feedback(0 , 1))
-    
+        self.assertEqual(circuit, symbols['BS'].feedback(out_port=0 , in_port=1))
+        #print(circuit, all_symbols['BS'].feedback(out_port=0 , in_port=1))
+
     def testRedheffer(self):
-        
+
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_redheffer)
         BS1, BS2 = symbols['BS1'], symbols['BS2']
         # print(circuit)
-        self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), 1, 1))
-    
+        self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), out_port=1, in_port=1))
+
     def testOpenPorts1(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_Open1)
         BS1, BS2 = symbols['BS1'], symbols['BS2']
         # print(circuit)
-        self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), 1, 1))
-            
+        self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), out_port=1, in_port=1))
+
     def testOpenPorts2(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_Open2)
         BS1, BS2 = symbols['BS1'], symbols['BS2']
         # print(circuit)
-        self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), 1, 1))
+        self.assertEqual(circuit, FB(((BS1 + cid(1)) << (cid(1) + BS2 )), out_port=1, in_port=1))
 
     def testOpenPorts3(self):
         circuit, symbols, _ = parse_first_architecture_to_circuit(qhdl_example_Open3)
         BS1, BS2 = symbols['BS1'], symbols['BS2']
         # print(circuit)
-        self.assertEqual(circuit.series_inverse().series_inverse(), P_sigma(1,0) << FB(((BS1 + cid(1)) << (cid(1) + BS2 )), 1, 1))    
+        self.assertEqual(circuit.series_inverse().series_inverse(), P_sigma(1,0) << FB(((BS1 + cid(1)) << (cid(1) + BS2 )), out_port=1, in_port=1))
 
 if __name__ == '__main__':
     unittest.main()

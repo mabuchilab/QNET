@@ -37,6 +37,7 @@ import os
 import re
 from abc import ABCMeta, abstractproperty, abstractmethod
 from functools import reduce
+from collections import OrderedDict
 
 from sympy import symbols, sympify
 from sympy import Matrix as SympyMatrix
@@ -224,23 +225,23 @@ class Circuit(metaclass=ABCMeta):
     def _series_inverse(self) -> 'Circuit':
         return SeriesInverse.create(self)
 
-    def feedback(self, out_index=None, in_index=None):
+    def feedback(self, *, out_port=None, in_port=None):
         """Return a circuit with self-feedback from the output port
-        (zero-based) ``out_index`` to the input port ``in_index``.
+        (zero-based) ``out_port`` to the input port ``in_port``.
 
-        :param out_index: The output port from which the feedback connection leaves (zero-based, default = ``None`` corresponds to the *last* port).
-        :type out_index: int or NoneType
-        :param in_index: The input port into which the feedback connection goes (zero-based, default = ``None`` corresponds to the *last* port).
-        :type in_index: int or NoneType
+        :param out_port: The output port from which the feedback connection leaves (zero-based, default = ``None`` corresponds to the *last* port).
+        :type out_port: int or NoneType
+        :param in_port: The input port into which the feedback connection goes (zero-based, default = ``None`` corresponds to the *last* port).
+        :type in_port: int or NoneType
         """
-        if out_index is None:
-            out_index = self.cdim - 1
-        if in_index is None:
-            in_index = self.cdim - 1
-        return self._feedback(out_index, in_index)
+        if out_port is None:
+            out_port = self.cdim - 1
+        if in_port is None:
+            in_port = self.cdim - 1
+        return self._feedback(out_port=out_port, in_port=in_port)
 
-    def _feedback(self, out_index: int, in_index: int) -> 'Circuit':
-        return Feedback.create(self, out_index, in_index)
+    def _feedback(self, *, out_port: int, in_port: int) -> 'Circuit':
+        return Feedback.create(self, out_port=out_port, in_port=in_port)
 
     def show(self):
         """Show the circuit expression in an IPython notebook."""
@@ -477,23 +478,23 @@ class SLH(Circuit, Expression):
     def _series_inverse(self):
         return SLH(self.S.adjoint(), - self.S.adjoint() * self.L, -self.H)
 
-    def _feedback(self, out_index, in_index):
+    def _feedback(self, *, out_port, in_port):
 
         if not isinstance(self.S, Matrix) or not isinstance(self.L, Matrix):
-            return Feedback(self, out_index, in_index)
+            return Feedback(self, out_port=out_port, in_port=in_port)
 
         sympyOne = sympify(1)
 
         n = self.cdim - 1
 
-        if out_index != n:
+        if out_port != n:
             return (
-                map_signals_circuit({out_index: n}, self.cdim).toSLH() <<
+                map_signals_circuit({out_port: n}, self.cdim).toSLH() <<
                 self
-            ).feedback(in_index=in_index)
-        elif in_index != n:
+            ).feedback(in_port=in_port)
+        elif in_port != n:
             return (
-                self << map_signals_circuit({n: in_index}, self.cdim).toSLH()
+                self << map_signals_circuit({n: in_port}, self.cdim).toSLH()
             ).feedback()
 
         S, L, H = self.S, self.L, self.H
@@ -952,11 +953,11 @@ class CPermutation(Circuit, Expression):
 
         return new_lhs_circuit, permuted_rhs_circuit, new_rhs_circuit
 
-    def _feedback(self, out_index, in_index):
+    def _feedback(self, *, out_port, in_port):
         n = self.cdim
         new_perm_circuit = (
-                map_signals_circuit({out_index: (n - 1)}, n) << self <<
-                map_signals_circuit({(n - 1): in_index}, n))
+                map_signals_circuit({out_port: (n - 1)}, n) << self <<
+                map_signals_circuit({(n - 1): in_port}, n))
         if new_perm_circuit == circuit_identity(n):
             return circuit_identity(n - 1)
         new_perm = list(new_perm_circuit.permutation)
@@ -965,16 +966,16 @@ class CPermutation(Circuit, Expression):
 
         return CPermutation.create(tuple(new_perm[:-1]))
 
-    def _factor_rhs(self, in_index):
+    def _factor_rhs(self, in_port):
         """With::
 
             n           := self.cdim
-            in_im       := self.permutation[in_index]
+            in_im       := self.permutation[in_port]
             m_{k->l}    := map_signals_circuit({k:l}, n)
 
         solve the equation (I) containing ``self``::
 
-            self << m_{(n-1) -> in_index}
+            self << m_{(n-1) -> in_port}
                 == m_{(n-1) -> in_im} << (red_self + cid(1))          (I)
 
         for the (n-1) channel CPermutation ``red_self``.
@@ -985,18 +986,18 @@ class CPermutation(Circuit, Expression):
         from the permutation and moving the remaining part of the permutation
         (``red_self``) outside of the feedback loop.
 
-        :param int in_index: The index for which to factor.
+        :param int in_port: The index for which to factor.
         """
         n = self.cdim
-        if not (0 <= in_index < n):
+        if not (0 <= in_port < n):
             raise Exception
-        in_im = self.permutation[in_index]
+        in_im = self.permutation[in_port]
         # (I) is equivalent to
-        #       m_{in_im -> (n-1)} <<  self << m_{(n-1) -> in_index}
+        #       m_{in_im -> (n-1)} <<  self << m_{(n-1) -> in_port}
         #           == (red_self + cid(1))     (I')
         red_self_plus_cid1 = (map_signals_circuit({in_im: (n - 1)}, n) <<
                               self <<
-                              map_signals_circuit({(n - 1): in_index}, n))
+                              map_signals_circuit({(n - 1): in_port}, n))
         if isinstance(red_self_plus_cid1, CPermutation):
 
             #make sure we can factor
@@ -1009,20 +1010,20 @@ class CPermutation(Circuit, Expression):
         else:
             # 'red_self_plus_cid1' must be the identity for n channels.
             # Actually, this case can only occur
-            # when self == m_{in_index ->  in_im}
+            # when self == m_{in_port ->  in_im}
 
             return in_im, circuit_identity(n - 1)
 
-    def _factor_lhs(self, out_index):
+    def _factor_lhs(self, out_port):
         """With::
 
             n           := self.cdim
-            out_inv     := invert_permutation(self.permutation)[out_index]
+            out_inv     := invert_permutation(self.permutation)[out_port]
             m_{k->l}    := map_signals_circuit({k:l}, n)
 
         solve the equation (I) containing ``self``::
 
-            m_{out_index -> (n-1)} << self
+            m_{out_port -> (n-1)} << self
                 == (red_self + cid(1)) << m_{out_inv -> (n-1)}           (I)
 
         for the (n-1) channel CPermutation ``red_self``.
@@ -1033,17 +1034,17 @@ class CPermutation(Circuit, Expression):
         from the permutation and moving the remaining part of the permutation
         (``red_self``) outside of the feedback loop.
 
-        :param out_index: The index for which to factor
+        :param out_port: The index for which to factor
         """
         n = self.cdim
-        assert (0 <= out_index < n)
-        out_inv = self.permutation.index(out_index)
+        assert (0 <= out_port < n)
+        out_inv = self.permutation.index(out_port)
 
         # (I) is equivalent to
-        #       m_{out_index -> (n-1)} <<  self << m_{(n-1)
+        #       m_{out_port -> (n-1)} <<  self << m_{(n-1)
         #           -> out_inv} == (red_self + cid(1))     (I')
 
-        red_self_plus_cid1 = (map_signals_circuit({out_index: (n - 1)}, n) <<
+        red_self_plus_cid1 = (map_signals_circuit({out_port: (n - 1)}, n) <<
                               self <<
                               map_signals_circuit({(n - 1): out_inv}, n))
 
@@ -1059,7 +1060,7 @@ class CPermutation(Circuit, Expression):
         else:
             # 'red_self_plus_cid1' must be the identity for n channels.
             # Actually, this case can only occur
-            # when self == m_{in_index ->  in_im}
+            # when self == m_{in_port ->  in_im}
 
             return out_inv, circuit_identity(n - 1)
 
@@ -1326,24 +1327,24 @@ class Concatenation(Circuit, Operation):
         return Concatenation.create(*[o.series_inverse()
                                       for o in self.operands])
 
-    def _feedback(self, out_index, in_index):
+    def _feedback(self, *, out_port, in_port):
 
         n = self.cdim
 
-        if out_index == n - 1 and in_index == n - 1:
+        if out_port == n - 1 and in_port == n - 1:
             return Concatenation.create(*(self.operands[:-1] +
                                           (self.operands[-1].feedback(),)))
 
-        in_index_in_block, in_block = self.index_in_block(in_index)
-        out_index_in_block, out_block = self.index_in_block(out_index)
+        in_port_in_block, in_block = self.index_in_block(in_port)
+        out_index_in_block, out_block = self.index_in_block(out_port)
 
         blocks = self.get_blocks()
 
         if in_block == out_block:
             return (Concatenation.create(*blocks[:out_block]) +
                     blocks[out_block].feedback(
-                           out_index=out_index_in_block,
-                           in_index=in_index_in_block) +
+                           out_port=out_index_in_block,
+                           in_port=in_port_in_block) +
                     Concatenation.create(*blocks[out_block + 1:]))
         ### no 'real' feedback loop, just an effective series
         #partition all blocks into just two
@@ -1353,14 +1354,14 @@ class Concatenation(Circuit, Operation):
             b2 = Concatenation.create(*blocks[out_block:])
 
             return ((b1 + circuit_identity(b2.cdim - 1)) <<
-                    map_signals_circuit({out_index - 1: in_index}, n - 1) <<
+                    map_signals_circuit({out_port - 1: in_port}, n - 1) <<
                     (circuit_identity(b1.cdim - 1) + b2))
         else:
             b1 = Concatenation.create(*blocks[:in_block])
             b2 = Concatenation.create(*blocks[in_block:])
 
             return ((circuit_identity(b1.cdim - 1) + b2) <<
-                    map_signals_circuit({out_index: in_index - 1}, n - 1) <<
+                    map_signals_circuit({out_port: in_port - 1}, n - 1) <<
                     (b1 + circuit_identity(b2.cdim - 1)))
 
     def _toABCD(self, linearize):
@@ -1381,20 +1382,29 @@ class Feedback(Circuit, Operation):
     """The circuit feedback operation applied to a circuit of channel
     dimension > 1 and an from an output port index to an input port index.
 
-        ``Feedback(circuit, out_index, in_index)``
-
     :param circuit: The circuit that undergoes self-feedback
     :type circuit: Circuit
-    :param out_index: The output port index.
-    :type out_index: int
-    :param in_index: The input port index.
-    :type in_index: int
+    :param out_port: The output port index.
+    :type out_port: int
+    :param in_port: The input port index.
+    :type in_port: int
     """
     delegate_to_method = (Concatenation, SLH, CPermutation)
 
     _simplifications = [match_replace, ]
 
     _rules = []  # see end of module
+
+    def __init__(self, circuit: Circuit, *, out_port: int, in_port: int):
+        self.out_port = int(out_port)
+        self.in_port = int(in_port)
+        operands = [circuit, ]
+        super().__init__(*operands)
+
+    @property
+    def kwargs(self):
+        return OrderedDict([('out_port', self.out_port),
+                            ('in_port', self.in_port)])
 
     @property
     def operand(self):
@@ -1403,8 +1413,8 @@ class Feedback(Circuit, Operation):
 
     @property
     def out_in_pair(self):
-        """Tuple of zero-based feedback port indices (out_index, in_index)"""
-        return self._operands[1:]
+        """Tuple of zero-based feedback port indices (out_port, in_port)"""
+        return (self.out_port, self.in_port)
 
     @property
     def cdim(self):
@@ -1413,7 +1423,7 @@ class Feedback(Circuit, Operation):
         return self.operand.cdim - 1
 
     @classmethod
-    def create(cls, circuit: Circuit, out_index: int, in_index: int) \
+    def create(cls, circuit: Circuit, *, out_port: int, in_port: int) \
             -> 'Feedback':
         if not isinstance(circuit, Circuit):
             raise ValueError()
@@ -1426,18 +1436,20 @@ class Feedback(Circuit, Operation):
             raise ValueError()
 
         if isinstance(circuit, cls.delegate_to_method):
-            return circuit._feedback(out_index, in_index)
+            return circuit._feedback(out_port=out_port, in_port=in_port)
 
-        return super().create(circuit, out_index, in_index)
+        return super().create(circuit, out_port=out_port, in_port=in_port)
 
     def _toSLH(self):
-        return self.operand.toSLH().feedback(*self.out_in_pair)
+        return self.operand.toSLH().feedback(
+                out_port=self.out_port, in_port=self.in_port)
 
     def _toABCD(self, linearize):
         raise NotImplementedError(self.__class__)
 
     def _creduce(self):
-        return self.operand.creduce().feedback(*self.out_in_pair)
+        return self.operand.creduce().feedback(
+                out_port=self.out_port, in_port=self.in_port)
 
     def _render(self, fmt, adjoint=False):
         assert not adjoint, "adjoint not defined"
@@ -1448,7 +1460,7 @@ class Feedback(Circuit, Operation):
 
     def _series_inverse(self):
         return Feedback.create(self.operand.series_inverse(),
-                               *reversed(self.out_in_pair))
+                               in_port=self.out_port, out_port=self.in_port)
 
     @property
     def space(self):
@@ -1556,25 +1568,23 @@ def P_sigma(*permutation):
     return CPermutation.create(permutation)
 
 
-def FB(circuit, out_index=None, in_index=None):
+def FB(circuit, *, out_port=None, in_port=None):
     """Wrapper for :py:class:Feedback: but with additional default values.
-
-        ``FB(circuit, out_index = None, in_index = None)``
 
     :param circuit: The circuit that undergoes self-feedback
     :type circuit: Circuit
-    :param out_index: The output port index, default = None --> last port
-    :type out_index: int
-    :param in_index: The input port index, default = None --> last port
-    :type in_index: int
+    :param out_port: The output port index, default = None --> last port
+    :type out_port: int
+    :param in_port: The input port index, default = None --> last port
+    :type in_port: int
     :return: The circuit with applied feedback operation.
     :rtype: Circuit
     """
-    if out_index is None:
-        out_index = circuit.cdim - 1
-    if in_index is None:
-        in_index = circuit.cdim - 1
-    return Feedback.create(circuit, out_index, in_index)
+    if out_port is None:
+        out_port = circuit.cdim - 1
+    if in_port is None:
+        in_port = circuit.cdim - 1
+    return Feedback.create(circuit, out_port=out_port, in_port=in_port)
 
 
 ###############################################################################
@@ -1792,26 +1802,26 @@ def _factor_permutation_for_blocks(cperm, rhs):
     raise CannotSimplify()
 
 
-def _pull_out_perm_lhs(lhs, rest, out_index, in_index):
+def _pull_out_perm_lhs(lhs, rest, out_port, in_port):
     """Pull out a permutation from the Feedback of a SeriesProduct with itself.
 
     :param lhs: The permutation circuit
     :type lhs: CPermutation
     :param rest: The other SeriesProduct operands
     :type rest: OperandsTuple
-    :param out_index: The feedback output port index
-    :type out_index: int
-    :param in_index: The feedback input port index
-    :type in_index: int
+    :param out_port: The feedback output port index
+    :type out_port: int
+    :param in_port: The feedback input port index
+    :type in_port: int
     :return: The simplified circuit
     :rtype: Circuit
     """
-    out_inv, lhs_red = lhs._factor_lhs(out_index)
+    out_inv, lhs_red = lhs._factor_lhs(out_port)
     return lhs_red << Feedback.create(SeriesProduct.create(*rest),
-                                      out_inv, in_index)
+                                      out_port=out_inv, in_port=in_port)
 
 
-def _pull_out_unaffected_blocks_lhs(lhs, rest, out_index, in_index):
+def _pull_out_unaffected_blocks_lhs(lhs, rest, out_port, in_port):
     """In a self-Feedback of a series product, where the left-most operand is
     reducible, pull all non-trivial blocks outside of the feedback.
 
@@ -1819,15 +1829,15 @@ def _pull_out_unaffected_blocks_lhs(lhs, rest, out_index, in_index):
    :type lhs: Circuit
    :param rest: The other SeriesProduct operands
    :type rest: OperandsTuple
-   :param out_index: The feedback output port index
-   :type out_index: int
-   :param in_index: The feedback input port index
-   :type in_index: int
+   :param out_port: The feedback output port index
+   :type out_port: int
+   :param in_port: The feedback input port index
+   :type in_port: int
    :return: The simplified circuit
    :rtype: Circuit
    """
 
-    _, block_index = lhs.index_in_block(out_index)
+    _, block_index = lhs.index_in_block(out_port)
 
     bs = lhs.block_structure
 
@@ -1840,27 +1850,30 @@ def _pull_out_unaffected_blocks_lhs(lhs, rest, out_index, in_index):
         outer_lhs = before + cid(nblock - 1) + after
         inner_lhs = cid(nbefore) + block + cid(nafter)
         return outer_lhs << Feedback.create(
-                SeriesProduct.create(inner_lhs, *rest), out_index, in_index)
+                SeriesProduct.create(inner_lhs, *rest),
+                out_port=out_port, in_port=in_port)
     elif block == cid(nblock):
         outer_lhs = before + cid(nblock - 1) + after
         return outer_lhs << Feedback.create(
-                SeriesProduct.create(*rest), out_index, in_index)
+                SeriesProduct.create(*rest),
+                out_port=out_port, in_port=in_port)
     raise CannotSimplify()
 
 
-def _pull_out_perm_rhs(rest, rhs, out_index, in_index):
+def _pull_out_perm_rhs(rest, rhs, out_port, in_port):
     """Similar to :py:func:_pull_out_perm_lhs: but on the RHS of a series
     product self-feedback."""
-    in_im, rhs_red = rhs._factor_rhs(in_index)
-    return (Feedback.create(SeriesProduct.create(*rest), out_index, in_im) <<
-            rhs_red)
+    in_im, rhs_red = rhs._factor_rhs(in_port)
+    return (Feedback.create(
+                SeriesProduct.create(*rest),
+                out_port=out_port, in_port=in_im) << rhs_red)
 
 
-def _pull_out_unaffected_blocks_rhs(rest, rhs, out_index, in_index):
+def _pull_out_unaffected_blocks_rhs(rest, rhs, out_port, in_port):
     """Similar to :py:func:_pull_out_unaffected_blocks_lhs: but on the RHS of a
     series product self-feedback.
     """
-    _, block_index = rhs.index_in_block(in_index)
+    _, block_index = rhs.index_in_block(in_port)
     rest = tuple(rest)
     bs = rhs.block_structure
     (nbefore, nblock, nafter) = (sum(bs[:block_index]),
@@ -1871,21 +1884,21 @@ def _pull_out_unaffected_blocks_rhs(rest, rhs, out_index, in_index):
         outer_rhs = before + cid(nblock - 1) + after
         inner_rhs = cid(nbefore) + block + cid(nafter)
         return Feedback.create(SeriesProduct.create(*(rest + (inner_rhs,))),
-                               out_index, in_index) << outer_rhs
+                               out_port=out_port, in_port=in_port) << outer_rhs
     elif block == cid(nblock):
         outer_rhs = before + cid(nblock - 1) + after
         return Feedback.create(SeriesProduct.create(*rest),
-                               out_index, in_index) << outer_rhs
+                               out_port=out_port, in_port=in_port) << outer_rhs
     raise CannotSimplify()
 
 
-def _series_feedback(series, out_index, in_index):
+def _series_feedback(series, out_port, in_port):
     """Invert a series self-feedback twice to get rid of unnecessary
     permutations."""
     series_s = series.series_inverse().series_inverse()
     if series_s == series:
         raise CannotSimplify()
-    return series_s.feedback(out_index, in_index)
+    return series_s.feedback(out_port=out_port, in_port=in_port)
 
 
 def getABCD(slh, a0=None, doubled_up=True):
@@ -2298,19 +2311,19 @@ def _algebraic_rules():
     ]
 
     Feedback._rules += [
-        (pattern_head(A_SeriesProduct, j_int, k_int),
-            lambda A, j, k: _series_feedback(A, j, k)),
+        (pattern_head(A_SeriesProduct, out_port=j_int, in_port=k_int),
+            lambda A, j, k: _series_feedback(A, out_port=j, in_port=k)),
         (pattern_head(pattern(SeriesProduct, A_CPermutation, B__Circuit),
-                      j_int, k_int),
+                      out_port=j_int, in_port=k_int),
             lambda A, B, j, k: _pull_out_perm_lhs(A, B, j, k)),
         (pattern_head(pattern(SeriesProduct, A_Concatenation, B__Circuit),
-                      j_int, k_int),
+                      out_port=j_int, in_port=k_int),
             lambda A, B, j, k: _pull_out_unaffected_blocks_lhs(A, B, j, k)),
         (pattern_head(pattern(SeriesProduct, A__Circuit, B_CPermutation),
-                      j_int, k_int),
+                      out_port=j_int, in_port=k_int),
             lambda A, B, j, k: _pull_out_perm_rhs(A, B, j, k)),
         (pattern_head(pattern(SeriesProduct, A__Circuit, B_Concatenation),
-                      j_int, k_int),
+                      out_port=j_int, in_port=k_int),
             lambda A, B, j, k: _pull_out_unaffected_blocks_rhs(A, B, j, k)),
     ]
 

@@ -18,9 +18,9 @@
 ###########################################################################
 """Provides the base class for Printers"""
 
-import re
 from typing import Any, Tuple
 from abc import ABCMeta
+from collections import OrderedDict
 
 from numpy import complex128
 import sympy
@@ -166,7 +166,10 @@ class Printer(metaclass=ABCMeta):
             # their name
             return repr(expr)
         args = expr.args
-        keys = sorted(expr.kwargs.keys())
+        if isinstance(expr.kwargs, OrderedDict):
+            keys = expr.kwargs.keys()
+        else:
+            keys = sorted(expr.kwargs.keys())
         kwargs = ''
         if len(keys) > 0:
             kwargs = cls.arg_sep.join(

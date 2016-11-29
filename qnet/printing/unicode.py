@@ -36,7 +36,7 @@ class _circuit_fb_fmt():
             return r'[{operand}]{output}₋{input}'.format(
                     operand=operand,
                     output=unicode_sub_super(output, subscript_mapping),
-                    input=unicode_sub_super(output, subscript_mapping))
+                    input=unicode_sub_super(input, subscript_mapping))
         except KeyError:
             return r'[{operand}]_{output}→{input}'.format(
                     operand=operand, output=output, input=input)

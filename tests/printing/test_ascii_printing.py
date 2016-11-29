@@ -69,7 +69,8 @@ def test_ascii_circuit_operations():
     assert ascii(perm) == "Perm(2, 1, 0, 3)"
     assert (ascii(SeriesProduct(perm, (A+B))) ==
             "Perm(2, 1, 0, 3) << (A_test + B_test)")
-    assert ascii(Feedback((A+B), 3, 0)) == "[A_test + B_test]_{3->0}"
+    assert (ascii(Feedback((A+B), out_port=3, in_port=0)) ==
+            "[A_test + B_test]_{3->0}")
     assert ascii(SeriesInverse(A+B)) == "[A_test + B_test]^{-1}"
 
 

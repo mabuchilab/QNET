@@ -48,18 +48,17 @@ def test_circuit_tree():
     A = CircuitSymbol("A_test", cdim=2)
     beta = CircuitSymbol("beta", cdim=1)
     gamma = CircuitSymbol("gamma", cdim=1)
-    tree = tree_str(Feedback((A << (beta + gamma)) + CIdentity, 2, 0))
+    tree = tree_str(Feedback((A << (beta + gamma)) + CIdentity,
+                             out_port=2, in_port=0))
     assert tree == dedent(r'''
-    . Feedback((A_test ◁ (β ⊞ γ)), 2, 0)
-      ├─ Concatenation(A_test ◁ (β ⊞ γ), cid(1))
-      │  ├─ SeriesProduct(A_test, β ⊞ γ)
-      │  │  ├─ CircuitSymbol(A_test, 2)
-      │  │  └─ Concatenation(β, γ)
-      │  │     ├─ CircuitSymbol(beta, 1)
-      │  │     └─ CircuitSymbol(gamma, 1)
-      │  └─ CIdentity
-      ├─ 2
-      └─ 0
+    . Feedback((A_test ◁ (β ⊞ γ)), out_port=2, in_port=0)
+      └─ Concatenation(A_test ◁ (β ⊞ γ), cid(1))
+         ├─ SeriesProduct(A_test, β ⊞ γ)
+         │  ├─ CircuitSymbol(A_test, 2)
+         │  └─ Concatenation(β, γ)
+         │     ├─ CircuitSymbol(beta, 1)
+         │     └─ CircuitSymbol(gamma, 1)
+         └─ CIdentity
     ''').strip()
 
 

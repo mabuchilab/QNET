@@ -67,7 +67,8 @@ def test_unicode_circuit_operations():
     assert unicode(perm) == "Perm(2, 1, 0, 3)"
     assert (unicode(SeriesProduct(perm, (A+B))) ==
             "Perm(2, 1, 0, 3) ◁ (A_test ⊞ B_test)")
-    assert unicode(Feedback((A+B), 3, 0)) == "[A_test ⊞ B_test]₃₋₃"
+    assert (unicode(Feedback((A+B), out_port=3, in_port=0)) ==
+            "[A_test ⊞ B_test]₃₋₀")
     assert unicode(SeriesInverse(A+B)) == "[A_test ⊞ B_test]^{-1}"
 
 

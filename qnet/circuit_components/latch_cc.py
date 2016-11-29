@@ -93,9 +93,38 @@ class Latch(Component):
 
     def _creduce(self):
 
-        B11, B12, B21, B22, B3, C1, C2, Phase1, Phase2, Phase3, W1, W2 = self.B11, self.B12, self.B21, self.B22, self.B3, self.C1, self.C2, self.Phase1, self.Phase2, self.Phase3, self.W1, self.W2
+        B11, B12, B21, B22, B3, C1, C2, Phase1, Phase2, Phase3, W1, W2 = \
+            (self.B11, self.B12, self.B21, self.B22, self.B3, self.C1, self.C2,
+             self.Phase1, self.Phase2, self.Phase3, self.W1, self.W2)
 
-        return P_sigma(1, 2, 3, 4, 5, 6, 7, 0) << FB((cid(4) + (P_sigma(0, 4, 1, 2, 3) << (B11 + cid(3)))) << P_sigma(0, 1, 2, 3, 4, 6, 7, 8, 5) << ((P_sigma(0, 1, 2, 3, 4, 7, 5, 6) << ((P_sigma(0, 1, 5, 3, 4, 2) << FB((cid(2) + ((B3 + cid(1)) << P_sigma(0, 2, 1) << (B12 + cid(1))) + cid(2)) << P_sigma(0, 1, 4, 5, 6, 2, 3) << (((cid(1) + ((cid(1) + ((Phase3 + Phase2) << B22) + cid(1)) << P_sigma(0, 1, 3, 2) << (C2 + W2))) << ((B21 << (Phase1 + cid(1))) + cid(3))) + cid(2)), 4, 0)) + cid(2)) << (cid(4) + (P_sigma(0, 2, 3, 1) << ((P_sigma(1, 0, 2) << C1) + W1)))) + cid(1)), 8, 4) << P_sigma(7, 0, 6, 3, 1, 2, 4, 5)
+        # TODO: reformat
+        res = (
+            P_sigma(1, 2, 3, 4, 5, 6, 7, 0) <<
+            FB(
+                (
+                    (cid(4) + (P_sigma(0, 4, 1, 2, 3) << (B11 + cid(3)))) <<
+                    P_sigma(0, 1, 2, 3, 4, 6, 7, 8, 5) <<
+                    ((P_sigma(0, 1, 2, 3, 4, 7, 5, 6) <<
+                  ((P_sigma(0, 1, 5, 3, 4, 2) <<
+                    FB((cid(2) +
+                        ((B3 + cid(1)) <<
+                         P_sigma(0, 2, 1) <<
+                         (B12 + cid(1))) +
+                       cid(2)) <<
+                       P_sigma(0, 1, 4, 5, 6, 2, 3) <<
+                       (((cid(1) +
+                          ((cid(1) + ((Phase3 + Phase2) << B22) + cid(1)) <<
+                           P_sigma(0, 1, 3, 2) << (C2 + W2))) <<
+                         ((B21 << (Phase1 + cid(1))) + cid(3))) +
+                        cid(2)),
+                       out_port=4, in_port=0)) +
+                   cid(2)) <<
+                  (cid(4) +
+                   (P_sigma(0, 2, 3, 1) << ((P_sigma(1, 0, 2) << C1) + W1)))) +
+                 cid(1))), out_port=8, in_port=4
+               ) <<
+            P_sigma(7, 0, 6, 3, 1, 2, 4, 5))
+        return res
 
     @property
     def space(self):

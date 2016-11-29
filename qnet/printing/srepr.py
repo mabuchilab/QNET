@@ -16,7 +16,11 @@
 # Copyright (C) 2016, Michael Goerz
 #
 ###########################################################################
-from typing import Any, Tuple
+"""Provides printers for a full-structured representation"""
+
+from collections import OrderedDict
+
+from typing import Any
 
 from sympy import Basic as SympyBasic
 from sympy.printing import srepr as sympy_srepr
@@ -109,7 +113,10 @@ class IndentedSReprPrinter(Printer):
             # their name
             return "    " * self.indent + repr(expr)
         args = expr.args
-        keys = sorted(expr.kwargs.keys())
+        if isinstance(expr.kwargs, OrderedDict):
+            keys = expr.kwargs.keys()
+        else:
+            keys = sorted(expr.kwargs.keys())
         if self._key_name is not None:
             lines.append("    " * self.indent + self._key_name + '=' +
                          expr.__class__.__name__ + "(")

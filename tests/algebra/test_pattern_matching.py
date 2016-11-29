@@ -208,7 +208,7 @@ concat_expr = Concatenation(SeriesProduct(C1, C2, perm1),
                             SeriesProduct(C3, C4, perm2))
 concat_expr2 = Concatenation(SeriesProduct(perm1, C1, C2),
                              SeriesProduct(perm2, C3, C4))
-expr_fb = Feedback(C1, 1, 2)
+expr_fb = Feedback(C1, out_port=1, in_port=2)
 
 # test patterns and wildcards
 wc_a_int_2 = wc('a', head=int, conditions=[lambda i: i == 2, ])
@@ -248,7 +248,9 @@ pattern_ints = pattern_head(pattern(int), pattern(int), pattern(int),
                             wc('i___', head=int))
 pattern_ints5 = pattern_head(1, 2, 3, 4, 5)
 pattern_fb = wc('B', head=Feedback,
-                args=[A_Circuit, pattern(int), pattern(int)])
+                args=[A_Circuit, ],
+                kwargs={'out_port': pattern(int), 'in_port': pattern(int)},
+                )
 
 
 PATTERNS = [
@@ -350,8 +352,9 @@ def test_no_match():
     assert not match
     assert "Double wildcard: 'A has already been set'" in match.reason
 
-    pat = wc('A', head=Feedback, args=[A_Circuit, 1, 2])
-    match = pat.match(Feedback(C1, 1, 2))
+    pat = wc('A', head=Feedback, args=[A_Circuit, ],
+             kwargs={'out_port': 1, 'in_port': 2})
+    match = pat.match(Feedback(C1, out_port=1, in_port=2))
     assert not match
     assert "Double wildcard: 'A has already been set'" in match.reason
 

@@ -59,7 +59,7 @@ class PseudoNANDLatch(Component):
 
         NAND1, NAND2 = self.NAND1, self.NAND2
 
-        return P_sigma(3, 4, 2, 0, 1, 5) << FB(((P_sigma(0, 1, 3, 2) << NAND2) + cid(3)) << (cid(1) + (P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(1, 2, 0, 3) << NAND1) + cid(2)))), 3, 2) << P_sigma(1, 2, 5, 0, 4, 3)
+        return P_sigma(3, 4, 2, 0, 1, 5) << FB(((P_sigma(0, 1, 3, 2) << NAND2) + cid(3)) << (cid(1) + (P_sigma(0, 3, 4, 5, 1, 2) << ((P_sigma(1, 2, 0, 3) << NAND1) + cid(2)))), out_port=3, in_port=2) << P_sigma(1, 2, 5, 0, 4, 3)
 
     @property
     def space(self):

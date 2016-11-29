@@ -226,34 +226,26 @@ def test_feedback():
     A, B, C, D, A1, A2 = get_symbols(3, 2, 1, 1, 1, 1)
     circuit_identity(1)
 
-    #self.assertRaises(Exception, Feedback, ())
-    #self.assertRaises(Exception, Feedback, (C,))
-    #self.assertRaises(Exception, Feedback, (C + D,))
-    #self.assertRaises(Exception, Feedback, (C << D,))
-    #self.assertRaises(Exception, Feedback, (circuit_identity(n),))
-    #self.assertRaises(Exception, Feedback.create, (circuit_identity(0)))
-    #self.assertEquals(Feedback.create(circuit_identity(n)), circuit_identity(n-1))
     assert FB(A+B) == A + FB(B)
     smq = map_signals_circuit({2:1}, 3) # == 'cid(1) + X'
     assert smq == smq.series_inverse()
-    # import metapost as mp
-    # mp.display_circuit(Feedback.apply_with_rules(smq.series_inverse() << (B + C) << smq))
-    # mp.display_circuit(B.feedback() + C)
 
-    assert ( smq << (B + C)).feedback(out_index = 2, in_index = 1) == B.feedback() + C
+    assert ( smq << (B + C)).feedback(out_port = 2, in_port = 1) == B.feedback() + C
 
     assert ( smq << (B + C) << smq).feedback() == B.feedback() + C
 
-    assert (B + C).feedback(1,1) == B.feedback() + C
+    assert (B + C).feedback(out_port=1, in_port=1) == B.feedback() + C
 
     #check that feedback is resolved into series when possible
-    assert B.feedback(1,0).substitute({B:(C+D)}) == C << D
+    b_feedback = B.feedback(out_port=1, in_port=0)
+    series_D_C = b_feedback.substitute({B:(C+D)})
+    assert series_D_C == C << D
     assert (A << (B + cid(1))).feedback() == A.feedback() << B
-    assert (A << (B + cid(1)) << (cid(1) + P_sigma(1,0))).feedback(2,1) == A.feedback() << B
-    assert (A << (cid(1) + P_sigma(1,0)) << (B + cid(1)) << (cid(1) + P_sigma(1,0))).feedback(1,1) == A.feedback(1,1) << B
-    assert (B << (cid(1)  + C)).feedback(0,1).substitute({B: (A1 + A2)}) == A2 << C << A1
-    assert ((cid(1)  + C)<< P_sigma(1,0) << B).feedback(1,1).substitute({B: (A1 + A2)}) == A2 << C << A1
-    assert ((cid(1)  + C)<< P_sigma(1,0) << B << (cid(1) + D)).feedback(1,1).substitute({B: (A1 + A2)}) == A2 << D<< C << A1
+    assert (A << (B + cid(1)) << (cid(1) + P_sigma(1,0))).feedback(out_port=2, in_port=1) == A.feedback() << B
+    assert (A << (cid(1) + P_sigma(1,0)) << (B + cid(1)) << (cid(1) + P_sigma(1,0))).feedback(out_port=1, in_port=1) == A.feedback(out_port=1, in_port=1) << B
+    assert (B << (cid(1)  + C)).feedback(out_port=0, in_port=1).substitute({B: (A1 + A2)}) == A2 << C << A1
+    assert ((cid(1)  + C)<< P_sigma(1,0) << B).feedback(out_port=1, in_port=1).substitute({B: (A1 + A2)}) == A2 << C << A1
+    assert ((cid(1)  + C)<< P_sigma(1,0) << B << (cid(1) + D)).feedback(out_port=1, in_port=1).substitute({B: (A1 + A2)}) == A2 << D<< C << A1
 
 
 def test_ABCD():

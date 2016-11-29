@@ -137,7 +137,7 @@ class Expression(metaclass=ABCMeta):
 
     # should _ascii_, _unicode_, _tex_ be returned from cache?
     _cached_rendering = True
-    # should we fore re-rendering of the cached representation?
+    # should we force re-rendering of the cached representation?
     _force_cache = False
 
     _rules = []

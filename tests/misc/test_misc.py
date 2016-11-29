@@ -54,12 +54,14 @@ class TestCircuitParsing(unittest.TestCase):
         self.assertEqual(parse_circuit_strings('cid(5)'), cid(5))
 
     def testFeedback(self):
-        self.assertEqual(parse_circuit_strings('[M(5)]_(3->4)'), Feedback(CircuitSymbol('M',5), 3, 4))
+        lhs = parse_circuit_strings('[M(5)]_(3->4)')
+        rhs = Feedback(CircuitSymbol('M',5), out_port=3, in_port=4)
+        self.assertEqual(lhs, rhs)
 
     def testNested(self):
         self.assertEqual(parse_circuit_strings('a(2) <<  (b(1) + c(1))'), SeriesProduct(CircuitSymbol('a',2),Concatenation(CircuitSymbol('b',1), CircuitSymbol('c',1))))
         self.assertEqual(parse_circuit_strings('a(2) +  (b(1) << c(1))'), Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))))
-        self.assertEqual(parse_circuit_strings('[a(2) +  (b(1) << c(1))]_(2->0)'), Feedback(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))),2,0))
+        self.assertEqual(parse_circuit_strings('[a(2) +  (b(1) << c(1))]_(2->0)'), Feedback(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))), out_port=2, in_port=0))
 
 class TestVisualizationPNG(unittest.TestCase):
 
@@ -114,12 +116,12 @@ class TestVisualizationPNG(unittest.TestCase):
         self.assertCanBeDrawn(cid(5))
 
     def testDrawFeedback(self):
-        self.assertCanBeDrawn(Feedback(CircuitSymbol('M',5), 3, 4))
+        self.assertCanBeDrawn(Feedback(CircuitSymbol('M',5), out_port=3, in_port=4))
 
     def testDrawNested(self):
         self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a',2),Concatenation(CircuitSymbol('b',1), CircuitSymbol('c',1))))
         self.assertCanBeDrawn(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))))
-        self.assertCanBeDrawn(Feedback(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))),2,0))
+        self.assertCanBeDrawn(Feedback(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))), out_port=2, in_port=0))
 
     def testDrawSLH(self):
         self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1)*Destroy(hs=1)))
@@ -183,7 +185,7 @@ class TestVisualizationEPS(unittest.TestCase):
         self.assertCanBeDrawn(cid(5))
 
     def testDrawFeedback(self):
-        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', 5), 3, 4))
+        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', 5), out_port=3, in_port=4))
 
     def testDrawNested(self):
         self.assertCanBeDrawn(
@@ -192,7 +194,7 @@ class TestVisualizationEPS(unittest.TestCase):
             Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
         self.assertCanBeDrawn(
             Feedback(Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))),
-                2, 0))
+                out_port=2, in_port=0))
 
     def testDrawSLH(self):
         self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1) * Destroy(hs=1)))
@@ -256,7 +258,7 @@ class TestVisualizationPDF(unittest.TestCase):
         self.assertCanBeDrawn(cid(5))
 
     def testDrawFeedback(self):
-        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', 5), 3, 4))
+        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', 5), out_port=3, in_port=4))
 
     def testDrawNested(self):
         self.assertCanBeDrawn(
@@ -265,7 +267,7 @@ class TestVisualizationPDF(unittest.TestCase):
             Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
         self.assertCanBeDrawn(
             Feedback(Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))),
-                2, 0))
+                out_port=2, in_port=0))
 
     def testDrawSLH(self):
         self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1) * Destroy(hs=1)))

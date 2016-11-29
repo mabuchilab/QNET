@@ -119,7 +119,7 @@ def test_tex_circuit_operations():
             r'\mathbf{P}_{\sigma}\begin{pmatrix} 0 & 1 & 2 & 3 \\ '
             r'2 & 1 & 0 & 3 \end{pmatrix} '
             r'\lhd \left(A_{\text{test}} \boxplus B_{\text{test}}\right)')
-    assert (tex(Feedback((A+B), 3, 0)) ==
+    assert (tex(Feedback((A+B), out_port=3, in_port=0)) ==
             r'\left\lfloor{A_{\text{test}} \boxplus B_{\text{test}}}'
             r'\right\rfloor_{3\rightarrow{}0}')
     assert (tex(SeriesInverse(A+B)) ==

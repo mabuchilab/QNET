@@ -143,7 +143,7 @@ def circuit_exprs():
         A + (B << C),
         perm,
         SeriesProduct(perm, (A+B)),
-        Feedback((A+B), 3, 0),
+        Feedback((A+B), out_port=3, in_port=0),
         SeriesInverse(A+B),
     ]
 
