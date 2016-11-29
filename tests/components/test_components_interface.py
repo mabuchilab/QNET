@@ -68,6 +68,8 @@ def test_component_interface(cls):
         comp = cls(name=name, **{pname: 5})
         assert getattr(comp, pname) == 5
         assert comp.name == name
+        for pname in cls._parameters:
+            assert pname in comp.kwargs
 
     slh = comp.toSLH()
     assert isinstance(slh, SLH)

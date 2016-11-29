@@ -42,8 +42,6 @@ def test_latch_srepr(datadir):
     """Test rendering of the "Latch" circuit component creduce expression"""
     # There is a problem with Components being cached incorrectly, so we have
     # to clear the instance cache until this is fixed
-    from qnet.algebra.abstract_algebra import Expression  # XXX
-    Expression._instances = {}  # XXX
     IndentedSReprPrinter.clear_registry()
     B11 = Beamsplitter('Latch.B11')
     B12 = Beamsplitter('Latch.B12')
@@ -110,10 +108,6 @@ def test_latch_srepr(datadir):
             r'◁ (Latch.Phase1)))))]₄₋₀)) ◁ (cid(4) ⊞ (Perm(0, 2, 3, 1) '
             r'◁ ((Perm(1, 0, 2) ◁ Latch.C1) ⊞ Latch.W1(α))))))]₈₋₄ '
             r'◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
-        W2_actual = expr.operands[1].operand.operands[-1].operands[0]\
-                    .operands[1].operands[0].operands[1].operand.operands[-1]\
-                    .operands[0].operands[0].operands[1].operands[2]\
-                    .operands[1]  # XXX
         assert unicode(expr) == expected
         UnicodePrinter.update_registry(registry)
         expected = (

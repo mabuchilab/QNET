@@ -102,7 +102,7 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
         res = OrderedDict()
         for key in self._parameters:
             try:
-                res[key] = self.key
+                res[key] = getattr(self, key)
             except AttributeError:
                 pass
         return res

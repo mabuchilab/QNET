@@ -58,7 +58,7 @@ class TwoPortKerrCavity(Component):
     kappa_1 = symbols('kappa_1', positive = True)   # coupling through first port
     kappa_2 = symbols('kappa_2', positive = True)   # coupling through first port
     FOCK_DIM = 75
-    _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', FOCK_DIM]
+    _parameters = ['Delta', 'chi', 'kappa_1', 'kappa_2', 'FOCK_DIM']
 
     @property
     def space(self):
