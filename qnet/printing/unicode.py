@@ -126,9 +126,16 @@ class UnicodePrinter(Printer, metaclass=Singleton):
     ketbra_fmt = _ketbra_fmt
     braket_fmt = _braket_fmt
 
+    _registry = {}
+
     @classmethod
     def render(cls, expr, adjoint=False):
         """Render an expression"""
+        try:
+            if not adjoint and expr in cls._registry:
+                return cls._registry[expr]
+        except TypeError:
+            pass  # unhashable types, e.g. numpy array
         if isinstance(expr, SCALAR_TYPES):
             return cls.render_scalar(expr, adjoint=adjoint)
         try:

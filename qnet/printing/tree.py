@@ -30,6 +30,7 @@ class HeadStrPrinter(Printer, metaclass=Singleton):
     `sub_render` for the components of the Expression"""
 
     sub_render = str
+    _registry = None  # disabled
 
     @classmethod
     def render(cls, expr, adjoint=False):
@@ -40,6 +41,10 @@ class HeadStrPrinter(Printer, metaclass=Singleton):
             return cls.render_head_repr(expr, sub_render=cls.sub_render)
         except AttributeError:
             return str(expr)
+
+    @classmethod
+    def clear_registry(cls):
+        cls._registry = None
 
 
 def tree(expr, attr='operands', padding='', to_str=HeadStrPrinter.render,

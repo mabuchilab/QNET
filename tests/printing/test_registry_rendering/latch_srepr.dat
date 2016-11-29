@@ -1,0 +1,140 @@
+SeriesProduct(
+    CPermutation(
+        (1, 2, 3, 4, 5, 6, 7, 0),
+    ),
+    Feedback(
+        SeriesProduct(
+            Concatenation(
+                CIdentity,
+                CIdentity,
+                CIdentity,
+                CIdentity,
+                SeriesProduct(
+                    CPermutation(
+                        (0, 4, 1, 2, 3),
+                    ),
+                    Concatenation(
+                        B11,
+                        CIdentity,
+                        CIdentity,
+                        CIdentity,
+                    ),
+                ),
+            ),
+            CPermutation(
+                (0, 1, 2, 3, 4, 6, 7, 8, 5),
+            ),
+            Concatenation(
+                SeriesProduct(
+                    CPermutation(
+                        (0, 1, 2, 3, 4, 7, 5, 6),
+                    ),
+                    Concatenation(
+                        SeriesProduct(
+                            CPermutation(
+                                (0, 1, 5, 3, 4, 2),
+                            ),
+                            Feedback(
+                                SeriesProduct(
+                                    Concatenation(
+                                        CIdentity,
+                                        CIdentity,
+                                        SeriesProduct(
+                                            Concatenation(
+                                                B3,
+                                                CIdentity,
+                                            ),
+                                            CPermutation(
+                                                (0, 2, 1),
+                                            ),
+                                            Concatenation(
+                                                B12,
+                                                CIdentity,
+                                            ),
+                                        ),
+                                        CIdentity,
+                                        CIdentity,
+                                    ),
+                                    CPermutation(
+                                        (0, 1, 4, 5, 6, 2, 3),
+                                    ),
+                                    Concatenation(
+                                        SeriesProduct(
+                                            Concatenation(
+                                                CIdentity,
+                                                SeriesProduct(
+                                                    Concatenation(
+                                                        CIdentity,
+                                                        SeriesProduct(
+                                                            Concatenation(
+                                                                Phase3,
+                                                                Phase2,
+                                                            ),
+                                                            B22,
+                                                        ),
+                                                        CIdentity,
+                                                    ),
+                                                    CPermutation(
+                                                        (0, 1, 3, 2),
+                                                    ),
+                                                    Concatenation(
+                                                        C2,
+                                                        W2,
+                                                    ),
+                                                ),
+                                            ),
+                                            Concatenation(
+                                                SeriesProduct(
+                                                    B21,
+                                                    Concatenation(
+                                                        Phase1,
+                                                        CIdentity,
+                                                    ),
+                                                ),
+                                                CIdentity,
+                                                CIdentity,
+                                                CIdentity,
+                                            ),
+                                        ),
+                                        CIdentity,
+                                        CIdentity,
+                                    ),
+                                ),
+                                out_port=4,
+                                in_port=0,
+                            ),
+                        ),
+                        CIdentity,
+                        CIdentity,
+                    ),
+                    Concatenation(
+                        CIdentity,
+                        CIdentity,
+                        CIdentity,
+                        CIdentity,
+                        SeriesProduct(
+                            CPermutation(
+                                (0, 2, 3, 1),
+                            ),
+                            Concatenation(
+                                SeriesProduct(
+                                    CPermutation(
+                                        (1, 0, 2),
+                                    ),
+                                    C1,
+                                ),
+                                W1,
+                            ),
+                        ),
+                    ),
+                ),
+                CIdentity,
+            ),
+        ),
+        out_port=8,
+        in_port=4,
+    ),
+    CPermutation(
+        (7, 0, 6, 3, 1, 2, 4, 5),
+    ),
+)

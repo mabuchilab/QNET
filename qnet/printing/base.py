@@ -135,9 +135,18 @@ class Printer(metaclass=ABCMeta):
 
     op_hs_super_sub = 1  # where to put Hilbert space label for operators
 
+    _registry = {}
+    # Note: do NOT set Printer._registry = {} instead of using clear_registry!
+    # This would create an instance attribute that shadows the class attribute
+
     @classmethod
     def render(cls, expr: Any, adjoint=False) -> str:
         """Render an expression (or the adjoint of the expression)"""
+        try:
+            if not adjoint and expr in cls._registry:
+                return cls._registry[expr]
+        except TypeError:
+            pass  # unhashable types, e.g. numpy array
         if isinstance(expr, SCALAR_TYPES):
             return cls.render_scalar(expr, adjoint=adjoint)
         try:
@@ -147,6 +156,30 @@ class Printer(metaclass=ABCMeta):
                 return "Adjoint[%s]" % str(expr)
             else:
                 return str(expr)
+
+    @classmethod
+    def register(cls, expr, rendered):
+        """Register a fixed rendered string for the given `expr` in an internal
+        registry. As a result, any call to :method:`render`
+        for `expr` will immediately return `rendered`"""
+        cls._registry[expr] = rendered
+
+    @classmethod
+    def update_registry(cls, mapping):
+        """Call ``register(key, val)`` for every key-value pair in the
+        `mapping dictionary`"""
+        cls._registry.update(mapping)
+
+    @classmethod
+    def del_registered_expr(cls, expr):
+        """Remove the registered `expr` from the registry (cf.
+        :method:`register_expr`)"""
+        del cls._registry[expr]
+
+    @classmethod
+    def clear_registry(cls):
+        """Clear the registry"""
+        cls._registry = {}
 
     @classmethod
     def render_head_repr(cls, expr: Any, sub_render=None) -> str:

@@ -3,7 +3,8 @@
 from qnet.circuit_components.library import make_namespace_string
 from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import cid, P_sigma, FB
-from qnet.circuit_components.three_port_kerr_cavity_cc import ThreePortKerrCavity
+from qnet.circuit_components.three_port_kerr_cavity_cc import (
+    ThreePortKerrCavity)
 from qnet.circuit_components.beamsplitter_cc import Beamsplitter
 from qnet.circuit_components.phase_cc import Phase
 from qnet.circuit_components.displace_cc import Displace
@@ -27,7 +28,8 @@ class Latch(Component):
     phi = 2.72
     phip = 0.14
     beta = (-79.838356622-35.806239846j)
-    _parameters = ['Delta', 'beta', 'chi', 'kappa_1', 'kappa_2', 'kappa_3', 'phi', 'phip', 'theta', 'thetap']
+    _parameters = ['Delta', 'beta', 'chi', 'kappa_1', 'kappa_2', 'kappa_3',
+                   'phi', 'phip', 'theta', 'thetap']
 
     # list of input port names
     PORTSIN = ['In1', 'In2']
@@ -85,7 +87,8 @@ class Latch(Component):
     def W2(self):
         return Displace(make_namespace_string(self.name, 'W2'), alpha = self.beta)
 
-    _sub_components = ['B11', 'B12', 'B21', 'B22', 'B3', 'C1', 'C2', 'Phase1', 'Phase2', 'Phase3', 'W1', 'W2']
+    _sub_components = ['B11', 'B12', 'B21', 'B22', 'B3', 'C1', 'C2', 'Phase1',
+                       'Phase2', 'Phase3', 'W1', 'W2']
 
 
     def _toSLH(self):
@@ -97,34 +100,29 @@ class Latch(Component):
             (self.B11, self.B12, self.B21, self.B22, self.B3, self.C1, self.C2,
              self.Phase1, self.Phase2, self.Phase3, self.W1, self.W2)
 
-        # TODO: reformat
-        res = (
+        return (
             P_sigma(1, 2, 3, 4, 5, 6, 7, 0) <<
-            FB(
-                (
-                    (cid(4) + (P_sigma(0, 4, 1, 2, 3) << (B11 + cid(3)))) <<
-                    P_sigma(0, 1, 2, 3, 4, 6, 7, 8, 5) <<
-                    ((P_sigma(0, 1, 2, 3, 4, 7, 5, 6) <<
-                  ((P_sigma(0, 1, 5, 3, 4, 2) <<
-                    FB((cid(2) +
-                        ((B3 + cid(1)) <<
-                         P_sigma(0, 2, 1) <<
-                         (B12 + cid(1))) +
-                       cid(2)) <<
-                       P_sigma(0, 1, 4, 5, 6, 2, 3) <<
-                       (((cid(1) +
+            FB(((cid(4) + (P_sigma(0, 4, 1, 2, 3) << (B11 + cid(3)))) <<
+                P_sigma(0, 1, 2, 3, 4, 6, 7, 8, 5) <<
+                ((P_sigma(0, 1, 2, 3, 4, 7, 5, 6) <<
+                 ((P_sigma(0, 1, 5, 3, 4, 2) <<
+                  FB((cid(2) +
+                      ((B3 + cid(1)) <<
+                          P_sigma(0, 2, 1) <<
+                          (B12 + cid(1))) +
+                      cid(2)) <<
+                      P_sigma(0, 1, 4, 5, 6, 2, 3) <<
+                      (((cid(1) +
                           ((cid(1) + ((Phase3 + Phase2) << B22) + cid(1)) <<
                            P_sigma(0, 1, 3, 2) << (C2 + W2))) <<
-                         ((B21 << (Phase1 + cid(1))) + cid(3))) +
-                        cid(2)),
-                       out_port=4, in_port=0)) +
-                   cid(2)) <<
-                  (cid(4) +
-                   (P_sigma(0, 2, 3, 1) << ((P_sigma(1, 0, 2) << C1) + W1)))) +
-                 cid(1))), out_port=8, in_port=4
-               ) <<
+                          ((B21 << (Phase1 + cid(1))) + cid(3))) +
+                       cid(2)),
+                      out_port=4, in_port=0)) +
+                  cid(2)) <<
+                 (cid(4) +
+                 (P_sigma(0, 2, 3, 1) << ((P_sigma(1, 0, 2) << C1) + W1)))) +
+                 cid(1))), out_port=8, in_port=4) <<
             P_sigma(7, 0, 6, 3, 1, 2, 4, 5))
-        return res
 
     @property
     def space(self):

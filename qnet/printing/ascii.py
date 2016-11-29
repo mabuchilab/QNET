@@ -24,7 +24,7 @@ from ..algebra.singleton import Singleton, singleton_object
 class AsciiPrinter(Printer, metaclass=Singleton):
     """Printer for a string (ASCII) representation. See class:`Printer` for
     details"""
-    pass
+    _registry = {}
 
 
 def ascii(expr):

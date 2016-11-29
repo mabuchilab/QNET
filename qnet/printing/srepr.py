@@ -37,10 +37,17 @@ class SReprPrinter(Printer, metaclass=Singleton):
     identical object (implementing (``srepr(expr, indented=False)``)
     """
 
+    _registry = {}
+
     @classmethod
     def render(cls, expr, adjoint=False):
         """Render the given expression. Not that `adjoint` must be False"""
         assert not adjoint, "adjoint not supported for SReprPrinter"
+        try:
+            if expr in cls._registry:
+                return cls._registry[expr]
+        except TypeError:
+            pass  # unhashable types, e.g. numpy array
         if isinstance(expr, SympyBasic):
             return sympy_srepr(expr)
         elif isinstance(expr, ndarray):
@@ -65,6 +72,8 @@ class IndentedSReprPrinter(Printer):
     ``srepr(expr, indented=True)``
     """
 
+    _registry = {}
+
     def __init__(self, indent=0):
         self.indent = int(indent)
         self._key_name = None
@@ -72,6 +81,11 @@ class IndentedSReprPrinter(Printer):
     def render(self, expr, adjoint=False):
         """Render the given expression. Not that `adjoint` must be False"""
         assert not adjoint, "adjoint not supported for SReprPrinter"
+        try:
+            if expr in self._registry:
+                return "    " * self.indent + self._registry[expr]
+        except TypeError:
+            pass  # unhashable types, e.g. numpy array
         if isinstance(expr, SympyBasic):
             return "    " * self.indent + sympy_srepr(expr)
         elif isinstance(expr, ndarray):

@@ -54,7 +54,7 @@ components = [And, Beamsplitter, Delay, Displace, DoubleSidedJaynesCummings,
               Relay, RelayDoubleProbe, SingleSidedJaynesCummings,
               SingleSidedOPO, ThreePortKerrCavity, ThreePortOPO,
               TwoPortKerrCavity, ZProbeCavity]
-#components = [Latch, ]  # FAILING
+components = [Latch, ]  # FAILING
 
 @pytest.mark.parametrize('cls', components)
 def test_component_interface(cls):

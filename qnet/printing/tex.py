@@ -79,9 +79,16 @@ class LaTeXPrinter(Printer, metaclass=Singleton):
     op_accent = r'\hat'
     superop_accent = r'\mathrm'
 
+    _registry = {}
+
     @classmethod
     def render(cls, expr, adjoint=False):
         """Return a LaTeX representation for the given `expr`"""
+        try:
+            if not adjoint and expr in cls._registry:
+                return cls._registry[expr]
+        except TypeError:
+            pass  # unhashable types, e.g. numpy array
         if isinstance(expr, SCALAR_TYPES):
             return cls.render_scalar(expr, adjoint=adjoint)
         if isinstance(expr, (sympy.Basic, sympy.Matrix)):
