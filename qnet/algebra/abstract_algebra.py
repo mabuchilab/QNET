@@ -31,6 +31,7 @@ from abc import ABCMeta, abstractproperty
 from collections import OrderedDict
 from functools import reduce
 from contextlib import contextmanager
+from copy import copy
 
 from .pattern_matching import (
         ProtoExpr, match_pattern, wc, pattern_head, pattern)
@@ -145,7 +146,6 @@ class Expression(metaclass=ABCMeta):
     # should we force re-rendering of the cached representation?
     _force_cache = False
 
-    _rules = []
     _simplifications = []
 
     # we cache all instances of Expressions for fast construction
@@ -699,4 +699,60 @@ def temporary_instance_cache(cls):
     orig_instances = cls._instances
     cls._instances = {}
     yield
+    cls._instances = orig_instances
+
+
+@contextmanager
+def extra_rules(cls, rules):
+    """Context manager that temporarily adds the given rules to `cls` (to be
+    processed by `match_replace`. Implies `temporary_instance_cache`.
+    """
+    orig_rules = copy(cls._rules)
+    cls._rules.extend(rules)
+    orig_instances = cls._instances
+    cls._instances = {}
+    yield
+    cls._rules = orig_rules
+    cls._instances = orig_instances
+
+
+@contextmanager
+def extra_binary_rules(cls, rules):
+    """Context manager that temporarily adds the given rules to `cls` (to be
+    processed by `match_replace_binary`. Implies `temporary_instance_cache`.
+    """
+    orig_rules = copy(cls._binary_rules)
+    cls._binary_rules.extend(rules)
+    orig_instances = cls._instances
+    cls._instances = {}
+    yield
+    cls._binary_rules = orig_rules
+    cls._instances = orig_instances
+
+
+@contextmanager
+def no_rules(cls):
+    """Context manager that temporarily disables all rules (processed by
+    `match_replace` or `match_replace_binary`) for the given `cls`. Implies
+    `temporary_instance_cache`.
+    """
+    has_rules = True
+    has_binary_rules = True
+    orig_instances = cls._instances
+    cls._instances = {}
+    try:
+        orig_rules = cls._rules
+        cls._rules = []
+    except AttributeError:
+        has_rules = False
+    try:
+        orig_binary_rules = cls._binary_rules
+        cls._binary_rules = []
+    except AttributeError:
+        has_binary_rules = False
+    yield
+    if has_rules:
+        cls._rules = orig_rules
+    if has_binary_rules:
+        cls._binary_rules = orig_binary_rules
     cls._instances = orig_instances
