@@ -30,6 +30,7 @@ See :ref:`abstract_algebra` for more details.
 from abc import ABCMeta, abstractproperty
 from collections import OrderedDict
 from functools import reduce
+from contextlib import contextmanager
 
 from .pattern_matching import (
         ProtoExpr, match_pattern, wc, pattern_head, pattern)
@@ -123,6 +124,10 @@ class Expression(metaclass=ABCMeta):
         expr.__class__(*expr.args, **expr.kwargs)
 
     will return and object identical to `expr`.
+
+    Class attributes:
+        instance_caching (bool):  Flag to indicate whether the `create` class
+            method should cache the instantiation of instances
     """
     # Note: all subclasses of Exression that override `__init__` or `create`
     # *must* call the corresponding superclass method *at the end*. Otherwise,
@@ -145,6 +150,7 @@ class Expression(metaclass=ABCMeta):
 
     # we cache all instances of Expressions for fast construction
     _instances = {}
+    instance_caching = True
 
     # eventually, we should ensure that the create method is idempotent, i.e.
     # expr.create(*expr.args, **expr.kwargs) == expr(*expr.args, **expr.kwargs)
@@ -169,7 +175,8 @@ class Expression(metaclass=ABCMeta):
         """
         key = cls._instance_key(args, kwargs)
         try:
-            return cls._instances[key]
+            if cls.instance_caching:
+                return cls._instances[key]
         except KeyError:
             pass
         for simplification in cls._simplifications:
@@ -179,8 +186,9 @@ class Expression(metaclass=ABCMeta):
             except (TypeError, ValueError):
                 # We assume that if the simplification didn't return a tuple,
                 # the result is a fully instantiated object
-                cls._instances[key] = simplified
-                if cls._create_idempotent:
+                if cls.instance_caching:
+                    cls._instances[key] = simplified
+                if cls._create_idempotent and cls.instance_caching:
                     try:
                         key2 = simplified._instance_key(simplified.args,
                                                         simplified.kwargs)
@@ -194,8 +202,9 @@ class Expression(metaclass=ABCMeta):
         if len(kwargs) > 0:
             cls._has_kwargs = True
         instance = cls(*args, **kwargs)
-        cls._instances[key] = instance
-        if cls._create_idempotent:
+        if cls.instance_caching:
+            cls._instances[key] = instance
+        if cls._create_idempotent and cls.instance_caching:
             key2 = cls._instance_key(args, kwargs)
             if key2 != key:
                 cls._instances[key2] = instance  # instantiated key
@@ -663,3 +672,31 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
             cls,
             _match_replace_binary_combine(cls, a[:-1], r),
             b[1:])
+
+
+###############################################################################
+############################## CONTEXT MANAGERS ###############################
+###############################################################################
+
+
+@contextmanager
+def no_instance_caching():
+    """Temporarily disable the caching of instances through
+    `Expression.create`"""
+    # this assumes that no sub-class of Expression shadows
+    # Expression.instance_caching
+    orig_flag = Expression.instance_caching
+    Expression.instance_caching = False
+    yield
+    Expression.instance_caching = orig_flag
+
+
+@contextmanager
+def temporary_instance_cache(cls):
+    """Use a temporary cache for instances obtained from the `create` method of
+    the given `cls`. That is, no cached instances from outside of the managed
+    context will be used within the managed context, and vice versa"""
+    orig_instances = cls._instances
+    cls._instances = {}
+    yield
+    cls._instances = orig_instances
