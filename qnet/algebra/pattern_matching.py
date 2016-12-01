@@ -347,6 +347,20 @@ class Pattern():
                     res.success = False
         return res
 
+    def findall(self, expr):
+        """Return a list of all matching (sub-)expressions in `expr`"""
+        result = []
+        try:
+            for arg in expr.args:
+                result.extend(self.findall(arg))
+            for arg in expr.kwargs.values():
+                result.extend(self.findall(arg))
+        except AttributeError:
+            pass
+        if self.match(expr):
+            result.append(expr)
+        return result
+
     def _repr_head(self):
         if self.head is not None:
             if isinstance(self.head, (list, tuple)):

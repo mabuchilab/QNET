@@ -24,8 +24,10 @@ import pytest
 
 from qnet.algebra.abstract_algebra import SCALAR_TYPES
 from qnet.algebra.operator_algebra import (
-        OperatorSymbol, ScalarTimesOperator)
-from qnet.algebra.hilbert_space_algebra import FullSpace, HilbertSpace
+        OperatorSymbol, ScalarTimesOperator, OperatorTimes, Operator,
+        LocalOperator, Create)
+from qnet.algebra.hilbert_space_algebra import (
+        FullSpace, HilbertSpace, LocalSpace)
 from qnet.algebra.circuit_algebra import (
         Circuit, CPermutation, Concatenation, SeriesProduct, CircuitSymbol,
         Feedback)
@@ -369,3 +371,22 @@ def test_pattern_str():
                       "Pattern(head=int, wc_name='i2')), "
                 "kwargs={'a': Pattern(head=str, wc_name='a'), "
                         "'b': Pattern(head=int, wc_name='b')})")
+
+
+def test_findall():
+    h1 = LocalSpace("h1")
+    a = OperatorSymbol("a", hs=h1)
+    b = OperatorSymbol("b", hs=h1)
+    c = OperatorSymbol("c", hs=h1)
+    c_local = Create(hs=h1, identifier='c')
+
+    expr = 2 * (a * b * c - b * c * a + a * b)
+    op_symbols = pattern(OperatorSymbol).findall(expr)
+    assert len(op_symbols) == 8
+    assert set(op_symbols) == {a, b, c}
+    op = wc(head=Operator)
+    three_factors = pattern(OperatorTimes, op, op, op).findall(expr)
+    assert three_factors == [a * b * c, b * c * a]
+    assert len(pattern(LocalOperator).findall(expr)) == 0
+    assert len(pattern(LocalOperator)
+               .findall(expr.substitute({c: c_local}))) == 2
