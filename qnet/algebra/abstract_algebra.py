@@ -271,6 +271,25 @@ class Expression(metaclass=ABCMeta):
                       for (key, val) in self.kwargs.items()}
         return self.__class__.create(*new_args, **new_kwargs)
 
+    def simplify(self, rules=None):
+        """Recursively re-instantiate the expression, while applying all of the
+        given `rules` to all encountered (sub-) expressions"""
+        if rules is None:
+            rules = []
+        new_args = [simplify(arg, rules) for arg in self.args]
+        new_kwargs = {key: simplify(val, rules)
+                      for (key, val) in self.kwargs.items()}
+        simplified = self.__class__.create(*new_args, **new_kwargs)
+        for (rule, replacement) in rules:
+            matched = rule.match(simplified)
+            if matched:
+                try:
+                    return replacement(**matched)
+                except CannotSimplify:
+                    pass
+        return simplified
+
+
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
         if adjoint:
@@ -403,6 +422,46 @@ def substitute(expr, var_map):
     except AttributeError:
         if expr in var_map:
             return var_map[expr]
+        return expr
+
+
+def simplify(expr, rules=None):
+    """Recursively re-instantiate the expression, while applying all of the
+    given `rules` to all encountered (sub-) expressions
+
+    Args:
+        expr:  Any Expression or scalar object
+        rules (list): A list of tuples ``(pattern, replacement)`` where `rule`
+            is an instance of :class:`Pattern`) and `replacement` is a
+            callable.  The pattern will be matched against any expression that
+            is encountered during the re-instantiation. If the `pattern`
+            matches, then the (sub-)expression is replaced by the result of
+            calling `replacement` while passing any wildcards from `pattern` as
+            keyword arguments. If `replacement` raises `CannotSimplify`, it
+            will be ignored
+
+    Note:
+        Instead of or in addition to passing `rules`, `simplify` can often be
+        combined with e.g. `extra_rules` / `extra_binary_rules` context
+        managers. If a simplification can be handled through these context
+        managers, this is usually more efficient than an equivalent rule.
+        However, both really are complemetary: the rules defined in the context
+        managers are applied *before* instantation (hence these these patterns
+        are instantiated through `pattern_head`). In contrast, the patterns
+        defined in `rules` are applied against instantiated expressions.
+    """
+    if rules is None:
+        rules = []
+    if hasattr(expr, 'simplify'):
+        return expr.simplify(rules)
+    else:
+        for (rule, replacement) in rules:
+            matched = rule.match(expr)
+            if matched:
+                try:
+                    return replacement(**matched)
+                except CannotSimplify:
+                    pass
         return expr
 
 
