@@ -477,7 +477,22 @@ def wc(name_mode="_", head=None, args=None, kwargs=None, *, conditions=None) \
 # In order to match Expressions before they are instantiated, we define
 # Proto-Expressions the provide just the 'args' and 'kwargs' properties,
 # allowing `match_pattern` to match them via duck typing
-ProtoExpr = namedtuple('ProtoExpr', ['args', 'kwargs'])
+class ProtoExpr():
+    """Object representing an un-instantiated Expression that may matched by a
+    `Pattern` created via :func:`pattern_head`
+
+    Args:
+        args (list): positional arguments that would be used in the
+            instantiation of the Expression
+        kwargs (dict):  keyword arguments
+    """
+    def __init__(self, args, kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def __hash__(self):
+        return hash((self.__class__, ) + tuple(self.args) +
+                    tuple(sorted(self.kwargs.items())))
 
 
 def match_pattern(expr_or_pattern: object, expr: object) -> MatchDict:
