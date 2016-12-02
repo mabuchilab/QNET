@@ -24,12 +24,27 @@ from .ascii import AsciiPrinter
 from ..algebra.singleton import Singleton, singleton_object
 
 
+def shorten_renderer(renderer, max_len):
+    """Return a modified that returns the representation of expr, or '...' if
+    that representation is longer than `max_len`"""
+
+    def short_renderer(expr):
+        res = renderer(expr)
+        if len(res) > max_len:
+            return '...'
+        else:
+            return res
+
+    return short_renderer
+
+
 @singleton_object
 class HeadStrPrinter(Printer, metaclass=Singleton):
     """Printer that renders all expressions to in a "head" format, but using
     `sub_render` for the components of the Expression"""
 
-    sub_render = str
+    sub_render = shorten_renderer(str, 15)
+    key_sub_render = str
     _registry = None  # disabled
 
     @classmethod
@@ -38,7 +53,8 @@ class HeadStrPrinter(Printer, metaclass=Singleton):
         if adjoint:
             raise NotImplementedError("adjoint not implemented")
         try:
-            return cls.render_head_repr(expr, sub_render=cls.sub_render)
+            return cls.render_head_repr(expr, sub_render=cls.sub_render,
+                                        key_sub_render=cls.key_sub_render)
         except AttributeError:
             return str(expr)
 
@@ -69,10 +85,14 @@ def tree(expr, attr='operands', padding='', to_str=HeadStrPrinter.render,
     lines = []
     if unicode:
         draw = {'leaf': '└─ ', 'branch': '├─ ', 'line': '│'}
-        HeadStrPrinter.__class__.sub_render = UnicodePrinter.render
+        HeadStrPrinter.__class__.sub_render = \
+                shorten_renderer(UnicodePrinter.render, 15)
+        HeadStrPrinter.__class__.key_sub_render = UnicodePrinter.render
     else:
         draw = {'leaf': '+- ', 'branch': '+- ', 'line': '|'}
-        HeadStrPrinter.__class__.sub_render = AsciiPrinter.render
+        HeadStrPrinter.__class__.sub_render = \
+                shorten_renderer(AsciiPrinter.render, 15)
+        HeadStrPrinter.__class__.key_sub_render = AsciiPrinter.render
     if _root:
         lines.append(". " + to_str(expr))
     else:
