@@ -343,7 +343,7 @@ def test_no_match():
                        b=pattern_head(pattern(int), pattern(int)))
     match = pat.match(ProtoExpr([], {'a': 1, 'b': 2}))
     assert not match
-    assert "2 is a scalar, not an Expression" in match.reason
+    assert "2 is not an instance of ProtoExpr" in match.reason
 
     pat = pattern_head(pattern(int))
     match = pat.match(ProtoExpr([1, 2], {}))
@@ -367,10 +367,9 @@ def test_no_match():
 
 def test_pattern_str():
     assert str(pattern_kwargs) == (
-        "Pattern(args=(Pattern(head=int, wc_name='i1'), "
-                      "Pattern(head=int, wc_name='i2')), "
-                "kwargs={'a': Pattern(head=str, wc_name='a'), "
-                        "'b': Pattern(head=int, wc_name='b')})")
+        "Pattern(head=ProtoExpr, args=(Pattern(head=int, wc_name='i1'), "
+        "Pattern(head=int, wc_name='i2')), kwargs={'a': Pattern(head=str, "
+        "wc_name='a'), 'b': Pattern(head=int, wc_name='b')})")
 
 
 def test_findall():

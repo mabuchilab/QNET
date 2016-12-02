@@ -422,9 +422,10 @@ def pattern(head, *args, mode=1, wc_name=None, conditions=None, **kwargs) \
 
 
 def pattern_head(*args, conditions=None, wc_name=None, **kwargs) -> Pattern:
-    """Helper function to create a Pattern object without `head`, but with
-    matching args and kwargs. Useful for defining rules matched
-    against a ProtoExpr. The function does not allow to set a wildcard name
+    """Helper function to create a Pattern object specfically matching a
+    `ProtoExpr`. The patterns used associated with `_rules` and `_binary_rules`
+    of an `Expression` subclass must be instantiated through this routine. The
+    function does not allow to set a wildcard name
     (`wc_name` must not be given / be None)"""
     # This routine is indented for the _rules and _binary_rules class
     # attributes of algebraic objects, which the match_replace and
@@ -436,7 +437,7 @@ def pattern_head(*args, conditions=None, wc_name=None, **kwargs) -> Pattern:
     if wc_name is not None:
         raise ValueError("pattern_head cannot be used to set a wildcard "
                          "(`wc_name` must not be given")
-    pat = Pattern(head=None, args=args, kwargs=kwargs, wc_name=None,
+    pat = Pattern(head=ProtoExpr, args=args, kwargs=kwargs, wc_name=None,
                   conditions=conditions)
     return pat
 
