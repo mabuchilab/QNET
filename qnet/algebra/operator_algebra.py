@@ -317,10 +317,10 @@ class OperatorOperation(Operator, Operation, metaclass=ABCMeta):
     operands.
     """
 
-    def __init__(self, *operands):
+    def __init__(self, *operands, **kwargs):
         op_spaces = [o.space for o in operands]
         self._space = ProductSpace.create(*op_spaces)
-        super().__init__(*operands)
+        super().__init__(*operands, **kwargs)
 
     @property
     def space(self):
@@ -333,9 +333,9 @@ class OperatorOperation(Operator, Operation, metaclass=ABCMeta):
 class SingleOperatorOperation(Operator, Operation, metaclass=ABCMeta):
     """Base class for Operations that act on a single Operator"""
 
-    def __init__(self, op):
+    def __init__(self, op, **kwargs):
         self._space = op.space
-        super().__init__(op)
+        super().__init__(op, **kwargs)
 
     @property
     def space(self):
@@ -1248,6 +1248,39 @@ class Adjoint(SingleOperatorOperation):
         return Adjoint.create(self.operands[0]._diff(sym))
 
 
+class OperatorPlusMinusCC(SingleOperatorOperation):
+    """And operator plus or minux its complex conjugate
+    """
+
+    def __init__(self, op, *, sign=+1):
+        self._sign = sign
+        super().__init__(op, sign=sign)
+
+    @property
+    def kwargs(self):
+        if self._sign > 0:
+            return {'sign': +1, }
+        else:
+            return {'sign': -1, }
+
+    def _expand(self):
+        return self
+
+    def pseudo_inverse(self):
+        return OperatorPlusMinusCC(self.operand.pseudo_inverse(), self._sign)
+
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        o = self.operand
+        sign_str = ' + '
+        if self._sign < 0:
+            sign_str = ' - '
+        return printer.render(o) + sign_str + printer.cc_string
+
+    def _diff(self, sym):
+        return OperatorPlusMinusCC(self.operands._diff(sym), self._sign)
+
+
 class PseudoInverse(SingleOperatorOperation):
     r"""The symbolic pseudo-inverse :math:`X^+` of an operator :math:`X`. It is
     defined via the relationship
@@ -1556,6 +1589,64 @@ def Jzjmcoeff(ls, m):
 
 def Jmjmcoeff(ls, m):
     return Jpjmcoeff(ls, m-1)
+
+
+
+###############################################################################
+# Extra ("manual") simplifications
+###############################################################################
+
+
+def _combine_operator_p_cc(A, B):
+    if B.adjoint() == A:
+        return OperatorPlusMinusCC(A, sign=+1)
+    else:
+        raise CannotSimplify
+
+
+def _combine_operator_m_cc(A, B):
+    if B.adjoint() == A:
+        return OperatorPlusMinusCC(A, sign=-1)
+    else:
+        raise CannotSimplify
+
+def _scal_combine_operator_pm_cc(c, A, d, B):
+    if B.adjoint() == A:
+        if c == d:
+            return c * OperatorPlusMinusCC(A, sign=+1)
+        elif c == -d:
+            return c * OperatorPlusMinusCC(A, sign=-1)
+    raise CannotSimplify
+
+
+def create_operator_pm_cc():
+    """Return a list of rules that can be used in an `extra_binary_rules`
+    context for `OperatorPlus` in order to combine suitable terms into a
+    `OperatorPlusMinusCC` instance
+    """
+    A = wc("A", head=Operator)
+    B = wc("B", head=Operator)
+    c = wc("c", head=SCALAR_TYPES)
+    d = wc("d", head=SCALAR_TYPES)
+    return [
+        (pattern_head(A, B),
+            _combine_operator_p_cc),
+        (pattern_head(pattern(ScalarTimesOperator, -1, B), A),
+            _combine_operator_m_cc),
+        (pattern_head(pattern(ScalarTimesOperator, c, A),
+                      pattern(ScalarTimesOperator, d, B)),
+            _scal_combine_operator_pm_cc),
+    ]
+
+
+def expand_operator_pm_cc():
+    """Return a list of rules that can be used in `simplify` to expand
+    instances of OperatorPlusMinusCC"""
+    A = wc("A", head=Operator)
+    return [
+        (pattern(OperatorPlusMinusCC, A, sign=+1), lambda A: A + A.dag()),
+        (pattern(OperatorPlusMinusCC, A, sign=-1), lambda A: A - A.dag()),
+    ]
 
 
 ###############################################################################

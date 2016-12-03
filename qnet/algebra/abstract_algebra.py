@@ -452,7 +452,7 @@ def simplify(expr, rules=None):
     """
     if rules is None:
         rules = []
-    if hasattr(expr, 'simplify'):
+    if isinstance(expr, Expression):
         return expr.simplify(rules)
     else:
         for (rule, replacement) in rules:

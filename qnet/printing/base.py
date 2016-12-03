@@ -96,6 +96,7 @@ class Printer(metaclass=ABCMeta):
             space
         braket_fmt (str): Format for rendering a :class:`BraKet` instance.
             Receives the formatting keys `label_i`, `label_j`, and `space`.
+        cc_string (str): String to indicate the complex conjugate (in a sum)
     """
 
     head_repr_fmt = r'{head}({args}{kwargs})'
@@ -132,6 +133,7 @@ class Printer(metaclass=ABCMeta):
     ket_fmt = r'|{label}>_({space})'
     ketbra_fmt = r'|{label_i}><{label_j}|_({space})'
     braket_fmt = r'<{label_i}|{label_j}>_({space})'
+    cc_string = r'c.c.'
 
     op_hs_super_sub = 1  # where to put Hilbert space label for operators
 
@@ -182,10 +184,13 @@ class Printer(metaclass=ABCMeta):
         cls._registry = {}
 
     @classmethod
-    def render_head_repr(cls, expr: Any, sub_render=None) -> str:
+    def render_head_repr(
+            cls, expr: Any, sub_render=None, key_sub_render=None) -> str:
         """Render a textual representation of `expr` using
         :attr:`head_repr_fmt`. Positional and keyword arguments are recursively
-        rendered using `sub_render`, which defaults to `cls.render` by default
+        rendered using `sub_render`, which defaults to `cls.render` by default.
+        If desired, a different renderer may be used for keyword arguments by
+        giving `key_sub_renderer`
 
         Raises:
             AttributeError: if `expr` is not an instance of
@@ -194,6 +199,8 @@ class Printer(metaclass=ABCMeta):
         """
         if sub_render is None:
             sub_render = cls.render
+        if key_sub_render is None:
+            key_sub_render = sub_render
         if isinstance(expr.__class__, Singleton):
             # We exploit that Singletons override __expr__ to directly return
             # their name
@@ -206,7 +213,7 @@ class Printer(metaclass=ABCMeta):
         kwargs = ''
         if len(keys) > 0:
             kwargs = cls.arg_sep.join(
-                        ["%s=%s" % (key, sub_render(expr.kwargs[key]))
+                        ["%s=%s" % (key, key_sub_render(expr.kwargs[key]))
                          for key in keys])
             if len(args) > 0:
                 kwargs = cls.arg_sep + kwargs
