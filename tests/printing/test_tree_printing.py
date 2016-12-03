@@ -51,8 +51,8 @@ def test_circuit_tree():
     tree = tree_str(Feedback((A << (beta + gamma)) + CIdentity,
                              out_port=2, in_port=0))
     assert tree == dedent(r'''
-    . Feedback((A_test ◁ (β ⊞ γ)), out_port=2, in_port=0)
-      └─ Concatenation(A_test ◁ (β ⊞ γ), cid(1))
+    . Feedback(..., out_port=2, in_port=0)
+      └─ Concatenation(..., cid(1))
          ├─ SeriesProduct(A_test, β ⊞ γ)
          │  ├─ CircuitSymbol(A_test, 2)
          │  └─ Concatenation(β, γ)
@@ -85,8 +85,8 @@ def test_operator_tree():
     expr = 2 * A - sqrt(gamma) * (B + C)
     tree = tree_str(expr, unicode=False)
     assert tree == dedent(r'''
-    . OperatorPlus(-sqrt(gamma) * (B^(q_1) + C^(q_2)), 2 * A^(q_1))
-      +- ScalarTimesOperator(-sqrt(gamma), B^(q_1) + C^(q_2))
+    . OperatorPlus(..., 2 * A^(q_1))
+      +- ScalarTimesOperator(-sqrt(gamma), ...)
       |  +- -sqrt(gamma)
       |  +- OperatorPlus(B^(q_1), C^(q_2))
       |     +- OperatorSymbol(B, hs=H_q_1)
@@ -111,10 +111,10 @@ def test_ket_tree():
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     tree = tree_str(KetBra.create(bell1, bell2))
     assert tree == dedent(r'''
-    . ScalarTimesOperator(1/2, (|e,g⟩_(q₁⊗q₂) - exp(-I*γ) * |g,e⟩_(q₁⊗q₂))(⟨e,e|_(q₁⊗q₂) - ⟨g,g|_(q₁⊗q₂)))
+    . ScalarTimesOperator(1/2, ...)
       ├─ 1/2
-      └─ KetBra(|e,g⟩_(q₁⊗q₂) - exp(-I*γ) * |g,e⟩_(q₁⊗q₂), |e,e⟩_(q₁⊗q₂) - |g,g⟩_(q₁⊗q₂))
-         ├─ KetPlus(|e,g⟩_(q₁⊗q₂), -exp(-I*γ) * |g,e⟩_(q₁⊗q₂))
+      └─ KetBra(..., ...)
+         ├─ KetPlus(|e,g⟩_(q₁⊗q₂), ...)
          │  ├─ TensorKet(|e⟩_(q₁), |g⟩_(q₂))
          │  │  ├─ BasisKet(e, hs=ℌ_q₁)
          │  │  └─ BasisKet(g, hs=ℌ_q₂)
@@ -146,7 +146,7 @@ def test_sop_operations():
     tree = tree_str(2 * A - sqrt(gamma) * (B + C))
     assert (
         tree == dedent(r'''
-        . SuperOperatorPlus(-√γ * (B^(q₁) + C^(q₂)), 2 * A^(q₁))
+        . SuperOperatorPlus(..., 2 * A^(q₁))
           ├─ ScalarTimesSuperOperator(-√γ, B^(q₁) + C^(q₂))
           │  ├─ -sqrt(gamma)
           │  └─ SuperOperatorPlus(B^(q₁), C^(q₂))
@@ -159,7 +159,7 @@ def test_sop_operations():
         # The sympy printer doesn't always give exactly the same result,
         # depending on context
         tree == dedent(r'''
-        . SuperOperatorPlus(-sqrt(γ) * (B^(q₁) + C^(q₂)), 2 * A^(q₁))
+        . SuperOperatorPlus(..., 2 * A^(q₁))
           ├─ ScalarTimesSuperOperator(-sqrt(γ), B^(q₁) + C^(q₂))
           │  ├─ -sqrt(gamma)
           │  └─ SuperOperatorPlus(B^(q₁), C^(q₂))
