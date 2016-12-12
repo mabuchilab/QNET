@@ -105,14 +105,16 @@ def implied_local_space(*, arg_index=None, keys=None):
     else:
         raise ValueError("must give at least one of arg_index and keys")
 
+
 def delegate_to_method(mtd):
+    """Create a simplification rule that delegates the instantiation to the
+    method `mtd` of the operand (if defined)"""
     def _delegate_to_method(cls, ops, kwargs):
-        """Factor out coefficients of all factors."""
-        try:
-            op, = ops
-            if isinstance(op. cls._delegate_to_method):
-                return getattr(op, mtd)()
-        except (ValueError, AttributeError):
+        assert len(ops) == 1
+        op, = ops
+        if hasattr(op, mtd):
+            return getattr(op, mtd)()
+        else:
             return ops, kwargs
     return _delegate_to_method
 
@@ -423,7 +425,7 @@ class IdentityOperator(Operator, Expression, metaclass=Singleton):
     def create(self):
         return self
 
-    def adjoint(self):
+    def _adjoint(self):
         return self
 
     def _expand(self):
@@ -432,7 +434,7 @@ class IdentityOperator(Operator, Expression, metaclass=Singleton):
     def _series_expand(self, param, about, order):
         return (self,) + ((0,) * order)
 
-    def pseudo_inverse(self):
+    def _pseudo_inverse(self):
         return self
 
     def _render(self, fmt, adjoint=False):
@@ -462,7 +464,7 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
     def args(self):
         return tuple()
 
-    def adjoint(self):
+    def _adjoint(self):
         return self
 
     def _expand(self):
@@ -471,7 +473,7 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
     def _series_expand(self, param, about, order):
         return (self,) + ((0,) * order)
 
-    def pseudo_inverse(self):
+    def _pseudo_inverse(self):
         return self
 
     def _render(self, fmt, adjoint=False):
@@ -646,10 +648,10 @@ class Phase(LocalOperator):
     def _diff(self, sym):
         raise NotImplementedError()
 
-    def adjoint(self):
+    def _adjoint(self):
         return Phase(-self.phi.conjugate(), hs=self.space)
 
-    def pseudo_inverse(self):
+    def _pseudo_inverse(self):
         return Phase(-self.phi, hs=self.space)
 
     def _simplify_scalar(self):
@@ -694,10 +696,10 @@ class Displace(LocalOperator):
     def _diff(self, sym):
         raise NotImplementedError()
 
-    def adjoint(self):
+    def _adjoint(self):
         return Displace(-self.alpha, hs=self.space)
 
-    pseudo_inverse = adjoint
+    _pseudo_inverse = _adjoint
 
     def _simplify_scalar(self):
         return Displace(simplify_scalar(self.alpha), hs=self.space)
@@ -741,10 +743,10 @@ class Squeeze(LocalOperator):
     def _diff(self, sym):
         raise NotImplementedError()
 
-    def adjoint(self):
+    def _adjoint(self):
         return Squeeze(-self.eta, hs=self.space)
 
-    pseudo_inverse = adjoint
+    _pseudo_inverse = _adjoint
 
     def _simplify_scalar(self):
         return Squeeze(simplify_scalar(self.eta), hs=self.space)
@@ -1101,7 +1103,7 @@ class ScalarTimesOperator(Operator, Operation):
         cd = c.diff(sym) if isinstance(c, SympyBasic) else 0
         return cd*t + c * t._diff(sym)
 
-    def pseudo_inverse(self):
+    def _pseudo_inverse(self):
         c, t = self.operands
         return t.pseudo_inverse() / c
 
@@ -1212,7 +1214,7 @@ class Adjoint(SingleOperatorOperation):
     :type op: Operator
     """
     _rules = []  # see end of module
-    _simplifications = [match_replace, ]
+    _simplifications = [match_replace, delegate_to_method('_adjoint')]
 
     def _expand(self):
         eo = self.operand.expand()
@@ -1221,7 +1223,7 @@ class Adjoint(SingleOperatorOperation):
             return OperatorPlus.create(*summands)
         return eo.adjoint()
 
-    def pseudo_inverse(self):
+    def _pseudo_inverse(self):
         return self.operand.pseudo_inverse().adjoint()
 
     def _render(self, fmt, adjoint=False):
@@ -1266,7 +1268,7 @@ class OperatorPlusMinusCC(SingleOperatorOperation):
     def _expand(self):
         return self
 
-    def pseudo_inverse(self):
+    def _pseudo_inverse(self):
         return OperatorPlusMinusCC(self.operand.pseudo_inverse(), self._sign)
 
     def _render(self, fmt, adjoint=False):
@@ -1302,12 +1304,12 @@ class PseudoInverse(SingleOperatorOperation):
     _rules = []  # see end of module
     _delegate_to_method = (ScalarTimesOperator, Squeeze, Displace,
                            ZeroOperator.__class__, IdentityOperator.__class__)
-    _simplifications = [match_replace, delegate_to_method('pseudo_inverse')]
+    _simplifications = [match_replace, delegate_to_method('_pseudo_inverse')]
 
     def _expand(self):
         return self
 
-    def pseudo_inverse(self):
+    def _pseudo_inverse(self):
         return self.operand
 
     def _render(self, fmt, adjoint=False):
