@@ -137,6 +137,11 @@ class Printer(metaclass=ABCMeta):
 
     op_hs_super_sub = 1  # where to put Hilbert space label for operators
 
+    _special_render = [
+        (SCALAR_TYPES, 'render_scalar'),
+        (str, '_render_rendered'),
+    ]
+
     _registry = {}
     # Note: do NOT set Printer._registry = {} instead of using clear_registry!
     # This would create an instance attribute that shadows the class attribute
@@ -144,20 +149,45 @@ class Printer(metaclass=ABCMeta):
     @classmethod
     def render(cls, expr: Any, adjoint=False) -> str:
         """Render an expression (or the adjoint of the expression)"""
+        # try to return known expression from _registry
         try:
             if not adjoint and expr in cls._registry:
                 return cls._registry[expr]
         except TypeError:
             pass  # unhashable types, e.g. numpy array
-        if isinstance(expr, SCALAR_TYPES):
-            return cls.render_scalar(expr, adjoint=adjoint)
+        # handle special classes
+        for special_cls, special_render in cls._special_render:
+            if isinstance(expr, special_cls):
+                mtd = getattr(cls, special_render)
+                res = mtd(expr, adjoint=adjoint)
+                if isinstance(res, str):
+                    return res
         try:
-            return expr._ascii_(adjoint=adjoint)
+            return cls._render(expr, adjoint=adjoint)
+        # fall back
         except AttributeError:
-            if adjoint:
-                return "Adjoint[%s]" % str(expr)
-            else:
-                return str(expr)
+            return cls._fallback(expr, adjoint=adjoint)
+
+    @classmethod
+    def _render(cls, expr, adjoint=False):
+        """Render the expression (usually by delegating to a method of expr),
+        or throw an AttributeError"""
+        return expr._ascii_(adjoint=adjoint)
+
+    @classmethod
+    def _fallback(cls, expr, adjoint=False):
+        """Render an expression that does not have _delegate_mtd"""
+        if adjoint:
+            return "Adjoint[%s]" % str(expr)
+        else:
+            return str(expr)
+
+    @classmethod
+    def _render_rendered(cls, expr, adjoint=False):
+        """Render an already rendered string"""
+        assert not adjoint, \
+            "Cannot render the adjoint of an already rendered expression"
+        return expr
 
     @classmethod
     def register(cls, expr, rendered):
@@ -307,41 +337,54 @@ class Printer(metaclass=ABCMeta):
         return ascii_str
 
     @classmethod
-    def render_infix(cls, operands: Any, infix_symbol: str, paren_cond=None,
-                     adjoint=False, padding=' ') -> str:
-        """Render an operation using an infix notation. Operands may be
-        expressions to be rendered or already rendered strings
-
-        Args:
-            operands: List of operands (expressions). These will be rendered
-                using the `render` method
-            infix_symbol (str): Name of an attribute that contains the infix
-                symbol. NOT the infix symbol itself.
-            parent_cond (bool or None): A condition to determine whether a
-                rendered operand should be enclosed in parentheses
-            adjoint (bool): Flag to indicate whether the adjoint of each
-                operand should be rendered instead of the operand itself
-            padding (str):  String (whitespace) that should be added around the
-                infix symbol (only if the infix symbol itself is not empty /
-                whitespace only)
-        """
+    def render_sum(
+            cls, operands, plus_sym='+', minus_sym='-', padding=' ',
+            adjoint=False):
+        """Render a sum"""
         parts = []
-        for operand in operands:
-            if isinstance(operand, str):
-                assert not adjoint, \
-                    "Cannot render infix adjoint with pre-rendered operands"
-                parts.append(operand)
-            else:
-                if paren_cond is not None and paren_cond(operand):
-                    parts.append(cls.par_left +
-                                 cls.render(operand, adjoint=adjoint) +
-                                 cls.par_right)
+        if len(plus_sym.strip()) > 0:
+            padded_plus_sym = padding + plus_sym.strip() + padding
+        padded_minus_sym = padding + minus_sym.strip() + padding
+        for i_op, operand in enumerate(operands):
+            part = cls.render(operand, adjoint=adjoint).strip()
+            if i_op > 0:
+                if part.startswith(minus_sym):
+                    parts.append(padded_minus_sym)
+                    part = part[len(minus_sym):].strip()
                 else:
-                    parts.append(cls.render(operand, adjoint=adjoint))
-        infix_symbol = getattr(cls, infix_symbol)
-        if len(infix_symbol.strip()) > 0:
-            infix_symbol = padding + infix_symbol + padding
-        return infix_symbol.join(parts)
+                    parts.append(padded_plus_sym)
+            parts.append(part)
+        return "".join(parts).strip()
+
+    @classmethod
+    def render_product(
+            cls, operands, prod_sym, sum_classes, minus_sym='-', padding=' ',
+            adjoint=False, dynamic_prod_sym=None):
+        """Render a product"""
+        parts = []
+        if len(prod_sym.strip()) > 0:
+            padded_prod_sym = padding + prod_sym.strip() + padding
+        else:
+            padded_prod_sym = prod_sym
+        prev_op = None
+        for i_op, operand in enumerate(operands):
+            part = cls.render(operand, adjoint=adjoint).strip()
+            if isinstance(operand, sum_classes):
+                part = cls.par_left + part + cls.par_right
+            elif part.startswith(minus_sym) and i_op > 0:
+                part = cls.par_left + part + cls.par_right
+            if i_op > 0:
+                if dynamic_prod_sym is not None:
+                    prod_sym = dynamic_prod_sym(prev_op, operand)
+                    if len(prod_sym.strip()) > 0:
+                        padded_prod_sym = padding + prod_sym.strip() + padding
+                    else:
+                        padded_prod_sym = prod_sym
+                parts.append(padded_prod_sym)
+            parts.append(part)
+            prev_op = operand
+        return "".join(parts).strip()
+
 
     @classmethod
     def render_hs_label(cls, hs: Any) -> str:
@@ -349,10 +392,9 @@ class Printer(metaclass=ABCMeta):
         if isinstance(hs.__class__, Singleton):
             return cls.render_string(hs.label)
         else:
-            return cls.render_infix([cls.render_string(ls.label)
-                                    for ls in hs.local_factors],
-                                    infix_symbol='tensor_sym',
-                                    padding='')
+            return cls.render_product(
+                    [cls.render_string(ls.label) for ls in hs.local_factors],
+                    prod_sym=cls.tensor_sym, sum_classes=(), padding='')
 
     @classmethod
     def render_scalar(cls, value: Any, adjoint=False) -> str:
@@ -363,7 +405,4 @@ class Printer(metaclass=ABCMeta):
         else:
             res = str(sympy.nsimplify(
                 value, rational=False, constants=[sympy.pi]))
-        if " + " in res:
-            return cls.par_left + res + cls.par_right
-        else:
-            return res
+        return res

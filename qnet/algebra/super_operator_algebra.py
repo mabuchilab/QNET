@@ -448,33 +448,16 @@ class SuperOperatorTimes(SuperOperatorOperation):
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
 
-        def str_o(o):
-            if isinstance(o, SuperOperatorPlus):
-                return (printer.par_left +
-                        printer.render(o, adjoint=adjoint) +
-                        printer.par_right)
+        def dynamic_prod_sym(a, b):
+            if a.space == b.space:
+                return printer.op_product_sym
             else:
-                return printer.render(o, adjoint=adjoint)
+                return printer.tensor_sym
 
-        if adjoint:
-            operands = tuple(reversed(self.operands))
-        else:
-            operands = self.operands
-        o = operands[0]
-        parts = [str_o(o), ]
-        hs_prev = o.space
-
-        for o in operands[1:]:
-            hs = o.space
-            if hs == hs_prev:
-                if len(printer.op_product_sym) > 0:
-                    parts.append(printer.op_product_sym)
-            else:
-                if len(printer.tensor_sym) > 0:
-                    parts.append(printer.tensor_sym)
-            parts.append(str_o(o))
-            hs_prev = hs
-        return " ".join(parts)
+        return printer.render_product(
+                self.operands, prod_sym=printer.tensor_sym,
+                sum_classes=(SuperOperatorPlus, ),
+                dynamic_prod_sym=dynamic_prod_sym)
 
 
 class ScalarTimesSuperOperator(SuperOperator, Operation):

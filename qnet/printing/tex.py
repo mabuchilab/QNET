@@ -20,6 +20,7 @@
 Routines for rendering expressions to LaTeX
 """
 import re
+from typing import Any
 
 import sympy
 from sympy.printing.conventions import split_super_sub
@@ -54,7 +55,7 @@ class LaTeXPrinter(Printer, metaclass=Singleton):
     scalar_product_sym = r''
     tensor_sym = r'\otimes'
     inner_product_sym = r'\cdot'
-    op_product_sym = r''
+    op_product_sym = r' '
     circuit_series_sym = r'\lhd'
     circuit_concat_sym = r'\boxplus'
     circuit_inverse_fmt = r'\left[{operand}\right]^{{\rhd}}'
@@ -80,35 +81,44 @@ class LaTeXPrinter(Printer, metaclass=Singleton):
     op_accent = r'\hat'
     superop_accent = r'\mathrm'
 
+    _special_render = [
+        (SCALAR_TYPES, 'render_scalar'),
+        (str, '_render_rendered'),
+        ((sympy.Basic, sympy.Matrix), 'render_sympy'),
+    ]
     _registry = {}
 
     @classmethod
-    def render(cls, expr, adjoint=False):
-        """Return a LaTeX representation for the given `expr`"""
-        try:
-            if not adjoint and expr in cls._registry:
-                return cls._registry[expr]
-        except TypeError:
-            pass  # unhashable types, e.g. numpy array
-        if isinstance(expr, SCALAR_TYPES):
-            return cls.render_scalar(expr, adjoint=adjoint)
-        if isinstance(expr, (sympy.Basic, sympy.Matrix)):
-            if adjoint:
-                return sympy_latex(expr).strip('$')
-            else:
-                return sympy_latex(expr.conjugate()).strip('$')
-        try:
-            return expr._tex_(adjoint=adjoint)
-        except AttributeError:
+    def _render(cls, expr, adjoint=False):
+        return expr._tex_(adjoint=adjoint)
+
+    @classmethod
+    def _fallback(cls, expr, adjoint=False):
+        """Render an expression that does not have _delegate_mtd"""
+        if adjoint:
+            return r"{\rm Adjoint[%s]}" % str(expr)
+        else:
             return r"{\rm " + str(expr) + "}"
 
     @classmethod
-    def render_hs_label(cls, hs):
-        """Render the label for the given Hilbert space"""
-        return cls.render_infix([cls.render_string(ls.label)
-                                 for ls in hs.local_factors],
-                                infix_symbol='tensor_sym',
-                                padding=' ')
+    def render_sympy(cls, expr, adjoint=False):
+        """Render a sympy expression"""
+        if adjoint:
+            return sympy_latex(expr.conjugate()).strip('$')
+        else:
+            return sympy_latex(expr).strip('$')
+
+    @classmethod
+    def render_hs_label(cls, hs: Any) -> str:
+        """Render the total label for the given Hilbert space"""
+        # This differs from the base `render_hs_label` only in the use of
+        # padding
+        if isinstance(hs.__class__, Singleton):
+            return cls.render_string(hs.label)
+        else:
+            return cls.render_product(
+                    [cls.render_string(ls.label) for ls in hs.local_factors],
+                    prod_sym=cls.tensor_sym, sum_classes=(), padding=' ')
 
     @classmethod
     def render_op(cls, identifier, hs=None, dagger=False, args=None,
@@ -159,10 +169,10 @@ class LaTeXPrinter(Printer, metaclass=Singleton):
         else:
             res = sympy.latex(sympy.nsimplify(
                 value, rational=False, constants=[sympy.pi]))
-        if " + " in res:
-            return cls.par_left + res + cls.par_right
-        else:
-            return res
+        if isinstance(value, (complex, complex128)):
+            if value.real != 0 and value.imag != 0:
+                res = cls.par_left + res + cls.par_right
+        return res
 
 
 def tex(expr):

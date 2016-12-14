@@ -496,4 +496,5 @@ class ProductSpace(HilbertSpace, Operation):
     def _render(self, fmt, adjoint=False):
         assert not adjoint, "adjoint not defined"
         printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_infix(self.operands, 'tensor_sym')
+        return printer.render_product(
+                self.operands, prod_sym=printer.tensor_sym, sum_classes=())

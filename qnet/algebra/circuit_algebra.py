@@ -1227,9 +1227,9 @@ class SeriesProduct(Circuit, Operation):
     def _render(self, fmt, adjoint=False):
         assert not adjoint, "adjoint not defined"
         printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_infix(
-                self.operands, 'circuit_series_sym',
-                paren_cond=lambda o: isinstance(o, Concatenation))
+        return printer.render_product(
+                self.operands, prod_sym=printer.circuit_series_sym,
+                sum_classes=(Concatenation, ), adjoint=adjoint)
 
     def _toABCD(self, linearize):
         raise NotImplementedError()
@@ -1278,9 +1278,9 @@ class Concatenation(Circuit, Operation):
                             printer.circuit_identity_fmt.format(cdim=id_count))
                     id_count = 0
                 reduced_operands.append(o)
-        return printer.render_infix(
-                reduced_operands, 'circuit_concat_sym',
-                paren_cond=lambda o: isinstance(o, SeriesProduct))
+        return printer.render_sum(
+                reduced_operands, plus_sym=printer.circuit_concat_sym,
+                adjoint=adjoint)
 
     @property
     def cdim(self):

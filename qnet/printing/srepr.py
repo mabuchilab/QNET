@@ -37,32 +37,43 @@ class SReprPrinter(Printer, metaclass=Singleton):
     identical object (implementing (``srepr(expr, indented=False)``)
     """
 
+    _special_render = [
+        (str, '_render_rendered'),
+        (SympyBasic, 'render_sympy'),
+        (ndarray, 'render_numpy_matrix'),
+    ]
     _registry = {}
 
     @classmethod
-    def render(cls, expr, adjoint=False):
-        """Render the given expression. Not that `adjoint` must be False"""
-        assert not adjoint, "adjoint not supported for SReprPrinter"
-        try:
-            if expr in cls._registry:
-                return cls._registry[expr]
-        except TypeError:
-            pass  # unhashable types, e.g. numpy array
-        if isinstance(expr, SympyBasic):
+    def _render(cls, expr, adjoint=False):
+        assert not adjoint, "Adjoint rendering not supported"
+        return cls.render_head_repr(expr)
+
+    @classmethod
+    def render_sympy(cls, expr, adjoint=False):
+        """Render a sympy expression"""
+        if adjoint:
             return sympy_srepr(expr)
-        elif isinstance(expr, ndarray):
-            if len(expr.shape) == 2:
-                rows = []
-                for row in expr:
-                    rows.append('[' +
-                                ", ".join([cls.render(val) for val in row]) +
-                                ']')
-                return ("array([" + ", ".join(rows) +
-                        "], dtype=%s)" % str(expr.dtype))
-        try:
-            return cls.render_head_repr(expr)
-        except AttributeError:
-            return repr(expr)
+        else:
+            return sympy_srepr(expr.conjugate())
+
+    @classmethod
+    def render_numpy_matrix(cls, expr, adjoint=False):
+        assert not adjoint, "Adjoint rendering not supported"
+        if len(expr.shape) == 2:
+            rows = []
+            for row in expr:
+                rows.append('[' +
+                            ", ".join([cls.render(val) for val in row]) +
+                            ']')
+            return ("array([" + ", ".join(rows) +
+                    "], dtype=%s)" % str(expr.dtype))
+        return None
+
+    @classmethod
+    def _fallback(cls, expr, adjoint=False):
+        assert not adjoint, "Adjoint rendering not supported"
+        return repr(expr)
 
 
 class IndentedSReprPrinter(Printer):
@@ -72,44 +83,53 @@ class IndentedSReprPrinter(Printer):
     ``srepr(expr, indented=True)``
     """
 
+    _special_render = [
+        (str, '_render_rendered'),
+        (SympyBasic, 'render_sympy'),
+        (ndarray, 'render_numpy_matrix'),
+    ]
+
     _registry = {}
 
     def __init__(self, indent=0):
         self.indent = int(indent)
         self._key_name = None
 
-    def render(self, expr, adjoint=False):
-        """Render the given expression. Not that `adjoint` must be False"""
-        assert not adjoint, "adjoint not supported for SReprPrinter"
-        try:
-            if expr in self._registry:
-                return "    " * self.indent + self._registry[expr]
-        except TypeError:
-            pass  # unhashable types, e.g. numpy array
-        if isinstance(expr, SympyBasic):
+    def _render(self, expr, adjoint=False):
+        assert not adjoint, "Adjoint rendering not supported"
+        return self.render_head_repr(expr)
+
+    def render_sympy(self, expr, adjoint=False):
+        """Render a sympy expression"""
+        if adjoint:
             return "    " * self.indent + sympy_srepr(expr)
-        elif isinstance(expr, ndarray):
-            if len(expr.shape) == 2:
-                lines = ["    " * self.indent + "array([", ]
+        else:
+            return "    " * self.indent + sympy_srepr(expr.conjugate())
+
+    def render_numpy_matrix(self, expr, adjoint=False):
+        assert not adjoint, "Adjoint rendering not supported"
+        if len(expr.shape) == 2:
+            lines = ["    " * self.indent + "array([", ]
+            self.indent += 1
+            for row in expr:
+                lines.append("    " * self.indent + '[')
                 self.indent += 1
-                for row in expr:
-                    lines.append("    " * self.indent + '[')
-                    self.indent += 1
-                    for val in row:
-                        lines.append(self.render(val) + ",")
-                    self.indent -= 1
-                    lines.append("    " * self.indent + '],')
+                for val in row:
+                    lines.append(self.render(val) + ",")
                 self.indent -= 1
-                lines.append("    " * self.indent +
-                             "], dtype=%s)" % str(expr.dtype))
-                return "\n".join(lines)
-        try:
-            return self.render_head_repr(expr)
-        except AttributeError:
-            if self._key_name is not None:
-                return "    " * self.indent + self._key_name + "=" + repr(expr)
-            else:
-                return "    " * self.indent + repr(expr)
+                lines.append("    " * self.indent + '],')
+            self.indent -= 1
+            lines.append("    " * self.indent +
+                            "], dtype=%s)" % str(expr.dtype))
+            return "\n".join(lines)
+        return None
+
+    def _fallback(self, expr, adjoint=False):
+        assert not adjoint, "Adjoint rendering not supported"
+        if self._key_name is not None:
+            return "    " * self.indent + self._key_name + "=" + repr(expr)
+        else:
+            return "    " * self.indent + repr(expr)
 
     def render_head_repr(self, expr: Any, sub_render=None) -> str:
         """Render a multiline textual representation of `expr`

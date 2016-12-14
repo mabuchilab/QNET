@@ -129,23 +129,8 @@ class UnicodePrinter(Printer, metaclass=Singleton):
     _registry = {}
 
     @classmethod
-    def render(cls, expr, adjoint=False):
-        """Render an expression"""
-        try:
-            if not adjoint and expr in cls._registry:
-                return cls._registry[expr]
-        except TypeError:
-            pass  # unhashable types, e.g. numpy array
-        if isinstance(expr, SCALAR_TYPES):
-            return cls.render_scalar(expr, adjoint=adjoint)
-        try:
-            return expr._unicode_(adjoint=adjoint)
-        except AttributeError:
-            if adjoint:
-                return "Adjoint[%s]" % str(expr)
-            else:
-                return str(expr)
-
+    def _render(cls, expr, adjoint=False):
+        return expr._unicode_(adjoint=adjoint)
 
     @classmethod
     def render_string(cls, ascii_str):
@@ -222,10 +207,7 @@ class UnicodePrinter(Printer, metaclass=Singleton):
             for string in re.findall(r'[A-Za-z]+', res):
                 if string in _greek_dictionary:
                     res = res.replace(string, _greek_dictionary[string])
-        if " + " in res:
-            return cls.par_left + res + cls.par_right
-        else:
-            return res
+        return res
 
 
 _greek_dictionary = {

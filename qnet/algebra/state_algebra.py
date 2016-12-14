@@ -514,11 +514,10 @@ class TensorKet(Ket, Operation):
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
         if self._label is None:
-            return printer.render_infix(
-                    self.operands, 'tensor_sym',
-                    paren_cond=lambda o: isinstance(o, KetPlus),
-                    adjoint=adjoint)
-        else:
+            return printer.render_product(
+                    self.operands, prod_sym=printer.tensor_sym,
+                    sum_classes=(KetPlus, ), adjoint=adjoint)
+        else:  # "trivial" product of LocalKets
             printer_fmt = printer.ket_fmt
             if adjoint:
                 printer_fmt = printer.bra_fmt

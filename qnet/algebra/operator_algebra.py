@@ -32,7 +32,7 @@ from collections import defaultdict, OrderedDict
 from itertools import product as cartesian_product
 
 from sympy import (exp, sqrt, I, sympify, Basic as SympyBasic,
-        series as sympy_series)
+        series as sympy_series, Add as SympyAdd)
 
 from .abstract_algebra import (
         Expression, Operation, assoc, orderby, filter_neutral,
@@ -809,11 +809,12 @@ class LocalSigma(LocalOperator):
 ###############################################################################
 
 
-class OperatorOrderKey():
+class OperatorTimesOrderKey():
     """Auxiliary class that generates the correct pseudo-order relation for
     operator products.  Only operators acting on different Hilbert spaces
     are commuted to achieve the order specified in the full HilbertSpace.
-    I.e., ``sorted(factors, key=OperatorOrderKey)`` achieves this ordering.
+    I.e., ``sorted(factors, key=OperatorTimesOrderKey)`` achieves this
+    ordering.
     """
 
     def __init__(self, op):
@@ -896,24 +897,8 @@ class OperatorPlus(OperatorOperation):
 
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
-        positive_summands = []
-        negative_summands = []
-        for o in self.operands:
-            is_negative = False
-            op_str = printer.render(o, adjoint=adjoint)
-            if op_str.startswith('-'):
-                is_negative = True
-                op_str = op_str[1:].strip()
-            if isinstance(o, OperatorPlus):
-                op_str = printer.par_left + op_str + printer.par_right
-            if is_negative:
-                negative_summands.append(op_str)
-            else:
-                positive_summands.append(op_str)
-        negative_str = " - ".join(negative_summands)
-        if len(negative_str) > 0:
-            negative_str = " - " + negative_str
-        return (" + ".join(positive_summands) + negative_str).strip()
+        return printer.render_sum(
+                self.operands, plus_sym='+', minus_sym='-', adjoint=adjoint)
 
 
 class OperatorTimes(OperatorOperation):
@@ -928,7 +913,7 @@ class OperatorTimes(OperatorOperation):
     _binary_rules = []  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
-    order_key = OperatorOrderKey
+    order_key = OperatorTimesOrderKey
 
     def factor_for_space(self, spc):
         if spc == TrivialSpace:
@@ -981,33 +966,16 @@ class OperatorTimes(OperatorOperation):
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
 
-        def str_o(o):
-            if isinstance(o, OperatorPlus):
-                return (printer.par_left +
-                        printer.render(o, adjoint=adjoint) +
-                        printer.par_right)
+        def dynamic_prod_sym(a, b):
+            if a.space == b.space:
+                return printer.op_product_sym
             else:
-                return printer.render(o, adjoint=adjoint)
+                return printer.tensor_sym
 
-        if adjoint:
-            operands = tuple(reversed(self.operands))
-        else:
-            operands = self.operands
-        o = operands[0]
-        parts = [str_o(o), ]
-        hs_prev = o.space
-
-        for o in operands[1:]:
-            hs = o.space
-            if hs == hs_prev:
-                if len(printer.op_product_sym) > 0:
-                    parts.append(printer.op_product_sym)
-            else:
-                if len(printer.tensor_sym) > 0:
-                    parts.append(printer.tensor_sym)
-            parts.append(str_o(o))
-            hs_prev = hs
-        return " ".join(parts)
+        return printer.render_product(
+                self.operands, prod_sym=printer.tensor_sym,
+                sum_classes=(OperatorPlus, OperatorPlusMinusCC),
+                dynamic_prod_sym=dynamic_prod_sym)
 
 
 class ScalarTimesOperator(Operator, Operation):
@@ -1047,7 +1015,7 @@ class ScalarTimesOperator(Operator, Operation):
         printer = getattr(self, "_"+fmt+"_printer")
         coeff, term = self.coeff, self.term
         term_str = printer.render(term, adjoint=adjoint)
-        if isinstance(term, Operation):
+        if isinstance(term, (OperatorPlus, OperatorPlusMinusCC)):
             term_str = printer.par_left + term_str + printer.par_right
 
         if coeff == -1:
@@ -1064,7 +1032,10 @@ class ScalarTimesOperator(Operator, Operation):
                 product_sym = " " + printer.scalar_product_sym + " "
             else:
                 product_sym = " "
-            return coeff_str.strip() + product_sym + term_str.strip()
+            coeff_str = coeff_str.strip()
+            if isinstance(coeff, SympyAdd):
+                coeff_str = printer.par_left + coeff_str + printer.par_right
+            return coeff_str + product_sym + term_str.strip()
 
     def _expand(self):
         c, t = self.operands
