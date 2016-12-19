@@ -28,12 +28,9 @@ See :ref:`abstract_algebra` for more details.
 
 """
 from abc import ABCMeta, abstractproperty
-from collections import OrderedDict
 from functools import reduce
 from contextlib import contextmanager
 from copy import copy
-
-from numpy import complex128
 
 from .pattern_matching import (
         ProtoExpr, match_pattern, wc, pattern_head, pattern)
@@ -449,50 +446,6 @@ def simplify(expr, rules=None):
                 except CannotSimplify:
                     pass
         return expr
-
-
-class KeyTuple(tuple):
-    """A tuple that allows for ordering, facilitating the default ordering of
-    Operations. It differs from a normal tuple in that it falls back to string
-    comparison if any elements are not directly comparable"""
-    def __lt__(self, other):
-        if isinstance(other, (SCALAR_TYPES, str)):
-            return False
-        for (a, b) in zip(self, other):
-            try:
-                if a < b:
-                    return True
-                elif a > b:
-                    return False
-            except (TypeError, ValueError):
-                if str(a) < str(b):
-                    return True
-                elif str(a) > str(b):
-                    return False
-        if len(self) < len(other):
-            return True
-        elif len(self) > len(other):
-            return False
-        return None
-
-    def __repr__(self):
-        return self.__class__.__name__ + tuple.__repr__(self)
-
-
-def expr_order_key(expr):
-    """A default order key for arbitrary expressions"""
-    if hasattr(expr, '_order_key'):
-        return expr._order_key
-    try:
-        if isinstance(expr.kwargs, OrderedDict):
-            key_vals = expr.kwargs.values()
-        else:
-            key_vals = [expr.kwargs[key] for key in sorted(expr.kwargs)]
-        return KeyTuple((expr.__class__.__name__, ) +
-                        tuple(map(expr_order_key, expr.args)) +
-                        tuple(map(expr_order_key, key_vals)))
-    except AttributeError:
-        return str(expr)
 
 
 def set_union(*sets):

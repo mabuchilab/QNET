@@ -33,8 +33,8 @@ from sympy import (
 
 from .abstract_algebra import (
         Operation, Expression, substitute, AlgebraError, assoc, orderby,
-        filter_neutral, match_replace, match_replace_binary, KeyTuple,
-        CannotSimplify, cache_attr, expr_order_key, SCALAR_TYPES)
+        filter_neutral, match_replace, match_replace_binary,
+        CannotSimplify, cache_attr, SCALAR_TYPES)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
@@ -43,7 +43,8 @@ from .operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
         IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
         Jminus, Jz, OperatorSymbol, LocalOperator, Jpjmcoeff, Jzjmcoeff,
-        Jmjmcoeff, Displace, Phase, FullCommutativeHSOrder)
+        Jmjmcoeff, Displace, Phase)
+from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
 from ..printing import ascii
 
 

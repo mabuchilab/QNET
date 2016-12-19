@@ -39,15 +39,16 @@ from sympy import (
 from .abstract_algebra import (
         Operation, Expression, AlgebraError, assoc, orderby,
         filter_neutral, match_replace, match_replace_binary, AlgebraException,
-        KeyTuple, SCALAR_TYPES)
+        SCALAR_TYPES)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
         HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)
 from .operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
-        IdentityOperator, simplify_scalar, OperatorSymbol, Create, Destroy,
-        FullCommutativeHSOrder, DisjunctCommutativeHSOrder)
+        IdentityOperator, simplify_scalar, OperatorSymbol, Create, Destroy)
+from .ordering import (
+        KeyTuple, FullCommutativeHSOrder, DisjunctCommutativeHSOrder)
 from .matrix_algebra import Matrix
 from ..printing import ascii
 

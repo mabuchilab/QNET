@@ -36,7 +36,8 @@ from itertools import product as cartesian_product
 
 from .abstract_algebra import (
         Expression, Operation, AlgebraError, assoc, idem, filter_neutral,
-        cache_attr, KeyTuple)
+        cache_attr)
+from .ordering import KeyTuple
 from .singleton import Singleton, singleton_object
 
 

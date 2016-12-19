@@ -36,13 +36,16 @@ from sympy import (exp, sqrt, I, sympify, Basic as SympyBasic,
 
 from .abstract_algebra import (
         Expression, Operation, assoc, orderby, filter_neutral,
-        match_replace_binary, match_replace, set_union, KeyTuple, substitute,
-        CannotSimplify, cache_attr, expr_order_key, SCALAR_TYPES)
+        match_replace_binary, match_replace, set_union, substitute,
+        CannotSimplify, cache_attr, SCALAR_TYPES)
 from .singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
         TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError,
         FullSpace)
 from .pattern_matching import wc, pattern_head, pattern
+from .ordering import (
+        KeyTuple, expr_order_key, DisjunctCommutativeHSOrder,
+        FullCommutativeHSOrder)
 from ..printing import ascii, srepr
 
 sympyOne = sympify(1)
@@ -816,79 +819,6 @@ class LocalSigma(LocalOperator):
     @property
     def args(self):
         return self.j, self.k
-
-
-###############################################################################
-# Operator ordering
-###############################################################################
-
-
-class DisjunctCommutativeHSOrder():
-    """Auxiliary class that generates the correct pseudo-order relation for
-    operator products.  Only operators acting on disjoint Hilbert spaces
-    are commuted to reflect the order the local factors have in the total
-    Hilbert space. I.e., ``sorted(factors, key=DisjunctCommutativeHSOrder)``
-    achieves this ordering.
-    """
-
-    def __init__(self, op, space_order=None, op_order=None):
-        self.op = op
-        self.space = op.space
-        if space_order is None:
-            self._space_order = op.space._order_key
-        else:
-            self._space_order = space_order
-        if op_order is None:
-            self._op_order = expr_order_key(op)
-        else:
-            self._op_order = op_order
-        self.trivial = False
-        if op.space is TrivialSpace:
-            self.trivial = True
-
-    def __repr__(self):
-        return "%s(%s, space_order=%r, op_order=%r)" %  (
-                self.__class__.__name__, srepr(self.op), self._space_order,
-                self._op_order)
-
-    def __lt__(self, other):
-        if self.trivial and other.trivial:
-            return self._op_order < other._op_order
-        else:
-            if self.space.isdisjoint(other.space):
-                return self._space_order < other._space_order
-        return None  # no ordering
-
-
-class FullCommutativeHSOrder():
-    """Auxiliary class that generates the correct pseudo-order relation for
-    operator products.  Only operators acting on disjoint Hilbert spaces
-    are commuted to reflect the order the local factors have in the total
-    Hilbert space. I.e., ``sorted(factors, key=FullCommutativeHSOrder)``
-    achieves this ordering.
-    """
-
-    def __init__(self, op, space_order=None, op_order=None):
-        self.space = op.space
-        if space_order is None:
-            self._space_order = self.space._order_key
-        else:
-            self._space_order = space_order
-        if op_order is None:
-            self._op_order = expr_order_key(op)
-        else:
-            self._op_order = op_order
-
-    def __repr__(self):
-        return "%s(%s, space_order=%r, op_order=%r)" %  (
-                self.__class__.__name__, srepr(self.op), self._space_order,
-                self._op_order)
-
-    def __lt__(self, other):
-        if self.space == other.space:
-            return self._op_order < other._op_order
-        else:
-            return self._space_order < other._space_order
 
 
 ###############################################################################

@@ -23,7 +23,8 @@ import pytest
 
 from qnet.algebra.abstract_algebra import (
         Operation, assoc, orderby, filter_neutral, CannotSimplify,
-        match_replace_binary, idem, expr_order_key)
+        match_replace_binary, idem)
+from qnet.algebra.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
 from qnet.algebra.operator_algebra import LocalSigma, OperatorTimes, Displace
 from qnet.algebra.hilbert_space_algebra import LocalSpace

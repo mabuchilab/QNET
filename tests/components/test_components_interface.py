@@ -49,11 +49,12 @@ from qnet.circuit_components.z_probe_cavity_cc import ZProbeCavity
 
 
 components = [And, Beamsplitter, Delay, Displace, DoubleSidedJaynesCummings,
-              DoubleSidedOPO, InvertingFanout, KerrCavity, Latch, LinearCavity,
+              DoubleSidedOPO, InvertingFanout, KerrCavity, LinearCavity,
               MachZehnder, OpenLossy, Phase, PseudoNAND, PseudoNANDLatch,
               Relay, RelayDoubleProbe, SingleSidedJaynesCummings,
               SingleSidedOPO, ThreePortKerrCavity, ThreePortOPO,
               TwoPortKerrCavity, ZProbeCavity]
+# TODO: add Latch (slow)
 
 @pytest.mark.parametrize('cls', components)
 def test_component_interface(cls):
