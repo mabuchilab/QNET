@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
   Operator Ad1 = A1.hc();
 
   // Hamiltonian
-  Operator H = ((omega) * (S2_1_1) + (I*E) * ((Ad0 + (-1) * (A0))) + (0.5*I*chi) * (((Ad0 * Ad0 * A1) + (-1) * ((A0 * A0 * Ad1)))) + (I*eta) * (((-1) * ((Ad1 * S2_0_1)) + (A1 * S2_1_0))));
+  Operator H = ((I*E) * ((Ad0 + (-1) * (A0))) + (0.5*I*chi) * (((Ad0 * Ad0 * A1) + (-1) * ((A0 * A0 * Ad1)))) + (I*eta) * (((-1) * ((Ad1 * S2_0_1)) + (A1 * S2_1_0))) + (omega) * (S2_1_1));
 
   // Lindblad operators
   const int nL = 3;

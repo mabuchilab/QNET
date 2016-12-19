@@ -48,9 +48,8 @@ def test_simple_cc():
     assert simplified == coeff * OperatorPlusMinusCC(a * sig_p, sign=-1)
     assert (srepr(simplified.term) ==
             "OperatorPlusMinusCC(OperatorTimes(Destroy(hs=LocalSpace('c', "
-            "basis=(0, 1, 2), dimension=3), identifier='a'), LocalSigma('e', "
-            "'g', hs=LocalSpace('q1', basis=('g', 'e'), dimension=2), "
-            "identifier='sigma')), sign=-1)")
+            "dimension=3)), LocalSigma('e', 'g', hs=LocalSpace('q1', "
+            "basis=('g', 'e')))), sign=-1)")
     expanded = simplified.simplify(rules=expand_operator_pm_cc())
     assert expanded == jc_expr
 

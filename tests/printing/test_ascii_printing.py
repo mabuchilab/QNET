@@ -65,7 +65,7 @@ def test_ascii_circuit_operations():
     assert ascii(A << B << C) == "A_test << B_test << C_test"
     assert ascii(A + B + C) == "A_test + B_test + C_test"
     assert ascii(A << (beta + gamma)) == "A_test << (beta + gamma)"
-    assert ascii(A + (B << C)) == "A_test + (B_test << C_test)"
+    assert ascii(A + (B << C)) == "A_test + B_test << C_test"
     assert ascii(perm) == "Perm(2, 1, 0, 3)"
     assert (ascii(SeriesProduct(perm, (A+B))) ==
             "Perm(2, 1, 0, 3) << (A_test + B_test)")
@@ -163,7 +163,7 @@ def test_ascii_operator_operations():
     assert ascii(PseudoInverse(A)) == '(A^(q_1))^+'
     assert ascii(NullSpaceProjector(A)) == 'P_Ker(A^(q_1))'
     assert ascii(A - B) == 'A^(q_1) - B^(q_1)'
-    assert ascii(A - B + C) == 'A^(q_1) + C^(q_2) - B^(q_1)'
+    assert ascii(A - B + C) == 'A^(q_1) - B^(q_1) + C^(q_2)'
     assert (ascii(2 * A - sqrt(gamma) * (B + C)) ==
             '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))')
 
@@ -226,7 +226,7 @@ def test_ascii_ket_operations():
     phase = exp(-I * gamma)
     assert ascii(psi1 + psi2) == '|Psi_1>_(q_1) + |Psi_2>_(q_1)'
     assert (ascii(psi1 - psi2 + psi3) ==
-            '|Psi_1>_(q_1) + |Psi_3>_(q_1) - |Psi_2>_(q_1)')
+            '|Psi_1>_(q_1) - |Psi_2>_(q_1) + |Psi_3>_(q_1)')
     with pytest.raises(UnequalSpaces):
         psi1 + phi
     with pytest.raises(AttributeError):
@@ -252,11 +252,11 @@ def test_ascii_ket_operations():
     assert (ascii(bell2) ==
             'sqrt(2)/2 * (|e,e>_(q_1*q_2) - |g,g>_(q_1*q_2))')
     assert (ascii(BraKet.create(bell1, bell2)) ==
-            r'1/2 * ((<e,g|_(q_1*q_2) + I * <g,e|_(q_1*q_2))*'
-            r'(|e,e>_(q_1*q_2) - |g,g>_(q_1*q_2)))')
+            r'1/2 * (<e,g|_(q_1*q_2) + I * <g,e|_(q_1*q_2))*(|e,e>_(q_1*q_2) '
+            r'- |g,g>_(q_1*q_2))')
     assert (ascii(KetBra.create(bell1, bell2)) ==
-            '1/2 * ((|e,g>_(q_1*q_2) - I * |g,e>_(q_1*q_2))'
-            '(<e,e|_(q_1*q_2) - <g,g|_(q_1*q_2)))')
+            '1/2 * (|e,g>_(q_1*q_2) - I * |g,e>_(q_1*q_2))(<e,e|_(q_1*q_2) '
+            '- <g,g|_(q_1*q_2))')
 
 
 def test_ascii_bra_operations():
@@ -281,9 +281,9 @@ def test_ascii_bra_operations():
     assert ascii((psi1 + psi2).dag) == '<Psi_1|_(q_1) + <Psi_2|_(q_1)'
     assert ascii(bra_psi1 + bra_psi2) == '<Psi_1|_(q_1) + <Psi_2|_(q_1)'
     assert (ascii((psi1 - psi2 + psi3).dag) ==
-            '<Psi_1|_(q_1) + <Psi_3|_(q_1) - <Psi_2|_(q_1)')
+            '<Psi_1|_(q_1) - <Psi_2|_(q_1) + <Psi_3|_(q_1)')
     assert (ascii(bra_psi1 - bra_psi2 + bra_psi3) ==
-            '<Psi_1|_(q_1) + <Psi_3|_(q_1) - <Psi_2|_(q_1)')
+            '<Psi_1|_(q_1) - <Psi_2|_(q_1) + <Psi_3|_(q_1)')
     assert ascii((psi1 * phi).dag) == '<Psi_1|_(q_1) * <Phi|_(q_2)'
     assert ascii(bra_psi1 * bra_phi) == '<Psi_1|_(q_1) * <Phi|_(q_2)'
     assert (bra_psi1_l * bra_phi_l).label == 'Psi_1,Phi'

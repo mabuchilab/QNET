@@ -38,7 +38,7 @@ class SReprPrinter(Printer, metaclass=Singleton):
     """
 
     _special_render = [
-        (str, '_render_rendered'),
+        #(str, '_render_rendered'),
         (SympyBasic, 'render_sympy'),
         (ndarray, 'render_numpy_matrix'),
     ]
@@ -53,9 +53,9 @@ class SReprPrinter(Printer, metaclass=Singleton):
     def render_sympy(cls, expr, adjoint=False):
         """Render a sympy expression"""
         if adjoint:
-            return sympy_srepr(expr)
-        else:
             return sympy_srepr(expr.conjugate())
+        else:
+            return sympy_srepr(expr)
 
     @classmethod
     def render_numpy_matrix(cls, expr, adjoint=False):
@@ -84,7 +84,7 @@ class IndentedSReprPrinter(Printer):
     """
 
     _special_render = [
-        (str, '_render_rendered'),
+        #(str, '_render_rendered'),
         (SympyBasic, 'render_sympy'),
         (ndarray, 'render_numpy_matrix'),
     ]
@@ -95,16 +95,37 @@ class IndentedSReprPrinter(Printer):
         self.indent = int(indent)
         self._key_name = None
 
-    def _render(self, expr, adjoint=False):
-        assert not adjoint, "Adjoint rendering not supported"
-        return self.render_head_repr(expr)
+    def render(self, expr, adjoint=False):
+        """Render the given expression. Not that `adjoint` must be False"""
+        assert not adjoint, "adjoint not supported for SReprPrinter"
+        try:
+            if expr in self._registry:
+                return "    " * self.indent + self._registry[expr]
+        except TypeError:
+            pass  # unhashable types, e.g. numpy array
+        # handle special classes
+        for special_cls, special_render in self._special_render:
+            if isinstance(expr, special_cls):
+                mtd = getattr(self, special_render)
+                res = mtd(expr, adjoint=adjoint)
+                if isinstance(res, str):
+                    return res
+        try:
+            return self.render_head_repr(expr)
+        except AttributeError:
+            if self._key_name is not None:
+                return "    " * self.indent + self._key_name + "=" + repr(expr)
+            else:
+                return "    " * self.indent + repr(expr)
+        except AttributeError:
+            return self._fallback(expr, adjoint=adjoint)
 
     def render_sympy(self, expr, adjoint=False):
         """Render a sympy expression"""
         if adjoint:
-            return "    " * self.indent + sympy_srepr(expr)
-        else:
             return "    " * self.indent + sympy_srepr(expr.conjugate())
+        else:
+            return "    " * self.indent + sympy_srepr(expr)
 
     def render_numpy_matrix(self, expr, adjoint=False):
         assert not adjoint, "Adjoint rendering not supported"
@@ -131,26 +152,27 @@ class IndentedSReprPrinter(Printer):
         else:
             return "    " * self.indent + repr(expr)
 
-    def render_head_repr(self, expr: Any, sub_render=None) -> str:
+    def render_head_repr(
+            self, expr: Any, sub_render=None, key_sub_render=None) -> str:
         """Render a multiline textual representation of `expr`
 
         Raises:
             AttributeError: if `expr` is not an instance of
                 :class:`Expression`, or more specifically, if `expr` does not
-                have `args` and `kwargs` properties
+                have `args` and `kwargs` (respectively `minimal_kwargs`)
+                properties
         """
         lines = []
         if sub_render is None:
             sub_render = self.render
+        if key_sub_render is None:
+            key_sub_render = sub_render
         if isinstance(expr.__class__, Singleton):
             # We exploit that Singletons override __expr__ to directly return
             # their name
             return "    " * self.indent + repr(expr)
         args = expr.args
-        if isinstance(expr.kwargs, OrderedDict):
-            keys = expr.kwargs.keys()
-        else:
-            keys = sorted(expr.kwargs.keys())
+        keys = expr.minimal_kwargs.keys()
         if self._key_name is not None:
             lines.append("    " * self.indent + self._key_name + '=' +
                          expr.__class__.__name__ + "(")
@@ -159,11 +181,11 @@ class IndentedSReprPrinter(Printer):
         self._key_name = None
         self.indent += 1
         for arg in args:
-            lines.append(self.render(arg) + ",")
+            lines.append(sub_render(arg) + ",")
         for key in keys:
             arg = expr.kwargs[key]
             self._key_name = key
-            lines.append(self.render(arg) + ",")
+            lines.append(key_sub_render(arg) + ",")
             self._key_name = None
         self.indent -= 1
         lines.append("    " * self.indent + ")")

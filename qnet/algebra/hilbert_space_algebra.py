@@ -30,12 +30,13 @@ For more details see :ref:`hilbert_space_algebra`.
 import re
 import operator
 import functools
+from collections import OrderedDict
 from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
 
 from .abstract_algebra import (
         Expression, Operation, AlgebraError, assoc, idem, filter_neutral,
-        cache_attr)
+        cache_attr, KeyTuple)
 from .singleton import Singleton, singleton_object
 
 
@@ -104,6 +105,17 @@ class HilbertSpace(metaclass=ABCMeta):
         """Return tuple of LocalSpace objects that tensored together yield this
         Hilbert space."""
         raise NotImplementedError(self.__class__.__name__)
+
+    def isdisjoint(self, other):
+        """Check whether two Hilbert spaces are disjoint (do not have any
+        common local factors). Note that `FullSpace` is *not* disjoint with any
+        other Hilbert space, while `TrivialSpace` *is* disjoint with any other
+        HilbertSpace (even itself)
+        """
+        if other == FullSpace:
+            return False
+        else:
+            return set(self.local_factors).isdisjoint(set(other.local_factors))
 
     def is_tensor_factor_of(self, other):
         """Test if a space is included within a larger tensor product space.
@@ -205,14 +217,15 @@ class LocalSpace(HilbertSpace, Expression):
             (tuple of labels for the basis states)
         dimension (int or None): Specify the dimension $n$ of the Hilbert
             space.  This implies a basis numbered from 0  to $n-1$.
-
-    If no `basis` or `dimension` is specified during initialization, it may be
-    set later by assigning to the corresponding properties. Note that the
-    `basis` and `dimension` arguments are mutually exclusive.
+        order_index (int or None): An optional key that determines the
+            preferred order of Hilbert spaces. This also changes the order of
+            e.g. sums or products of Operators. Hilbert spaces will be ordered
+            from left to right be increasing `order_index`; Hilbert spaces
+            without an explicit `order_index` are sorted by their label
     """
     _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
 
-    def __init__(self, label, *, basis=None, dimension=None):
+    def __init__(self, label, *, basis=None, dimension=None, order_index=None):
         label = str(label)
         if not self._rx_label.match(label):
             raise ValueError("label '%s' does not match pattern '%s'"
@@ -230,7 +243,25 @@ class LocalSpace(HilbertSpace, Expression):
             self._basis = tuple(basis)
             self._dimension = len(basis)
         self._label = label
-        super().__init__(label, basis=basis, dimension=dimension)
+        if order_index is None:
+            self._order_index = float('inf')  # ensure sort as last
+        else:
+            self._order_index = int(order_index)
+        self._order_key = KeyTuple((self._order_index, self._label,
+                                    str(self.dimension), str(self.basis)))
+        self._kwargs = OrderedDict([('basis', self._basis),
+                                    ('dimension', self._dimension),
+                                    ('order_index', order_index)])
+        self._minimal_kwargs = self._kwargs.copy()
+        if basis is None:
+            del self._minimal_kwargs['basis']
+        if dimension is None:
+            del self._minimal_kwargs['dimension']
+        if order_index is None:
+            del self._minimal_kwargs['order_index']
+
+        super().__init__(label, basis=basis, dimension=dimension,
+                         order_index=order_index)
 
     @property
     def args(self):
@@ -251,13 +282,14 @@ class LocalSpace(HilbertSpace, Expression):
 
     @property
     def kwargs(self):
-        return {'basis': self._basis, 'dimension': self._dimension}
+        return self._kwargs
+
+    @property
+    def minimal_kwargs(self):
+        return self._minimal_kwargs
 
     def all_symbols(self):
         return {}
-
-    def _order_key(self):
-        return self._label
 
     def remove(self, other):
         if other == self:
@@ -295,8 +327,9 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
         """Empty tuple (no arguments)"""
         return ()
 
+    @property
     def _order_key(self):
-        return "____"
+        return KeyTuple((-2, '_'))
 
     @property
     def dimension(self):
@@ -358,8 +391,9 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
     def __hash__(self):
         return hash(self.__class__)
 
-    def _order_key(self, a):
-        return "____"
+    @property
+    def _order_key(self):
+        return KeyTuple((-1, '_'))
 
     def all_symbols(self):
         """Empty set (no symbols)"""
@@ -436,6 +470,8 @@ class ProductSpace(HilbertSpace, Operation):
             self._basis = tuple(basis)
         except BasisNotSetError:
             self._basis = None
+        op_keys = [space._order_key for space in local_spaces]
+        self._order_key = KeyTuple([v for op_key in op_keys for v in op_key])
         super().__init__(*local_spaces)  # Operation __init__
 
     @classmethod
@@ -470,6 +506,12 @@ class ProductSpace(HilbertSpace, Operation):
     def local_factors(self):
         """The LocalSpace instances that make up the product"""
         return self.operands
+
+    @classmethod
+    def order_key(cls, obj):
+        """Key by which operands are sorted"""
+        assert isinstance(obj, HilbertSpace)
+        return obj._order_key
 
     def intersect(self, other):
         """Find the mutual tensor factors of two Hilbert spaces."""

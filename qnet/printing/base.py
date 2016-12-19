@@ -139,7 +139,7 @@ class Printer(metaclass=ABCMeta):
 
     _special_render = [
         (SCALAR_TYPES, 'render_scalar'),
-        (str, '_render_rendered'),
+        #(str, '_render_rendered'),
     ]
 
     _registry = {}
@@ -225,7 +225,8 @@ class Printer(metaclass=ABCMeta):
         Raises:
             AttributeError: if `expr` is not an instance of
                 :class:`Expression`, or more specifically, if `expr` does not
-                have `args` and `kwargs` properties
+                have `args` and `kwargs` (respectively `minimal_kwargs`)
+                properties
         """
         if sub_render is None:
             sub_render = cls.render
@@ -236,10 +237,7 @@ class Printer(metaclass=ABCMeta):
             # their name
             return repr(expr)
         args = expr.args
-        if isinstance(expr.kwargs, OrderedDict):
-            keys = expr.kwargs.keys()
-        else:
-            keys = sorted(expr.kwargs.keys())
+        keys = expr.minimal_kwargs.keys()
         kwargs = ''
         if len(keys) > 0:
             kwargs = cls.arg_sep.join(
@@ -405,4 +403,7 @@ class Printer(metaclass=ABCMeta):
         else:
             res = str(sympy.nsimplify(
                 value, rational=False, constants=[sympy.pi]))
+        if isinstance(value, (complex, complex128)):
+            if value.real != 0 and value.imag != 0:
+                res = cls.par_left + res + cls.par_right
         return res

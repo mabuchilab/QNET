@@ -98,29 +98,26 @@ def test_latch_srepr(datadir):
     UnicodePrinter.clear_registry()
     with configure_printing(cached_rendering=False):
         expected = (
-            r'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ [(cid(4) ⊞ (Perm(0, 4, 1, 2, 3) '
-            r'◁ (Latch.B11))) ◁ Perm(0, 1, 2, 3, 4, 6, 7, 8, 5) '
-            r'◁ ((Perm(0, 1, 2, 3, 4, 7, 5, 6) ◁ ((Perm(0, 1, 5, 3, 4, 2) '
-            r'◁ [(cid(2) ⊞ ((Latch.B3) ◁ Perm(0, 2, 1) ◁ (Latch.B12))) '
-            r'◁ Perm(0, 1, 4, 5, 6, 2, 3) ◁ (((cid(1) ⊞ ((cid(1) '
-            r'⊞ ((Latch.Phase3 ⊞ Latch.Phase2) ◁ Latch.B22)) '
-            r'◁ Perm(0, 1, 3, 2) ◁ (Latch.C2 ⊞ Latch.W2(α)))) ◁ ((Latch.B21 '
-            r'◁ (Latch.Phase1)))))]₄₋₀)) ◁ (cid(4) ⊞ (Perm(0, 2, 3, 1) '
-            r'◁ ((Perm(1, 0, 2) ◁ Latch.C1) ⊞ Latch.W1(α))))))]₈₋₄ '
-            r'◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
+            r'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ [(cid(4) ⊞ Perm(0, 4, 1, 2, 3) '
+            r'◁ (Latch.B11)) ◁ Perm(0, 1, 2, 3, 4, 6, 7, 8, 5) ◁ '
+            r'(Perm(0, 1, 2, 3, 4, 7, 5, 6) ◁ (Perm(0, 1, 5, 3, 4, 2) ◁ '
+            r'[(cid(2) ⊞ (Latch.B3) ◁ Perm(0, 2, 1) ◁ (Latch.B12)) ◁ '
+            r'Perm(0, 1, 4, 5, 6, 2, 3) ◁ ((cid(1) ⊞ (cid(1) ⊞ (Latch.Phase3 '
+            r'⊞ Latch.Phase2) ◁ Latch.B22) ◁ Perm(0, 1, 3, 2) ◁ (Latch.C2 ⊞ '
+            r'Latch.W2(α))) ◁ (Latch.B21 ◁ (Latch.Phase1)))]₄₋₀) ◁ (cid(4) ⊞ '
+            r'Perm(0, 2, 3, 1) ◁ (Perm(1, 0, 2) ◁ Latch.C1 ⊞ '
+            r'Latch.W1(α))))]₈₋₄ ◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
         assert unicode(expr) == expected
         UnicodePrinter.update_registry(registry)
         expected = (
-            r'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ [(cid(4) ⊞ (Perm(0, 4, 1, 2, 3) '
-            r'◁ (B11))) ◁ Perm(0, 1, 2, 3, 4, 6, 7, 8, 5) '
-            r'◁ ((Perm(0, 1, 2, 3, 4, 7, 5, 6) ◁ ((Perm(0, 1, 5, 3, 4, 2) '
-            r'◁ [(cid(2) ⊞ ((B3) ◁ Perm(0, 2, 1) ◁ (B12))) '
-            r'◁ Perm(0, 1, 4, 5, 6, 2, 3) ◁ (((cid(1) ⊞ ((cid(1) '
-            r'⊞ ((Phase3 ⊞ Phase2) ◁ B22)) '
-            r'◁ Perm(0, 1, 3, 2) ◁ (C2 ⊞ W2))) ◁ ((B21 '
-            r'◁ (Phase1)))))]₄₋₀)) ◁ (cid(4) ⊞ (Perm(0, 2, 3, 1) '
-            r'◁ ((Perm(1, 0, 2) ◁ C1) ⊞ W1)))))]₈₋₄ '
-            r'◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
+            r'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ [(cid(4) ⊞ Perm(0, 4, 1, 2, 3) ◁ '
+            r'(B11)) ◁ Perm(0, 1, 2, 3, 4, 6, 7, 8, 5) ◁ '
+            r'(Perm(0, 1, 2, 3, 4, 7, 5, 6) ◁ (Perm(0, 1, 5, 3, 4, 2) ◁ '
+            r'[(cid(2) ⊞ (B3) ◁ Perm(0, 2, 1) ◁ (B12)) ◁ '
+            r'Perm(0, 1, 4, 5, 6, 2, 3) ◁ ((cid(1) ⊞ (cid(1) ⊞ '
+            r'(Phase3 ⊞ Phase2) ◁ B22) ◁ Perm(0, 1, 3, 2) ◁ (C2 ⊞ W2)) ◁ '
+            r'(B21 ◁ (Phase1)))]₄₋₀) ◁ (cid(4) ⊞ Perm(0, 2, 3, 1) ◁ '
+            r'(Perm(1, 0, 2) ◁ C1 ⊞ W1)))]₈₋₄ ◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
         assert unicode(expr) == expected
         UnicodePrinter.register(expr.operands[1], 'main_term')
         expected = (

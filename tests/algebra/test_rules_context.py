@@ -34,7 +34,7 @@ def test_no_rules():
     suppressed"""
     h1 = LocalSpace("h1")
     a = OperatorSymbol("a", hs=h1)
-    hs_repr = "LocalSpace('h1', basis=None, dimension=None)"
+    hs_repr = "LocalSpace('h1')"
     assert (srepr(2*a*3 + 3 * (2*a*3)) ==
             "ScalarTimesOperator(24, ""OperatorSymbol('a', hs="+hs_repr+"))")
     with no_rules(ScalarTimesOperator):
@@ -67,7 +67,7 @@ def test_extra_rules():
     h1 = LocalSpace("h1")
     a = OperatorSymbol("a", hs=h1)
     b = OperatorSymbol("b", hs=h1)
-    hs_repr = "LocalSpace('h1', basis=None, dimension=None)"
+    hs_repr = "LocalSpace('h1')"
     rule = (pattern_head(6, a), lambda: b)
     with extra_rules(ScalarTimesOperator, [rule, ]):
         assert rule in ScalarTimesOperator._rules

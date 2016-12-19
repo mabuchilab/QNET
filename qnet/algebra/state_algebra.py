@@ -34,7 +34,7 @@ from sympy import (
 from .abstract_algebra import (
         Operation, Expression, substitute, AlgebraError, assoc, orderby,
         filter_neutral, match_replace, match_replace_binary, KeyTuple,
-        CannotSimplify, cache_attr, SCALAR_TYPES)
+        CannotSimplify, cache_attr, expr_order_key, SCALAR_TYPES)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
@@ -43,7 +43,7 @@ from .operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
         IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
         Jminus, Jz, OperatorSymbol, LocalOperator, Jpjmcoeff, Jzjmcoeff,
-        Jmjmcoeff, Displace, Phase)
+        Jmjmcoeff, Displace, Phase, FullCommutativeHSOrder)
 from ..printing import ascii
 
 
@@ -184,6 +184,7 @@ class KetSymbol(Ket, Expression):
         elif isinstance(hs, tuple):
             hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
         self._hs = hs
+        self._order_key = KeyTuple((self.__class__.__name__, str(label), 1.0))
         super().__init__(label, hs=hs)
 
     @property
@@ -249,6 +250,10 @@ class ZeroKet(Ket, Expression, metaclass=Singleton):
     def args(self):
         return tuple()
 
+    @property
+    def _order_key(self):
+        return KeyTuple(('~~', self.__class__.__name__, 1.0))
+
     def _expand(self):
         return self
 
@@ -284,6 +289,10 @@ class TrivialKet(Ket, Expression, metaclass=Singleton):
     @property
     def args(self):
         return tuple()
+
+    @property
+    def _order_key(self):
+        return KeyTuple(('~~', self.__class__.__name__, 1.0))
 
     def _series_expand(self, param, about, order):
         return (self,) + (0,)*(order - 1)
@@ -392,18 +401,18 @@ class KetPlus(Ket, Operation):
     _simplifications = [assoc, orderby, filter_neutral, check_kets_same_space,
                         match_replace_binary]
 
+    order_key = FullCommutativeHSOrder
+
+    def __init__(self, *operands):
+        self._order_key = KeyTuple([
+            '~'+self.__class__.__name__,
+            ", ".join([op.__class__.__name__ for op in operands]),
+            1.0, tuple([op._order_key for op in operands])])
+        super().__init__(*operands)
+
     @property
     def space(self):
         return self.operands[0].space
-
-    @classmethod
-    def order_key(cls, a):
-        if isinstance(a, ScalarTimesKet):
-            c = a.coeff
-            if isinstance(c, SympyBasic):
-                c = float('inf')
-            return KeyTuple((Expression.order_key(a.term), c))
-        return KeyTuple((Expression.order_key(a), 1))
 
     def _expand(self):
         return KetPlus.create(*[o.expand() for o in self.operands])
@@ -414,24 +423,8 @@ class KetPlus(Ket, Operation):
 
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
-        positive_summands = []
-        negative_summands = []
-        for o in self.operands:
-            is_negative = False
-            op_str = printer.render(o, adjoint=adjoint)
-            if op_str.startswith('-'):
-                is_negative = True
-                op_str = op_str[1:].strip()
-            if isinstance(o, KetPlus):
-                op_str = printer.par_left + op_str + printer.par_right
-            if is_negative:
-                negative_summands.append(op_str)
-            else:
-                positive_summands.append(op_str)
-        negative_str = " - ".join(negative_summands)
-        if len(negative_str) > 0:
-            negative_str = " - " + negative_str
-        return (" + ".join(positive_summands) + negative_str).strip()
+        return printer.render_sum(
+                self.operands, plus_sym='+', minus_sym='-', adjoint=adjoint)
 
 
 class TensorKet(Ket, Operation):
@@ -447,13 +440,17 @@ class TensorKet(Ket, Operation):
     neutral_element = TrivialKet
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
-    order_key = OperatorTimes.order_key
+    order_key = FullCommutativeHSOrder
 
     def __init__(self, *operands):
         self._space = None
         self._label = None
         if all(isinstance(o, LocalKet) for o in operands):
             self._label = ",".join([str(o.label) for o in operands])
+        self._order_key = KeyTuple([
+            '~'+self.__class__.__name__,
+            ", ".join([op.__class__.__name__ for op in operands]),
+            1.0, tuple([op._order_key for op in operands])])
         super().__init__(*operands)
 
     @classmethod
@@ -542,6 +539,15 @@ class ScalarTimesKet(Ket, Operation):
     _simplifications = [match_replace, ]
 
     @property
+    def _order_key(self):
+        t = self.term._order_key
+        try:
+            c = abs(float(self.coeff))  # smallest coefficients first
+        except (ValueError, TypeError):
+            c = float('inf')
+        return KeyTuple(t[:2] + (c, ) + t[3:] + (ascii(self.coeff), ))
+
+    @property
     def space(self):
         return self.operands[1].space
 
@@ -601,7 +607,7 @@ class ScalarTimesKet(Ket, Operation):
 
 
 class OperatorTimesKet(Ket, Operation):
-    """Multiply an operator by a scalar coefficient.
+    """Multiply an operator by an operator
 
     Instantiate as::
 
@@ -612,6 +618,12 @@ class OperatorTimesKet(Ket, Operation):
     """
     _rules = []  # see end of module
     _simplifications = [match_replace, check_op_ket_space]
+
+    @property
+    def _order_key(self):
+        return KeyTuple(
+            (self.__class__.__name__, self.ket.__class__.__name__, 1.0) +
+            self.ket._order_key + self.operator._order_key)
 
     @property
     def space(self):
@@ -668,6 +680,11 @@ class Bra(Operation):
 
     :param Ket k: The state to represent as Bra.
     """
+    def __init__(self, ket):
+        self._order_key = KeyTuple(
+                (self.__class__.__name__, ket.__class__.__name__, 1.0) +
+                ket._order_key)
+        super().__init__(ket)
 
     @property
     def ket(self):
@@ -737,9 +754,7 @@ class Bra(Operation):
 
 class BraKet(Operator, Operation):
     r"""The symbolic inner product between two states, represented as Bra and
-    Ket::
-
-        BraKet(b, k)
+    Ket
 
     In math notation this corresponds to:
 
@@ -749,15 +764,17 @@ class BraKet(Operator, Operation):
     which we define to be linear in the state :math:`k` and anti-linear in
     :math:`b`.
 
-    :param Ket b: The anti-linear state argument.
-    :param Ket k: The linear state argument.
+    :param Ket bra: The anti-linear state argument.
+    :param Ket ket: The linear state argument.
     """
-    # TODO: BraKet is a scalar. Investigate whether it should be a subclass of
-    # Operator / whether we need a ScalarOperator class, and whether the
-    # `space` property is well-defined
     _rules = []  # see end of module
     _space = TrivialSpace
     _simplifications = [check_kets_same_space, match_replace]
+
+    def __init__(self, bra, ket):
+        self._order_key = KeyTuple((self.__class__.__name__, '__', 1.0,
+                                    expr_order_key(bra), expr_order_key(ket)))
+        super().__init__(bra, ket)
 
     @property
     def ket(self):
@@ -769,7 +786,7 @@ class BraKet(Operator, Operation):
 
     @property
     def space(self):
-        return self.operands[0].space
+        return TrivialSpace
 
     def _adjoint(self):
         return BraKet.create(*reversed(self.operands))
@@ -786,11 +803,11 @@ class BraKet(Operator, Operation):
         printer = getattr(self, "_"+fmt+"_printer")
         trivial = True
         try:
-            bra_label = self.bra.label
+            bra_label = str(self.bra.label)
         except AttributeError:
             trivial = False
         try:
-            ket_label = self.ket.label
+            ket_label = str(self.ket.label)
         except AttributeError:
             trivial = False
         if trivial:
@@ -826,15 +843,18 @@ class BraKet(Operator, Operation):
 
 
 class KetBra(Operator, Operation):
-    """A symbolic operator formed by the outer product of two states::
+    """A symbolic operator formed by the outer product of two states
 
-        KetBra(k, b)
-
-    :param Ket k: The first state that defines the range of the operator.
-    :param ket b: The second state that defines the Kernel of the operator.
+    :param Ket ket: The first state that defines the range of the operator.
+    :param Ket bra: The second state that defines the Kernel of the operator.
     """
     _rules = []  # see end of module
     _simplifications = [check_kets_same_space, match_replace]
+
+    def __init__(self, ket, bra):
+        self._order_key = KeyTuple((self.__class__.__name__, '__', 1.0,
+                                    expr_order_key(ket), expr_order_key(bra)))
+        super().__init__(ket, bra)
 
     @property
     def ket(self):
@@ -863,11 +883,11 @@ class KetBra(Operator, Operation):
         printer = getattr(self, "_"+fmt+"_printer")
         trivial = True
         try:
-            bra_label = self.bra.label
+            bra_label = str(self.bra.label)
         except AttributeError:
             trivial = False
         try:
-            ket_label = self.ket.label
+            ket_label = str(self.ket.label)
         except AttributeError:
             trivial = False
         if trivial:
@@ -1058,7 +1078,7 @@ def _algebraic_rules():
             lambda u, v, Psi: (u + v) * Psi),
         (pattern_head(pattern(ScalarTimesKet, u, Psi), Psi),
             lambda u, Psi: (u + 1) * Psi),
-        (pattern_head(Psi, pattern(ScalarTimesOperator, v, Psi)),
+        (pattern_head(Psi, pattern(ScalarTimesKet, v, Psi)),
             lambda v, Psi: (1 + v) * Psi),
         (pattern_head(Psi, Psi),
             lambda Psi: 2 * Psi),

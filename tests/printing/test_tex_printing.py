@@ -110,8 +110,7 @@ def test_tex_circuit_operations():
     assert (tex(A << (beta + gamma)) ==
             r'A_{\text{test}} \lhd \left(\beta \boxplus \gamma\right)')
     assert (tex(A + (B << C)) ==
-            r'A_{\text{test}} \boxplus \left(B_{\text{test}} \lhd '
-            r'C_{\text{test}}\right)')
+            r'A_{\text{test}} \boxplus B_{\text{test}} \lhd C_{\text{test}}')
     assert (tex(perm) ==
             r'\mathbf{P}_{\sigma}\begin{pmatrix} 0 & 1 & 2 & 3 \\ '
             r'2 & 1 & 0 & 3 \end{pmatrix}')
@@ -234,7 +233,7 @@ def test_tex_operator_operations():
             r'\hat{P}_{{Ker}}\left(\hat{A}^{(q_{1})}\right)')
     assert tex(A - B) == r'\hat{A}^{(q_{1})} - \hat{B}^{(q_{1})}'
     assert (tex(A - B + C) ==
-            r'\hat{A}^{(q_{1})} + \hat{C}^{(q_{2})} - \hat{B}^{(q_{1})}')
+            r'\hat{A}^{(q_{1})} - \hat{B}^{(q_{1})} + \hat{C}^{(q_{2})}')
     assert (tex(2 * A - sqrt(gamma) * (B + C)) ==
             r'2 \hat{A}^{(q_{1})} - \sqrt{\gamma} \left(\hat{B}^{(q_{1})} + '
             r'\hat{C}^{(q_{2})}\right)')
@@ -312,9 +311,9 @@ def test_tex_ket_operations():
             r'\left|\Psi_{1}\right\rangle_{(q_{1})} + '
             r'\left|\Psi_{2}\right\rangle_{(q_{1})}')
     assert (tex(psi1 - psi2 + psi3) ==
-            r'\left|\Psi_{1}\right\rangle_{(q_{1})} + '
-            r'\left|\Psi_{3}\right\rangle_{(q_{1})} - '
-            r'\left|\Psi_{2}\right\rangle_{(q_{1})}')
+            r'\left|\Psi_{1}\right\rangle_{(q_{1})} - '
+            r'\left|\Psi_{2}\right\rangle_{(q_{1})} + '
+            r'\left|\Psi_{3}\right\rangle_{(q_{1})}')
     assert (tex(psi1 * phi) ==
             r'\left|\Psi_{1}\right\rangle_{(q_{1})} \otimes '
             r'\left|\Phi\right\rangle_{(q_{2})}')
@@ -342,18 +341,11 @@ def test_tex_ket_operations():
             r'\frac{\sqrt{2}}{2} \left('
             r'\left|e,e\right\rangle_{(q_{1} \otimes q_{2})} - '
             r'\left|g,g\right\rangle_{(q_{1} \otimes q_{2})}\right)')
+    assert BraKet.create(bell1, bell2).expand() == 0
     assert (tex(BraKet.create(bell1, bell2)) ==
-            r'\frac{1}{2} \left('
-            r'\left(\left\langle{}e,g\right|_{(q_{1} \otimes q_{2})} + '
-            r'i \left\langle{}g,e\right|_{(q_{1} \otimes q_{2})}\right)'
-            r'\left(\left|e,e\right\rangle_{(q_{1} \otimes q_{2})} - '
-            r'\left|g,g\right\rangle_{(q_{1} \otimes q_{2})}\right)\right)')
+            r'\frac{1}{2} \left(\left\langle{}e,g\right|_{(q_{1} \otimes q_{2})} + i \left\langle{}g,e\right|_{(q_{1} \otimes q_{2})}\right)\left(\left|e,e\right\rangle_{(q_{1} \otimes q_{2})} - \left|g,g\right\rangle_{(q_{1} \otimes q_{2})}\right)')
     assert (tex(KetBra.create(bell1, bell2)) ==
-            r'\frac{1}{2} \left('
-            r'\left(\left|e,g\right\rangle_{(q_{1} \otimes q_{2})} - '
-            r'i \left|g,e\right\rangle_{(q_{1} \otimes q_{2})}\right)'
-            r'\left(\left\langle{}e,e\right|_{(q_{1} \otimes q_{2})} - '
-            r'\left\langle{}g,g\right|_{(q_{1} \otimes q_{2})}\right)\right)')
+            r'\frac{1}{2} \left(\left|e,g\right\rangle_{(q_{1} \otimes q_{2})} - i \left|g,e\right\rangle_{(q_{1} \otimes q_{2})}\right)\left(\left\langle{}e,e\right|_{(q_{1} \otimes q_{2})} - \left\langle{}g,g\right|_{(q_{1} \otimes q_{2})}\right)')
 
 
 def test_tex_bra_operations():
@@ -380,9 +372,9 @@ def test_tex_bra_operations():
             r'\left\langle{}\Psi_{1}\right|_{(q_{1})} + '
             r'\left\langle{}\Psi_{2}\right|_{(q_{1})}')
     assert (tex(bra_psi1 - bra_psi2 + bra_psi3) ==
-            r'\left\langle{}\Psi_{1}\right|_{(q_{1})} + '
-            r'\left\langle{}\Psi_{3}\right|_{(q_{1})} - '
-            r'\left\langle{}\Psi_{2}\right|_{(q_{1})}')
+            r'\left\langle{}\Psi_{1}\right|_{(q_{1})} - '
+            r'\left\langle{}\Psi_{2}\right|_{(q_{1})} + '
+            r'\left\langle{}\Psi_{3}\right|_{(q_{1})}')
     assert (tex(bra_psi1 * bra_phi) ==
             r'\left\langle{}\Psi_{1}\right|_{(q_{1})} \otimes '
             r'\left\langle{}\Phi\right|_{(q_{2})}')

@@ -69,4 +69,4 @@ def test_simplify():
         new_expr = simplify(expr, [commutator_rule, ])
     assert (srepr(new_expr) ==
             "ScalarTimesOperator(2, OperatorSymbol('CommutAD', "
-            "hs=LocalSpace('h1', basis=None, dimension=None)))")
+            "hs=LocalSpace('h1')))")

@@ -46,9 +46,10 @@ from .hilbert_space_algebra import (
         HilbertSpace, FullSpace, TrivialSpace, LocalSpace, ProductSpace)
 from .operator_algebra import (
         Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
-        IdentityOperator, simplify_scalar, OperatorSymbol, Create, Destroy)
+        IdentityOperator, simplify_scalar, OperatorSymbol, Create, Destroy,
+        FullCommutativeHSOrder, DisjunctCommutativeHSOrder)
 from .matrix_algebra import Matrix
-from ..printing import ascii  # for docstring
+from ..printing import ascii
 
 
 ###############################################################################
@@ -159,9 +160,17 @@ class SuperOperator(metaclass=ABCMeta):
 class SuperOperatorOperation(SuperOperator, Operation, metaclass=ABCMeta):
     """Base class for Operations acting only on SuperOperator arguments."""
 
+    def __init__(self, *operands):
+        op_spaces = [o.space for o in operands]
+        self._space = ProductSpace.create(*op_spaces)
+        self._order_key = KeyTuple([
+            '~'+self.__class__.__name__, '__',
+            1.0] + [op._order_key for op in operands])
+        super().__init__(*operands)
+
     @property
     def space(self):
-        return ProductSpace.create(*(o.space for o in self.operands))
+        return self._space
 
     def _simplify_scalar(self):
         return self.__class__.create(*[o.simplify_scalar()
@@ -185,8 +194,8 @@ class SuperOperatorSymbol(SuperOperator, Expression):
 
         SuperOperatorSymbol(name, hs)
 
-    :param name: Symbol identifier
-    :type name: str
+    :param label: Symbol identifier
+    :type label: str
     :param hs: Associated Hilbert space.
     :type hs: HilbertSpace
     """
@@ -202,6 +211,8 @@ class SuperOperatorSymbol(SuperOperator, Expression):
         elif isinstance(hs, tuple):
             hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
         self._hs = hs
+        self._order_key = KeyTuple((self.__class__.__name__, str(label),
+                                    1.0))
         super().__init__(label, hs=hs)
 
     @property
@@ -241,6 +252,10 @@ class IdentitySuperOperator(SuperOperator, Expression, metaclass=Singleton):
         return TrivialSpace
 
     @property
+    def _order_key(self):
+        return KeyTuple(('~~', self.__class__.__name__, 1.0))
+
+    @property
     def args(self):
         return tuple()
 
@@ -270,6 +285,10 @@ class ZeroSuperOperator(SuperOperator, Expression, metaclass=Singleton):
         return TrivialSpace
 
     @property
+    def _order_key(self):
+        return KeyTuple(('~~', self.__class__.__name__, 1.0))
+
+    @property
     def args(self):
         return tuple()
 
@@ -291,75 +310,6 @@ class ZeroSuperOperator(SuperOperator, Expression, metaclass=Singleton):
 
 
 ###############################################################################
-# Operator ordering
-###############################################################################
-
-
-class SuperOperatorOrderKey(object):
-    """Auxiliary class that generates the correct pseudo-order relation for
-    operator products.  Only operators acting on different Hilbert spaces are
-    commuted to achieve the order specified in the full HilbertSpace.  I.e.,
-    sorted(factors, key = OperatorOrderKey) achieves this ordering.
-    """
-    def __init__(self, op):
-        if isinstance(op, ScalarTimesSuperOperator):
-            op = op.term
-        space = op.space
-        self.op = op
-        self.full = False
-        self.trivial = False
-        if isinstance(space, LocalSpace):
-            self.local_spaces = {space.args, }
-        elif space is TrivialSpace:
-            self.local_spaces = set(())
-            self.trivial = True
-        elif space is FullSpace:
-            self.full = True
-        else:
-            assert isinstance(space, ProductSpace)
-            self.local_spaces = {s.args for s in space.args}
-
-    def __lt__(self, other):
-        if isinstance(self.op, SPre) and isinstance(other.op, SPost):
-            return True
-        elif isinstance(self.op, SPost) and isinstance(other.op, SPre):
-            return False
-
-        if self.trivial and other.trivial:
-            return (Expression.order_key(self.op) <
-                    Expression.order_key(other.op))
-
-        if self.full or len(self.local_spaces & other.local_spaces):
-            return False
-        return tuple(self.local_spaces) < tuple(other.local_spaces)
-
-    def __gt__(self, other):
-        if isinstance(self.op, SPost) and isinstance(other.op, SPre):
-            return True
-        elif isinstance(self.op, SPre) and isinstance(other.op, SPost):
-            return False
-
-        if self.trivial and other.trivial:
-            return (Expression.order_key(self.op) >
-                    Expression.order_key(other.op))
-
-        if self.full or len(self.local_spaces & other.local_spaces):
-            return False
-
-        return tuple(self.local_spaces) > tuple(other.local_spaces)
-
-    def __eq__(self, other):
-        if ((isinstance(self.op, SPost) and isinstance(other.op, SPre)) or
-                (isinstance(self.op, SPre) and isinstance(other.op, SPost))):
-            return False
-        if self.trivial and other.trivial:
-            return (Expression.order_key(self.op) ==
-                    Expression.order_key(other.op))
-
-        return self.full or len(self.local_spaces & other.local_spaces) > 0
-
-
-###############################################################################
 # Algebra Operations
 ###############################################################################
 
@@ -377,14 +327,7 @@ class SuperOperatorPlus(SuperOperatorOperation):
     _binary_rules = []  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
-    @classmethod
-    def order_key(cls, a):
-        if isinstance(a, ScalarTimesSuperOperator):
-            c = a.coeff
-            if isinstance(c, SympyBasic):
-                c = str(c)
-            return KeyTuple((Expression.order_key(a.term), c))
-        return KeyTuple((Expression.order_key(a), 1))
+    order_key = FullCommutativeHSOrder
 
     def _expand(self):
         return sum((o.expand() for o in self.operands), ZeroSuperOperator)
@@ -413,6 +356,18 @@ class SuperOperatorPlus(SuperOperatorOperation):
         return (" + ".join(positive_summands) + negative_str).strip()
 
 
+class SuperCommutativeHSOrder(DisjunctCommutativeHSOrder):
+    """Ordering class that acts like DisjunctCommutativeHSOrder, but also
+    commutes any `SPost` and `SPre`"""
+    def __lt__(self, other):
+        if isinstance(self.op, SPre) and isinstance(other.op, SPost):
+            return True
+        elif isinstance(self.op, SPost) and isinstance(other.op, SPre):
+            return False
+        else:
+            return DisjunctCommutativeHSOrder.__lt__(self, other)
+
+
 class SuperOperatorTimes(SuperOperatorOperation):
     """A product of super-operators that denotes order of application of
     super-operators (right to left)::
@@ -425,7 +380,7 @@ class SuperOperatorTimes(SuperOperatorOperation):
     _binary_rules = []  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
-    order_key = SuperOperatorOrderKey
+    order_key = SuperCommutativeHSOrder
 
     @classmethod
     def create(cls, *ops):
@@ -476,6 +431,15 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
     @property
     def space(self):
         return self.term.space
+
+    @property
+    def _order_key(self):
+        t = self.term._order_key
+        try:
+            c = abs(float(self.coeff))  # smallest coefficients first
+        except (ValueError, TypeError):
+            c = float('inf')
+        return KeyTuple(t[:2] + (c, ) + t[3:] + (ascii(self.coeff), ))
 
     @property
     def coeff(self):
@@ -549,10 +513,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
 class SuperAdjoint(SuperOperatorOperation):
     r"""The symbolic SuperAdjoint of a super-operator.
 
-    For a super operator ``L`` use as::
-
-        SuperAdjoint(L)
-
     The math notation for this is typically
 
     .. math::
@@ -570,6 +530,11 @@ class SuperAdjoint(SuperOperatorOperation):
     """
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
+
+    def __init__(self, operand):
+        super().__init__(operand)
+        self._order_key = (self.operands[0]._order_key +
+                           KeyTuple((self.__class__.__name__, )))
 
     @property
     def operand(self):
@@ -599,15 +564,17 @@ class SuperAdjoint(SuperOperatorOperation):
 class SPre(SuperOperator, Operation):
     """Linear pre-multiplication operator.
 
-    Use as::
-
-        SPre(op)
-
     Acting ``SPre(A)`` on an operator ``B`` just yields the product ``A * B``
     """
 
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
+
+    def __init__(self, op):
+        self._order_key = KeyTuple(("AAA" + self.__class__.__name__,
+                                    '__', 1.0, op._order_key))
+        # The prepended "AAA" ensures that SPre sorts before SPost
+        super().__init__(op)
 
     @property
     def space(self):
@@ -626,16 +593,18 @@ class SPre(SuperOperator, Operation):
 class SPost(SuperOperator, Operation):
     """Linear post-multiplication operator.
 
-        Use as::
-
-            SPost(op)
-
         Acting ``SPost(A)`` on an operator ``B`` just yields the reversed
         product ``B * A``.
     """
 
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
+
+    def __init__(self, op):
+        self._order_key = KeyTuple(("BBB" + self.__class__.__name__,
+                                    '__', 1.0, op._order_key))
+        # The prepended "BBB" ensures that SPre sorts before SPost
+        super().__init__(op)
 
     @property
     def space(self):
@@ -654,15 +623,19 @@ class SPost(SuperOperator, Operation):
 class SuperOperatorTimesOperator(Operator, Operation):
     """Application of a super-operator to an operator (result is an Operator).
 
-    Use as::
-
-        SuperOperatorTimesOperator(sop, op)
-
     :param SuperOperator sop: The super-operator to apply.
     :param Operator op: The operator it is applied to.
     """
     _rules = []  # see end of module
     _simplifications = [match_replace, ]
+
+    def __init__(self, sop, op):
+        assert isinstance(sop, SuperOperator)
+        assert isinstance(op, Operator)
+        self._order_key = KeyTuple(
+                (self.__class__.__name__, '__',
+                 1.0, sop._order_key, op._order_key))
+        super().__init__(sop, op)
 
     @property
     def space(self):
@@ -826,11 +799,11 @@ def liouvillian_normal_form(L, symbolic = False):
     >>> LL = liouvillian(H, Ls)
     >>> Hnf, Lsnf = liouvillian_normal_form(LL)
     >>> print(ascii(Hnf))
-    I*sqrt(kappa_1)*conjugate(alpha) * a^(1) + Delta * (a^(1)H * a^(1)) - I*alpha*sqrt(kappa_1) * a^(1)H
+    -I*alpha*sqrt(kappa_1) * a^(1)H + I*sqrt(kappa_1)*conjugate(alpha) * a^(1) + Delta * a^(1)H * a^(1)
     >>> len(Lsnf)
     1
     >>> print(ascii(Lsnf[0]))
-    (sqrt(kappa_1 + kappa_2)) * a^(1)
+    sqrt(kappa_1 + kappa_2) * a^(1)
 
     In terms of the ensemble dynamics this final system is equivalent.
     Note that this function will only work for proper Liouvillians.

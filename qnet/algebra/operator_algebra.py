@@ -37,13 +37,13 @@ from sympy import (exp, sqrt, I, sympify, Basic as SympyBasic,
 from .abstract_algebra import (
         Expression, Operation, assoc, orderby, filter_neutral,
         match_replace_binary, match_replace, set_union, KeyTuple, substitute,
-        CannotSimplify, cache_attr, SCALAR_TYPES)
+        CannotSimplify, cache_attr, expr_order_key, SCALAR_TYPES)
 from .singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
         TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError,
         FullSpace)
 from .pattern_matching import wc, pattern_head, pattern
-from ..printing import ascii  # for doctests
+from ..printing import ascii, srepr
 
 sympyOne = sympify(1)
 
@@ -275,6 +275,15 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
         if len(args) != self._nargs:
             raise ValueError("expected %d arguments, gotten %d"
                              % (self._nargs, len(args)))
+        args_vals = []
+        for arg in self.args:
+            try:
+                args_vals.append(float(arg))
+            except (TypeError, ValueError):
+                args_vals.append("~%s" % ascii(arg))
+        self._order_key = KeyTuple([self.__class__.__name__,
+                                    self._identifier, 1.0] +
+                                    args_vals)
         super().__init__(*args, hs=hs)
 
     @property
@@ -288,6 +297,13 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
     @property
     def kwargs(self):
         return OrderedDict([('hs', self._hs), ('identifier', self.identifier)])
+
+    @property
+    def minimal_kwargs(self):
+        if self._identifier == self.__class__._identifier:
+            return {'hs': self._hs}
+        else:
+            return self.kwargs
 
     def _render(self, fmt, adjoint=False):
         if adjoint:
@@ -322,6 +338,9 @@ class OperatorOperation(Operator, Operation, metaclass=ABCMeta):
     def __init__(self, *operands, **kwargs):
         op_spaces = [o.space for o in operands]
         self._space = ProductSpace.create(*op_spaces)
+        self._order_key = KeyTuple([
+            '~'+self.__class__.__name__, '__',
+            1.0] + [op._order_key for op in operands])
         super().__init__(*operands, **kwargs)
 
     @property
@@ -337,6 +356,7 @@ class SingleOperatorOperation(Operator, Operation, metaclass=ABCMeta):
 
     def __init__(self, op, **kwargs):
         self._space = op.space
+        self._order_key = op._order_key + KeyTuple((self.__class__.__name__, ))
         super().__init__(op, **kwargs)
 
     @property
@@ -381,6 +401,8 @@ class OperatorSymbol(Operator, Expression):
             self._hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
         else:
             self._hs = hs
+        self._order_key = KeyTuple((self.__class__.__name__, str(identifier),
+                                    1.0))
         super().__init__(identifier, hs=hs)
 
     @property
@@ -417,6 +439,10 @@ class IdentityOperator(Operator, Expression, metaclass=Singleton):
     def space(self):
         """TrivialSpace"""
         return TrivialSpace
+
+    @property
+    def _order_key(self):
+        return KeyTuple(('~~', self.__class__.__name__, 1.0))
 
     @property
     def args(self):
@@ -459,6 +485,10 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
     def space(self):
         """TrivialSpace"""
         return TrivialSpace
+
+    @property
+    def _order_key(self):
+        return KeyTuple(('~~', self.__class__.__name__, 1.0))
 
     @property
     def args(self):
@@ -641,10 +671,6 @@ class Phase(LocalOperator):
     def args(self):
         return (self.phi, )
 
-    @property
-    def kwargs(self):
-        return OrderedDict([('hs', self._hs), ('identifier', self.identifier)])
-
     def _diff(self, sym):
         raise NotImplementedError()
 
@@ -689,10 +715,6 @@ class Displace(LocalOperator):
     def args(self):
         return (self.alpha, )
 
-    @property
-    def kwargs(self):
-        return OrderedDict([('hs', self._hs), ('identifier', self.identifier)])
-
     def _diff(self, sym):
         raise NotImplementedError()
 
@@ -735,10 +757,6 @@ class Squeeze(LocalOperator):
     @property
     def args(self):
         return (self.eta, )
-
-    @property
-    def kwargs(self):
-        return OrderedDict([('hs', self._hs), ('identifier', self.identifier)])
 
     def _diff(self, sym):
         raise NotImplementedError()
@@ -799,64 +817,78 @@ class LocalSigma(LocalOperator):
     def args(self):
         return self.j, self.k
 
-    @property
-    def kwargs(self):
-        return OrderedDict([('hs', self._hs), ('identifier', self.identifier)])
-
 
 ###############################################################################
 # Operator ordering
 ###############################################################################
 
 
-class OperatorTimesOrderKey():
+class DisjunctCommutativeHSOrder():
     """Auxiliary class that generates the correct pseudo-order relation for
-    operator products.  Only operators acting on different Hilbert spaces
-    are commuted to achieve the order specified in the full HilbertSpace.
-    I.e., ``sorted(factors, key=OperatorTimesOrderKey)`` achieves this
-    ordering.
+    operator products.  Only operators acting on disjoint Hilbert spaces
+    are commuted to reflect the order the local factors have in the total
+    Hilbert space. I.e., ``sorted(factors, key=DisjunctCommutativeHSOrder)``
+    achieves this ordering.
     """
 
-    def __init__(self, op):
-        s = op.space
+    def __init__(self, op, space_order=None, op_order=None):
         self.op = op
-        self.full = False
-        self.trivial = False
-        self.local_spaces = set()
-        if isinstance(s, LocalSpace):
-            self.local_spaces = {s.args, }
-        elif s is TrivialSpace:
-            self.trivial = True
-        elif s is FullSpace:
-            self.full = True
+        self.space = op.space
+        if space_order is None:
+            self._space_order = op.space._order_key
         else:
-            assert isinstance(s, ProductSpace)
-            self.local_spaces = {s.args for s in s.operands}
+            self._space_order = space_order
+        if op_order is None:
+            self._op_order = expr_order_key(op)
+        else:
+            self._op_order = op_order
+        self.trivial = False
+        if op.space is TrivialSpace:
+            self.trivial = True
+
+    def __repr__(self):
+        return "%s(%s, space_order=%r, op_order=%r)" %  (
+                self.__class__.__name__, srepr(self.op), self._space_order,
+                self._op_order)
 
     def __lt__(self, other):
         if self.trivial and other.trivial:
-            return (Expression.order_key(self.op) <
-                    Expression.order_key(other.op))
-        if self.full or len(self.local_spaces & other.local_spaces):
-            return False
-        return tuple(self.local_spaces) < tuple(other.local_spaces)
+            return self._op_order < other._op_order
+        else:
+            if self.space.isdisjoint(other.space):
+                return self._space_order < other._space_order
+        return None  # no ordering
 
-    def __gt__(self, other):
-        if self.trivial and other.trivial:
-            return (Expression.order_key(self.op) >
-                    Expression.order_key(other.op))
 
-        if self.full or len(self.local_spaces & other.local_spaces):
-            return False
+class FullCommutativeHSOrder():
+    """Auxiliary class that generates the correct pseudo-order relation for
+    operator products.  Only operators acting on disjoint Hilbert spaces
+    are commuted to reflect the order the local factors have in the total
+    Hilbert space. I.e., ``sorted(factors, key=FullCommutativeHSOrder)``
+    achieves this ordering.
+    """
 
-        return tuple(self.local_spaces) > tuple(other.local_spaces)
+    def __init__(self, op, space_order=None, op_order=None):
+        self.space = op.space
+        if space_order is None:
+            self._space_order = self.space._order_key
+        else:
+            self._space_order = space_order
+        if op_order is None:
+            self._op_order = expr_order_key(op)
+        else:
+            self._op_order = op_order
 
-    def __eq__(self, other):
-        if self.trivial and other.trivial:
-            return (Expression.order_key(self.op) ==
-                    Expression.order_key(other.op))
+    def __repr__(self):
+        return "%s(%s, space_order=%r, op_order=%r)" %  (
+                self.__class__.__name__, srepr(self.op), self._space_order,
+                self._op_order)
 
-        return self.full or len(self.local_spaces & other.local_spaces) > 0
+    def __lt__(self, other):
+        if self.space == other.space:
+            return self._op_order < other._op_order
+        else:
+            return self._space_order < other._space_order
 
 
 ###############################################################################
@@ -874,14 +906,7 @@ class OperatorPlus(OperatorOperation):
     _binary_rules = []
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
-    @classmethod
-    def order_key(cls, a):
-        if isinstance(a, ScalarTimesOperator):
-            c = a.coeff
-            if isinstance(c, SympyBasic):
-                c = float('inf')
-            return KeyTuple((Expression.order_key(a.term), c))
-        return KeyTuple((Expression.order_key(a), 1))
+    order_key = FullCommutativeHSOrder
 
     def _expand(self):
         summands = [o.expand() for o in self.operands]
@@ -913,7 +938,7 @@ class OperatorTimes(OperatorOperation):
     _binary_rules = []  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
-    order_key = OperatorTimesOrderKey
+    order_key = DisjunctCommutativeHSOrder
 
     def factor_for_space(self, spc):
         if spc == TrivialSpace:
@@ -998,6 +1023,15 @@ class ScalarTimesOperator(Operator, Operation):
         """
         cs = str(c).strip()
         return cs[0] == "-"
+
+    @property
+    def _order_key(self):
+        t = self.term._order_key
+        try:
+            c = abs(float(self.coeff))  # smallest coefficients first
+        except (ValueError, TypeError):
+            c = float('inf')
+        return KeyTuple(t[:2] + (c, ) + t[3:] + (ascii(self.coeff), ))
 
     @property
     def space(self):
@@ -1135,6 +1169,9 @@ class OperatorTrace(Operator, Operation):
         assert isinstance(over_space, HilbertSpace)
         self._over_space = over_space
         self._space = None
+        self._order_key = (op._order_key +
+                           KeyTuple((self.__class__.__name__,
+                           over_space._order_key)))
         super().__init__(op, over_space=over_space)
 
     @property
@@ -1235,6 +1272,13 @@ class OperatorPlusMinusCC(SingleOperatorOperation):
             return {'sign': +1, }
         else:
             return {'sign': -1, }
+
+    @property
+    def minimal_kwargs(self):
+        if self._sign == +1:
+            return {}
+        else:
+            return self.kwargs
 
     def _expand(self):
         return self

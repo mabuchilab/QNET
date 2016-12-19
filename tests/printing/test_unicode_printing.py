@@ -63,7 +63,7 @@ def test_unicode_circuit_operations():
     assert unicode(A << B << C) == "A_test ◁ B_test ◁ C_test"
     assert unicode(A + B + C) == 'A_test ⊞ B_test ⊞ C_test'
     assert unicode(A << (beta + gamma)) == "A_test ◁ (β ⊞ γ)"
-    assert unicode(A + (B << C)) == "A_test ⊞ (B_test ◁ C_test)"
+    assert unicode(A + (B << C)) == "A_test ⊞ B_test ◁ C_test"
     assert unicode(perm) == "Perm(2, 1, 0, 3)"
     assert (unicode(SeriesProduct(perm, (A+B))) ==
             "Perm(2, 1, 0, 3) ◁ (A_test ⊞ B_test)")
@@ -238,11 +238,11 @@ def test_unicode_ket_operations():
     assert (unicode(bell1) ==
             'sqrt(2)/2 * (|e,g⟩_(q₁⊗q₂) - ⅈ * |g,e⟩_(q₁⊗q₂))')
     assert (unicode(BraKet.create(bell1, bell2)) ==
-            r'1/2 * ((⟨e,g|_(q₁⊗q₂) + ⅈ * ⟨g,e|_(q₁⊗q₂))*(|e,e⟩_(q₁⊗q₂) '
-            r'- |g,g⟩_(q₁⊗q₂)))')
+            r'1/2 * (⟨e,g|_(q₁⊗q₂) + ⅈ * ⟨g,e|_(q₁⊗q₂))*(|e,e⟩_(q₁⊗q₂) - '
+            r'|g,g⟩_(q₁⊗q₂))')
     assert (unicode(KetBra.create(bell1, bell2)) ==
-            '1/2 * ((|e,g⟩_(q₁⊗q₂) - ⅈ * |g,e⟩_(q₁⊗q₂))(⟨e,e|_(q₁⊗q₂) '
-            r'- ⟨g,g|_(q₁⊗q₂)))')
+            r'1/2 * (|e,g⟩_(q₁⊗q₂) - ⅈ * |g,e⟩_(q₁⊗q₂))(⟨e,e|_(q₁⊗q₂) - '
+            r'⟨g,g|_(q₁⊗q₂))')
 
 
 def test_unicode_bra_operations():

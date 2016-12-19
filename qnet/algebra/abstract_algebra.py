@@ -33,6 +33,8 @@ from functools import reduce
 from contextlib import contextmanager
 from copy import copy
 
+from numpy import complex128
+
 from .pattern_matching import (
         ProtoExpr, match_pattern, wc, pattern_head, pattern)
 from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter, SReprPrinter
@@ -240,6 +242,12 @@ class Expression(metaclass=ABCMeta):
                 % str(self.__class__.__name__))
         return {}
 
+    @property
+    def minimal_kwargs(self):
+        """A "minimal" dictionary of keyword-only arguments, i.e. a subsect of
+        `kwargs` that may exclude default options"""
+        return self.kwargs
+
     def __eq__(self, other):
         return (self is other) or hash(self) == hash(other)
 
@@ -339,28 +347,6 @@ class Expression(metaclass=ABCMeta):
         if type(eq) is bool:
             return not eq
         return NotImplemented
-
-    @classmethod
-    def order_key(cls, obj):
-        """Default ordering mechanism for achieving canonical ordering of
-        expressions sequences."""
-        try:
-            return obj._order_key()
-        except AttributeError:
-            return str(obj)
-
-    def _order_key(self):
-        if isinstance(self.kwargs, OrderedDict):
-            key_vals = self.kwargs.values()
-        else:
-            key_vals = [self.kwargs[key] for key in sorted(self.kwargs)]
-        # It just happens that the keyword arguments (which include the Hilbert
-        # space for Operator, Kets, and SuperOperators) are usually more
-        # relevant to the orderding than the positional arguments, hence the
-        # expression below
-        return KeyTuple((self.__class__.__name__, ) +
-                        tuple(map(Expression.order_key, key_vals)) +
-                        tuple(map(Expression.order_key, self.args)))
 
     def __getstate__(self):
         """state to be pickled"""
@@ -467,20 +453,46 @@ def simplify(expr, rules=None):
 
 class KeyTuple(tuple):
     """A tuple that allows for ordering, facilitating the default ordering of
-    Operations"""
+    Operations. It differs from a normal tuple in that it falls back to string
+    comparison if any elements are not directly comparable"""
     def __lt__(self, other):
-        if isinstance(other, (int, str)):
+        if isinstance(other, (SCALAR_TYPES, str)):
             return False
-        if isinstance(other, KeyTuple):
-            return super(KeyTuple, self).__lt__(other)
-        raise AlgebraException("Cannot compare: {}".format(other))
-
-    def __gt__(self, other):
-        if isinstance(other, (int, str)):
+        for (a, b) in zip(self, other):
+            try:
+                if a < b:
+                    return True
+                elif a > b:
+                    return False
+            except (TypeError, ValueError):
+                if str(a) < str(b):
+                    return True
+                elif str(a) > str(b):
+                    return False
+        if len(self) < len(other):
             return True
-        if isinstance(other, KeyTuple):
-            return super(KeyTuple, self).__gt__(other)
-        raise AlgebraException("Cannot compare: {}".format(other))
+        elif len(self) > len(other):
+            return False
+        return None
+
+    def __repr__(self):
+        return self.__class__.__name__ + tuple.__repr__(self)
+
+
+def expr_order_key(expr):
+    """A default order key for arbitrary expressions"""
+    if hasattr(expr, '_order_key'):
+        return expr._order_key
+    try:
+        if isinstance(expr.kwargs, OrderedDict):
+            key_vals = expr.kwargs.values()
+        else:
+            key_vals = [expr.kwargs[key] for key in sorted(expr.kwargs)]
+        return KeyTuple((expr.__class__.__name__, ) +
+                        tuple(map(expr_order_key, expr.args)) +
+                        tuple(map(expr_order_key, key_vals)))
+    except AttributeError:
+        return str(expr)
 
 
 def set_union(*sets):
@@ -548,6 +560,7 @@ def idem(cls, ops, kwargs):
     E.g.::
 
         >>> class Set(Operation):
+        ...     order_key = lambda val: val
         ...     _simplifications = [idem, ]
         >>> Set.create(1,2,3,1,3)
         Set(1, 2, 3)
@@ -561,6 +574,7 @@ def orderby(cls, ops, kwargs):
     E.g.::
 
         >>> class Times(Operation):
+        ...     order_key = lambda val: val
         ...     _simplifications = [orderby, ]
         >>> Times.create(2,1)
         Times(1, 2)

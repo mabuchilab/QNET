@@ -69,8 +69,8 @@ def test_hilbert_tree():
     tree = tree_str(H1 * H2)
     assert tree == dedent(r'''
     . ProductSpace(ℌ₁, ℌ₂)
-      ├─ LocalSpace(1, basis=None, dimension=None)
-      └─ LocalSpace(2, basis=None, dimension=None)
+      ├─ LocalSpace(1)
+      └─ LocalSpace(2)
     ''').strip()
 
 
@@ -85,15 +85,15 @@ def test_operator_tree():
     expr = 2 * A - sqrt(gamma) * (B + C)
     tree = tree_str(expr, unicode=False)
     assert tree == dedent(r'''
-    . OperatorPlus(..., 2 * A^(q_1))
-      +- ScalarTimesOperator(-sqrt(gamma), ...)
-      |  +- -sqrt(gamma)
-      |  +- OperatorPlus(B^(q_1), C^(q_2))
-      |     +- OperatorSymbol(B, hs=H_q_1)
-      |     +- OperatorSymbol(C, hs=H_q_2)
+    . OperatorPlus(2 * A^(q_1), ...)
       +- ScalarTimesOperator(2, A^(q_1))
-         +- 2
-         +- OperatorSymbol(A, hs=H_q_1)
+      |  +- 2
+      |  +- OperatorSymbol(A, hs=H_q_1)
+      +- ScalarTimesOperator(-sqrt(gamma), ...)
+         +- -sqrt(gamma)
+         +- OperatorPlus(B^(q_1), C^(q_2))
+            +- OperatorSymbol(B, hs=H_q_1)
+            +- OperatorSymbol(C, hs=H_q_2)
     ''').strip()
 
 
@@ -146,26 +146,26 @@ def test_sop_operations():
     tree = tree_str(2 * A - sqrt(gamma) * (B + C))
     assert (
         tree == dedent(r'''
-        . SuperOperatorPlus(..., 2 * A^(q₁))
-          ├─ ScalarTimesSuperOperator(-√γ, B^(q₁) + C^(q₂))
-          │  ├─ -sqrt(gamma)
-          │  └─ SuperOperatorPlus(B^(q₁), C^(q₂))
-          │     ├─ SuperOperatorSymbol(B, hs=ℌ_q₁)
-          │     └─ SuperOperatorSymbol(C, hs=ℌ_q₂)
-          └─ ScalarTimesSuperOperator(2, A^(q₁))
-             ├─ 2
-             └─ SuperOperatorSymbol(A, hs=ℌ_q₁)
+        . SuperOperatorPlus(2 * A^(q₁), ...)
+          ├─ ScalarTimesSuperOperator(2, A^(q₁))
+          │  ├─ 2
+          │  └─ SuperOperatorSymbol(A, hs=ℌ_q₁)
+          └─ ScalarTimesSuperOperator(-√γ, B^(q₁) + C^(q₂))
+             ├─ -sqrt(gamma)
+             └─ SuperOperatorPlus(B^(q₁), C^(q₂))
+                ├─ SuperOperatorSymbol(B, hs=ℌ_q₁)
+                └─ SuperOperatorSymbol(C, hs=ℌ_q₂)
         ''').strip() or
         # The sympy printer doesn't always give exactly the same result,
         # depending on context
         tree == dedent(r'''
-        . SuperOperatorPlus(..., 2 * A^(q₁))
-          ├─ ScalarTimesSuperOperator(-sqrt(γ), B^(q₁) + C^(q₂))
-          │  ├─ -sqrt(gamma)
-          │  └─ SuperOperatorPlus(B^(q₁), C^(q₂))
-          │     ├─ SuperOperatorSymbol(B, hs=ℌ_q₁)
-          │     └─ SuperOperatorSymbol(C, hs=ℌ_q₂)
-          └─ ScalarTimesSuperOperator(2, A^(q₁))
-             ├─ 2
-             └─ SuperOperatorSymbol(A, hs=ℌ_q₁)
+        . SuperOperatorPlus(2 * A^(q₁), ...)
+          ├─ ScalarTimesSuperOperator(2, A^(q₁))
+          │  ├─ 2
+          │  └─ SuperOperatorSymbol(A, hs=ℌ_q₁)
+          └─ ScalarTimesSuperOperator(-sqrt(γ), B^(q₁) + C^(q₂))
+             ├─ -sqrt(gamma)
+             └─ SuperOperatorPlus(B^(q₁), C^(q₂))
+                ├─ SuperOperatorSymbol(B, hs=ℌ_q₁)
+                └─ SuperOperatorSymbol(C, hs=ℌ_q₂)
         ''').strip())

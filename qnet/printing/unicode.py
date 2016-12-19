@@ -20,6 +20,7 @@ Routines for rendering expressions to Unicode
 """
 import re
 
+from numpy import complex128
 import sympy
 from sympy.printing.conventions import split_super_sub
 from sympy.printing.pretty.pretty_symbology import modifier_dict
@@ -115,7 +116,7 @@ class UnicodePrinter(Printer, metaclass=Singleton):
     scalar_product_sym = r'*'
     tensor_sym = r'⊗'
     inner_product_sym = r'·'
-    op_product_sym = r''
+    op_product_sym = r' '
     circuit_series_sym = '◁'
     circuit_concat_sym = '⊞'
     circuit_fb_fmt = _circuit_fb_fmt
@@ -207,6 +208,9 @@ class UnicodePrinter(Printer, metaclass=Singleton):
             for string in re.findall(r'[A-Za-z]+', res):
                 if string in _greek_dictionary:
                     res = res.replace(string, _greek_dictionary[string])
+        if isinstance(value, (complex, complex128)):
+            if value.real != 0 and value.imag != 0:
+                res = cls.par_left + res + cls.par_right
         return res
 
 

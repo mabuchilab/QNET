@@ -23,7 +23,8 @@ from numpy import sqrt
 import qutip
 
 from qnet.algebra.operator_algebra import (
-        Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol)
+    Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol,
+    ScalarTimesOperator)
 from qnet.convert.to_qutip import _time_dependent_to_qutip, convert_to_qutip
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 
@@ -177,6 +178,6 @@ def test_time_dependent_to_qutip():
     res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
     assert len(res) == 9
     terms = sorted([term for H, term in res[1:]])
-    expected = sorted(['t**2', 't', 't', 't**2', '2*t', '2*t**2 + 1', '2*t',
-                       't**2'])
+    expected = sorted([str(op.coeff) for op in H.expand().operands
+                       if isinstance(op, ScalarTimesOperator)])
     assert terms == expected
