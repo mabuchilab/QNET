@@ -107,6 +107,11 @@ class Matrix(Expression):
     def args(self):
         return (self.matrix, )
 
+    @property
+    def is_zero(self):
+        """Are all elements of the matrix zero?"""
+        return (self.matrix == 0).all()
+
     @classmethod
     def _instance_key(cls, args, kwargs):
         matrix = args[0]
