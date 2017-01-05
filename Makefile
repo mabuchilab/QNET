@@ -49,12 +49,11 @@ clean:
 
 .venv/py33/bin/py.test:
 	@conda create -y -m -p .venv/py33 python=3.3 $(PACKAGES)
-	@.venv/py33/bin/pip install --no-use-wheel qutip
+	@.venv/py33/bin/pip install --no-use-wheel qutip==3.1.0  # qutip 4.0 not available for Python 3.3
 	@.venv/py33/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 .venv/py35/bin/py.test:
-	@conda create -y -m -p .venv/py35 python=3.5 $(PACKAGES)
-	@.venv/py35/bin/pip install --no-use-wheel qutip
+	@conda create -y -c conda-forge -m -p .venv/py35 python=3.5 $(PACKAGES) qutip
 	@.venv/py35/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 test33: .venv/py33/bin/py.test
