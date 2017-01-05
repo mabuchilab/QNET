@@ -18,6 +18,7 @@
 ###########################################################################
 """Printing system for QNET Expressions and related objects"""
 
+import copy
 from contextlib import contextmanager
 
 import sympy
@@ -40,7 +41,7 @@ __all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'tex',
 
 def init_printing(
     use_unicode=True, str_printer=None, repr_printer=None,
-    cached_rendering=True, _init_sympy=True):
+    cached_rendering=True, implicit_tensor=False, _init_sympy=True):
     """Initialize printing
 
     * Initialize `sympy` printing with the given `use_unicode`
@@ -69,6 +70,8 @@ def init_printing(
             Python session
         cached_rendering (bool): Flag whether the results of ``ascii(expr)``,
             ``unicode(expr)``, and ``tex(expr)`` should be cached
+        implicit_tensor (bool): If True, don't use tensor product symbols in
+            the standard tex representation
 
     Notes:
         * This routine does not set custom printers for rendering `ascii`,
@@ -110,6 +113,8 @@ def init_printing(
         if not isinstance(repr_printer, Printer):
             raise TypeError("repr_printer must be a Printer instance")
         Expression._repr_printer = repr_printer
+    if implicit_tensor:
+        LaTeXPrinter.tensor_sym = ' '
     # Set cached rendering
     Expression._cached_rendering = cached_rendering
 
@@ -122,8 +127,10 @@ def configure_printing(**kwargs):
     str_printer = Expression._str_printer
     repr_printer = Expression._repr_printer
     cached_rendering = Expression._cached_rendering
+    latex_settings = copy.copy(LaTeXPrinter.__dict__)
     init_printing(_init_sympy=False, **kwargs)
     yield
     Expression._str_printer = str_printer
     Expression._repr_printer = repr_printer
     Expression._cached_rendering = cached_rendering
+    LaTeXPrinter.__dict__ = latex_settings

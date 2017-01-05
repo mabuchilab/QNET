@@ -22,8 +22,10 @@ import pytest
 from sympy import symbols, sqrt, exp, I
 
 from qnet.algebra.circuit_algebra import CircuitSymbol, Feedback
+from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.algebra.operator_algebra import OperatorSymbol
 from qnet.printing import (
-    configure_printing, SReprPrinter, AsciiPrinter, UnicodePrinter, ascii)
+    configure_printing, SReprPrinter, AsciiPrinter, UnicodePrinter, ascii, tex)
 
 
 def test_custom_str_repr_printer():
@@ -66,3 +68,10 @@ def test_no_cached_rendering():
     AsciiPrinter.circuit_fb_fmt = orig_circuit_fb_fmt
 
 
+def test_implicit_tensor():
+    """Test the implicit_tensor printing options"""
+    A = OperatorSymbol('A', hs=1)
+    B = OperatorSymbol('B', hs=2)
+    assert tex(A*B) == r'\hat{A}^{(1)} \otimes \hat{B}^{(2)}'
+    with configure_printing(implicit_tensor=True, cached_rendering=False):
+        assert tex(A*B) == r'\hat{A}^{(1)} \hat{B}^{(2)}'
