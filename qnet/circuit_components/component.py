@@ -134,10 +134,10 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
         return self.toSLH().toABCD(linearize)
 
     def _substitute(self, var_map):
-        all_names = self._parameters + self._sub_components
+        all_names = self._parameters
         all_namesubvals = [(n, substitute(getattr(self, n), var_map))
                            for n in all_names]
-        return self.__class__(**dict(all_namesubvals))
+        return self.__class__(self._name, **dict(all_namesubvals))
 
 
 class SubComponent(Circuit, Expression, metaclass=ABCMeta):
