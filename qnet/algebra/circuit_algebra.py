@@ -399,6 +399,9 @@ class SLH(Circuit, Expression):
         if S.shape[0] != L.shape[0]:
             raise ValueError('S and L misaligned: S = {!r}, L = {!r}'
                              .format(S, L))
+        if L.shape[1] != 1:
+            raise ValueError(("L has wrong shape %s. L must be a column vector "
+                              "of operators (shape n × 1)") % str(L.shape))
         self.S = S
         self.L = L
         self.H = H
@@ -407,6 +410,11 @@ class SLH(Circuit, Expression):
     @property
     def args(self):
         return self.S, self.L, self.H
+
+    @property
+    def Ls(self):
+        """Lindblad operators (entries of the L vector), as a list"""
+        return list(self.L.matrix[:, 0])
 
     @property
     def cdim(self):
@@ -2034,7 +2042,7 @@ def getABCD(slh, a0=None, doubled_up=True):
 
     # use the coefficients in the L vector to generate the C, D
     # matrices
-    for jj, Ljj in enumerate(slh_displaced.L.matrix[:, 0]):
+    for jj, Ljj in enumerate(slh_displaced.Ls):
         coeffsjj = get_coeffs(Ljj)
         c[jj] = coeffsjj[IdentityOperator]
         if doubled_up:
