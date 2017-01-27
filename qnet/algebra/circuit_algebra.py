@@ -491,6 +491,7 @@ class SLH(Circuit, Expression):
         if not isinstance(self.S, Matrix) or not isinstance(self.L, Matrix):
             return Feedback(self, out_port=out_port, in_port=in_port)
 
+        from sympy.core.numbers import ComplexInfinity, Infinity
         sympyOne = sympify(1)
 
         n = self.cdim - 1
@@ -520,6 +521,10 @@ class SLH(Circuit, Expression):
                                    ' operators: {}'.format(one_minus_Snn))
 
         one_minus_Snn_inv = sympyOne / one_minus_Snn
+        if one_minus_Snn_inv in [Infinity, ComplexInfinity]:
+            raise AlgebraError(
+                "Ill-posed network: singularity in feedback [%s]%d->%d"
+                % (ascii(self), out_port, in_port))
 
         new_S = S[:n, :n] + S[0:n, n:] * one_minus_Snn_inv * S[n:, 0: n]
 
