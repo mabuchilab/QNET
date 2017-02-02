@@ -146,7 +146,8 @@ class HilbertSpace(metaclass=ABCMeta):
         dimension = self.dimension
         if dimension is None:
             if raise_basis_not_set_error:
-                raise BasisNotSetError("Hilbert space %s has no defined basis")
+                raise BasisNotSetError(
+                    "Hilbert space %s has no defined basis" % str(self))
         return dimension
 
     @property
@@ -161,7 +162,8 @@ class HilbertSpace(metaclass=ABCMeta):
         basis = self.basis
         if basis is None:
             if raise_basis_not_set_error:
-                raise BasisNotSetError("Hilbert space %s has no defined basis")
+                raise BasisNotSetError(
+                    "Hilbert space %s has no defined basis" % str(self))
         return basis
 
     @abstractmethod

@@ -22,6 +22,8 @@ import numpy as np
 from numpy import sqrt
 import qutip
 
+import pytest
+
 from qnet.algebra.operator_algebra import (
     Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol,
     ScalarTimesOperator)
@@ -181,3 +183,35 @@ def test_time_dependent_to_qutip():
     expected = sorted([str(op.coeff) for op in H.expand().operands
                        if isinstance(op, ScalarTimesOperator)])
     assert terms == expected
+
+
+def test_trivial_space_conversion():
+    """Test that the conversion of objects in TrivialSpace gives useful error
+    messages and that the conversion works successfully if the full Hilbert
+    space is given explicitly
+
+    This tests the resolution of issue #48
+    """
+    from qnet.convert.to_qutip import convert_to_qutip, SLH_to_qutip
+    from qnet.algebra.operator_algebra import ZeroOperator
+    from qnet.algebra.hilbert_space_algebra import LocalSpace
+    from qnet.circuit_components import mach_zehnder_cc
+    from qnet.algebra.abstract_algebra import AlgebraError
+
+    with pytest.raises(AlgebraError) as excinfo:
+        O = convert_to_qutip(ZeroOperator)
+    assert "Cannot convert object in TrivialSpace" in str(excinfo.value)
+
+    O = convert_to_qutip(ZeroOperator, full_space=LocalSpace(0, dimension=10))
+    assert np.linalg.norm((O.data.todense() - np.zeros((10, 10)))) == 0.0
+
+    mz = mach_zehnder_cc.MachZehnder('Zender', alpha=1, phi=0)
+    slh = mz.toSLH()
+
+    with pytest.raises(AlgebraError) as excinfo:
+        H, Ls = SLH_to_qutip(slh)
+    assert "Cannot convert SLH object in TrivialSpace" in str(excinfo.value)
+
+    H, Ls = SLH_to_qutip(slh, full_space=LocalSpace(0, dimension=10))
+    assert np.linalg.norm((H.data.todense() - np.zeros((10, 10)))) == 0.0
+    assert len(Ls) == 0
