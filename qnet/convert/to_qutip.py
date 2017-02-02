@@ -29,6 +29,7 @@ from qnet.algebra.operator_algebra import (
 from qnet.algebra.state_algebra import (
         Ket, BraKet, KetBra, BasisKet, CoherentStateKet, KetPlus, TensorKet,
         ScalarTimesKet, OperatorTimesKet)
+from qnet.algebra.hilbert_space_algebra import TrivialSpace
 from qnet.algebra.super_operator_algebra import (
         SuperOperator, IdentitySuperOperator, SuperOperatorPlus,
         SuperOperatorTimes, ScalarTimesSuperOperator, SPre, SPost,
@@ -59,6 +60,10 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
         full_space = expr.space
     if not expr.space.is_tensor_factor_of(full_space):
         raise ValueError("expr must be in full_space")
+    if full_space == TrivialSpace:
+        raise AlgebraError(
+            "Cannot convert object in TrivialSpace to qutip. "
+            "You may pass a non-trivial `full_space`")
     if mapping is not None:
         if expr in mapping:
             ret = mapping[expr]
@@ -116,8 +121,7 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
 
 def SLH_to_qutip(slh, full_space=None, time_symbol=None,
                  convert_as='pyfunc'):
-    """
-    Generate and return QuTiP representation matrices for the Hamiltonian
+    """Generate and return QuTiP representation matrices for the Hamiltonian
     and the collapse operators.
 
     Args:
@@ -135,6 +139,10 @@ def SLH_to_qutip(slh, full_space=None, time_symbol=None,
             dependence, e.g.  ``H = [H0, [H1, eps_t]]``, where ``H0`` and
             ``H1`` are of type `qutip.Qobj`, and ``eps_t`` is either a string
             (``convert_as='str'``) or a function (``convert_as='pyfunc'``)
+
+    Raises:
+        AlgebraError: If the Hilbert space (`slh.space` or `full_space`) is
+            invalid for numerical conversion
     """
     if full_space:
         if not full_space >= slh.space:
@@ -142,6 +150,10 @@ def SLH_to_qutip(slh, full_space=None, time_symbol=None,
                                "at least include slh.space = "+str(slh.space))
     else:
         full_space = slh.space
+    if full_space == TrivialSpace:
+        raise AlgebraError(
+            "Cannot convert SLH object in TrivialSpace. "
+            "You may pass a non-trivial `full_space`")
     if time_symbol is None:
         H = convert_to_qutip(slh.H, full_space)
         Ls = [convert_to_qutip(L, full_space) for L in slh.L.matrix.flatten()
