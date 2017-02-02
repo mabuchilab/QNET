@@ -20,6 +20,7 @@ from numpy import (
         argwhere,
         complex128, float64)
 from qnet.algebra.abstract_algebra import AlgebraError
+from qnet.algebra.circuit_algebra import SLH
 from qnet.algebra.operator_algebra import (
         IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, OperatorOperation,
@@ -102,6 +103,12 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
         # defined as a common superclass for the Operations in the state
         # algebra
         return _convert_state_operation_to_qutip(expr, full_space, mapping)
+    elif isinstance(expr, SLH):
+        # SLH object cannot be converted to a single qutip object, only to a
+        # nested list of qutip object. That's why a separate routine
+        # SLH_to_qutip exists
+        raise ValueError("SLH objects can only be converted using "
+                         "SLH_to_qutip routine")
     else:
         raise ValueError("Cannot convert '%s' of type %s"
                          % (str(expr), type(expr)))
