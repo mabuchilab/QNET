@@ -678,7 +678,8 @@ class Phase(LocalOperator):
         raise NotImplementedError()
 
     def _adjoint(self):
-        return Phase(-self.phi.conjugate(), hs=self.space)
+        return Phase(-self.phi.conjugate(), hs=self.space,
+                     identifier=self.identifier)
 
     def _pseudo_inverse(self):
         return Phase(-self.phi, hs=self.space)
@@ -722,7 +723,7 @@ class Displace(LocalOperator):
         raise NotImplementedError()
 
     def _adjoint(self):
-        return Displace(-self.alpha, hs=self.space)
+        return Displace(-self.alpha, hs=self.space, identifier=self.identifier)
 
     _pseudo_inverse = _adjoint
 
@@ -765,7 +766,7 @@ class Squeeze(LocalOperator):
         raise NotImplementedError()
 
     def _adjoint(self):
-        return Squeeze(-self.eta, hs=self.space)
+        return Squeeze(-self.eta, hs=self.space, identifier=self.identifier)
 
     _pseudo_inverse = _adjoint
 
@@ -1620,6 +1621,7 @@ def _algebraic_rules():
     A_times = wc("A", head=OperatorTimes)
 
     ls = wc("ls", head=LocalSpace)
+    id = wc('id', head=str)
     h1 = wc("h1", head=HilbertSpace)
     H_ProductSpace = wc("H", head=ProductSpace)
 
@@ -1768,18 +1770,18 @@ def _algebraic_rules():
                                              for o in A.operands[::-1]])),
         (pattern_head(pattern(Adjoint, A)),
             lambda A: A),
-        (pattern_head(pattern(Create, hs=ls)),
-            lambda ls: Destroy(hs=ls)),
-        (pattern_head(pattern(Destroy, hs=ls)),
-            lambda ls: Create(hs=ls)),
+        (pattern_head(pattern(Create, hs=ls, identifier=id)),
+            lambda ls, id: Destroy(hs=ls, identifier=id)),
+        (pattern_head(pattern(Destroy, hs=ls, identifier=id)),
+            lambda ls, id: Create(hs=ls, identifier=id)),
         (pattern_head(pattern(Jplus, hs=ls)),
             lambda ls: Jminus(hs=ls)),
         (pattern_head(pattern(Jminus, hs=ls)),
             lambda ls: Jplus(hs=ls)),
-        (pattern_head(pattern(Jz, hs=ls)),
-            lambda ls: Jz(hs=ls)),
-        (pattern_head(pattern(LocalSigma, ra, rb, hs=ls)),
-            lambda ls, ra, rb: LocalSigma(rb, ra, hs=ls)),
+        (pattern_head(pattern(Jz, hs=ls, identifier=id)),
+            lambda ls, id: Jz(hs=ls, identifier=id)),
+        (pattern_head(pattern(LocalSigma, ra, rb, hs=ls, identifier=id)),
+            lambda ls, ra, rb, id: LocalSigma(rb, ra, hs=ls, identifier=id)),
     ]
 
     Displace._rules += [
