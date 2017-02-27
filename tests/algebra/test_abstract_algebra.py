@@ -26,7 +26,8 @@ from qnet.algebra.abstract_algebra import (
         match_replace_binary, idem)
 from qnet.algebra.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
-from qnet.algebra.operator_algebra import LocalSigma, OperatorTimes, Displace
+from qnet.algebra.operator_algebra import (
+        LocalSigma, OperatorTimes, Displace, II)
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 
@@ -124,3 +125,9 @@ def test_match_replace_binary_complete():
            LocalSigma(0, 0, hs=hs)]
     res = OperatorTimes.create(*ops)
     assert res == LocalSigma(0, 0, hs=hs)
+
+
+def test_singleton_substitute():
+    """Test that calling the substitute method on a Singleton returns the
+    Singleton"""
+    assert II.substitute({}) is II

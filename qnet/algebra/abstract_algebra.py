@@ -34,6 +34,7 @@ from copy import copy
 
 from .pattern_matching import (
         ProtoExpr, match_pattern, wc, pattern_head, pattern)
+from .singleton import Singleton
 from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter, SReprPrinter
 from ..printing import SCALAR_TYPES, srepr
 
@@ -271,6 +272,8 @@ class Expression(metaclass=ABCMeta):
     def _substitute(self, var_map):
         if self in var_map:
             return var_map[self]
+        if isinstance(self.__class__, Singleton):
+            return self
         new_args = [substitute(arg, var_map) for arg in self.args]
         new_kwargs = {key: substitute(val, var_map)
                       for (key, val) in self.kwargs.items()}
