@@ -556,7 +556,7 @@ class SLH(Circuit, Expression):
         """
         L, H = self.L, self.H
         if rho is None:
-            rho = OperatorSymbol('rho', self.space)
+            rho = OperatorSymbol('rho', hs=self.space)
         return (-I * (H * rho - rho * H) +
                 sum(Lk * rho * adjoint(Lk) -
                     (adjoint(Lk) * Lk * rho + rho * adjoint(Lk) * Lk) / 2
@@ -579,7 +579,7 @@ class SLH(Circuit, Expression):
         L, H = self.L, self.H
 
         if X is None:
-            X = OperatorSymbol('X', L.space | H.space)
+            X = OperatorSymbol('X', hs=(L.space | H.space))
 
         summands = [I * (H * X - X * H), ]
         for Lk in L.matrix.flatten():
