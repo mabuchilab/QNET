@@ -1190,8 +1190,7 @@ class Adjoint(SingleOperatorOperation):
 
 
 class OperatorPlusMinusCC(SingleOperatorOperation):
-    """And operator plus or minux its complex conjugate
-    """
+    """An operator plus or minus its complex conjugate"""
 
     def __init__(self, op, *, sign=+1):
         self._sign = sign
@@ -1570,7 +1569,20 @@ def _scal_combine_operator_pm_cc(c, A, d, B):
 def create_operator_pm_cc():
     """Return a list of rules that can be used in an `extra_binary_rules`
     context for `OperatorPlus` in order to combine suitable terms into a
-    `OperatorPlusMinusCC` instance
+    `OperatorPlusMinusCC` instance::
+
+    >>> A = OperatorSymbol('A', hs=1)
+    >>> sum = A + A.dag()
+    >>> from qnet.algebra.abstract_algebra import extra_binary_rules
+    >>> with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
+    ...     sum2 = sum.simplify()
+    >>> print(ascii(sum2))
+    A^(1) + c.c.
+
+    The inverse is done through :func:`expand_operator_pm_cc`::
+
+    >>> print(ascii(sum2.simplify(rules=expand_operator_pm_cc())))
+    A^(1) + A^(1)H
     """
     A = wc("A", head=Operator)
     B = wc("B", head=Operator)
