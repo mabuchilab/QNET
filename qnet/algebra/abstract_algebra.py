@@ -18,14 +18,10 @@
 #
 ###########################################################################
 r"""
-Abstract Algebra
-================
-
 The abstract algebra package provides a basic interface
     for defining custom Algebras.
 
-See :ref:`abstract_algebra` for more details.
-
+See :ref:`abstract_algebra` for design details and usage.
 """
 from abc import ABCMeta, abstractproperty
 from functools import reduce

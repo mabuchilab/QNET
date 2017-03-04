@@ -17,9 +17,6 @@
 #
 ###########################################################################
 r"""
-Operator Algebra
-================
-
 This module features classes and functions to define and manipulate symbolic
 Operator expressions.  For more details see :ref:`operator_algebra`.
 

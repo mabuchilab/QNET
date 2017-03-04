@@ -19,9 +19,6 @@
 ###########################################################################
 
 """
-Circuit Algebra
-===============
-
 This module defines the circuit algebra for quantum optical feedback and
 feedforward circuits in the zero-internal time-delay limit.  For more details
 see :ref:`circuit_algebra`.

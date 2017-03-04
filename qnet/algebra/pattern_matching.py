@@ -18,9 +18,6 @@
 #
 ###########################################################################
 r'''
-Pattern Matching
-================
-
 Patterns may be constructed by either instantiating a :class:`Pattern` instance
 directly, or (preferred) by calling the :func:`pattern`, :func:`pattern_head`,
 or :func:`wc` helper routines.

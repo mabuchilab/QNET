@@ -17,9 +17,6 @@
 #
 ###########################################################################
 r"""
-Canonical Ordering
-==================
-
 The `ordering` package implements the default canonical ordering for sums and
 products of operators, states, and superoperators.
 
@@ -46,9 +43,10 @@ A user may implement a custom ordering by subclassing (or replacing)
 their replacements to all the desired algebraic classes.
 """
 
+from collections import OrderedDict
+
 from ..printing import SCALAR_TYPES
 
-from collections import OrderedDict
 
 class KeyTuple(tuple):
     """A tuple that allows for ordering, facilitating the default ordering of

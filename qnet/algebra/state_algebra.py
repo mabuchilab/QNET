@@ -19,9 +19,6 @@
 ###########################################################################
 
 r"""
-State Algebra
-=============
-
 This module implements a basic Hilbert space state algebra.
 """
 import re
