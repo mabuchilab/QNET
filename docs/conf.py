@@ -11,8 +11,15 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
 
+
+import sys
+import os
+import shlex
+
+# We import the qnet just to ensure that it installed in the same
+# environment as sphinx, so that autdoc works
+import qnet
 
 try:
     from unittest import mock
@@ -67,7 +74,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'QNET'
-copyright = u'2012-2016, Nikolas Tezak, Michael Goerz'
+copyright = u'2012-2017, Nikolas Tezak, Michael Goerz'
+author = 'Nikolas Tezak and Michael Goerz'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -102,7 +110,7 @@ exclude_patterns = ['_build',"*.test.rst"]
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-add_module_names = True
+#add_module_names = True
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -130,9 +138,9 @@ napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = True # overwritten by patch below!
-napoleon_use_param = False
-napoleon_use_rtype = False
+napoleon_use_ivar = True
+napoleon_use_param = True
+napoleon_use_rtype = True
 
 # -- Extensions to the  Napoleon GoogleDocstring class ---------------------
 
@@ -163,14 +171,26 @@ GoogleDocstring._parse = patched_parse
 
 # -- Options for HTML output ---------------------------------------------------
 
+# on_rtd is whether we are on readthedocs.org, this line of code grabbed from
+# docs.readthedocs.org
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinxdoc'
+if not on_rtd:  # only import and set the theme if we're building docs locally
+    import sphinx_rtd_theme
+    html_theme = "sphinx_rtd_theme"
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+#html_theme = 'sphinxdoc'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {
+    'collapse_navigation': True,
+    'display_version': True,
+    'navigation_depth': 5,
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -221,13 +241,13 @@ html_static_path = ['_static']
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-html_show_sourcelink = True
+html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-html_show_copyright = True
+#html_show_copyright = True
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -258,7 +278,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'qnet.tex', u'qnet Documentation',
-   u'Author', 'manual'),
+   author, 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -288,7 +308,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'qnet', u'qnet Documentation',
-     [u'Author'], 1)
+     [author], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -302,7 +322,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'qnet', u'qnet Documentation',
-   u'Author', 'qnet', 'One line description of project.',
+   author, 'qnet', 'One line description of project.',
    'Miscellaneous'),
 ]
 

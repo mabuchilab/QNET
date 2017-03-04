@@ -64,7 +64,8 @@ setup(
         'numpy',
     ] + (['typing', ] if sys.version_info < (3, 5) else []),
     extras_require={
-        'dev': (['click', 'pytest', 'sphinx', 'nose', 'cython', 'coverage',
+        'dev': (['click', 'pytest', 'sphinx', 'sphinx-autobuild',
+                 'sphinx_rtd_theme', 'nose', 'cython', 'coverage',
                  'pytest-cov', 'pytest-capturelog', 'pytest-xdist'] +
                 mock_package),
         'simulation': ['cython', 'qutip>=3.0.1'],
