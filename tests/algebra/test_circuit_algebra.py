@@ -18,19 +18,20 @@
 ###########################################################################
 
 
-from sympy import I
-import pytest
-
 from qnet.algebra.circuit_algebra import (
         SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
         SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
         map_signals_circuit, FB, getABCD, connect, CIdentity,
-        pad_with_identity)
+        pad_with_identity, move_drive_to_H)
 from qnet.algebra.permutations import (
         permute, full_block_perm, block_perm_and_perms_within_blocks)
-from qnet.algebra.operator_algebra import sympyOne, Destroy
-from qnet.algebra.matrix_algebra import identity_matrix
+from qnet.algebra.operator_algebra import OperatorSymbol, sympyOne, Destroy
+from qnet.algebra.matrix_algebra import Matrix, identity_matrix
+from qnet.circuit_components.displace_cc import Displace
 
+import sympy
+from sympy import I
+import pytest
 
 symbol_counter = 0
 
@@ -310,3 +311,78 @@ def connect_data():
 def test_connect(components, connections, expected):
     res = connect(components, connections, force_SLH=False)
     assert res == expected
+
+
+def test_move_drive_to_H():
+    """Test moving inhomogeneities in the Lindblad operators to the
+    Hamiltonian. This occurs when adding a coherent drive input to a circuit
+    """
+
+    # Single channel
+    S = identity_matrix(1)
+    L = Matrix([[OperatorSymbol('L', hs=1)], ])
+    H = OperatorSymbol('H', hs='1')
+    SLH1 = SLH(S, L, H)
+    assert move_drive_to_H(SLH1) == SLH1
+
+    # Two Channels
+    S2 = identity_matrix(2)
+    L2 = Matrix([[OperatorSymbol('L_1', hs=2)], [OperatorSymbol('L_2', hs=2)]])
+    H2 = OperatorSymbol('H', hs='2')
+    SLH2 = SLH(S2, L2, H2)
+    assert move_drive_to_H(SLH2) == SLH2
+
+    # Single Drive
+    α = sympy.symbols('alpha')
+    W = Displace('W', alpha=α)
+    SLH_driven = (SLH1 << W).toSLH()
+    SLH_driven_out = move_drive_to_H(SLH_driven)
+    assert SLH_driven_out.S == SLH1.S
+    assert SLH_driven_out.L == SLH1.L
+    assert SLH_driven_out.H == (SLH1.H - I * α * L[0,0].dag() +
+                                I * α.conjugate() * L[0,0])
+
+    # Concatenated drives (single channel)
+    β = sympy.symbols('beta')
+    Wb = Displace('W', alpha=β)
+    SLH_concat_driven = (SLH1 << Wb << W).toSLH()
+    SLH_concat_driven_out = move_drive_to_H(SLH_concat_driven)
+    assert SLH_concat_driven_out.S == SLH1.S
+    assert SLH_concat_driven_out.L == SLH1.L
+    term = SLH_concat_driven.H.expand().operands
+    assert (
+        SLH_concat_driven_out.H - (term[0] + term[1] + 2*term[2] + 2*term[3])
+    ).expand().simplify_scalar() == 0
+
+    # Two Drives (two channels)
+    α1 = sympy.symbols('alpha_1')
+    α2 = sympy.symbols('alpha_2')
+    W1 = Displace('W', alpha=α1)
+    W2 = Displace('W', alpha=α2)
+    SLH2_driven = (SLH2 << (W1 + W2)).toSLH()
+    term2 = SLH2_driven.H.expand().operands
+    # ###  remove both inhomogeneities (implicitly)
+    SLH2_driven_out = move_drive_to_H(SLH2_driven)
+    assert SLH2_driven_out.S == SLH2.S
+    assert SLH2_driven_out.L == SLH2.L
+    assert SLH2_driven_out.H == (
+        SLH2.H + (2 * (SLH2_driven.H.expand() - SLH2.H)).expand())
+    # ###  remove first inhomogeneity only
+    SLH2_driven_out1 = move_drive_to_H(SLH2_driven, [0, ])
+    assert SLH2_driven_out1.S == SLH2.S
+    assert SLH2_driven_out1.L[0, 0] == SLH2.L[0,0]
+    assert SLH2_driven_out1.L[1, 0] == SLH2_driven.L[1,0]
+    assert (
+        SLH2_driven_out1.H - term2[0] - 2*term2[1] - 2*term2[2] -
+        term2[3] - term2[4] == 0)
+    # ###  remove second inhomogeneity only
+    SLH2_driven_out2 = move_drive_to_H(SLH2_driven, [1, ])
+    assert SLH2_driven_out2.S == SLH2.S
+    assert SLH2_driven_out2.L[0,0] == SLH2_driven.L[0,0]
+    assert SLH2_driven_out2.L[1,0] == SLH2.L[1,0]
+    assert (
+        SLH2_driven_out2.H - term2[0] - term2[1] - term2[2] -
+        2*term2[3] - 2*term2[4] == 0)
+    # ###  remove both inhomogeneities (explicitly)
+    SLH2_driven_out12 = move_drive_to_H(SLH2_driven, [0, 1])
+    assert SLH2_driven_out12 == SLH2_driven_out

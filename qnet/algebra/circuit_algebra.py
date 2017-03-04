@@ -2064,14 +2064,31 @@ def getABCD(slh, a0=None, doubled_up=True):
 
 
 def move_drive_to_H(slh, which=[]):
-    """Take an SLH model and replace it by one with the same master equation,
-    but where the coherent drive terms have been shifted to the Hamilton
-    operator.
+    r'''For the given `slh` model, move inhomogeneities in the Lindblad
+    operators (resulting from the presence of a :class:`coherent drive
+    <qnet.circuit_components.displace_cc.Displace>`) to the Hamiltonian.
 
-    :param slh: The SLH model to convert.
-    :param which: Specifies for which indices this should happen. If [], for all.
-    :rtype : SLH
-    """
+    This exploits the invariance of the Lindblad master equation under the
+    transformation  (cf. Breuer and Pettrucione, Ch 3.2.1)
+
+    .. math::
+        :nowrap:
+
+        \begin{eqnarray}
+            L_i &\longrightarrow L_i' = L_i - \alpha_i  \\
+            H   &\longrightarrow
+            H' = H + \frac{1}{2i} \sum_j
+                    (\alpha_j L_j^{\dagger} - \alpha^* A_j)
+        \end{eqnarray}
+
+    In the context of SLH, this transformation is achieved by feeding the `slh`
+    into ```SLH(1, -alpha, 0)```, where ``alpha`` is the vector of $\alpha_i$.
+
+    The `which` argument allows to select which subscripts $i$ (circuit
+    dimensions) should be tranformed. The default is all dimensions. If `slh`
+    does not contain any inhomogeneities, it is invariant under the
+    transformation.
+    '''
     slh = slh.expand()
     L= slh.L
     scalarcs = []
