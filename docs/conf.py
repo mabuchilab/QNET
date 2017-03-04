@@ -21,10 +21,7 @@ import shlex
 # environment as sphinx, so that autdoc works
 import qnet
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 MOCK_MODULES = ['numpy', 'numpy.linalg', 'scipy', 'scipy.sparse', 'matplotlib',
     'matplotlib.pyplot', 'qutip', 'ply','pyx','pyx.text']
 sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)

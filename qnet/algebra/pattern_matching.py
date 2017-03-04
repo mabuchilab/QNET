@@ -30,6 +30,7 @@ The :class:`MatchDict` object also maps any wildcard names to the expression
 that the corresponding wildcard Pattern matches.
 '''
 import re
+import unittest
 from collections import namedtuple, OrderedDict
 
 
@@ -187,8 +188,11 @@ class Pattern():
             if not hasattr(head, '__name__'):
                 for sub_head in head:
                     if not hasattr(sub_head, '__name__'):
-                        raise TypeError("'head' must be class or tuple of "
-                                        "classes")
+                        # during doc generation, some types are mocked and are
+                        # missing the __name__ attribute
+                        if not isinstance(sub_head, unittest.mock.Mock):
+                            raise TypeError("'head' must be class or tuple of "
+                                            "classes")
         self.head = head
         if args is not None:
             args = tuple(args)
