@@ -19,8 +19,8 @@ from numpy import (
         eye as np_eye,
         argwhere,
         complex128, float64)
-from qnet.algebra.abstract_algebra import AlgebraError
-from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.abstract_algebra import AlgebraError, SCALAR_TYPES
+from qnet.algebra.circuit_algebra import SLH, move_drive_to_H
 from qnet.algebra.operator_algebra import (
         IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, OperatorOperation,
@@ -44,7 +44,7 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
 
     Args:
         expr: a QNET expression
-        full_space (qnet.algebra.hilbert_space_algebra.HilbertSpace): The
+        full_space (HilbertSpace): The
             Hilbert space in which `expr` is defined. If not given,
             ``expr.space`` is used. The Hilbert space must have a well-defined
             basis.
@@ -122,23 +122,25 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
 def SLH_to_qutip(slh, full_space=None, time_symbol=None,
                  convert_as='pyfunc'):
     """Generate and return QuTiP representation matrices for the Hamiltonian
-    and the collapse operators.
+    and the collapse operators. Any inhomogeneities in the Lindblad operators
+    (resulting from coherent drives) will be moved into the Hamiltonian, cf.
+    :func:`~qnet.algebra.circuit_algebra.move_drive_to_H`.
 
     Args:
         slh (SLH): The SLH object from which to generate the qutip data
         full_space (HilbertSpace or None): The Hilbert space in which to
             represent the operators. If None, the space of `shl` will be used
-        time_symbol (sympy.Symbol or None): The symbol (if any) expressing time
-            dependence (usually 't')
+        time_symbol (:class:`sympy.Symbol` or None): The symbol (if any)
+            expressing time dependence (usually 't')
         convert_as (str): How to express time dependencies to qutip. Must be
             'pyfunc' or 'str'
 
     Returns:
         tuple ``(H, [L1, L2, ...])`` as numerical `qutip.Qobj` representations,
-            where ``H`` and each ``L`` may be a nested list to express time
-            dependence, e.g.  ``H = [H0, [H1, eps_t]]``, where ``H0`` and
-            ``H1`` are of type `qutip.Qobj`, and ``eps_t`` is either a string
-            (``convert_as='str'``) or a function (``convert_as='pyfunc'``)
+        where ``H`` and each ``L`` may be a nested list to express time
+        dependence, e.g.  ``H = [H0, [H1, eps_t]]``, where ``H0`` and
+        ``H1`` are of type `qutip.Qobj`, and ``eps_t`` is either a string
+        (``convert_as='str'``) or a function (``convert_as='pyfunc'``)
 
     Raises:
         AlgebraError: If the Hilbert space (`slh.space` or `full_space`) is
@@ -154,17 +156,26 @@ def SLH_to_qutip(slh, full_space=None, time_symbol=None,
         raise AlgebraError(
             "Cannot convert SLH object in TrivialSpace. "
             "You may pass a non-trivial `full_space`")
+    slh = move_drive_to_H(slh)
     if time_symbol is None:
         H = convert_to_qutip(slh.H, full_space)
-        Ls = [convert_to_qutip(L, full_space) for L in slh.L.matrix.flatten()
-              if isinstance(L, Operator)]
+        Ls = []
+        for L in slh.Ls:
+            if isinstance(L, SCALAR_TYPES):
+                L = L * IdentityOperator
+            L_qutip = convert_to_qutip(L, full_space)
+            if L_qutip.norm() > 0:
+                Ls.append(L_qutip)
     else:
         H = _time_dependent_to_qutip(slh.H, full_space, time_symbol,
                                      convert_as)
         Ls = []
-        for L in slh.L.matrix.flatten():
-            Ls.append(_time_dependent_to_qutip(L, full_space, time_symbol,
-                                               convert_as))
+        for L in slh.Ls:
+            if isinstance(L, SCALAR_TYPES):
+                L = L * IdentityOperator
+            L_qutip = _time_dependent_to_qutip(L, full_space, time_symbol,
+                                               convert_as)
+            Ls.append(L_qutip)
     return H, Ls
 
 

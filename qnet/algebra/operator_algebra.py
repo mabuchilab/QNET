@@ -1486,6 +1486,11 @@ def scalar_free_symbols(*operands):
 def _coeff_term(op):
     if isinstance(op, ScalarTimesOperator):
         return op.coeff, op.term
+    elif isinstance(op, SCALAR_TYPES):
+        if op == 0:
+            return 0, ZeroOperator
+        else:
+            return op, IdentityOperator
     else:
         return 1, op
 
