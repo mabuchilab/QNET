@@ -90,9 +90,13 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
     elif isinstance(expr, OperatorOperation):
         return _convert_operator_operation_to_qutip(expr, full_space, mapping)
     elif isinstance(expr, ScalarTimesOperator):
-        return complex(expr.coeff) * \
-                    convert_to_qutip(expr.term, full_space=full_space,
-                                     mapping=mapping)
+        try:
+            coeff = complex(expr.coeff)
+        except TypeError:
+            raise TypeError("Scalar coefficient '%s' is not numerical" %
+                            expr.coeff)
+        return coeff * convert_to_qutip(expr.term, full_space=full_space,
+                                        mapping=mapping)
     elif isinstance(expr, OperatorTrace):
         raise NotImplementedError('Cannot convert OperatorTrace to '
                                   'qutip')
