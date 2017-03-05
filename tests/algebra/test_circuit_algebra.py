@@ -17,6 +17,10 @@
 #
 ###########################################################################
 
+import sympy
+from sympy import I
+import pytest
+
 
 from qnet.algebra.circuit_algebra import (
         SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
@@ -25,13 +29,12 @@ from qnet.algebra.circuit_algebra import (
         pad_with_identity, move_drive_to_H)
 from qnet.algebra.permutations import (
         permute, full_block_perm, block_perm_and_perms_within_blocks)
-from qnet.algebra.operator_algebra import OperatorSymbol, sympyOne, Destroy
+from qnet.algebra.operator_algebra import (
+        OperatorSymbol, sympyOne, Destroy, ZeroOperator)
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.circuit_components.displace_cc import Displace
+from qnet.circuit_components import mach_zehnder_cc
 
-import sympy
-from sympy import I
-import pytest
 
 symbol_counter = 0
 
@@ -386,3 +389,11 @@ def test_move_drive_to_H():
     # ###  remove both inhomogeneities (explicitly)
     SLH2_driven_out12 = move_drive_to_H(SLH2_driven, [0, 1])
     assert SLH2_driven_out12 == SLH2_driven_out
+
+    # SLH with only passive elements (scalar entries)
+    mz = mach_zehnder_cc.MachZehnder('Zender', alpha=1, phi=0)
+    passive_slh = mz.toSLH()
+    passive_slh_out = move_drive_to_H(passive_slh)
+    assert passive_slh_out.S == identity_matrix(2)
+    assert passive_slh_out.L == Matrix([[ZeroOperator, ], [ZeroOperator, ]])
+    assert passive_slh_out.H == ZeroOperator
