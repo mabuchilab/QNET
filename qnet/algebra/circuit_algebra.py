@@ -2097,17 +2097,18 @@ def move_drive_to_H(slh, which=[]):
     does not contain any inhomogeneities, it is invariant under the
     transformation.
     '''
-    slh = slh.expand()
-    L= slh.L
     scalarcs = []
-    for jj, Lj in enumerate(L.matrix[:, 0]):
+    for jj, L in enumerate(slh.Ls):
         if not which or jj in which:
-            scalarcs.append(-get_coeffs(Lj)[IdentityOperator])
+            scalarcs.append(-get_coeffs(L.expand())[IdentityOperator])
         else:
             scalarcs.append(0)
 
-    return (SLH(identity_matrix(slh.cdim), scalarcs, 0)
-            << slh).expand().simplify_scalar()
+    if np.all(np.array(scalarcs) == 0):
+        return slh
+    else:
+        return (SLH(identity_matrix(slh.cdim), scalarcs, 0)
+                << slh).expand().simplify_scalar()
 
 
 def prepare_adiabatic_limit(slh, k=None):
