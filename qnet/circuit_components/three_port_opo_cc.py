@@ -39,7 +39,7 @@ class ThreePortOPO(Component):
     The model's SLH parameters are given by
 
     .. math::
-        S & = \mathbf{1}_3 \\
+        S & = \identity_3 \\
         L & = \begin{pmatrix} \sqrt{\kappa_1} a \\ \sqrt{\kappa_2} a \\ \sqrt{\kappa_3} a \end{pmatrix} \\
         H &= \Delta a^\dagger a + {i\over 2} \left( \alpha {a^\dagger}^2 - \alpha^* a^2\right)
 

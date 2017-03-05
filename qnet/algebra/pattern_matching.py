@@ -143,33 +143,37 @@ class Pattern():
 
         Consider the following nested circuit expression::
 
-        >>> from qnet.algebra.circuit_algebra import *
-        >>> C1 = CircuitSymbol('C1', 3)
-        >>> C2 = CircuitSymbol('C2', 3)
-        >>> C3 = CircuitSymbol('C3', 3)
-        >>> C4 = CircuitSymbol('C4', 3)
-        >>> perm1 = CPermutation((2, 1, 0))
-        >>> perm2 = CPermutation((0, 2, 1))
-        >>> concat_expr = Concatenation(
-        ...                   (C1 << C2 << perm1),
-        ...                   (C3 << C4 << perm2))
+            >>> from qnet.algebra.circuit_algebra import *
+            >>> C1 = CircuitSymbol('C1', 3)
+            >>> C2 = CircuitSymbol('C2', 3)
+            >>> C3 = CircuitSymbol('C3', 3)
+            >>> C4 = CircuitSymbol('C4', 3)
+            >>> perm1 = CPermutation((2, 1, 0))
+            >>> perm2 = CPermutation((0, 2, 1))
+            >>> concat_expr = Concatenation(
+            ...                   (C1 << C2 << perm1),
+            ...                   (C3 << C4 << perm2))
 
         We may match this with the following pattern::
-        >>> conditions = [lambda c: c.cdim == 3,
-        ...               lambda c: c.name[0] == 'C']
-        >>> A__Circuit = wc("A__", head=CircuitSymbol, conditions=conditions)
-        >>> C__Circuit = wc("C__", head=CircuitSymbol, conditions=conditions)
-        >>> B_CPermutation = wc("B", head=CPermutation)
-        >>> D_CPermutation = wc("D", head=CPermutation)
-        >>> pattern_concat = pattern(
-        ...         Concatenation,
-        ...         pattern(SeriesProduct, A__Circuit, B_CPermutation),
-        ...         pattern(SeriesProduct, C__Circuit, D_CPermutation))
-        >>> m = pattern_concat.match(concat_expr)
+
+            >>> conditions = [lambda c: c.cdim == 3,
+            ...               lambda c: c.name[0] == 'C']
+            >>> A__Circuit = wc("A__", head=CircuitSymbol,
+            ...                 conditions=conditions)
+            >>> C__Circuit = wc("C__", head=CircuitSymbol,
+            ...                 conditions=conditions)
+            >>> B_CPermutation = wc("B", head=CPermutation)
+            >>> D_CPermutation = wc("D", head=CPermutation)
+            >>> pattern_concat = pattern(
+            ...         Concatenation,
+            ...         pattern(SeriesProduct, A__Circuit, B_CPermutation),
+            ...         pattern(SeriesProduct, C__Circuit, D_CPermutation))
+            >>> m = pattern_concat.match(concat_expr)
 
         The match returns the following dictionary::
-        >>> result = {'A': [C1, C2], 'B': perm1, 'C': [C3, C4], 'D': perm2}
-        >>> assert m == result
+
+            >>> result = {'A': [C1, C2], 'B': perm1, 'C': [C3, C4], 'D': perm2}
+            >>> assert m == result
     """
     # Note: if we every need to allow Patterns that have backtracking (i.e.
     # multiple more-than-single wildcards, or more-than-single wildcards

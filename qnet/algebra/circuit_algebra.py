@@ -161,9 +161,11 @@ class Circuit(metaclass=ABCMeta):
         I.e., only for reducible circuits, this gives a result different from
         the argument itself.
 
-        :param channel_index: The index of the external channel
-        :type channel_index: int
-        :raise: ValueError
+        Args:
+            channel_index (int): The index of the external channel
+
+        Raises:
+            ValueError: for an invalid `channel_index`
 
         """
         if channel_index < 0 or channel_index >= self.cdim:
@@ -187,13 +189,16 @@ class Circuit(metaclass=ABCMeta):
         given has to be compatible with the circuits actual block structure,
         i.e. it can only be more coarse-grained.
 
-        :param block_structure: The block structure according to which the
-        subblocks are generated (default = ``None``, corresponds to the
-        circuit's own block structure)
-        :type block_structure: tuple
-        :return: A tuple of subblocks that the circuit consists of.
-        :rtype: tuple
-        :raises: IncompatibleBlockStructures
+        Args:
+            block_structure (tuple): The block structure according to which the
+                subblocks are generated (default = ``None``, corresponds to the
+                circuit's own block structure)
+
+        Returns:
+            A tuple of subblocks that the circuit consists of.
+
+        Raises:
+            IncompatibleBlockStructures
         """
         if block_structure is None:
             block_structure = self.block_structure
@@ -2062,8 +2067,9 @@ def getABCD(slh, a0=None, doubled_up=True):
 
 def move_drive_to_H(slh, which=[]):
     r'''For the given `slh` model, move inhomogeneities in the Lindblad
-    operators (resulting from the presence of a :class:`coherent drive
-    <qnet.circuit_components.displace_cc.Displace>`) to the Hamiltonian.
+    operators (resulting from the presence of a coherent drive, see
+    :class:`~qnet.circuit_components.displace_cc.Displace`) to the
+    Hamiltonian.
 
     This exploits the invariance of the Lindblad master equation under the
     transformation  (cf. Breuer and Pettrucione, Ch 3.2.1)
@@ -2071,15 +2077,20 @@ def move_drive_to_H(slh, which=[]):
     .. math::
         :nowrap:
 
-        \begin{eqnarray}
-            L_i &\longrightarrow L_i' = L_i - \alpha_i  \\
-            H   &\longrightarrow
-            H' = H + \frac{1}{2i} \sum_j
-                    (\alpha_j L_j^{\dagger} - \alpha^* A_j)
-        \end{eqnarray}
+        \begin{align}
+            \Op{L}_i &\longrightarrow \Op{L}_i' = \Op{L}_i - \alpha_i  \\
+            \Op{H}   &\longrightarrow
+            \Op{H}' = \Op{H} + \frac{1}{2i} \sum_j
+                    (\alpha_j \Op{L}_j^{\dagger} - \alpha_j^* \Op{L}_j)
+        \end{align}
 
-    In the context of SLH, this transformation is achieved by feeding the `slh`
-    into ```SLH(1, -alpha, 0)```, where ``alpha`` is the vector of $\alpha_i$.
+    In the context of SLH, this transformation is achieved by feeding `slh`
+    into
+
+    .. math::
+        \SLH(\identity, -\mat{\alpha}, 0)
+
+    where $\mat{\alpha}$ has the components $\alpha_i$.
 
     The `which` argument allows to select which subscripts $i$ (circuit
     dimensions) should be tranformed. The default is all dimensions. If `slh`

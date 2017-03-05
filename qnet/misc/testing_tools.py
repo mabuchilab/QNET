@@ -16,10 +16,11 @@ def datadir(tmpdir, request):
     test module and, if available, moving all contents to a temporary directory
     so tests can use them freely.
 
-    In any test, import the datadir routine and turn it into a fixture:
-    >>> import pytest
-    >>> import qnet.misc.testing_tools
-    >>> datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
+    In any test, import the datadir routine and turn it into a fixture::
+
+        >>> import pytest
+        >>> import qnet.misc.testing_tools
+        >>> datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
     '''
     # http://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
     filename = request.module.__file__
@@ -32,16 +33,18 @@ def datadir(tmpdir, request):
 
 
 def qsd_traj(datadir, folder, seed):
-    """Return a proto-fixture that returns a TrajectoryData instance based on
-    all the *.out file in the given folder (relative to the test datadir), and
-    with the given seed.
+    """Return a proto-fixture that returns a
+    :class:`~qdyn.misc.trajectory_data.TrajectoryData` instance based on
+    all the ``*.out`` file in the given folder (relative to the test datadir),
+    and with the given `seed`.
 
-    The returned function should be turned into a fixture:
-    >>> import pytest
-    >>> import qnet.misc.testing_tools
-    >>> from qnet.misc.testing_tools import qsd_traj
-    >>> datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
-    >>> traj1 = pytest.fixture(qsd_traj(datadir, 'traj1', 102121))
+    The returned function should be turned into a fixture::
+
+        >>> import pytest
+        >>> import qnet.misc.testing_tools
+        >>> from qnet.misc.testing_tools import qsd_traj
+        >>> datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
+        >>> traj1 = pytest.fixture(qsd_traj(datadir, 'traj1', 102121))
     """
     def proto_fixture(datadir):
         operators = OrderedDict()
@@ -56,9 +59,9 @@ def qsd_traj(datadir, folder, seed):
 
 
 def fake_traj(traj_template, ID, seed):
-    """Return a new trajectory that has the same data as traj_template, but a
-    different ID and seed. Assumes that traj_template only has a single record
-    (i.e., it was created from QSD data)"""
+    """Return a new trajectory that has the same data as `traj_template`, but a
+    different `ID` and `seed`. Assumes that `traj_template` only has a single
+    record (i.e., it was created from QSD data)"""
     assert len(traj_template.record) == 1
     orig_id = traj_template.ID
     orig_seed, ntraj, op = traj_template._record[orig_id]

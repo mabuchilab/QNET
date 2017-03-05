@@ -520,12 +520,12 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
 class Create(LocalOperator):
     """``Create(hs=space)`` yields a bosonic creation operator acting on a
     particular local space/degree of freedom.
-    Its adjoint is
+    Its adjoint is::
 
         >>> print(ascii(Create(hs=1).adjoint()))
         a^(1)
 
-    and it obeys the bosonic commutation relation
+    and it obeys the bosonic commutation relation::
 
         >>> Destroy(hs=1) * Create(hs=1) - Create(hs=1) * Destroy(hs=1)
         IdentityOperator
@@ -542,12 +542,12 @@ class Create(LocalOperator):
 class Destroy(LocalOperator):
     """``Destroy(hs=space)`` yields a bosonic annihilation operator acting on a
     particular local space/degree of freedom.
-    Its adjoint is
+    Its adjoint is::
 
         >>> print(ascii(Destroy(hs=1).adjoint()))
         a^(1)H
 
-    and it obeys the bosonic commutation relation
+    and it obeys the bosonic commutation relation::
 
         >>> Destroy(hs=1) * Create(hs=1) - Create(hs=1) * Destroy(hs=1)
         IdentityOperator
@@ -562,14 +562,15 @@ class Destroy(LocalOperator):
 
 
 class Jz(LocalOperator):
-    """``Jz(space)`` yields the z-component of a general spin operator acting
+    """``Jz(space)`` yields the $z$ component of a general spin operator acting
     on a particular local space/degree of freedom with well defined spin
-    quantum number J.  It is Hermitian
+    quantum number $J$.  It is Hermitian::
 
         >>> print(ascii(Jz(hs=1).adjoint()))
         J_z^(1)
 
-    Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
+    :class:`Jz`, :class:`Jplus` and :class:`Jminus` satisfy the angular
+    momentum commutator algebra::
 
         >>> print(ascii((Jz(hs=1) * Jplus(hs=1) -
         ...              Jplus(hs=1)*Jz(hs=1)).expand()))
@@ -583,20 +584,22 @@ class Jz(LocalOperator):
         ...              - Jminus(hs=1)*Jplus(hs=1)).expand()))
         2 * J_z^(1)
 
-    where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
+    where ``Jplus = Jx + i * Jy``, ``Jminux= Jx - i * Jy``.
     """
     _identifier = 'J_z'
 
 
 class Jplus(LocalOperator):
-    """ ``Jplus(space)`` yields the J_+ raising ladder operator of a general
+    """ ``Jplus(space)`` yields the $J_+$ raising ladder operator of a general
     spin operator acting on a particular local space/degree of freedom with
-    well defined spin quantum number J.  It's adjoint is the lowering operator
+    well defined spin quantum number $J$.  It's adjoint is the lowering
+    operator::
 
         >>> print(ascii(Jplus(hs=1).adjoint()))
         J_-^(1)
 
-    Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
+    :class:`Jz`, :class:`Jplus` and :class:`Jminus` satisfy that angular
+    momentum commutator algebra::
 
         >>> print(ascii((Jz(hs=1) * Jplus(hs=1) -
         ...              Jplus(hs=1)*Jz(hs=1)).expand()))
@@ -610,20 +613,22 @@ class Jplus(LocalOperator):
         ...             Jminus(hs=1)*Jplus(hs=1)).expand()))
         2 * J_z^(1)
 
-    where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
+    where ``Jplus = Jx + i * Jy``, ``Jminux= Jx - i * Jy``.
     """
     _identifier = 'J_+'
 
 
 class Jminus(LocalOperator):
-    """``Jminus(space)`` yields the J_- lowering ladder operator of a general
+    """``Jminus(space)`` yields the $J_-$ lowering ladder operator of a general
     spin operator acting on a particular local space/degree of freedom with
-    well defined spin quantum number J.  It's adjoint is the raising operator
+    well defined spin quantum number $J$.  It's adjoint is the raising
+    operator::
 
         >>> print(ascii(Jminus(hs=1).adjoint()))
         J_+^(1)
 
-    Jz, Jplus and Jminus satisfy that angular momentum commutator algebra
+    :class:`Jz`, :class:`Jplus` and :class:`Jminus` satisfy that angular
+    momentum commutator algebra::
 
         >>> print(ascii((Jz(hs=1) * Jplus(hs=1) -
         ...              Jplus(hs=1)*Jz(hs=1)).expand()))
@@ -637,7 +642,7 @@ class Jminus(LocalOperator):
         ...              Jminus(hs=1)*Jplus(hs=1)).expand()))
         2 * J_z^(1)
 
-    where Jplus = Jx + i * Jy, Jminux= Jx - i * Jy.
+    where ``Jplus = Jx + i * Jy``, ``Jminux= Jx - i * Jy``.
     """
     _identifier = 'J_-'
 
@@ -696,7 +701,7 @@ class Displace(LocalOperator):
         D_{\rm s}(\alpha) := \exp\left({\alpha a_{\rm s}^\dagger - \alpha^* a_{\rm s}}\right)
 
     where :math:`a_{\rm s}` is the annihilation operator acting on the local
-    space s.
+    space $s$.
 
     :param space: Associated local Hilbert space.
     :type space: LocalSpace or str
@@ -739,7 +744,8 @@ class Squeeze(LocalOperator):
 
         S_{\rm s}(\eta) := \exp {\left( \frac{\eta}{2} {a_{\rm s}^\dagger}^2 - \frac{\eta^*}{2} {a_{\rm s}}^2 \right)}
 
-    where :math:`a_{\rm s}` is the annihilation operator acting on the local space s.
+    where :math:`a_{\rm s}` is the annihilation operator acting on the local
+    space $s$.
 
     :param space: Associated local Hilbert space.
     :type space: LocalSpace or str
@@ -934,10 +940,8 @@ class OperatorTimes(OperatorOperation):
 class ScalarTimesOperator(Operator, Operation):
     """Multiply an operator by a scalar coefficient.
 
-        ``ScalarTimesOperator(coefficient, term)``
-
     :param coefficient: Scalar coefficient.
-    :type coefficient: Any of SCALAR_TYPES
+    :type coefficient: Any of `SCALAR_TYPES`
     :param term: The operator that is multiplied.
     :type term: Operator
     """
@@ -1236,10 +1240,6 @@ class PseudoInverse(SingleOperatorOperation):
         (X^+ X)^\dagger = X^+ X  \\
         (X X^+)^\dagger = X X^+
 
-    Use as:
-
-        ``PseudoInverse(X)``
-
     :param X: The operator to take the adjoint of.
     :type X: Operator
     """
@@ -1269,10 +1269,6 @@ class NullSpaceProjector(SingleOperatorOperation):
 
         X \mathcal{P}_{{\rm Ker} X} = 0 \Leftrightarrow  X (1 - \mathcal{P}_{{\rm Ker} X}) = X\\
         \mathcal{P}_{{\rm Ker} X}^\dagger = \mathcal{P}_{{\rm Ker} X} = \mathcal{P}_{{\rm Ker} X}^2
-
-    Use as:
-
-        ``NullSpaceProjector(X)``
 
     :param X: Operator argument
     :type X: Operator
@@ -1564,22 +1560,23 @@ def _scal_combine_operator_pm_cc(c, A, d, B):
 
 
 def create_operator_pm_cc():
-    """Return a list of rules that can be used in an `extra_binary_rules`
-    context for `OperatorPlus` in order to combine suitable terms into a
-    `OperatorPlusMinusCC` instance::
+    """Return a list of rules that can be used in an
+    :func:`~qnet.algebra.abstract_algebra.extra_binary_rules`
+    context for :class:`OperatorPlus` in order to combine suitable terms into a
+    :class:`OperatorPlusMinusCC` instance::
 
-    >>> A = OperatorSymbol('A', hs=1)
-    >>> sum = A + A.dag()
-    >>> from qnet.algebra.abstract_algebra import extra_binary_rules
-    >>> with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
-    ...     sum2 = sum.simplify()
-    >>> print(ascii(sum2))
-    A^(1) + c.c.
+        >>> A = OperatorSymbol('A', hs=1)
+        >>> sum = A + A.dag()
+        >>> from qnet.algebra.abstract_algebra import extra_binary_rules
+        >>> with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
+        ...     sum2 = sum.simplify()
+        >>> print(ascii(sum2))
+        A^(1) + c.c.
 
     The inverse is done through :func:`expand_operator_pm_cc`::
 
-    >>> print(ascii(sum2.simplify(rules=expand_operator_pm_cc())))
-    A^(1) + A^(1)H
+        >>> print(ascii(sum2.simplify(rules=expand_operator_pm_cc())))
+        A^(1) + A^(1)H
     """
     A = wc("A", head=Operator)
     B = wc("B", head=Operator)

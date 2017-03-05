@@ -80,7 +80,7 @@ def tree(expr, attr='operands', padding='', to_str=HeadStrPrinter.render,
             If False, use an ASCII approximation
 
     See also:
-        `tree_str` return the result as a string, instead of printing it
+        :func:`tree_str` return the result as a string, instead of printing it
     """
     lines = []
     if unicode:
@@ -143,7 +143,7 @@ def tree_str(expr, **kwargs):
     command line program for showing directory trees)
 
     See also:
-        `qnet.printing.srepr` with ``indented=True` produces a similar
+        :func:`qnet.printing.srepr` with ``indented=True`` produces a similar
         tree-like rendering of the given expression that can be re-evaluated to
         the original expression.
     """

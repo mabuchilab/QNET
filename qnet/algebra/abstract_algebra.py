@@ -118,6 +118,8 @@ class Expression(metaclass=ABCMeta):
     arguments that uniquely determine the expression and that may be accessed
     through the `args` and `kwargs` property. That is,
 
+    ::
+
         expr.__class__(*expr.args, **expr.kwargs)
 
     will return and object identical to `expr`.
