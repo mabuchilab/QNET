@@ -30,7 +30,7 @@ The :class:`MatchDict` object also maps any wildcard names to the expression
 that the corresponding wildcard Pattern matches.
 '''
 import re
-import unittest
+import unittest.mock
 from collections import namedtuple, OrderedDict
 
 
