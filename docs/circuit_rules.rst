@@ -5,11 +5,11 @@ Properties and Simplification of Circuit Algebraic Expressions
 
 
 
-By observing that we can define for a general system :math:`Q = (\mathbf{S}, \mathbf{L}, H)` its *series inverse* system :math:`Q^{\lhd -1} := (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H)`
+By observing that we can define for a general system :math:`Q = (\mat{S}, \mat{L}, H)` its *series inverse* system :math:`Q^{\lhd -1} := (\mat{S}^\dagger, - \mat{S}^\dagger \mat{L}, - H)`
 
 .. math::
 
-    (\mathbf{S}, \mathbf{L}, H) \lhd (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H) =   (\mathbf{S}^\dagger, - \mathbf{S}^\dagger \mathbf{L}, - H) \lhd (\mathbf{S}, \mathbf{L}, H) = (\mathbb{I}_n, 0, 0) =: {\rm id}_{n},
+    (\mat{S}, \mat{L}, H) \lhd (\mat{S}^\dagger, - \mat{S}^\dagger \mat{L}, - H) =   (\mat{S}^\dagger, - \mat{S}^\dagger \mat{L}, - H) \lhd (\mat{S}, \mat{L}, H) = (\mathbb{I}_n, 0, 0) =: {\rm id}_{n},
 
 we see that the series product induces a group structure on the set of :math:`n`-channel circuit components for any :math:`n \ge 1`.
 It can easily be verified that the series inverse of the basic operations is calculated as follows
@@ -20,7 +20,7 @@ It can easily be verified that the series inverse of the basic operations is cal
     \left(Q_1 \boxplus Q_2\right)^{\lhd -1} & = Q_1^{\lhd -1} \boxplus Q_2^{\lhd -1} \\
     \left([Q]_{k\to l}\right)^{\lhd -1} & = \left[Q^{\lhd -1}\right]_{l\to k}.
 
-In the following, we denote the number of channels of any given system :math:`Q = (\mathbf{S}, \mathbf{L}, H)` by :math:`{\rm cdim}\;{Q} := n`.
+In the following, we denote the number of channels of any given system :math:`Q = (\mat{S}, \mat{L}, H)` by :math:`{\rm cdim}\;{Q} := n`.
 The most obvious expression simplification is the associative expansion of concatenations and series:
 
 .. math::
@@ -53,7 +53,7 @@ Here, a red box marks a series product and a blue box marks a concatenation. The
 
 It will most often be preferable to use the RHS expression of the tensor decomposition law above as this enables us to understand the flow of optical signals more easily from the algebraic expression.
 In [GoughJames09]_ Gough and James denote a system that can be expressed as a concatenation as *reducible*. A system that cannot be further decomposed into concatenated subsystems is accordingly called *irreducible*.
-As follows intuitively from a graphical representation any given complex system :math:`Q = (\mathbf{S}, \mathbf{L}, H)` admits a decomposition into :math:`1 \le N \le {\rm cdim}\;{Q}` irreducible subsystems :math:`Q = Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N`, where their channel dimensions satisfy :math:`{\rm cdim}\;{Q_j}\ge 1, \, j=1,2, \dots N` and :math:`\sum_{j=1}^N {\rm cdim}\;{Q_j} = {\rm cdim}\;{Q}`. While their individual parameter triplets themselves are not uniquely determined\footnote{Actually the scattering matrices :math:`\{\mathbf{S}_j\}` and the coupling vectors :math:`\{\mathbf{L}_j\}` *are* uniquely determined, but the Hamiltonian parameters :math:`\{H_j\}` must only obey the constraint :math:`\sum_{j=1}^N H_j = H`.}, the sequence of their channel dimensions :math:`({\rm cdim}\;{Q_1}, {\rm cdim}\;{Q_2},\dots {\rm cdim}\;{Q_N}) =: {\rm bls}\;{Q}` clearly is. We denote this tuple as the block structure of :math:`Q`.
+As follows intuitively from a graphical representation any given complex system :math:`Q = (\mat{S}, \mat{L}, H)` admits a decomposition into :math:`1 \le N \le {\rm cdim}\;{Q}` irreducible subsystems :math:`Q = Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N`, where their channel dimensions satisfy :math:`{\rm cdim}\;{Q_j}\ge 1, \, j=1,2, \dots N` and :math:`\sum_{j=1}^N {\rm cdim}\;{Q_j} = {\rm cdim}\;{Q}`. While their individual parameter triplets themselves are not uniquely determined\footnote{Actually the scattering matrices :math:`\{\mat{S}_j\}` and the coupling vectors :math:`\{\mat{L}_j\}` *are* uniquely determined, but the Hamiltonian parameters :math:`\{H_j\}` must only obey the constraint :math:`\sum_{j=1}^N H_j = H`.}, the sequence of their channel dimensions :math:`({\rm cdim}\;{Q_1}, {\rm cdim}\;{Q_2},\dots {\rm cdim}\;{Q_N}) =: {\rm bls}\;{Q}` clearly is. We denote this tuple as the block structure of :math:`Q`.
 We are now able to generalize the decomposition law in the following way:
 Given two systems of :math:`n` channels with the same block structure :math:`{\rm bls}\;{A} = {\rm bls}\;{B} = (n_1, ... n_N)`, there exist decompositions of :math:`A` and :math:`B` such that
 
@@ -82,11 +82,11 @@ Even in the case of a series between systems with unequal block structures, ther
 Permutation objects
 -------------------
 
-The algebraic representation of complex circuits often requires systems that only permute channels without actual scattering. The group of permutation matrices is simply a subgroup of the unitary (operator) matrices. For any permutation matrix :math:`\mathbf{P}`, the system described by :math:`(\mathbf{P},\mathbf{0},0)` represents a pure permutation of the optical fields (ref fig permutation).
+The algebraic representation of complex circuits often requires systems that only permute channels without actual scattering. The group of permutation matrices is simply a subgroup of the unitary (operator) matrices. For any permutation matrix :math:`\mat{P}`, the system described by :math:`(\mat{P},\mat{0},0)` represents a pure permutation of the optical fields (ref fig permutation).
 
 .. figure:: _static/plots/permutation.png
 
-    A graphical representation of :math:`\mathbf{P}_\sigma` where :math:`\sigma \equiv (4,1,5,2,3)` in image tuple notation.
+    A graphical representation of :math:`\mat{P}_\sigma` where :math:`\sigma \equiv (4,1,5,2,3)` in image tuple notation.
 
 
 A permutation :math:`\sigma` of :math:`n` elements (:math:`\sigma \in \Sigma_n`) is often represented in the following form :math:`\begin{pmatrix} 1 & 2 & \dots & n \\ \sigma(1) & \sigma(2) & \dots & \sigma(n)\end{pmatrix}`, but obviously it is also sufficient to specify the tuple of images :math:`(\sigma(1), \sigma(2), \dots, \sigma(n))`.
@@ -94,20 +94,20 @@ We now define the permutation matrix via its matrix elements
 
 .. math::
 
-    (\mathbf{P}_\sigma)_{kl} = \delta_{k \sigma(l)} = \delta_{\sigma^{-1}(k) l}.
+    (\mat{P}_\sigma)_{kl} = \delta_{k \sigma(l)} = \delta_{\sigma^{-1}(k) l}.
 
 Such a matrix then maps the :math:`j`-th unit vector onto the :math:`\sigma(j)`-th unit vector or equivalently the :math:`j`-th incoming optical channel is mapped to the :math:`\sigma(j)`-th outgoing channel.
-In contrast to a definition often found in mathematical literature this definition ensures that the representation matrix for a composition of permutations :math:`\sigma_2 \circ \sigma_1` results from a product of the individual representation matrices in the same order :math:`\mathbf{P}_{\sigma_2 \circ \sigma_1} = \mathbf{P}_{\sigma_2} \mathbf{P}_{ \sigma_1}`. This can be shown directly on the order of the matrix elements
+In contrast to a definition often found in mathematical literature this definition ensures that the representation matrix for a composition of permutations :math:`\sigma_2 \circ \sigma_1` results from a product of the individual representation matrices in the same order :math:`\mat{P}_{\sigma_2 \circ \sigma_1} = \mat{P}_{\sigma_2} \mat{P}_{ \sigma_1}`. This can be shown directly on the order of the matrix elements
 
 .. math::
 
-    (\mathbf{P}_{\sigma_2 \circ \sigma_1})_{kl} = \delta_{k (\sigma_2 \circ \sigma_1)(l)} = \sum_j \delta_{k j} \delta_{ j (\sigma_2 \circ \sigma_1)(l)} = \sum_j \delta_{k \sigma_2(j)} \delta_{ \sigma_2(j) (\sigma_2 \circ \sigma_1)(l)} \\
-    = \sum_j \delta_{k \sigma_2(j)} \delta_{ \sigma_2(j) \sigma_2(\sigma_1(l))} = \sum_j \delta_{k \sigma_2(j)} \delta_{j  \sigma_1(l)} = \sum_j (\mathbf{P}_{\sigma_2})_{kj} (\mathbf{P}_{\sigma_1})_{jl},
+    (\mat{P}_{\sigma_2 \circ \sigma_1})_{kl} = \delta_{k (\sigma_2 \circ \sigma_1)(l)} = \sum_j \delta_{k j} \delta_{ j (\sigma_2 \circ \sigma_1)(l)} = \sum_j \delta_{k \sigma_2(j)} \delta_{ \sigma_2(j) (\sigma_2 \circ \sigma_1)(l)} \\
+    = \sum_j \delta_{k \sigma_2(j)} \delta_{ \sigma_2(j) \sigma_2(\sigma_1(l))} = \sum_j \delta_{k \sigma_2(j)} \delta_{j  \sigma_1(l)} = \sum_j (\mat{P}_{\sigma_2})_{kj} (\mat{P}_{\sigma_1})_{jl},
 
 where the third equality corresponds simply to a reordering of the summands and the fifth equality follows from the bijectivity of :math:`\sigma_2`.
-In the following we will often write :math:`P_{\sigma}` as a shorthand for :math:`(\mathbf{P}_{\sigma}, \mathbf{0},0)`. Thus, our definition ensures that we may simplify any series of permutation systems in the most intuitive way: :math:`P_{\sigma_2} \lhd P_{\sigma_1} = P_{\sigma_2 \circ \sigma_1}`. Obviously the set of permutation systems of :math:`n` channels and the series product are a subgroup of the full system series group of :math:`n` channels. Specifically, it includes the identity :math:`{\rm id}{n} = P_{\sigma_{{\rm id}_n}}`.
+In the following we will often write :math:`P_{\sigma}` as a shorthand for :math:`(\mat{P}_{\sigma}, \mat{0},0)`. Thus, our definition ensures that we may simplify any series of permutation systems in the most intuitive way: :math:`P_{\sigma_2} \lhd P_{\sigma_1} = P_{\sigma_2 \circ \sigma_1}`. Obviously the set of permutation systems of :math:`n` channels and the series product are a subgroup of the full system series group of :math:`n` channels. Specifically, it includes the identity :math:`{\rm id}{n} = P_{\sigma_{{\rm id}_n}}`.
 
-From the orthogonality of the representation matrices it directly follows that :math:`\mathbf{P}_{\sigma}^T = \mathbf{P}_{\sigma^{-1}}`
+From the orthogonality of the representation matrices it directly follows that :math:`\mat{P}_{\sigma}^T = \mat{P}_{\sigma^{-1}}`
 For future use we also define a concatenation between permutations
 
 .. math::
@@ -154,19 +154,19 @@ The simples case is realized when the permutation simply permutes whole blocks i
 
 A block permuting series.
 
-Given a block structure :math:`\mathbf{n} := (n_1, n_2, \dots n_N)` a permutation :math:`\sigma \in \Sigma_n` is said to *block permute* :math:`\mathbf{n}` iff there exists a permutation :math:`\tilde{\sigma} \in \Sigma_N` such that
+Given a block structure :math:`\mat{n} := (n_1, n_2, \dots n_N)` a permutation :math:`\sigma \in \Sigma_n` is said to *block permute* :math:`\mat{n}` iff there exists a permutation :math:`\tilde{\sigma} \in \Sigma_N` such that
 
 .. math::
 
     P_{\sigma} \lhd (Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N) & = \left(P_{\sigma} \lhd (Q_1 \boxplus Q_2 \boxplus \dots \boxplus Q_N) \lhd P_{\sigma^{-1}}\right) \lhd P_{\sigma} \\
     & = (Q_{\tilde{\sigma}(1)} \boxplus Q_{\tilde{\sigma}(2)} \boxplus \dots \boxplus Q_{\tilde{\sigma}(N)}) \lhd P_{\sigma}
 
-Hence, the permutation :math:`\sigma`, given in image tuple notation, block permutes :math:`\mathbf{n}` iff for all :math:`1 \le j \le N`  and for all :math:`0 \le k < n_j` we have :math:`\sigma(o_j + k) = \sigma(o_j) + k`, where we have introduced the block offsets :math:`o_j := 1 + \sum_{j' < j} n_j`.
+Hence, the permutation :math:`\sigma`, given in image tuple notation, block permutes :math:`\mat{n}` iff for all :math:`1 \le j \le N`  and for all :math:`0 \le k < n_j` we have :math:`\sigma(o_j + k) = \sigma(o_j) + k`, where we have introduced the block offsets :math:`o_j := 1 + \sum_{j' < j} n_j`.
 When these conditions are satisfied, :math:`\tilde{\sigma}` may be obtained by demanding that :math:`\tilde{\sigma}(a) > \tilde{\sigma}(b) \Leftrightarrow \sigma(o_a) > \sigma(o_b)`. This equivalence reduces the computation of :math:`\tilde{\sigma}` to sorting a list in a specific way.
 
 **Block-factorizing permutations**
 
-The next-to-simplest case is realized when a permutation :math:`\sigma` can be decomposed :math:`\sigma = \sigma_{\rm b} \circ \sigma_{\rm i}` into a permutation :math:`\sigma_{\rm b}` that block permutes the block structure :math:`\mathbf{n}` and an internal permutation :math:`\sigma_{\rm i}` that only permutes within each block, i.e.~:math:`\sigma_{\rm i} = \sigma_1 \boxplus \sigma_2 \boxplus \dots \boxplus \sigma_N`. In this case we can perform the following simplifications
+The next-to-simplest case is realized when a permutation :math:`\sigma` can be decomposed :math:`\sigma = \sigma_{\rm b} \circ \sigma_{\rm i}` into a permutation :math:`\sigma_{\rm b}` that block permutes the block structure :math:`\mat{n}` and an internal permutation :math:`\sigma_{\rm i}` that only permutes within each block, i.e.~:math:`\sigma_{\rm i} = \sigma_1 \boxplus \sigma_2 \boxplus \dots \boxplus \sigma_N`. In this case we can perform the following simplifications
 
 .. math::
 
@@ -178,7 +178,7 @@ We see that we have reduced the problem to the above discussed case. The result 
 
     P_{\sigma} \lhd (Q_1 \boxplus \dots \boxplus Q_N) = \left[ (P_{\sigma_{\tilde{\sigma_{\rm b}}(1)}} \lhd Q_{\tilde{\sigma_{\rm b}}(1)}) \boxplus \dots \boxplus (P_{\sigma_{\tilde{\sigma_{\rm b}}(N)}} \lhd Q_{\tilde{\sigma_{\rm b}}(N)})\right] \lhd P_{\sigma_{\rm b}}.
 
-In this case we say that :math:`\sigma` *block factorizes* according to the block structure :math:`\mathbf{n}`.
+In this case we say that :math:`\sigma` *block factorizes* according to the block structure :math:`\mat{n}`.
 The following figure illustrates an example of this case.
 
 .. figure:: _static/plots/block_factorization1.png
@@ -198,7 +198,7 @@ The following figure illustrates an example of this case.
 
 A block factorizable series.
 
-A permutation :math:`\sigma` block factorizes according to the block structure :math:`\mathbf{n}` iff for all :math:`1 \le j \le N` we have :math:`\max_{0 \le k < n_j}\sigma(o_j + k)  - \min_{0 \le k' < n_j}\sigma(o_j + k') = n_j - 1`, with the block offsets defined as above. In other words, the image of a single block is coherent in the sense that no other numbers from outside the block are mapped into the integer range spanned by the minimal and maximal points in the block's image. The equivalence follows from our previous result and the bijectivity of :math:`\sigma`.
+A permutation :math:`\sigma` block factorizes according to the block structure :math:`\mat{n}` iff for all :math:`1 \le j \le N` we have :math:`\max_{0 \le k < n_j}\sigma(o_j + k)  - \min_{0 \le k' < n_j}\sigma(o_j + k') = n_j - 1`, with the block offsets defined as above. In other words, the image of a single block is coherent in the sense that no other numbers from outside the block are mapped into the integer range spanned by the minimal and maximal points in the block's image. The equivalence follows from our previous result and the bijectivity of :math:`\sigma`.
 
 **The general case**
 
@@ -208,11 +208,11 @@ In general there exists no unique way how to split apart the action of a permuta
 
     \sigma_{\rm x} := \sigma \circ \sigma_{\rm i}^{-1} \circ \sigma_{\rm b}^{-1}.
 
-Hence, by construction, :math:`\sigma_{\rm b} \circ \sigma_{\rm i}` factorizes according to :math:`\mathbf{n}` so only :math:`\sigma_{\rm x}` remains on the exterior LHS of the expression.
+Hence, by construction, :math:`\sigma_{\rm b} \circ \sigma_{\rm i}` factorizes according to :math:`\mat{n}` so only :math:`\sigma_{\rm x}` remains on the exterior LHS of the expression.
 
 So what then are the rules according to which we construct the block permuting :math:`\sigma_{\rm b}` and the decomposable :math:`\sigma_{\rm i}`?
 We wish to define :math:`\sigma_{\rm i}` such that the remainder :math:`\sigma \circ \sigma_{\rm i}^{-1} = \sigma_{\rm x} \circ \sigma_{\rm b}` does not cross any two signals that are emitted from the same block. Since by construction :math:`\sigma_{\rm b}` only permutes full blocks anyway this means that :math:`\sigma_{\rm x}` also does not cross any two signals emitted from the same block.
-This completely determines :math:`\sigma_{\rm i}` and we can therefore calculate :math:`\sigma \circ \sigma_{\rm i}^{-1} = \sigma_{\rm x} \circ \sigma_{\rm b}` as well. To construct :math:`\sigma_{\rm b}` it is sufficient to define an total order relation on the blocks that only depends on the block structure :math:`\mathbf{n}` and on :math:`\sigma \circ \sigma_{\rm i}^{-1}`. We define the order on the blocks such that they are ordered according to their minimal image point under :math:`\sigma`. Since :math:`\sigma \circ \sigma_{\rm i}^{-1}` does not let any block-internal lines cross, we can thus order the blocks according to the order of the images of the first signal :math:`\sigma \circ \sigma_{\rm i}^{-1}(o_j)`. In (ref fig general_factorization) we have illustrated this with an example.
+This completely determines :math:`\sigma_{\rm i}` and we can therefore calculate :math:`\sigma \circ \sigma_{\rm i}^{-1} = \sigma_{\rm x} \circ \sigma_{\rm b}` as well. To construct :math:`\sigma_{\rm b}` it is sufficient to define an total order relation on the blocks that only depends on the block structure :math:`\mat{n}` and on :math:`\sigma \circ \sigma_{\rm i}^{-1}`. We define the order on the blocks such that they are ordered according to their minimal image point under :math:`\sigma`. Since :math:`\sigma \circ \sigma_{\rm i}^{-1}` does not let any block-internal lines cross, we can thus order the blocks according to the order of the images of the first signal :math:`\sigma \circ \sigma_{\rm i}^{-1}(o_j)`. In (ref fig general_factorization) we have illustrated this with an example.
 
 .. figure:: _static/plots/block_factorization_g1.png
     :height: 1.6cm

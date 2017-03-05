@@ -1,63 +1,62 @@
-# coding=utf-8
-
-from __future__ import division
-
 import numpy as np
-from qnet.algebra.circuit_algebra import *
+from qnet.algebra.operator_algebra import (
+    OperatorSymbol, ScalarTimesOperator, IdentityOperator, Create, Destroy,
+    get_coeffs)
+from qnet.algebra.hilbert_space_algebra import TrivialSpace
+from qnet.algebra.matrix_algebra import Matrix
 
 
-
-
-def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True, epsilon = 0., return_eoms=False):
-    """
-    Return the matrices necessary to carry out a semi-classical simulation
+def model_matrices(
+        slh, dynamic_input_ports, apply_kerr_diagonal_correction=True,
+        epsilon=0., return_eoms=False):
+    r'''Return the matrices necessary to carry out a semi-classical simulation
     of the SLH system driven by some dynamic inputs.
 
-    Params
-    ------
-    slh: SLH object
+    Args:
+        slh: SLH object
+        dynamic_input_ports (dict): Mapping of port index to ``input_name_str``
+        apply_kerr_diagonal_correction (bool): whether there should be an
+            effective detuning of 2 \chi for every kerr-cavity.
+        epsilon (float): for non-zero epsilon (and a numerical coefficient slh)
+            remove expressions with coefficents smaller than epsilon.
+        return_eoms (bool): Whether to also return the symbolic e.o.m.'s as
+            well as the output processes.
 
-    dynamic_input_ports: python dict {port_index: input_name_str,...}
+    Returns:
+        A tuple ``(A, B, C, D, A_kerr, B_input, D_input, u_c, U_c[, eoms,
+        dA'])``
 
-    apply_kerr_diagonal_correction: bool that specifies whether there should be an
-                                    effective detuning of 2 \chi for every kerr-cavity.
-
-    epsilon: for non-zero epsilon (and a numerical coefficient slh) remove
-             expressions with coefficents smaller than epsilon.
-
-    return_eoms: Whether to also return the symbolic e.o.m.'s as well as the output processes.
-
-    Returns
-    -------
-    A tuple (A, B, C, D, A_kerr, B_input, D_input, u_c, U_c[, eoms, dA'])
-
-    A: coupling of modes to each other
-    B: coupling of external input fields to modes
-    C: coupling of internal modes to output
-    D: coupling of external input fields to output fields
-
-    A_kerr: kerr-type coupling between modes
-    B_input: coupling of dynamic inputs to modes
-    D_input: coupling of dynamic inputs to external output fields
-    u_c: constant coherent input driving to modes
-    U_c: constant coherent input contribution to output field
-
-    Optional
-    --------
-
-    eoms: symbolic QSDEs for the internal modes
-    dA': symbolic expression for the output fields
+        * ``A``: coupling of modes to each other
+        * ``B``: coupling of external input fields to modes
+        * ``C``: coupling of internal modes to output
+        * ``D``: coupling of external input fields to output fields
+        * ``A_kerr``: kerr-type coupling between modes
+        * ``B_input``: coupling of dynamic inputs to modes
+        * ``D_input``: coupling of dynamic inputs to external output fields
+        * ``u_c``: constant coherent input driving to modes
+        * ``U_c``: constant coherent input contribution to output field
+        * ``eoms``: symbolic QSDEs for the internal modes (if `return_eoms` is
+          True, None otherwise)
+        * ``dA``: symbolic expression for the output fields (if `return_eoms`
+          is True, None otherwise)
 
     The overall SDE is then:
-    da_t/dt = (A * a_t + (A_kerr * (a_t (*) a_t^*)) (*) a_t + u_c + B_input * u_t) + B * dA_t/dt
-    dA'_t/dt = (C * a_t + U_c + D_input * u_t) + D * dA_t/dt
 
-    Here A * b is a matrix product, whereas a (*) b is an element-wise
-    product of two vectors.  It is assumed that all degrees of freedom
+    .. math::
+        :nowrap:
+
+        \begin{align}
+            da_t/dt &= (A a_t + (A_{kerr} (a_t \odot a_t^*)) \odot a_t +
+                        u_c + B_{input} u_t) + B dA_t/dt \\
+            dA'_t/dt &= (C * a_t + U_c + D_{input}  u_t) + D  dA_t/dt
+        \end{align}
+
+    where $\odot$ denotes the element-wise product of two vectors.  It is
+    assumed that all degrees of freedom
     are cavities with their only non-linearity being of the Kerr-type,
-    i.e. either self coupling H_kerr = a^*a^* a a or cross-coupling
-    H_kerr = a^*a b^*b.
-    """
+    i.e. either self coupling $H_{kerr} = a^*a^* a a$ or cross-coupling
+    $H_{kerr} = a^*a b^*b$.
+    '''
 
     # the different degrees of freedom
     modes = sorted(slh.space.local_factors())
@@ -71,9 +70,13 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
     A = np.zeros((ncav, ncav), dtype=object)
     B = np.zeros((ncav, cdim), dtype=object)
     C = np.zeros((cdim, ncav), dtype=object)
+
     def ascomplex(o):
         try:
-            return complex(o.coeff) if (isinstance(o, ScalarTimesOperator) and o.term is IdentityOperator) else o
+            return complex(o.coeff) \
+                if (isinstance(o, ScalarTimesOperator) and
+                    o.term is IdentityOperator) \
+                else o
         except:
             return o
 
@@ -85,11 +88,12 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
     U_c = np.zeros(cdim, dtype=object)
 
     # make symbols for the external field modes
-    noises = [OperatorSymbol('b_{{{}}}'.format(n), "ext({})".format(n)) for n in range(cdim)]
+    noises = [OperatorSymbol('b_{{{}}}'.format(n), hs="ext({})".format(n))
+              for n in range(cdim)]
 
     # make symbols for the dynamic inputs
-    inputs = [OperatorSymbol('u_{{{}}}'.format(u_name), TrivialSpace) for
-               n, u_name in sorted(dynamic_input_ports.items())]
+    inputs = [OperatorSymbol('u_{{{}}}'.format(u_name), hs=TrivialSpace)
+              for n, u_name in sorted(dynamic_input_ports.items())]
 
     inputs_extended = [0] * cdim
     for ii, n in zip(inputs, sorted(dynamic_input_ports.keys())):
@@ -100,7 +104,8 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
 
     print("computing QSDEs")
     # compute the QSDEs for the internal operators
-    eoms = [slh_input.symbolic_heisenberg_eom(Destroy(hs=s), noises=noises) for s in modes]
+    eoms = [slh_input.symbolic_heisenberg_eom(Destroy(hs=s), noises=noises)
+            for s in modes]
 
 
     print("Extracting matrices")
@@ -109,7 +114,8 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
         coeffsjj = get_coeffs(eoms[jj], epsilon=epsilon)
         for kk, skk in enumerate(modes):
             A[jj, kk] = coeffsjj[Destroy(hs=skk)]
-            chi_jjkk = coeffsjj[Create(hs=skk) * Destroy(hs=skk) * Destroy(hs=sjj)]
+            chi_jjkk = (coeffsjj[Create(hs=skk) * Destroy(hs=skk) *
+                        Destroy(hs=sjj)])
             if apply_kerr_diagonal_correction:
                 A[jj, kk] += -(1 + int(jj==kk)) * chi_jjkk / 2
             A_kerr[jj, kk] = chi_jjkk
@@ -120,7 +126,6 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
                 continue
             B_input[jj,kk] = coeffsjj[u_kk]
         u_c[jj] = coeffsjj[IdentityOperator]
-
 
     # use the coefficients in the L vector to generate the C, D
     # matrices
@@ -133,58 +138,67 @@ def model_matrices(slh, dynamic_input_ports, apply_kerr_diagonal_correction=True
         for kk, u_kk in enumerate(inputs):
             D_input[jj, kk] = coeffsjj[u_kk]
 
-
     if return_eoms:
         # compute output processes
-        dAps =  (slh_input.S * Matrix([noises]).T + slh_input.L).expand().simplify_scalar()
+        dAps =  (slh_input.S * Matrix([noises]).T +
+                 slh_input.L).expand().simplify_scalar()
         return A, B, C, D, A_kerr, B_input, D_input, u_c, U_c, eoms, dAps
 
-    return A, B, C, D, A_kerr, B_input, D_input, u_c, U_c
+    return A, B, C, D, A_kerr, B_input, D_input, u_c, U_c, None, None
 
 
 def model_matrices_complex(*args, **kwargs):
-    "Same as model_matrices() but tries to convert all output to purely numerical matrices"
+    """Same as :func:`model_matrices` but tries to convert all output to purely
+    numerical matrices"""
     matrices = model_matrices(*args, **kwargs)
     if len(matrices) <= 9:
         return [arr.astype(complex) for arr in matrices]
     else:
-        return [arr.astype(complex) for arr in matrices[:9]] + list(matrices[9:])
-model_matrices_complex.__doc__ += "\n--\ndoc of model_matrices():\n" + model_matrices.__doc__
+        return [arr.astype(complex)
+                for arr in matrices[:9]] + list(matrices[9:])
 
 
 def model_matrices_symbolic(*args, **kwargs):
-    "Same as model_matrices() but converts all output to Matrix() objects."
+    """Same as :func:`model_matrices` but converts all output to :class:`Matrix`
+    objects."""
     matrices = model_matrices(*args, **kwargs)
     if len(matrices) <= 9:
         return [Matrix(arr) for arr in matrices]
     else:
         return [Matrix(arr) for arr in matrices[:9]] + list(matrices[9:])
-model_matrices_symbolic.__doc__ += "\n--\ndoc of model_matrices():\n" + model_matrices.__doc__
 
 
 
 def substitute_into_symbolic_model_matrices(model_matrices, params):
-
-    return [m.substitute(params).matrix.astype(complex) for m in model_matrices[:9]] + list(model_matrices[9:])
+    return [m.substitute(params).matrix.astype(complex)
+            for m in model_matrices[:9]] + list(model_matrices[9:])
 
 
 def prepare_sde(numeric_model_matrices, input_fn, return_jac=False):
-    """
-    Compute the SDE functions f, g and (optionally) the Jacobian of f (see euler_mayurama docs) for the model matrices.
+    r'''Compute the SDE functions f, g and (optionally) the Jacobian of f (see
+    `euler_mayurama` docs) for the model matrices.
 
-    Returns f, g[, Jf]
+    Returns:
+        ``f, g[, Jf]``
 
     The overall SDE is:
-    da_t/dt = (A * a_t + (A_kerr * (a_t (*) a_t^*)) (*) a_t + u_c + B_input * u_t) + B * dA_t/dt
-    dA'_t/dt = (C * a_t + U_c + D_input * u_t) + D * dA_t/dt
-    """
+
+    .. math::
+        :nowrap:
+
+        \begin{align}
+            da_t/dt &= (A  a_t + (A_{kerr}  (a_t \odot a_t^*) \odot a_t +
+                        u_c + B_{input}  u_t) + B  dA_t/dt \\
+            dA'_t/dt &= (C  a_t + U_c + D_{input}  u_t) + D  dA_t/dt
+        \end{align}
+    '''
     A, B, C, D, A_kerr, B_input, D_input, u_c, U_c = numeric_model_matrices[:9]
     B_over_2 = B/2.
     u_c = u_c.ravel()
 
     def f(a, t):
-        "Return A.dot(a) +  (A_kerr.dot(a.conjugate() * a)) * a + u_c + B_input.dot(input_fn(t))."
-        return A.dot(a) +  (A_kerr.dot(a.conjugate() * a)) * a + u_c + B_input.dot(input_fn(t))
+        return (A.dot(a) +  (A_kerr.dot(a.conjugate() * a)) * a +
+                u_c + B_input.dot(input_fn(t)))
 
     def g(a, t):
         return B_over_2
@@ -193,47 +207,50 @@ def prepare_sde(numeric_model_matrices, input_fn, return_jac=False):
         return f, g
 
     def Jf(a, t):
-        AA, BB = A + np.diag(A_kerr.dot(a * a.conjugate())) + A_kerr * np.outer(a, a.conjugate()), A_kerr*np.outer(a, a)
+        AA, BB = (A + np.diag(A_kerr.dot(a * a.conjugate())) +
+                  A_kerr * np.outer(a, a.conjugate()), A_kerr*np.outer(a, a))
         return np.vstack([
             np.hstack([AA, BB]),
             np.hstack([BB.conjugate(), AA.conjugate()]),
         ])
     return f, g, Jf
 
+
 def wrap_fqp(f):
-    "Wrap a complex ode function f(a,t) as f(qp, t) where qp = [a1r, a1i, a2r, a2i,...]"
+    """Wrap a complex ode function ``f(a,t)`` as ``f(qp, t)`` where
+    ``qp = [a1r, a1i, a2r, a2i,...]``"""
+
     def fqp(qp, t):
         qp.dtype = np.complex128
         fa = f(qp, t)
         qp.dtype = np.float64
         fa.dtype = np.float64
         return fa
+
     return fqp
 
 def T_qp_a(n):
-    "Basis transfer matrix, qp = T_qp_a.dot([[a],[a.conjugate()]])"
+    """Basis transfer matrix, ``qp = T_qp_a.dot([[a],[a.conjugate()]])``"""
     ret = np.zeros((2*n, 2*n), dtype=complex)
     ret[::2,:n] = ret[::2,n:] = np.eye(n)
     ret[1::2,:n] = -1j* np.eye(n)
     ret[1::2,n:] = 1j * np.eye(n)
     return ret/2.
-[]
+
+
 def T_a_qp(n):
-    """
-    Basis transfer matrix, [[a],[a.conjugate()]] = T_a_qp.dot(qp),
-    where qp = [a1r, a1i, a2r, a2i,...]
-    """
+    """Basis transfer matrix, ``[[a],[a.conjugate()]] = T_a_qp.dot(qp)``,
+    where ``qp = [a1r, a1i, a2r, a2i,...]``"""
     ret = np.zeros((2*n, 2*n), dtype=complex)
     ret[::2,:n] = ret[::2,n:] = np.eye(n)
     ret[1::2,:n] = -1j* np.eye(n)
     ret[1::2,n:] = 1j * np.eye(n)
     return ret.T.conjugate()
 
+
 def wrap_Jqp(J):
-    """
-    Wrap the jacobian of a complex ode function f(a,t) as f(qp, t),
-    where qp = [a1r, a1i, a2r, a2i,...]
-    """
+    """Wrap the jacobian of a complex ode function ``f(a,t)`` as ``f(qp, t)``,
+    where ``qp = [a1r, a1i, a2r, a2i,...]``"""
     def Jqp(qp, t):
         qp.dtype = np.complex128
         Ja = J(qp, t)

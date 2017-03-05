@@ -54,12 +54,14 @@ Contents:
    model_analysis_simulation
    references
 
-API:
+
+API
+===
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
-   qnet
+   API of the qnet package <API/qnet>
 
    
 

@@ -18,9 +18,6 @@
 ###########################################################################
 
 r"""
-The Hilbert Space Algebra
-=========================
-
 This module defines some simple classes to describe simple and
 *composite/tensor* (i.e., multiple degree of freedom)
 Hilbert spaces of quantum systems.

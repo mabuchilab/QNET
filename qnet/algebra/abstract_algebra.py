@@ -18,14 +18,10 @@
 #
 ###########################################################################
 r"""
-Abstract Algebra
-================
-
 The abstract algebra package provides a basic interface
     for defining custom Algebras.
 
-See :ref:`abstract_algebra` for more details.
-
+See :ref:`abstract_algebra` for design details and usage.
 """
 from abc import ABCMeta, abstractproperty
 from functools import reduce
@@ -121,6 +117,8 @@ class Expression(metaclass=ABCMeta):
     Every expression has a well-defined list of positional and keyword
     arguments that uniquely determine the expression and that may be accessed
     through the `args` and `kwargs` property. That is,
+
+    ::
 
         expr.__class__(*expr.args, **expr.kwargs)
 

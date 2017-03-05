@@ -18,9 +18,6 @@
 ###########################################################################
 
 r"""
-Singletons
-==========
-
 Constant algebraic objects are best implemented as singletons (i.e., they only
 exist as a single object). This module provides the means to declare
 singletons:

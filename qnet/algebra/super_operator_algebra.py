@@ -19,9 +19,6 @@
 ###########################################################################
 
 """
-Super-Operator Algebra
-======================
-
 The specification of a quantum mechanics symbolic super-operator algebra.
 See :ref:`super_operator_algebra` for more details.
 """

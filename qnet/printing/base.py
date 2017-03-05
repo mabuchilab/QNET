@@ -192,7 +192,7 @@ class Printer(metaclass=ABCMeta):
     @classmethod
     def register(cls, expr, rendered):
         """Register a fixed rendered string for the given `expr` in an internal
-        registry. As a result, any call to :method:`render`
+        registry. As a result, any call to :meth:`render`
         for `expr` will immediately return `rendered`"""
         cls._registry[expr] = rendered
 
@@ -205,7 +205,7 @@ class Printer(metaclass=ABCMeta):
     @classmethod
     def del_registered_expr(cls, expr):
         """Remove the registered `expr` from the registry (cf.
-        :method:`register_expr`)"""
+        :meth:`register_expr`)"""
         del cls._registry[expr]
 
     @classmethod

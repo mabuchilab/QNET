@@ -18,9 +18,6 @@
 #
 ###########################################################################
 r'''
-Pattern Matching
-================
-
 Patterns may be constructed by either instantiating a :class:`Pattern` instance
 directly, or (preferred) by calling the :func:`pattern`, :func:`pattern_head`,
 or :func:`wc` helper routines.
@@ -33,6 +30,7 @@ The :class:`MatchDict` object also maps any wildcard names to the expression
 that the corresponding wildcard Pattern matches.
 '''
 import re
+import unittest
 from collections import namedtuple, OrderedDict
 
 
@@ -145,33 +143,37 @@ class Pattern():
 
         Consider the following nested circuit expression::
 
-        >>> from qnet.algebra.circuit_algebra import *
-        >>> C1 = CircuitSymbol('C1', 3)
-        >>> C2 = CircuitSymbol('C2', 3)
-        >>> C3 = CircuitSymbol('C3', 3)
-        >>> C4 = CircuitSymbol('C4', 3)
-        >>> perm1 = CPermutation((2, 1, 0))
-        >>> perm2 = CPermutation((0, 2, 1))
-        >>> concat_expr = Concatenation(
-        ...                   (C1 << C2 << perm1),
-        ...                   (C3 << C4 << perm2))
+            >>> from qnet.algebra.circuit_algebra import *
+            >>> C1 = CircuitSymbol('C1', 3)
+            >>> C2 = CircuitSymbol('C2', 3)
+            >>> C3 = CircuitSymbol('C3', 3)
+            >>> C4 = CircuitSymbol('C4', 3)
+            >>> perm1 = CPermutation((2, 1, 0))
+            >>> perm2 = CPermutation((0, 2, 1))
+            >>> concat_expr = Concatenation(
+            ...                   (C1 << C2 << perm1),
+            ...                   (C3 << C4 << perm2))
 
         We may match this with the following pattern::
-        >>> conditions = [lambda c: c.cdim == 3,
-        ...               lambda c: c.name[0] == 'C']
-        >>> A__Circuit = wc("A__", head=CircuitSymbol, conditions=conditions)
-        >>> C__Circuit = wc("C__", head=CircuitSymbol, conditions=conditions)
-        >>> B_CPermutation = wc("B", head=CPermutation)
-        >>> D_CPermutation = wc("D", head=CPermutation)
-        >>> pattern_concat = pattern(
-        ...         Concatenation,
-        ...         pattern(SeriesProduct, A__Circuit, B_CPermutation),
-        ...         pattern(SeriesProduct, C__Circuit, D_CPermutation))
-        >>> m = pattern_concat.match(concat_expr)
+
+            >>> conditions = [lambda c: c.cdim == 3,
+            ...               lambda c: c.name[0] == 'C']
+            >>> A__Circuit = wc("A__", head=CircuitSymbol,
+            ...                 conditions=conditions)
+            >>> C__Circuit = wc("C__", head=CircuitSymbol,
+            ...                 conditions=conditions)
+            >>> B_CPermutation = wc("B", head=CPermutation)
+            >>> D_CPermutation = wc("D", head=CPermutation)
+            >>> pattern_concat = pattern(
+            ...         Concatenation,
+            ...         pattern(SeriesProduct, A__Circuit, B_CPermutation),
+            ...         pattern(SeriesProduct, C__Circuit, D_CPermutation))
+            >>> m = pattern_concat.match(concat_expr)
 
         The match returns the following dictionary::
-        >>> result = {'A': [C1, C2], 'B': perm1, 'C': [C3, C4], 'D': perm2}
-        >>> assert m == result
+
+            >>> result = {'A': [C1, C2], 'B': perm1, 'C': [C3, C4], 'D': perm2}
+            >>> assert m == result
     """
     # Note: if we every need to allow Patterns that have backtracking (i.e.
     # multiple more-than-single wildcards, or more-than-single wildcards
@@ -190,8 +192,11 @@ class Pattern():
             if not hasattr(head, '__name__'):
                 for sub_head in head:
                     if not hasattr(sub_head, '__name__'):
-                        raise TypeError("'head' must be class or tuple of "
-                                        "classes")
+                        # during doc generation, some types are mocked and are
+                        # missing the __name__ attribute
+                        if not isinstance(sub_head, unittest.mock.Mock):
+                            raise TypeError("'head' must be class or tuple of "
+                                            "classes")
         self.head = head
         if args is not None:
             args = tuple(args)
