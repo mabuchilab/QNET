@@ -8,8 +8,9 @@
 *_parsetab.py
 *.py.backup_*
 *.synctex.gz
+tags
 backup/*
-docsrc/_build/*
+docs/_build/*
 /htmlcov
 /.venv
 /.cache

@@ -2,14 +2,18 @@ qnet.qhdl package
 =================
 
 .. automodule:: qnet.qhdl
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    
 
 
-.. toctree::
+    Submodules:
 
-   qnet.qhdl.parser_QHDLParser_parsetab
-   qnet.qhdl.qhdl
-   qnet.qhdl.qhdl_parser
+    .. toctree::
+       :maxdepth: 1
+
+       qnet.qhdl.parser_QHDLParser_parsetab
+       qnet.qhdl.qhdl
+       qnet.qhdl.qhdl_parser
+
+
+
 

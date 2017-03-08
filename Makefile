@@ -70,7 +70,7 @@ coverage: test33
 
 doc: .venv/py35/bin/py.test
 	@rm -f docs/API/qnet.*
-	$(MAKE) -C docs SPHINXBUILD=../.venv/py35/bin/sphinx-build SPHINXAPIDOC=../.venv/py35/bin/sphinx-apidoc html
+	$(MAKE) -C docs SPHINXBUILD=../.venv/py35/bin/sphinx-build html
 	@rm -rf $(DOC)
 	@cp -r docs/_build/html $(DOC)
 	tar -c $(DOC) | gzip > $(DOC).tgz

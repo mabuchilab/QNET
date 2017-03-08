@@ -59,7 +59,7 @@ API
 ===
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    API of the qnet package <API/qnet>
 

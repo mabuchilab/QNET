@@ -2,17 +2,21 @@ qnet package
 ============
 
 .. automodule:: qnet
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    
 
 
-.. toctree::
+    Subpackages:
 
-    qnet.algebra
-    qnet.circuit_components
-    qnet.convert
-    qnet.misc
-    qnet.printing
-    qnet.qhdl
+    .. toctree::
+       :maxdepth: 1
+
+       qnet.algebra
+       qnet.circuit_components
+       qnet.convert
+       qnet.misc
+       qnet.printing
+       qnet.qhdl
+
+
+
 

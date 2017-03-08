@@ -50,8 +50,8 @@ setup(
     version=version,
     description="Tools for symbolically analyzing quantum feedback networks.",
     scripts=["bin/parse_qhdl.py"],
-    author="Nikolas Tezak",
-    author_email="nikolas.tezak@gmail.com",
+    author="Nikolas Tezak, Michael Goerz",
+    author_email="mail@michaelgoerz.net",
     url="http://github.com/mabuchilab/QNET",
     # cmdclass={'build_ext': build_ext},
     packages=packages,
@@ -65,8 +65,9 @@ setup(
     ] + (['typing', ] if sys.version_info < (3, 5) else []),
     extras_require={
         'dev': (['click', 'pytest', 'sphinx', 'sphinx-autobuild',
-                 'sphinx_rtd_theme', 'nose', 'cython', 'coverage',
-                 'pytest-cov', 'pytest-capturelog', 'pytest-xdist'] +
+                 'sphinx_rtd_theme', 'better-apidoc', 'nose', 'cython',
+                 'coverage', 'pytest-cov', 'pytest-capturelog',
+                 'pytest-xdist'] +
                 mock_package),
         'simulation': ['cython', 'qutip>=3.0.1'],
         'circuit_visualization': 'pyx>0.13',

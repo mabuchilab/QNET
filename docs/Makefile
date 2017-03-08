@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXAPIDOC  = sphinx-apidoc
+SPHINXAPIDOC  = better-apidoc
 PAPER         =
 BUILDDIR      = _build
 
@@ -16,7 +16,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 APIDIR = API
-SPHINXAPIOPTS = -f -M --no-toc --separate
+SPHINXAPIOPTS = --templates=_templates --force --no-toc --separate
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
 
@@ -44,10 +44,6 @@ help:
 
 $(APIDIR)/qnet.rst:
 	$(SPHINXAPIDOC) $(SPHINXAPIOPTS) -o $(APIDIR) ../qnet
-	@find $(APIDIR)/*.rst | xargs sed -i.bak '/^-\{3,\}$$/d'
-	@find $(APIDIR)/*.rst | xargs sed -i.bak '/^Subpackages$$/d'
-	@find $(APIDIR)/*.rst | xargs sed -i.bak '/^Submodules$$/d'
-	@rm $(APIDIR)/*.bak
 
 clean:
 	-rm -rf $(BUILDDIR)/*

@@ -2,13 +2,17 @@ qnet.convert package
 ====================
 
 .. automodule:: qnet.convert
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    
 
 
-.. toctree::
+    Submodules:
 
-   qnet.convert.to_qutip
-   qnet.convert.to_sympy_matrix
+    .. toctree::
+       :maxdepth: 1
+
+       qnet.convert.to_qutip
+       qnet.convert.to_sympy_matrix
+
+
+
 

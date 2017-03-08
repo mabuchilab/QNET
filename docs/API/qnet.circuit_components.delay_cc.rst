@@ -1,7 +1,25 @@
 qnet.circuit_components.delay_cc module
 =======================================
 
+.. currentmodule:: qnet.circuit_components.delay_cc
+
 .. automodule:: qnet.circuit_components.delay_cc
-    :members:
+    :members: Delay
     :undoc-members:
     :show-inheritance:
+    :member-order: bysource
+
+    Summary
+    -------
+
+    Classes:
+
+    .. autosummary::
+        :nosignatures:
+
+        Delay
+
+
+
+    Reference
+    ---------
