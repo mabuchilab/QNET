@@ -21,7 +21,6 @@
 """
 import re
 from functools import reduce
-import qutip
 from sympy import symbols
 from sympy.utilities.lambdify import lambdify
 from scipy.sparse import csr_matrix
@@ -54,6 +53,14 @@ from qnet.algebra.super_operator_algebra import (
         SuperOperator, IdentitySuperOperator, SuperOperatorPlus,
         SuperOperatorTimes, ScalarTimesSuperOperator, SPre, SPost,
         SuperOperatorTimesOperator, ZeroSuperOperator)
+
+try:
+    import qutip
+except ImportError:
+    # we want qnet to be importable even if qutip is not installed. In this
+    # case, and exception will occur when any of the qutip conversion routines
+    # are called
+    pass
 
 
 DENSE_DIMENSION_LIMIT = 1000
