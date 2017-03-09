@@ -38,14 +38,6 @@ def find_packages(path=".", prefix=""):
 os.path.realpath(__file__)
 packages = list(find_packages('qnet', 'qnet'))
 
-try:
-    # In Python >3.3, 'mock' is part of the standard library
-    import unittest.mock
-    mock_package = []
-except ImportError:
-    # In other versions, it has be to be installed as an exernal package
-    mock_package = ['mock', ]
-
 setup(
     name='QNET',
     version=version,
@@ -63,13 +55,12 @@ setup(
         'ply',
         'six',
         'numpy',
-    ] + (['typing', ] if sys.version_info < (3, 5) else []),
+    ],
     extras_require={
-        'dev': (['click', 'pytest', 'sphinx', 'sphinx-autobuild',
-                 'sphinx_rtd_theme', 'better-apidoc', 'nose', 'cython',
-                 'coverage', 'pytest-cov', 'pytest-capturelog',
-                 'pytest-xdist'] +
-                mock_package),
+        'dev': ['click', 'pytest', 'sphinx', 'sphinx-autobuild',
+                'sphinx_rtd_theme', 'better-apidoc', 'nose', 'cython',
+                'coverage', 'pytest-cov', 'pytest-capturelog',
+                'pytest-xdist'],
         'simulation': ['cython', 'qutip>=3.0.1'],
         'circuit_visualization': 'pyx>0.13',
     },
@@ -80,7 +71,8 @@ setup(
     ],
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.5',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Operating System :: OS Independent',
         'Development Status :: 4 - Beta',
