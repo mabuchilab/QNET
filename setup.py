@@ -1,8 +1,7 @@
-# coding=utf-8
+import os
 import sys
 from distutils.core import setup
 from pkgutil import walk_packages
-import qnet
 # from distutils.extension import Extension
 #
 # from Cython.Distutils import build_ext
@@ -18,6 +17,7 @@ import qnet
 
 
 def get_version(filename):
+    """Extract the package version"""
     with open(filename) as in_fh:
         for line in in_fh:
             if line.startswith('__version__'):
@@ -35,7 +35,8 @@ def find_packages(path=".", prefix=""):
         if ispkg:
             yield name
 
-packages = list(find_packages(qnet.__path__, qnet.__name__))
+os.path.realpath(__file__)
+packages = list(find_packages('qnet', 'qnet'))
 
 try:
     # In Python >3.3, 'mock' is part of the standard library
