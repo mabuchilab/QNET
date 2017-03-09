@@ -53,7 +53,9 @@ def test_module_access(request):
 
     import qnet
 
-    exclude = ['qnet.misc.circuit_visualization', 'qnet.qhdl']
+    exclude = ['qnet.misc.circuit_visualization',
+               'qnet.misc.parser__CircuitExpressionParser_parsetab',
+               'qnet.qhdl']
 
     def check_excl(module, exclude):
         for excl in exclude:
