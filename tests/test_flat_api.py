@@ -37,6 +37,14 @@ def get_leaf_modules(package_path, root):
     return res
 
 
+def test_get_leaf_modules(request):
+    """Test that get_leaf_modules produces expected results"""
+    filename = request.module.__file__
+    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
+    modules = get_leaf_modules(qnet_dir, root='../qnet')
+    assert "qnet.algebra.abstract_algebra" in modules
+
+
 def test_module_access(request):
     """Test that we can reach all leaf modules by importing just qnet"""
     filename = request.module.__file__
