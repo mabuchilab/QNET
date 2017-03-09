@@ -24,10 +24,11 @@ import os
 import importlib
 
 
-def get_leaf_modules(package_path, root):
+def get_leaf_modules(package_path):
     """Return all leaf modules in the given package_path"""
     assert os.path.isfile(os.path.join(package_path, '__init__.py'))
     res = []
+    root = os.path.join(package_path, '..')
     for path, _, files in os.walk(package_path):
         for f in files:
             if f.endswith(".py") and not f == "__init__.py":
@@ -41,7 +42,7 @@ def test_get_leaf_modules(request):
     """Test that get_leaf_modules produces expected results"""
     filename = request.module.__file__
     qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = get_leaf_modules(qnet_dir, root='../qnet')
+    modules = get_leaf_modules(qnet_dir)
     assert "qnet.algebra.abstract_algebra" in modules
 
 
@@ -49,7 +50,7 @@ def test_module_access(request):
     """Test that we can reach all leaf modules by importing just qnet"""
     filename = request.module.__file__
     qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = get_leaf_modules(qnet_dir, root='../qnet')
+    modules = get_leaf_modules(qnet_dir)
 
     import qnet
 
@@ -77,7 +78,7 @@ def test_flat_algebra(request):
     """
     filename = request.module.__file__
     qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = [m for m in get_leaf_modules(qnet_dir, root='../qnet')
+    modules = [m for m in get_leaf_modules(qnet_dir)
                if m.startswith('qnet.algebra.')]
 
     import qnet
@@ -116,7 +117,7 @@ def test_algebra_all(request):
     """
     filename = request.module.__file__
     qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = [m for m in get_leaf_modules(qnet_dir, root='../qnet')
+    modules = [m for m in get_leaf_modules(qnet_dir)
                if m.startswith('qnet.algebra.')]
     for modname in modules:
         mod = importlib.import_module(modname)
@@ -135,7 +136,7 @@ def test_flat_circuit_components(request):
     """
     filename = request.module.__file__
     qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = [m for m in get_leaf_modules(qnet_dir, root='../qnet')
+    modules = [m for m in get_leaf_modules(qnet_dir)
                if m.startswith('qnet.circuit_components.')]
 
     import qnet
