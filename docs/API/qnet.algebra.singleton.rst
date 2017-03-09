@@ -26,6 +26,7 @@ qnet.algebra.singleton module
 
         singleton_object
 
+    ``__all__``: :class:`Singleton <qnet.algebra.singleton.Singleton>`, :func:`singleton_object <qnet.algebra.singleton.singleton_object>`
 
 
     Reference

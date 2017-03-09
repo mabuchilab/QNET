@@ -21,6 +21,7 @@ qnet.circuit_components.relay_cc module
         RelayControl
         RelayOut
 
+    ``__all__``: :class:`Relay <qnet.circuit_components.relay_cc.Relay>`
 
 
     Reference

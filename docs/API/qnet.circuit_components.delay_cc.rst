@@ -19,6 +19,7 @@ qnet.circuit_components.delay_cc module
 
         Delay
 
+    ``__all__``: :class:`Delay <qnet.circuit_components.delay_cc.Delay>`
 
 
     Reference

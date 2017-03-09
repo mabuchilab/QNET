@@ -21,6 +21,7 @@ qnet.convert.to_sympy_matrix module
         basis_state
         convert_to_sympy_matrix
 
+    ``__all__``: :func:`convert_to_sympy_matrix <qnet.convert.to_sympy_matrix.convert_to_sympy_matrix>`
 
 
     Reference

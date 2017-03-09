@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 
@@ -43,6 +43,17 @@ from .operator_algebra import (
         Jmjmcoeff, Displace, Phase)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
 from ..printing import ascii
+
+__all__ = [
+    'OverlappingSpaces', 'SpaceTooLargeError', 'UnequalSpaces', 'BasisKet',
+    'Bra', 'BraKet', 'CoherentStateKet', 'Ket', 'KetBra', 'KetPlus',
+    'KetSymbol', 'LocalKet', 'OperatorTimesKet', 'ScalarTimesKet',
+    'TensorKet', 'TrivialKet', 'ZeroKet']
+
+__private__ = [  # anything not in __all__ must be in __private__
+    'act_locally', 'act_locally_times_tensor', 'tensor_decompose_kets',
+    'check_kets_same_space', 'check_op_ket_space']
+
 
 
 ###############################################################################

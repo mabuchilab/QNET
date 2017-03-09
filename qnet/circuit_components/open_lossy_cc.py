@@ -13,7 +13,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 from sympy import symbols
@@ -23,6 +23,7 @@ from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import cid, P_sigma
 from qnet.circuit_components.beamsplitter_cc import Beamsplitter
 from qnet.circuit_components.kerr_cavity_cc import KerrCavity
+
 
 __all__ = ['OpenLossy']
 

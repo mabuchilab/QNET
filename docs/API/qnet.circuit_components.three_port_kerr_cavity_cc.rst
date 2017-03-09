@@ -20,6 +20,7 @@ qnet.circuit_components.three_port_kerr_cavity_cc module
         KerrPort
         ThreePortKerrCavity
 
+    ``__all__``: :class:`ThreePortKerrCavity <qnet.circuit_components.three_port_kerr_cavity_cc.ThreePortKerrCavity>`
 
 
     Reference

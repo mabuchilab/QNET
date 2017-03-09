@@ -21,6 +21,7 @@ qnet.circuit_components.relay_double_probe_cc module
         RelayDoubleProbe
         RelayOut
 
+    ``__all__``: :class:`RelayDoubleProbe <qnet.circuit_components.relay_double_probe_cc.RelayDoubleProbe>`
 
 
     Reference

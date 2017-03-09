@@ -1,4 +1,3 @@
-# coding=utf-8
 # This file is part of QNET.
 #
 #    QNET is free software: you can redistribute it and/or modify
@@ -14,14 +13,23 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
-r"""
-The abstract algebra package provides a basic interface
-    for defining custom Algebras.
+r"""The abstract algebra package provides the foundation for
+symbolic algebra of quantum objects or circuits. All symbolic objects are
+either a :data:`scalar  <SCALAR_TYPES>` (leveraging Sympy_) or an instance of
+:class:`Expression`. Algebraic combinations of atomic expressions are instances
+of :class:`Operation`. In this way, any symbolic expression is a tree of
+operations, with children of each node defined through the
+:attr:`Operation.operands` attribute, and the leaves being atomic expressions
+or scalars.
 
 See :ref:`abstract_algebra` for design details and usage.
+
+.. _Sympy: http://www.sympy.org
+
+.. py:data:: SCALAR_TYPES
 """
 from abc import ABCMeta, abstractproperty
 from functools import reduce
@@ -33,6 +41,20 @@ from .pattern_matching import (
 from .singleton import Singleton
 from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter, SReprPrinter
 from ..printing import SCALAR_TYPES, srepr
+
+__doc__ += \
+    "\n    " + ", ".join(["``" + repr(typ) + "``" for typ in SCALAR_TYPES])
+
+__all__ = [
+    'AlgebraException', 'AlgebraError', 'CannotSimplify',
+    'WrongSignatureError', 'Expression', 'Operation', 'all_symbols',
+    'extra_binary_rules', 'extra_rules', 'no_instance_caching', 'no_rules',
+    'set_union', 'simplify', 'substitute', 'temporary_instance_cache',
+    'SCALAR_TYPES']
+
+__private__ = [  # anything not in __all__ must be in __private__
+    'assoc', 'idem', 'orderby', 'filter_neutral', 'match_replace',
+    'match_replace_binary', 'cache_attr', 'check_idempotent_create']
 
 
 def _trace(fn):
@@ -709,7 +731,8 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
 @contextmanager
 def no_instance_caching():
     """Temporarily disable the caching of instances through
-    `Expression.create`"""
+    :meth:`Expression.create`
+    """
     # this assumes that no sub-class of Expression shadows
     # Expression.instance_caching
     orig_flag = Expression.instance_caching

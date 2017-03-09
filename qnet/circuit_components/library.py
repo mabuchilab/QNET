@@ -13,13 +13,15 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 """This module features some helper functions for automatically creating and
 managing a library of circuit component definition files."""
 import os
 import re
+
+__all__ = []
 
 MODULE_DIR = os.path.dirname(__file__)
 
@@ -59,12 +61,14 @@ def getCDIM(component_name):
         raise ImportError("Could not retrieve Circuit file: %s" % e)
     return getattr(component_module, component_name).CDIM
 
+
 def _make_default_value_string(name, tp, default):
     if default is not None:
         return str(default)
     if tp == 'real':
         return 'symbols(%r, real = True)' % (name,)
     return 'symbols(%r)' % (name,)
+
 
 def write_component(entity, architectures, local = False):
     """

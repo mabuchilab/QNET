@@ -19,6 +19,7 @@ qnet.circuit_components.beamsplitter_cc module
 
         Beamsplitter
 
+    ``__all__``: :class:`Beamsplitter <qnet.circuit_components.beamsplitter_cc.Beamsplitter>`
 
 
     Reference

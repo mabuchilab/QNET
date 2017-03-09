@@ -13,7 +13,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 """Matrices of Operators"""
@@ -30,6 +30,13 @@ from .operator_algebra import Operator, scalar_free_symbols, simplify_scalar
 from .hilbert_space_algebra import TrivialSpace, ProductSpace
 from .permutations import check_permutation
 
+__all__ = [
+    'NonSquareMatrix', 'Matrix', 'block_matrix', 'diagm', 'hstackm',
+    'identity_matrix', 'permutation_matrix', 'vstackm', 'zerosm',
+    'ImMatrix', 'ReMatrix', 'ImAdjoint', 'ReAdjoint']
+
+__private__ = [  # anything not in __all__ must be in __private__
+    'sympyOne', 'Re', 'Im']
 
 sympyOne = sympify(1)
 
@@ -412,6 +419,9 @@ def Im(op):
     return (op.conjugate() - op) * I / 2
 
 
+ImMatrix = Im  # for flat API
+
+
 def Re(op):
     """The real part of a number or operator. Acting on OperatorMatrices, it
     produces the element-wise real parts.
@@ -422,6 +432,9 @@ def Re(op):
     :rtype: Same as type of `op`.
     """
     return (op.conjugate() + op) / 2
+
+
+ReMatrix = Re  # for flat API
 
 
 def ImAdjoint(opmatrix):

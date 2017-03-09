@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 
@@ -62,6 +62,22 @@ from .hilbert_space_algebra import (
         TrivialSpace, ProductSpace, FullSpace, LocalSpace, BasisNotSetError)
 from .pattern_matching import wc, pattern_head, pattern
 from ..printing import ascii, unicode, tex
+
+
+__all__ = [
+    'CannotConvertToABCD', 'CannotConvertToSLH',
+    'CannotEliminateAutomatically', 'CannotVisualize',
+    'IncompatibleBlockStructures', 'WrongCDimError',
+    'ABCD', 'CPermutation', 'CircuitSymbol', 'Concatenation', 'Feedback',
+    'Circuit', 'SLH', 'SeriesInverse', 'SeriesProduct', 'FB', 'P_sigma',
+    'circuit_identity', 'cid', 'cid_1', 'connect', 'eval_adiabatic_limit',
+    'extract_signal', 'extract_signal_circuit', 'getABCD',
+    'get_common_block_structure', 'map_signals', 'map_signals_circuit',
+    'move_drive_to_H', 'pad_with_identity', 'prepare_adiabatic_limit',
+    'try_adiabatic_elimination', 'CIdentity', 'CircuitZero']
+
+__private__ = [  # anything not in __all__ must be in __private__
+    'check_cdims']
 
 
 ###############################################################################

@@ -36,6 +36,7 @@ qnet.algebra.hilbert_space_algebra module
         convert_to_spaces
         empty_trivial
 
+    ``__all__``: :exc:`BasisNotSetError <qnet.algebra.hilbert_space_algebra.BasisNotSetError>`, :data:`FullSpace <FullSpace>`, :class:`HilbertSpace <qnet.algebra.hilbert_space_algebra.HilbertSpace>`, :class:`LocalSpace <qnet.algebra.hilbert_space_algebra.LocalSpace>`, :class:`ProductSpace <qnet.algebra.hilbert_space_algebra.ProductSpace>`, :data:`TrivialSpace <TrivialSpace>`
 
     Module data:
 

@@ -13,7 +13,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 r"""
@@ -50,6 +50,23 @@ sympyOne = sympify(1)
 # for hilbert space dimensions less than or equal to this,
 # compute numerically PseudoInverse and NullSpaceProjector representations
 DENSE_DIMENSION_LIMIT = 1000
+
+
+__all__ = [
+    'Adjoint', 'Create', 'Destroy', 'Displace', 'Jminus', 'Jplus',
+    'Jz', 'LocalOperator', 'LocalSigma', 'NullSpaceProjector', 'Operator',
+    'OperatorOperation', 'OperatorPlus', 'OperatorPlusMinusCC',
+    'OperatorSymbol', 'OperatorTimes', 'OperatorTrace',
+    'Phase', 'PseudoInverse', 'ScalarTimesOperator', 'SingleOperatorOperation',
+    'Squeeze', 'Jmjmcoeff', 'Jpjmcoeff', 'Jzjmcoeff', 'LocalProjector',
+    'X', 'Y', 'Z', 'adjoint', 'create_operator_pm_cc', 'decompose_space',
+    'expand_operator_pm_cc', 'factor_coeff', 'factor_for_trace', 'get_coeffs',
+    'scalar_free_symbols', 'simplify_scalar', 'space', 'II',
+    'IdentityOperator', 'ZeroOperator']
+
+__private__ = [  # anything not in __all__ must be in __private__
+    'implied_local_space',  'delegate_to_method']
+
 
 
 ###############################################################################

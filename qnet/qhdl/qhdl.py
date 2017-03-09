@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 
@@ -25,6 +25,11 @@ The other module in this package :py:mod:`qhdl_parser` implements an actual pars
 converts structured netlist information into a circuit expression.
 
 For more details on the QHDL syntax, see :ref:`qhdl_syntax`.
+
+.. note::
+
+    The :mod:`qnet.qhdl.qhdl` module is not exposed through
+    :mod:`qnet` (it is for internal use only)
 """
 
 from collections import OrderedDict

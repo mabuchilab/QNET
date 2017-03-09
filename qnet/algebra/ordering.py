@@ -13,7 +13,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2016, Michael Goerz
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 r"""
@@ -46,6 +46,13 @@ their replacements to all the desired algebraic classes.
 from collections import OrderedDict
 
 from ..printing import SCALAR_TYPES
+
+__all__ = []
+
+__private__ = [  # anything not in __all__ must be in __private__
+    'KeyTuple', 'expr_order_key', 'DisjunctCommutativeHSOrder',
+    'FullCommutativeHSOrder'
+]
 
 
 class KeyTuple(tuple):

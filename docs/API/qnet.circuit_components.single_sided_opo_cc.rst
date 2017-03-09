@@ -19,6 +19,7 @@ qnet.circuit_components.single_sided_opo_cc module
 
         SingleSidedOPO
 
+    ``__all__``: :class:`SingleSidedOPO <qnet.circuit_components.single_sided_opo_cc.SingleSidedOPO>`
 
 
     Reference

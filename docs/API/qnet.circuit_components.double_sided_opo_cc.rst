@@ -20,6 +20,7 @@ qnet.circuit_components.double_sided_opo_cc module
         DoubleSidedOPO
         OPOPort
 
+    ``__all__``: :class:`DoubleSidedOPO <qnet.circuit_components.double_sided_opo_cc.DoubleSidedOPO>`
 
 
     Reference

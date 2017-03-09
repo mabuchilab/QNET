@@ -13,7 +13,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2016, Michael Goerz
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 
@@ -30,6 +30,11 @@ singletons:
 Singletons in QNET should use both of these.
 """
 from abc import ABCMeta
+
+
+__all__ = ['singleton_object', 'Singleton']
+
+__private__ = []
 
 
 def singleton_object(cls):

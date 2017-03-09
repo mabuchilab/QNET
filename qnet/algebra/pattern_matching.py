@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2016, Michael Goerz
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 r'''
@@ -32,6 +32,12 @@ that the corresponding wildcard Pattern matches.
 import re
 import unittest.mock
 from collections import namedtuple, OrderedDict
+
+
+__all__ = [
+    'MatchDict', 'Pattern', 'match_pattern', 'pattern', 'pattern_head', 'wc']
+
+__private__ = ['ProtoExpr']  # anything not in __all__ must be in __private__
 
 
 class MatchDict(OrderedDict):

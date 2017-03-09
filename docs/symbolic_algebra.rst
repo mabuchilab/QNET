@@ -11,6 +11,13 @@ Symbolic Algebra
 The Abstract Algebra module
 ===========================
 
+.. warning::
+
+    This overview is currently not up to date with respect to the latest
+    development version of QNET. Please refer to the
+    :mod:`API <qnet.algebra.abstract_algebra>` instead.
+
+
 The module features generic classes for encapsulating expressions and operations on expressions.
 It also includes some basic pattern matching and expression rewriting capabilities.
 

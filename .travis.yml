@@ -16,12 +16,12 @@ install:
   - conda info -a
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib scipy sympy ipython bokeh pytest nose ply sphinx cython
   - source activate test-environment
-  - echo '[ "$TRAVIS_PYTHON_VERSION" == "3.3" ] && ( pip install --no-use-wheel qutip==3.1.0 ) || ( conda install -y -c conda-forge qutip )' > install_qutip.sh
+  - echo '[ "$TRAVIS_PYTHON_VERSION" == "3.3" ] && (pip install typing) || ( pip install --no-use-wheel qutip==3.1.0 ) || ( conda install -y -c conda-forge qutip )' > install_qutip.sh
   - source install_qutip.sh
   - pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 script:
   - which sphinx-build
   - which sphinx-apidoc
-  - make doc
+  - make -C docs html
   - py.test --doctest-modules --cov=qnet qnet tests

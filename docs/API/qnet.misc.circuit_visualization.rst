@@ -20,6 +20,7 @@ qnet.misc.circuit_visualization module
         draw_circuit
         draw_circuit_canvas
 
+    ``__all__``: :func:`draw_circuit <qnet.misc.circuit_visualization.draw_circuit>`, :func:`draw_circuit_canvas <qnet.misc.circuit_visualization.draw_circuit_canvas>`
 
 
     Reference

@@ -14,9 +14,19 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
+
+__all__ = []
+
+__private__ = [  # anything not in __all__ must be in __private__
+    'BadPermutationError', 'block_perm_and_perms_within_blocks',
+    'check_permutation', 'compose_permutations', 'concatenate_permutations',
+    'full_block_perm', 'invert_permutation',
+    'permutation_from_block_permutations', 'permutation_from_disjoint_cycles',
+    'permutation_to_block_permutations', 'permutation_to_disjoint_cycles',
+    'permute']
 
 
 class BadPermutationError(ValueError):

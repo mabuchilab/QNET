@@ -13,7 +13,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 """Component definition file for a infinite bandwidth beamsplitter with
@@ -25,6 +25,9 @@ from sympy import pi, sin, cos
 from qnet.algebra.circuit_algebra import SLH
 from qnet.algebra.matrix_algebra import Matrix
 from qnet.circuit_components.component import Component
+
+
+__all__ = ['Beamsplitter']
 
 
 class Beamsplitter(Component):

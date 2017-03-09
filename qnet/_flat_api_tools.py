@@ -17,18 +17,18 @@
 #
 ###########################################################################
 
-import pytest
+import importlib
 
-from qnet.algebra.hilbert_space_algebra import (
-        LocalSpace, TrivialSpace, FullSpace)
 
-def test_product_space_order():
-    H1 = LocalSpace(1)
-    H2 = LocalSpace('2')
-    assert H1 * H2 == H2 * H1
-    assert (H1 * H2).operands == (H1, H2)
-
-    H1 = LocalSpace(1)
-    H2 = LocalSpace('2', order_index=2)
-    H3 = LocalSpace(3, order_index=1)
-    assert (H1 * H2 * H3).operands == (H3, H2, H1)
+def _combine_all(*modules):
+    """Modify `all_list` in place, extending it with the entries from all
+    modules.
+    """
+    all_list = []
+    for module in modules:
+        mod = importlib.import_module(module)
+        if hasattr(mod, '__all__'):
+            all_list.extend(mod.__all__)
+    if len(set(all_list)) != len(all_list):
+        raise ValueError("modules have overlapping __all__ lists")
+    return sorted(all_list)

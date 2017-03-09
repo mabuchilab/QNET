@@ -20,6 +20,7 @@ qnet.circuit_components.kerr_cavity_cc module
         KerrCavity
         KerrPort
 
+    ``__all__``: :class:`KerrCavity <qnet.circuit_components.kerr_cavity_cc.KerrCavity>`
 
 
     Reference

@@ -10,6 +10,7 @@ from qnet.circuit_components.beamsplitter_cc import Beamsplitter
 from qnet.circuit_components.displace_cc import Displace
 from qnet.circuit_components.phase_cc import Phase
 
+
 __all__ = ['InvertingFanout']
 
 

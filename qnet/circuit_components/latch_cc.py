@@ -9,6 +9,7 @@ from qnet.circuit_components.beamsplitter_cc import Beamsplitter
 from qnet.circuit_components.phase_cc import Phase
 from qnet.circuit_components.displace_cc import Displace
 
+
 __all__ = ['Latch']
 
 

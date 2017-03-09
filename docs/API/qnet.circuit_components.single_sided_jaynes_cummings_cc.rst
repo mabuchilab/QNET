@@ -21,6 +21,7 @@ qnet.circuit_components.single_sided_jaynes_cummings_cc module
         DecayChannel
         SingleSidedJaynesCummings
 
+    ``__all__``: :class:`SingleSidedJaynesCummings <qnet.circuit_components.single_sided_jaynes_cummings_cc.SingleSidedJaynesCummings>`
 
 
     Reference

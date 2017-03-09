@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 
@@ -48,6 +48,18 @@ from .ordering import (
         KeyTuple, FullCommutativeHSOrder, DisjunctCommutativeHSOrder)
 from .matrix_algebra import Matrix
 from ..printing import ascii
+
+
+__all__ = [
+    'BadLiouvillianError', 'CannotSymbolicallyDiagonalize', 'SPost',
+    'SPre', 'ScalarTimesSuperOperator', 'SuperAdjoint',
+    'SuperCommutativeHSOrder', 'SuperOperator', 'SuperOperatorOperation',
+    'SuperOperatorPlus', 'SuperOperatorSymbol', 'SuperOperatorTimes',
+    'SuperOperatorTimesOperator', 'anti_commutator', 'commutator',
+    'lindblad', 'liouvillian', 'liouvillian_normal_form',
+    'IdentitySuperOperator', 'ZeroSuperOperator']
+
+__private__ = []  # anything not in __all__ must be in __private__
 
 
 ###############################################################################

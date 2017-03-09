@@ -21,6 +21,7 @@ qnet.circuit_components.double_sided_jaynes_cummings_cc module
         DecayChannel
         DoubleSidedJaynesCummings
 
+    ``__all__``: :class:`DoubleSidedJaynesCummings <qnet.circuit_components.double_sided_jaynes_cummings_cc.DoubleSidedJaynesCummings>`
 
 
     Reference

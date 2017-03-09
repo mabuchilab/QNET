@@ -13,13 +13,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 
 """
 Component definition file for a coherent field displacement component.
-See documentation of :py:class:`Displace`.
 """
 
 from sympy.core.symbol import symbols
@@ -27,6 +26,10 @@ from sympy.core.symbol import symbols
 from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import SLH
 from qnet.algebra.matrix_algebra import Matrix
+
+
+__all__ = ['Displace']
+
 
 class Displace(Component):
     r"""Coherent displacement of the input field (usually vacuum) by a complex

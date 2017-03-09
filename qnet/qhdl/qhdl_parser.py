@@ -14,12 +14,17 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 
 """
 The PLY-based QHDLParser class.
+
+.. note::
+
+    The :mod:`qnet.qhdl.qhdl_parser` module is not exposed through
+    :mod:`qnet` (it is for internal use only)
 """
 
 from qnet.misc.parser import Parser, ParsingError
@@ -28,12 +33,12 @@ from qnet.qhdl import qhdl
 
 
 class QHDLParser(Parser):
-    
+
     def parse(self, inputstring):
         self.entities = {}
         self.architectures = {}
         return Parser.parse(self, inputstring)
-        
+
     def create_circuit_lib(self, arch_id = None):
         if arch_id == None:
             if len(self.architectures) > 1:
@@ -43,11 +48,11 @@ class QHDLParser(Parser):
             arch_id = self.architectures.keys().pop()
 
         arch = self.architectures[arch_id]
-        
+
         arch_circuit = arch.to_circuit()
         print(arch_circuit)
-        
-    
+
+
     reserved = {
         'begin': 'BEGIN',
         'end': 'END',
@@ -87,8 +92,8 @@ class QHDLParser(Parser):
         Parser.__init__(self, **kw)
 
         self.entities = {}
-        self.architectures = {}    
-        
+        self.architectures = {}
+
     t_ignore = ' \t\x0c'
 
     # Newlines
@@ -124,9 +129,9 @@ class QHDLParser(Parser):
     def t_error(self, t):
         print("Illegal character %s" % repr(t.value[0]))
         t.lexer.skip(1)
-        
-    start = 'top_level_list'            
-    
+
+    start = 'top_level_list'
+
     def p_top_level_list(self, p):
         """
         top_level_list : top_level_list top_level_unit
@@ -152,16 +157,16 @@ class QHDLParser(Parser):
                 p[0] = p[1]
             else:
                 raise ParsingError()
-        
-        
-        
+
+
+
     def p_top_level_unit(self, p):
         """
-        top_level_unit : entity_declaration 
+        top_level_unit : entity_declaration
                        | architecture_declaration
         """
         p[0] = p[1]
-        
+
     def p_entity_declaration(self, p):
         """
         entity_declaration : ENTITY ID IS generic_clause port_clause END opt_entity opt_id SEMI
@@ -174,14 +179,14 @@ class QHDLParser(Parser):
             raise ParsingError('IDs don\'t match: %s, %s' % (identifier, second_identifer))
 
         p[0] = self.entities[identifier] = qhdl.Entity(identifier, generics, ports)
-    
+
     def p_opt_entity(self, p):
         """
         opt_entity : ENTITY
                    | empty
         """
         p[0] = p[1]
-    
+
     def p_opt_id(self, p):
         """
         opt_id : ID
@@ -232,7 +237,7 @@ class QHDLParser(Parser):
         """
         generic_entry_group : id_list COLON generic_type generic_default
         """
-    
+
         p[0] = p[1], p[3], p[4]
 
     def p_id_list(self, p):
@@ -244,11 +249,11 @@ class QHDLParser(Parser):
             p[0] = [p[1]]
         else:
             p[0] = p[1] + [p[3]]
-    
+
 
     def p_generic_type(self, p):
         """ generic_type : REAL
-                         | COMPLEX 
+                         | COMPLEX
                          | INT """
         p[0] = p[1]
 
@@ -287,7 +292,7 @@ class QHDLParser(Parser):
         real : FCONST
         """
         p[0] = float(p[1])
-    
+
 
     def p_complex(self, p):
         """
@@ -325,17 +330,17 @@ class QHDLParser(Parser):
 
     def p_with_io_port_list(self, p):
         """
-        with_io_port_list : io_port_entry_group SEMI non_io_port_list 
+        with_io_port_list : io_port_entry_group SEMI non_io_port_list
                           | io_port_entry_group
         """
         if len(p) == 2:
             p[0] = [p[1]]
         else:
             p[0] = [p[1]] + p[3]
-            
+
     def p_non_io_port_list(self, p):
         """
-        non_io_port_list : non_io_port_entry_group SEMI non_io_port_list 
+        non_io_port_list : non_io_port_entry_group SEMI non_io_port_list
                           | non_io_port_entry_group
         """
         if len(p) == 2:
@@ -354,7 +359,7 @@ class QHDLParser(Parser):
         """
         io_port_entry_group : id_list COLON INOUT signal_type
         """
-        p[0] = p[1], p[3], p[4]        
+        p[0] = p[1], p[3], p[4]
 
 
     def p_signal_direction(self, p):
@@ -366,7 +371,7 @@ class QHDLParser(Parser):
 
     def p_signal_type(self, p):
         """
-        signal_type : FIELDMODE 
+        signal_type : FIELDMODE
                     | LOSSY_FIELDMODE
         """
         p[0] = p[1]
@@ -392,7 +397,7 @@ class QHDLParser(Parser):
         architecture_head : component_declaration_list signal_list
         """
         p[0] = (p[1], p[2])
-        
+
     def p_opt_arch(self, p):
         """
         opt_arch : ARCHITECTURE
@@ -419,7 +424,7 @@ class QHDLParser(Parser):
         if p[7] != None and p[7] != p[2]:
             raise ParsingError('IDs don\'t match')
         p[0] = qhdl.Component(p[2], p[3], p[4])
-        
+
 
     def p_signal_list(self, p):
         """
@@ -436,10 +441,10 @@ class QHDLParser(Parser):
         """
         signal_entry_group : SIGNAL id_list COLON signal_type SEMI
         """
-    
+
         p[0] = p[2], p[4]
-        
-        
+
+
 
     def p_instance_mapping_assignment_list(self, p):
         """
@@ -555,7 +560,7 @@ class QHDLParser(Parser):
             p[0] = {}
         else:
             p[0] = p[4]
-    
+
     def p_feedleft_assignment_list(self, p):
         """
         feedleft_assignment_list : feedleft_assignment_list feedleft_assignment
@@ -569,7 +574,7 @@ class QHDLParser(Parser):
                 raise Exception("Duplicate assignment of global identifiers %s" % (tuple(dkeys),))
             p[1].update(p[2])
             p[0] = p[1]
-    
+
     def p_feedleft_assignment(self, p):
         """
         feedleft_assignment : ID FEEDLEFT ID SEMI
@@ -579,7 +584,7 @@ class QHDLParser(Parser):
             p[0] = {}
         else:
             p[0] = {p[3]:p[1]}
-        
+
 
     def p_error(self, p):
         print(p, self.lexer.lineno)

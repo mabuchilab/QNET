@@ -20,6 +20,7 @@ qnet.circuit_components.component module
         Component
         SubComponent
 
+    ``__all__``: :class:`Component <qnet.circuit_components.component.Component>`, :class:`SubComponent <qnet.circuit_components.component.SubComponent>`
 
 
     Reference

@@ -13,7 +13,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Copyright (C) 2012-2013, Nikolas Tezak
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
 
@@ -29,6 +29,9 @@ from qnet.algebra.operator_algebra import Destroy
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from sympy.core.symbol import symbols
+
+
+__all__ = ["KerrCavity"]
 
 
 class KerrCavity(Component):

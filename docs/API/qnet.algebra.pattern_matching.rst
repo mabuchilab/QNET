@@ -31,6 +31,7 @@ qnet.algebra.pattern_matching module
         pattern_head
         wc
 
+    ``__all__``: :class:`MatchDict <qnet.algebra.pattern_matching.MatchDict>`, :class:`Pattern <qnet.algebra.pattern_matching.Pattern>`, :func:`match_pattern <qnet.algebra.pattern_matching.match_pattern>`, :func:`pattern <qnet.algebra.pattern_matching.pattern>`, :func:`pattern_head <qnet.algebra.pattern_matching.pattern_head>`, :func:`wc <qnet.algebra.pattern_matching.wc>`
 
 
     Reference
