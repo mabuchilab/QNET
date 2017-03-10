@@ -1,8 +1,3 @@
-.. qnet documentation master file, created by
-   sphinx-quickstart on Fri Sep  7 18:34:40 2012.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to QNET's documentation!
 ================================
 
@@ -18,9 +13,9 @@ For a rigorous introduction to the underlying mathematical physics we refer to t
 
 The main components of this package are:
 
-1. A symbolic computer algebra package ``qnet.algebra`` for Hilbert Space quantum mechanical operators, the Gough-James circuit algebra and also an algebra for Hilbert space states and Super-operators.
-2. The QHDL language definition and parser ``qnet.qhdl`` including a front-end located at ``bin/parse_qhdl.py`` that can convert a QHDL-file into a circuit component library file.
-3. A library of existing primitive or composite circuit components ``qnet.circuit_components`` that can be embedded into a new circuit definition.
+1. A symbolic computer algebra package :mod:`qnet.algebra` for Hilbert Space quantum mechanical operators, the Gough-James circuit algebra and also an algebra for Hilbert space states and Super-operators.
+2. The QHDL language definition and parser :mod:`qnet.qhdl` including a front-end located at ``bin/parse_qhdl.py`` that can convert a QHDL-file into a circuit component library file.
+3. A library of existing primitive or composite circuit components :mod:`qnet.circuit_components` that can be embedded into a new circuit definition.
 
 
 In practice one might want to use these to:
@@ -31,7 +26,7 @@ III. Export the schematic to QHDL using ``gnetlist`` (also part of gEDA) or dire
 IV. Parse the QHDL-circuit definition file into a Python circuit library component using the parser front-end ``bin/parse_qhdl.py``, :doc:`parsing_qhdl`
 V. Analyze the model analytically using our symbolic algebra and/or numerically using QuTiP, :doc:`symbolic_algebra`, :doc:`model_analysis_simulation`
 
-This package is still work in progress and as it is currently being developed by a single developer (interested in `helping? <mailto:ntezak@stanford.edu>`_), documentation and comprehensive testing code are still somewhat lacking.
+This package is still work in progress and as it is currently being developed by a single developer (interested in `helping? <mailto:goerz@stanford.edu>`_), documentation and comprehensive testing code are still somewhat lacking.
 Any contributions, bug reports and general feedback from end-users would be highly appreciated. If you have found a bug, it would be extremely helpful if you could try to write a minimal code example that reproduces the bug.
 Feature requests will definitely be considered. Higher priority will be given to things that many people ask for and that can be implemented efficiently.
 
@@ -63,7 +58,6 @@ API
 
    API of the qnet package <API/qnet>
 
-   
 
 
 Indices and tables
