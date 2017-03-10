@@ -11,11 +11,13 @@ install:
   - conda update -q conda
   - conda info -a
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib scipy sympy ipython bokeh pytest nose ply sphinx cython
+  - conda install -n test-environment -y -c conda-forge qutip
+  - conda install -n test-environment -y -c conda-forge texlive-core=20160523b
   - source activate test-environment
-  - conda install -y -c conda-forge qutip
-  - conda install -y -c conda-forge texlive-core=20160523b
   - pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 script:
+  - echo $PATH
+  - which latex
   - which sphinx-build
   - py.test --doctest-modules --cov=qnet qnet tests
