@@ -18,6 +18,7 @@ install:
 
 script:
   - echo $PATH
+  - ls /home/travis/miniconda/envs/test-environment/bin/*
   - which latex
   - which sphinx-build
   - py.test --doctest-modules --cov=qnet qnet tests
