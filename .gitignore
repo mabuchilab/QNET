@@ -10,7 +10,6 @@
 *.synctex.gz
 tags
 backup/*
-docs/_build/*
 /QNET.egg-info
 /htmlcov
 /.venv

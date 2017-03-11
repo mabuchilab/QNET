@@ -10,8 +10,6 @@ TESTS = qnet tests
 
 VERSION = $(shell grep __version__ < qnet/__init__.py | sed 's/.*"\(.*\)"/\1/')
 
-DOC = qnet-doc-$(VERSION)
-
 develop:
 	pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
@@ -42,7 +40,6 @@ clean:
 	@find . -iname *pyc | xargs rm -f
 	@find . -iname __pycache__ | xargs rm -rf
 	@make -C docs clean
-	@rm -rf $(DOC) $(DOC).tgz
 	@rm -rf htmlcov
 	@rm -rf .cache
 	@rm -f .coverage
@@ -64,12 +61,9 @@ coverage: test35
 	.venv/py35/bin/coverage html
 
 doc: .venv/py35/bin/py.test
-	@rm -f docs/API/qnet.*
-	$(MAKE) -C docs SPHINXAPIDOC=../.venv/py35/bin/better-apidoc SPHINXBUILD=../.venv/py35/bin/sphinx-build html
-	@rm -rf $(DOC)
-	@cp -r docs/_build/html $(DOC)
-	tar -c $(DOC) | gzip > $(DOC).tgz
-	@rm -rf $(DOC)
+	@rm -f docs/API/*.rst
+	$(MAKE) -C docs SPHINXBUILD=../.venv/py35/bin/sphinx-build html
+	@echo "Documentation is in docs/_build/html"
 
 .PHONY: install develop uninstall upload test-upload test-install sdist clean \
 test test35 doc coverage distclean

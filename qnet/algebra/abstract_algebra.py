@@ -32,14 +32,14 @@ See :ref:`abstract_algebra` for design details and usage.
 .. py:data:: SCALAR_TYPES
 """
 from abc import ABCMeta, abstractproperty
-from functools import reduce
 from contextlib import contextmanager
 from copy import copy
+from functools import reduce
 
 from .pattern_matching import (
-        ProtoExpr, match_pattern, wc, pattern_head, pattern)
+    ProtoExpr, match_pattern, wc, pattern_head, pattern)
 from .singleton import Singleton
-from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter, SReprPrinter
+from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter
 from ..printing import SCALAR_TYPES, srepr
 
 __doc__ += \
@@ -61,6 +61,7 @@ def _trace(fn):
     """Function decorator to receive debugging information about function calls
     and return values.
     """
+
     def _tfn(*args, **kwargs):
         print("[", "-" * 40)
         ret = fn(*args, **kwargs)
@@ -70,6 +71,7 @@ def _trace(fn):
         print("-->", repr(ret))
         print("-" * 40, "]")
         return ret
+
     return _tfn
 
 
@@ -115,13 +117,17 @@ def cache_attr(attr):
     >>> a._str
     'MyClass'
     """
+
     def tie_to_attr_decorator(meth):
         """Decorator that ties `meth` to the fixed `attr`"""
+
         def tied_method(self):
             if getattr(self, attr) is None:
                 setattr(self, attr, meth(self))
             return getattr(self, attr)
+
         return tied_method
+
     return tie_to_attr_decorator
 
 
@@ -155,10 +161,10 @@ class Expression(metaclass=ABCMeta):
     # caching will not work correctly
 
     # Printer instances handling __str__, __repr__, etc.
-    _str_printer = UnicodePrinter      # for __str__()
-    _repr_printer = UnicodePrinter     # for __repr__()
-    _tex_printer = LaTeXPrinter        # for _tex_()
-    _ascii_printer = AsciiPrinter      # for _ascii_()
+    _str_printer = UnicodePrinter  # for __str__()
+    _repr_printer = UnicodePrinter  # for __repr__()
+    _tex_printer = LaTeXPrinter  # for _tex_()
+    _ascii_printer = AsciiPrinter  # for _ascii_()
     _unicode_printer = UnicodePrinter  # for _unicode_()
 
     # should _ascii_, _unicode_, _tex_ be returned from cache?
@@ -175,6 +181,7 @@ class Expression(metaclass=ABCMeta):
     # eventually, we should ensure that the create method is idempotent, i.e.
     # expr.create(*expr.args, **expr.kwargs) == expr(*expr.args, **expr.kwargs)
     _create_idempotent = False
+
     # At this point, match_replace_binary does not yet guarantee this
 
     def __init__(self, *args, **kwargs):
@@ -240,7 +247,7 @@ class Expression(metaclass=ABCMeta):
         gives the same result are identical by definition (although `expr1 is
         expr2` is not guaranteed to hold)
         """
-        return (cls, ) + tuple(args) + tuple(sorted(kwargs.items()))
+        return (cls,) + tuple(args) + tuple(sorted(kwargs.items()))
 
     @abstractproperty
     def args(self):
@@ -317,9 +324,8 @@ class Expression(metaclass=ABCMeta):
                     pass
         return simplified
 
-
     def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
+        printer = getattr(self, "_" + fmt + "_printer")
         if adjoint:
             raise NotImplementedError("_render is defined for adjoint=True")
             # Any _render that falls back to head_repr should never be called
@@ -399,7 +405,7 @@ def _print_debug_cache(prefix, color, key, instance, level=0):
            " " + _str_instance_key(key) +
            click.style(" -> %s" % hash(instance), fg=color) +
            " %s" % str(instance))
-    click.echo("  " * (level+1) + msg)
+    click.echo("  " * (level + 1) + msg)
 
 
 def check_idempotent_create(expr):
@@ -678,10 +684,10 @@ def match_replace_binary(cls, ops, kwargs):
     operands.
     """
     assert assoc in cls._simplifications, (
-            cls.__name__ + " must be associative to use match_replace_binary")
+        cls.__name__ + " must be associative to use match_replace_binary")
     assert hasattr(cls, 'neutral_element'), (
-            cls.__name__ + " must define a neutral element to use "
-            "match_replace_binary")
+        cls.__name__ + " must define a neutral element to use "
+                       "match_replace_binary")
     fops = _match_replace_binary(cls, list(ops))
     if len(fops) == 1:
         return fops[0]
@@ -696,12 +702,12 @@ def _match_replace_binary(cls, ops: list) -> list:
     n = len(ops)
     if n <= 1:
         return ops
-    ops_left = ops[:n//2]
-    ops_right = ops[n//2:]
+    ops_left = ops[:n // 2]
+    ops_right = ops[n // 2:]
     return _match_replace_binary_combine(
-            cls,
-            _match_replace_binary(cls, ops_left),
-            _match_replace_binary(cls, ops_right))
+        cls,
+        _match_replace_binary(cls, ops_left),
+        _match_replace_binary(cls, ops_right))
 
 
 def _match_replace_binary_combine(cls, a: list, b: list) -> list:
@@ -718,9 +724,9 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
     else:
         r = [r, ]
     return _match_replace_binary_combine(
-            cls,
-            _match_replace_binary_combine(cls, a[:-1], r),
-            b[1:])
+        cls,
+        _match_replace_binary_combine(cls, a[:-1], r),
+        b[1:])
 
 
 ###############################################################################

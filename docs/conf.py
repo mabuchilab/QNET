@@ -32,6 +32,21 @@ sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('_extensions'))
 
+# -- Generate API documentation ------------------------------------------------
+
+
+def run_apidoc(_):
+    """Generage API documentation"""
+    import better_apidoc
+    better_apidoc.main(
+        ['better-apidoc', '-t', './_templates', '--force', '--no-toc',
+         '--separate', '-o', './API', '../qnet'])
+
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
+
+
 # -- General configuration -----------------------------------------------------
 
 # Report broken links as warnings
