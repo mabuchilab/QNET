@@ -203,7 +203,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 html_theme_options = {
     'collapse_navigation': True,
     'display_version': True,
-    'navigation_depth': 5,
+    'navigation_depth': 4,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
