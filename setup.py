@@ -1,7 +1,7 @@
 import os
 import sys
 from distutils.core import setup
-from pkgutil import walk_packages
+from setuptools import find_packages
 # from distutils.extension import Extension
 #
 # from Cython.Distutils import build_ext
@@ -27,17 +27,6 @@ def get_version(filename):
 
 version = get_version('qnet/__init__.py')
 
-
-def find_packages(path=".", prefix=""):
-    yield prefix
-    prefix = prefix + "."
-    for _, name, ispkg in walk_packages(path, prefix):
-        if ispkg:
-            yield name
-
-os.path.realpath(__file__)
-packages = list(find_packages('qnet', 'qnet'))
-
 setup(
     name='QNET',
     version=version,
@@ -47,7 +36,7 @@ setup(
     author_email="mail@michaelgoerz.net",
     url="http://github.com/mabuchilab/QNET",
     # cmdclass={'build_ext': build_ext},
-    packages=packages,
+    packages=find_packages(exclude=["tests"]),
     # ext_modules=ext_modules,
     install_requires=[
         'matplotlib',
