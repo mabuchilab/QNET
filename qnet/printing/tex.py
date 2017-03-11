@@ -30,7 +30,7 @@ from numpy import complex128
 
 from .base import Printer
 from ..algebra.singleton import Singleton, singleton_object
-from ..printing import SCALAR_TYPES
+from ..algebra.scalar_types import SCALAR_TYPES
 
 
 @singleton_object

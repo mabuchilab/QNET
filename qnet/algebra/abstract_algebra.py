@@ -18,7 +18,7 @@
 ###########################################################################
 r"""The abstract algebra package provides the foundation for
 symbolic algebra of quantum objects or circuits. All symbolic objects are
-either a :data:`scalar  <SCALAR_TYPES>` (leveraging Sympy_) or an instance of
+either scalars (see :mod:`~qnet.algebra.scalar_types`)  or an instance of
 :class:`Expression`. Algebraic combinations of atomic expressions are instances
 of :class:`Operation`. In this way, any symbolic expression is a tree of
 operations, with children of each node defined through the
@@ -26,10 +26,6 @@ operations, with children of each node defined through the
 or scalars.
 
 See :ref:`abstract_algebra` for design details and usage.
-
-.. _Sympy: http://www.sympy.org
-
-.. py:data:: SCALAR_TYPES
 """
 from abc import ABCMeta, abstractproperty
 from contextlib import contextmanager
@@ -39,18 +35,15 @@ from functools import reduce
 from .pattern_matching import (
     ProtoExpr, match_pattern, wc, pattern_head, pattern)
 from .singleton import Singleton
+from .scalar_types import SCALAR_TYPES
 from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter
-from ..printing import SCALAR_TYPES, srepr
-
-__doc__ += \
-    "\n    " + ", ".join(["``" + repr(typ) + "``" for typ in SCALAR_TYPES])
+from ..printing import srepr
 
 __all__ = [
     'AlgebraException', 'AlgebraError', 'CannotSimplify',
     'WrongSignatureError', 'Expression', 'Operation', 'all_symbols',
     'extra_binary_rules', 'extra_rules', 'no_instance_caching', 'no_rules',
-    'set_union', 'simplify', 'substitute', 'temporary_instance_cache',
-    'SCALAR_TYPES']
+    'set_union', 'simplify', 'substitute', 'temporary_instance_cache']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'assoc', 'idem', 'orderby', 'filter_neutral', 'match_replace',

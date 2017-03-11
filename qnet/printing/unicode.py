@@ -27,7 +27,7 @@ from sympy.printing.pretty.pretty_symbology import modifier_dict
 
 from .base import Printer
 from ..algebra.singleton import Singleton, singleton_object
-from ..printing import SCALAR_TYPES
+from ..algebra.scalar_types import SCALAR_TYPES
 
 
 class _circuit_fb_fmt():

@@ -28,6 +28,7 @@ import qnet.algebra.permutations
 import qnet.algebra.singleton
 import qnet.algebra.state_algebra
 import qnet.algebra.super_operator_algebra
+import qnet.algebra.scalar_types
 
 from .abstract_algebra import *
 from .circuit_algebra import *
@@ -37,6 +38,7 @@ from .operator_algebra import *
 from .state_algebra import *
 from .super_operator_algebra import *
 from .pattern_matching import *
+from .scalar_types import *
 
 from qnet._flat_api_tools import _combine_all
 
@@ -48,4 +50,5 @@ __all__ = _combine_all(
     'qnet.algebra.operator_algebra',
     'qnet.algebra.state_algebra',
     'qnet.algebra.super_operator_algebra',
+    'qnet.algebra.scalar_types',
     'qnet.algebra.pattern_matching')

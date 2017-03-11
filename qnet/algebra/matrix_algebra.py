@@ -24,8 +24,9 @@ from numpy import (
         np_ones, diag as np_diag)
 from sympy import Basic as SympyBasic, I, sympify
 
+from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-        Expression, Operation, SCALAR_TYPES, cache_attr, substitute)
+        Expression, Operation, cache_attr, substitute)
 from .operator_algebra import Operator, scalar_free_symbols, simplify_scalar
 from .hilbert_space_algebra import TrivialSpace, ProductSpace
 from .permutations import check_permutation

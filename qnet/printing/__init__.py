@@ -22,10 +22,6 @@ import copy
 from contextlib import contextmanager
 
 import sympy
-from numpy import int64, complex128, float64
-
-SCALAR_TYPES = (int, float, complex, sympy.Basic, int64, complex128, float64)
-# SCALAR_TYPES *must* be defined *before* imports from sub-modules
 
 from .base import Printer
 from .ascii import AsciiPrinter, ascii

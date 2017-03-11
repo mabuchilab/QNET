@@ -38,7 +38,8 @@ from numpy import (
         eye as np_eye,
         argwhere,
         complex128, float64)
-from qnet.algebra.abstract_algebra import AlgebraError, SCALAR_TYPES
+from qnet.algebra.scalar_types import SCALAR_TYPES
+from qnet.algebra.abstract_algebra import AlgebraError
 from qnet.algebra.circuit_algebra import SLH, move_drive_to_H
 from qnet.algebra.operator_algebra import (
         IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz,

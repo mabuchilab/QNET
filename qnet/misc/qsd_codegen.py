@@ -9,8 +9,9 @@ from collections import OrderedDict
 from functools import partial
 import subprocess as sp
 
+from qnet.algebra.scalar_types import SCALAR_TYPES
 from qnet.algebra.abstract_algebra import (
-        Operation, Expression, set_union, SCALAR_TYPES)
+        Operation, Expression, set_union)
 from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
 from qnet.algebra.circuit_algebra import Circuit
 from qnet.algebra.state_algebra import (

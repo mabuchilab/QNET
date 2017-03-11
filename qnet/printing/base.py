@@ -26,7 +26,7 @@ from numpy import complex128
 import sympy
 
 from ..algebra.singleton import Singleton
-from ..printing import SCALAR_TYPES
+from ..algebra.scalar_types import SCALAR_TYPES
 
 class Printer(metaclass=ABCMeta):
     """Base class for Printers (and default ASCII printer)

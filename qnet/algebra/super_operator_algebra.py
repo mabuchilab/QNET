@@ -33,10 +33,10 @@ from numpy import (sqrt as np_sqrt, array as np_array)
 from sympy import (
         symbols, Basic as SympyBasic, Matrix as SympyMatrix, sqrt, I)
 
+from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
         Operation, Expression, AlgebraError, assoc, orderby,
-        filter_neutral, match_replace, match_replace_binary, AlgebraException,
-        SCALAR_TYPES)
+        filter_neutral, match_replace, match_replace_binary, AlgebraException)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (

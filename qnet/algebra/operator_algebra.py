@@ -31,10 +31,11 @@ from itertools import product as cartesian_product
 from sympy import (exp, sqrt, I, sympify, Basic as SympyBasic,
         series as sympy_series, Add as SympyAdd)
 
+from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
         Expression, Operation, assoc, orderby, filter_neutral,
         match_replace_binary, match_replace, set_union, substitute,
-        CannotSimplify, cache_attr, SCALAR_TYPES)
+        CannotSimplify, cache_attr)
 from .singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
         TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError,

@@ -45,7 +45,7 @@ their replacements to all the desired algebraic classes.
 
 from collections import OrderedDict
 
-from ..printing import SCALAR_TYPES
+from .scalar_types import SCALAR_TYPES
 
 __all__ = []
 

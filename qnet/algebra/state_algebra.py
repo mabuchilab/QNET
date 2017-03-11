@@ -28,10 +28,11 @@ from itertools import product as cartesian_product
 from sympy import (
         Basic as SympyBasic, Add, series as sympy_series, sqrt, exp, I)
 
+from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
         Operation, Expression, substitute, AlgebraError, assoc, orderby,
         filter_neutral, match_replace, match_replace_binary,
-        CannotSimplify, cache_attr, SCALAR_TYPES)
+        CannotSimplify, cache_attr)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
