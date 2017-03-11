@@ -183,6 +183,20 @@ GoogleDocstring._unpatched_parse = GoogleDocstring._parse
 GoogleDocstring._parse = patched_parse
 
 
+# -- Monkeypatch for instance attribs (sphinx bug #2044) -----------------------
+
+
+from sphinx.ext.autodoc import (
+    ClassLevelDocumenter, InstanceAttributeDocumenter)
+
+
+def iad_add_directive_header(self, sig):
+    ClassLevelDocumenter.add_directive_header(self, sig)
+
+
+InstanceAttributeDocumenter.add_directive_header = iad_add_directive_header
+
+
 # -- Options for HTML output ---------------------------------------------------
 
 # on_rtd is whether we are on readthedocs.org, this line of code grabbed from

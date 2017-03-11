@@ -390,21 +390,14 @@ class Circuit(metaclass=ABCMeta):
 
 class SLH(Circuit, Expression):
     """SLH class to encapsulate an open system model that is parametrized as
-    described in [2]_ , [3]_ ::
+    described in [2]_ , [3]_
 
-        SLH(S, L, H)
-
-    Attributes:
+    Args:
         S (Matrix): The scattering matrix (with in general Operator-valued
             elements)
         L (Matrix): The coupling vector (with in general Operator-valued
             elements)
         H (Operator): The internal Hamiltonian operator
-
-    Args:
-        S: Value for the `S` attribute.
-        L: Value for the `L` attribute
-        H: Value for the `H` attribute
     """
 
     def __init__(self, S, L, H):
@@ -420,9 +413,9 @@ class SLH(Circuit, Expression):
         if L.shape[1] != 1:
             raise ValueError(("L has wrong shape %s. L must be a column vector "
                               "of operators (shape n × 1)") % str(L.shape))
-        self.S = S
-        self.L = L
-        self.H = H
+        self.S = S  #: Scattering matrix
+        self.L = L  #: Coupling vector
+        self.H = H  #: Hamiltonian
         super().__init__(S, L, H)
 
     @property
@@ -436,6 +429,7 @@ class SLH(Circuit, Expression):
 
     @property
     def cdim(self):
+        """The circuit dimension"""
         return self.S.shape[0]
 
     def _creduce(self):
