@@ -61,4 +61,4 @@ dependencies:
 - pip:
   - ipython-genutils==0.1.0
   - prompt-toolkit==1.0.9
-  - better_apidoc==0.1.0
+  - better_apidoc==0.1.1
