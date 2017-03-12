@@ -1092,7 +1092,7 @@ class ScalarTimesOperator(Operator, Operation):
         return scalar_free_symbols(self.coeff) | self.term.all_symbols()
 
 
-class OperatorTrace(Operator, Operation):
+class OperatorTrace(SingleOperatorOperation):
     r"""Take the (partial) trace of an operator :math:`X` over the degrees of
     freedom given by a Hilbert hs :math:`\mathcal{H}`:
 
@@ -1118,11 +1118,11 @@ class OperatorTrace(Operator, Operation):
             over_space = LocalSpace(over_space)
         assert isinstance(over_space, HilbertSpace)
         self._over_space = over_space
+        super().__init__(op, over_space=over_space)
         self._space = None
         self._order_key = (op._order_key +
                            KeyTuple((self.__class__.__name__,
                            over_space._order_key)))
-        super().__init__(op, over_space=over_space)
 
     @property
     def kwargs(self):
