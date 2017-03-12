@@ -118,6 +118,7 @@ and ``_binary_rules`` class attributes are always constructed using the
 :func:`pattern` helper function. The :func:`wc` function is used to associate
 Expression arguments with wildcard names.
 
+.. _hilbert_space_algebra:
 
 Hilbert Space Algebra
 =====================
@@ -148,8 +149,6 @@ Furthermore,
 .. [#f1] *trivial* in the sense that :math:`\mathcal{H}_0 \simeq \mathbb{C}`,
          i.e., all states are multiples of each other and thus equivalent.
 
-.. _operator_algebra:
-
 Expressions in the operator, state, and superoperator algebra (discussed below)
 will all be associated with a Hilbert space. If any expressions are intended to
 be fed into a numerical simulation, all their associated Hilbert spaces must
@@ -158,6 +157,8 @@ to either define the all the :class:`LocalSpace` instances they depend on with
 `basis` or `dimension` arguments first, or to later generate new expression
 with updated Hilbert spaces through the
 :func:`~qnet.algebra.abstract_algebra.substitute` routine.
+
+.. _operator_algebra:
 
 Operator Algebra
 ================
