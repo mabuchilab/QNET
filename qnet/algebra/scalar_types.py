@@ -26,8 +26,6 @@ any algebraic operation may have. The lists consist of the following:
 
 .. _Sympy: http://www.sympy.org
 .. _Numpy numerical types: https://docs.scipy.org/doc/numpy/user/basics.types.html
-
-.. py:data:: SCALAR_TYPES
 '''
 import sympy
 from numpy import int64, complex128, float64

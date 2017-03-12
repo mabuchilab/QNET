@@ -52,3 +52,6 @@ __all__ = _combine_all(
     'qnet.algebra.super_operator_algebra',
     'qnet.algebra.scalar_types',
     'qnet.algebra.pattern_matching')
+
+__imported_data__ = {
+    'SCALAR_TYPES': ':data:`~qnet.algebra.scalar_types.SCALAR_TYPES`'}
