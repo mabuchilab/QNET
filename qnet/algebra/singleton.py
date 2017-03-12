@@ -32,7 +32,7 @@ Singletons in QNET should use both of these.
 from abc import ABCMeta
 
 
-__all__ = ['singleton_object', 'Singleton']
+__all__ = ['singleton_object', 'Singleton', 'SingletonType']
 
 __private__ = []
 
@@ -70,6 +70,10 @@ class Singleton(ABCMeta):
     >>> b = MyClass()
     >>> a is b
     True
+
+    You can check that a object is a singleton using
+    >>> isinstance(a, SingletonType)
+    True
     """
     _instances = {}
 
@@ -78,3 +82,19 @@ class Singleton(ABCMeta):
             cls._instances[cls] = super(Singleton, cls).__call__(*args,
                                                                  **kwargs)
         return cls._instances[cls]
+
+    @classmethod
+    def __instancecheck__(mcs, instance):
+        if instance.__class__ is mcs:
+            return True
+        else:
+            return isinstance(instance.__class__, mcs)
+
+
+class SingletonType(metaclass=Singleton):
+    """A dummy type that may be used to check whether an object is a
+    Singleton::
+
+        isinstance(obj, SingletonType)
+    """
+    pass
