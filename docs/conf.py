@@ -73,8 +73,8 @@ extensions = [
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3.5', None),
     'sympy': ('http://docs.sympy.org/latest/', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    'matplotlib': ('http://matplotlib.sourceforge.net/', None)
+    'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+    'matplotlib': ('http://matplotlib.org/', None)
 }
 
 # Add any paths that contain templates here, relative to this directory.
