@@ -18,9 +18,7 @@
 #
 ###########################################################################
 
-r"""
-This module implements a basic Hilbert space state algebra.
-"""
+r"""This module implements a basic Hilbert space state algebra."""
 import re
 from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product

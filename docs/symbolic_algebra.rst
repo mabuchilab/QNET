@@ -4,219 +4,213 @@
 Symbolic Algebra
 ================
 
-
-
 .. _abstract_algebra:
 
-The Abstract Algebra module
-===========================
+.. currentmodule:: qnet.algebra.abstract_algebra
 
-.. warning::
+Expressions and Operations
+==========================
 
-    This overview is currently not up to date with respect to the latest
-    development version of QNET. Please refer to the
-    :mod:`API <qnet.algebra.abstract_algebra>` instead.
+QNET includes a rich (and extensible) symbolic algebra system for quantum
+mechanics and circuit modes. The foundation of the symbolic algebra are the
+:class:`~Expression` class and its subclass :class:`~Operation`.
 
+A general algebraic expression has a tree structure. The branches of the tree
+are operations; their children are the operands. The leaves of the tree are
+scalars or "atomic" expressions, where "atomic" means *not* an object of type
+:class:`~Operation` (e.g., a symbol)
 
-The module features generic classes for encapsulating expressions and operations on expressions.
-It also includes some basic pattern matching and expression rewriting capabilities.
+For example, the :class:`~qnet.algebra.state_algebra.KetPlus` operation
+defines the sum of Hilbert space vectors, represented as::
 
-The most important classes to derive from for implementing a custom 'algebra' are :py:class:`qnet.algebra.abstract_algebra.Expression` and :py:class:`qnet.algebra.abstract_algebra.Operation`,
-where the second is actually a subclass of the first.
+    KetPlus(psi1, psi2, ..., psiN)
 
-The ``Operation`` class should be subclassed to implement any structured expression type
-that can be specified in terms of a *head* and a (finite) sequence of *operands*::
+All operations follow this pattern::
 
     Head(op1, op1, ..., opN)
 
-An operation is assumed to have immutable operands, i.e., if one wishes to change the operands of an ``Operation``,
-one rather creates a new Operation with modified Operands.
+where ``Head`` is a subclass of :class:`~Operation` and ``op1 .. opN`` are the
+operands, which may be other operations, scalars, or atomic
+:class:`~Expression` objects.
+
+Note that all expressions (inluding operations) can have associated
+*arguments*. For example :class:`~qnet.algebra.state_algebra.KetSymbol` takes
+`label` as an argument, and the Hilbert space displacement operator
+:class:`~qnet.algebra.operator_algebra.Displace` takes a displacement amplitude
+as an argument. To avoid confusion between operands and arguments, operations
+are required to take their operands as positional arguments, and possible
+additional arguments as keyword arguments.
+
+
+Expressions should generally not be instantiated directly, but through their
+:meth:`~Expression.create` method allowing for simplifications. This is true
+both for operations and atomic expressions. For example, instantiating
+:class:`~qnet.algebra.operator_algebra.Displace` with ``alpha=0`` results in an
+:obj:`~qnet.algebra.operator_algebra.IdentityOperator` (unlike direct
+instantiation, the create method of any class may or may not
+return an instance of the same class). For operations, the `create` method
+handles the application of algebraic rules such as associativity (translating
+e.g.  ``KetPlus(psi1, KetPlus(psi2, psi3))`` into ``KetPlus(psi1, psi2, psi3)``)
+
+Many operations are associated with infix operators, e.g.
+a :class:`~qnet.algebra.state_algebra.KetPlus` instance is automatically
+created if two instances of :class:`~qnet.algebra.state_algebra.KetSymbol`
+are added with ``+``. In this case, the `create` method is used automatically.
+
+Expressions and Operations are considered immutable: any change to the
+expression tree (e.g. an algebraic simplification) generates a new expression.
 
 
 Defining ``Operation`` subclasses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The single most important method of the ``Operation`` class is the :py:meth:`qnet.algebra.abstract_algebra.Operation.create` classmethod.
+When extending an algebra with new operations, it is essential to define the
+expression rewriting ("simplification") rules that govern how new expressions
+are instantiated. To this end, the ``_simplification`` class attribute of an
+:class:`~Expression` subclass must be defined.
+This attribute contains a list of callables. Each of these callables takes
+three parameters (the class, the list ``args`` of positional arguments given to
+:meth:`~Expression.create` and
+a dictionary ``kwargs`` of keyword arguments given to
+:meth:`~Expression.create`) and return either a
+tuple of new ``args`` and ``kwargs`` (which are then handed to the next
+callable), or an :class:`~Expression` (which is
+directly returned as the result of the call to :meth:`Expression.create`).
 
+Callables such as as :func:`assoc`, :func:`idem`, :func:`orderby`, and
+:func:`filter_neutral` handle common algebraic properties such as associativity
+or commutativity. The :func:`match_replace` and :func:`match_replace_binary`
+callables are central to any more advanced simplification through pattern
+matching. They delegate to a list of :class:`Patterns
+<qnet.algebra.pattern_matching.Pattern>` and replacements that are defined
+in the ``_rules``, respectively ``_binary_rules`` class attributes of the
+:class:`Expression` subclass.
 
-**Automatic expression rewriting by modifying/decorating the** :py:meth:`qnet.algebra.abstract_algebra.Operation.create()` **method**
-
-A list of class decorators:
-
-    * :py:func:`qnet.algebra.abstract_algebra.assoc`
-
-    * :py:func:`qnet.algebra.abstract_algebra.idem`
-
-    * :py:func:`qnet.algebra.abstract_algebra.orderby`
-
-    * :py:func:`qnet.algebra.abstract_algebra.filter_neutral`
-
-    * :py:func:`qnet.algebra.abstract_algebra.check_signature`
-
-    * :py:func:`qnet.algebra.abstract_algebra.match_replace`
-
-    * :py:func:`qnet.algebra.abstract_algebra.match_replace_binary`
+The pattern matching rules may temporarily extended or modified using the
+:func:`extra_rules`, :func:`extra_binary_rules`,  and :func:`no_rules` context
+managers.
 
 
 Pattern matching
 ^^^^^^^^^^^^^^^^
 
-The :py:class:`qnet.algebra.abstract_algebra.Wildcard` class.
+The application of patterns is central to symbolic algebra. Patterns are
+defined and applied using the classed and helper routines in the
+:mod:`~qnet.algebra.pattern_matching` module.
 
+There are two main places where pattern matching comes up:
 
-The :py:func:`qnet.algebra.abstract_algebra.match` function.
+* automatically, through :func:`match_replace` and :func:`match_replace_binary`
+  simplifications applied inside of :meth:`Expression.create`.
 
+* manually, through the :func:`simplify` function (or the
+  :meth:`Expression.simplify` method)
 
-For a relatively simple example of how an algebra can be defined, see the Hilbert space algebra defined in :py:mod:`qnet.algebra.hilbert_space_algebra`.
+.. currentmodule:: qnet.algebra.pattern_matching
 
-.. _hilbert_space_algebra:
+Since inside :func:`~qnet.algebra.abstract_algebra.match_replace` and
+:func:`~qnet.algebra.abstract_algebra.match_replace_binary`, patterns
+are matched against expressions that are not yet instantiated (we call these
+:class:`ProtoExpressions <ProtoExpr>`), the patterns in the ``_rules``
+and ``_binary_rules`` class attributes are always constructed using the
+:func:`pattern_head` helper function. In contrast, patterns for
+:func:`~qnet.algebra.abstract_algebra.simplify` are usually created through the
+:func:`pattern` helper function. The :func:`wc` function is used to associate
+Expression arguments with wildcard names.
+
 
 Hilbert Space Algebra
 =====================
 
-This covers only finite dimensional or countably infinite dimensional Hilbert spaces.
+.. currentmodule:: qnet.algebra.hilbert_space_algebra
 
-The basic abstract class that features all properties of Hilbert space objects is given by: :py:class:`qnet.algebra.hilbert_space_algebra.HilbertSpace`.
-Its most important subclasses are:
+The :mod:`~qnet.algebra.hilbert_space_algebra` module defines a simple algebra
+of finite dimensional or countably infinite dimensional Hilbert spaces.
 
-    * local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity mode) are described by a :py:class:`qnet.algebra.hilbert_space_algebra.LocalSpace`. Every local space is identified by
+.. inheritance-diagram:: qnet.algebra.hilbert_space_algebra
+   :parts: 1
 
-    * composite tensor product spaces are given by instances of the :py:class:`qnet.algebra.hilbert_space_algebra.ProductSpace` class.
+Local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity
+mode) are described by a :class:`LocalSpace`; it requires a label, and may
+define a basis through the `basis` or `dimension` arguments.
 
-    * the :py:class:`qnet.algebra.hilbert_space_algebra.TrivialSpace` represents a *trivial* [#f1]_ Hilbert space :math:`\mathcal{H}_0 \simeq \mathbb{C}`
+Instances of :class:`LocalSpace` combine via a product into
+composite tensor product spaces are given by instances of the :class:`ProductSpace`
 
-    * the :py:class:`qnet.algebra.hilbert_space_algebra.FullSpace` represents a Hilbert space that includes all possible degrees of freedom.
+Furthermore,
+
+* the :obj:`~qnet.algebra.hilbert_space_algebra.TrivialSpace` represents a
+  *trivial* [#f1]_ Hilbert space :math:`\mathcal{H}_0 \simeq \mathbb{C}`
+
+* the :obj:`~qnet.algebra.hilbert_space_algebra.FullSpace` represents a Hilbert
+  space that includes all possible degrees of freedom.
 
 .. [#f1] *trivial* in the sense that :math:`\mathcal{H}_0 \simeq \mathbb{C}`,
          i.e., all states are multiples of each other and thus equivalent.
 
-Examples
-^^^^^^^^
-
-A single local space can be instantiated in several ways. It is most convenient to use the :py:func:`qnet.algebra.hilbert_space_algebra.local_space` method:
-
->>> local_space(1)
-    LocalSpace(1, '')
-
-This method also allows for the specification of the ``dimension`` of the local degree of freedom's state space:
-
->>> s = local_space(1, dimension = 10)
->>> s
-    LocalSpace(1, '')
->>> s.dimension
-    10
->>> s.basis
-    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-Alternatively, one can pass a sequence of ``basis`` state labels instead of the ``dimension`` argument:
-
->>> lambda_atom_space = local_space('las', basis = ('e', 'h', 'g'))
->>> lambda_atom_space
-    LocalSpace('las', '')
->>> lambda_atom_space.dimension
-    3
->>> lambda_atom_space.basis
-    ('e', 'h', 'g')
-
-Finally, one can pass a ``namespace`` argument, which is useful if one is working with multiple copies of identical systems, e.g. if one instantiates multiple copies of a particular circuit component with internal degrees of freedom:
-
->>> s_q1 = local_space('s', namespace = 'q1', basis = ('g', 'h'))
->>> s_q2 = local_space('s', namespace = 'q2', basis = ('g', 'h'))
->>> s_q1
-    LocalSpace('s', 'q1')
->>> s_q2
-    LocalSpace('s', 'q2')
->>> s_q1 * s_q2
-    ProductSpace(LocalSpace('s', 'q1'), LocalSpace('s', 'q2'))
-
-The default ``namespace`` is the empty string ``''``.
-Here, we have already seen the simplest way to create a tensor product of spaces:
-
->>> local_space(1) * local_space(2)
-    ProductSpace(LocalSpace(1, ''), LocalSpace(2, ''))
-
-Note that this tensor product is *commutative*
-
->>> local_space(2) * local_space(1)
-    ProductSpace(LocalSpace(1, ''), LocalSpace(2, ''))
->>> local_space(2) * local_space(1) == local_space(1) * local_space(2)
-    True
-
-and *associative*
-
->>> (local_space(1) * local_space(2)) * local_space(3)
-    ProductSpace(LocalSpace('1', ''), LocalSpace('2', ''), LocalSpace('3', ''))
-
-
-
 .. _operator_algebra:
 
-The Operator Algebra module
-===========================
+Expressions in the operator, state, and superoperator algebra (discussed below)
+will all be associated with a Hilbert space. If any expressions are intended to
+be fed into a numerical simulation, all their associated Hilbert spaces must
+have a known dimension.  Since all expressions are immutable, it is important
+to either define the all the :class:`LocalSpace` instances they depend on with
+`basis` or `dimension` arguments first, or to later generate new expression
+with updated Hilbert spaces through the
+:func:`~qnet.algebra.abstract_algebra.substitute` routine.
 
-This module features classes and functions to define and manipulate symbolic Operator expressions.
-Operator expressions are constructed from sums (:py:class:`qnet.algebra.operator_algebra.OperatorPlus`) and products (:py:class:`qnet.algebra.operator_algebra.OperatorTimes`)
-of some basic elements, most importantly *local* operators,
-such as the annihilation (:py:class:`qnet.algebra.operator_algebra.Destroy`) and creation (:py:class:`qnet.algebra.operator_algebra.Create`) operators :math:`a_s, a_s^\dagger`
-of a quantum harmonic oscillator degree of freedom :math:`s`.
-Further important elementary local operators are the switching operators
-:math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (:py:class:`qnet.algebra.operator_algebra.LocalSigma`).
-Each operator has an associated :py:attr:`qnet.algebra.operator_algebra.Operator.space` property which gives the Hilbert space
-(cf :py:class:`qnet.algebra.hilbert_space_algebra.HilbertSpace`) on which it acts *non-trivially*.
-We don't explicitly distinguish between *tensor*-products :math:`X_s\otimes Y_r` of operators on different degrees of freedom :math:`s,r`
-(which we designate as *local* spaces) and *operator-composition*-products :math:`X_s \cdot Y_s` of operators acting on the same degree of freedom :math:`s`.
-Conceptionally, we assume that each operator is always implicitly tensored with identity operators acting on all un-specified degrees of freedom.
-This is typically done in the physics literature and only plays a role when tansforming to a numerical representation
-of the problem for the purpose of simulation, diagonalization, etc.
+Operator Algebra
+================
 
-All Operator classes
-^^^^^^^^^^^^^^^^^^^^
+.. currentmodule:: qnet.algebra.operator_algebra
 
-A complete list of all local operators is given below:
+The :mod:`~qnet.algebra.operator_algebra` module implements and algebra of Hilbert space operators
 
-    * Harmonic oscillator mode operators :math:`a_s, a_s^\dagger` (cf :py:class:`qnet.algebra.operator_algebra.Destroy`, :py:class:`qnet.algebra.operator_algebra.Create`)
+.. inheritance-diagram:: qnet.algebra.operator_algebra
+   :parts: 1
 
-    * :math:`\sigma`-switching operators  :math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s` (cf :py:class:`qnet.algebra.operator_algebra.LocalSigma`)
+Operator expressions are constructed from sums (:class:`OperatorPlus`) and
+products (:class:`OperatorTimes`) of some basic elements, most importantly *local*
+operators (subclasses of :class:`LocalOperator`). This include some very common symbolic operator such as
 
-    * coherent displacement operators :math:`D_s(\alpha) := \exp{\left(\alpha a_s^\dagger - \alpha^* a_s\right)}` (cf :py:class:`qnet.algebra.operator_algebra.Displace`)
+* Harmonic oscillator mode operators :math:`a_s, a_s^\dagger`: :class:`Destroy`, :class:`Create`
 
-    * phase operators :math:`P_s(\phi) := \exp {\left(i\phi a_s^\dagger a_s\right)}` (cf :py:class:`qnet.algebra.operator_algebra.Phase`)
+* :math:`\sigma`-switching operators  :math:`\sigma_{jk}^s := \left| j \right\rangle_s \left \langle k \right|_s`: :class:`LocalSigma`
 
-    * squeezing operators :math:`S_s(\eta) := \exp {\left[{1\over 2}\left({\eta {a_s^\dagger}^2 - \eta^* a_s^2}\right)\right]}` (cf :py:class:`qnet.algebra.operator_algebra.Squeeze`)
+* coherent displacement operators :math:`D_s(\alpha) := \exp{\left(\alpha a_s^\dagger - \alpha^* a_s\right)}`: :class:`Displace`
+
+* phase operators :math:`P_s(\phi) := \exp {\left(i\phi a_s^\dagger a_s\right)}`: :class:`Phase`
+
+* squeezing operators :math:`S_s(\eta) := \exp {\left[{1\over 2}\left({\eta {a_s^\dagger}^2 - \eta^* a_s^2}\right)\right]}`: :class:`Squeeze`
 
 Furthermore, there exist symbolic representations for constants and symbols:
 
-    * the identity operator (cf :py:class:`qnet.algebra.operator_algebra.IdentityOperator`)
+* the :class:`IdentityOperator`
 
-    * and the zero operator (cf :py:class:`qnet.algebra.operator_algebra.ZeroOperator`)
+* the :class:`ZeroOperator`
 
-    * an arbitrary operator symbol (cf :py:class:`qnet.algebra.operator_algebra.OperatorSymbol`)
+* an arbitrary :class:`OperatorSymbol`
 
-Finally, we have the following Operator operations:
+There are also a number of algebraic operations that act only on a single operator as their only operand. These include:
 
-    * sums of operators :math:`X_1 + X_2 + \dots + X_n` (cf :py:class:`qnet.algebra.operator_algebra.OperatorPlus`)
+* the Hilbert space :class:`Adjoint` operator :math:`X^\dagger`
 
-    * products of operators :math:`X_1  X_2  \cdots  X_n` (cf :py:class:`qnet.algebra.operator_algebra.OperatorTimes`)
+* :class:`PseudoInverse` of operators :math:`X^+` satisfying :math:`X X^+ X = X` and :math:`X^+ X X^+ = X^+` as well as :math:`(X^+ X)^\dagger = X^+ X` and :math:`(X X^+)^\dagger = X X^+`
 
-    * the Hilbert space adjoint operator :math:`X^\dagger` (cf :py:class:`qnet.algebra.operator_algebra.Adjoint`)
+* the kernel projection operator (:class:`NullSpaceProjector`) :math:`\mathcal{P}_{{\rm Ker} X}` satisfying both :math:`X \mathcal{P}_{{\rm Ker} X} = 0` and :math:`X^+ X =  1 - \mathcal{P}_{{\rm Ker} X}`
 
-    * scalar multiplication :math:`\lambda X` (cf :py:class:`qnet.algebra.operator_algebra.ScalarTimesOperator`)
-
-    * pseudo-inverse of operators :math:`X^+` satisfying :math:`X X^+ X = X` and :math:`X^+ X X^+ = X^+` as well
-        as :math:`(X^+ X)^\dagger = X^+ X` and :math:`(X X^+)^\dagger = X X^+` (cf :py:class:`qnet.algebra.operator_algebra.PseudoInverse`)
-
-    * the kernel projection operator :math:`\mathcal{P}_{{\rm Ker} X}` satisfying both :math:`X \mathcal{P}_{{\rm Ker} X} = 0`
-        and :math:`X^+ X =  1 - \mathcal{P}_{{\rm Ker} X}`  (cf :py:class:`qnet.algebra.operator_algebra.NullSpaceProjector`)
-
-    * Partial traces over Operators :math:`{\rm Tr}_s X` (cf :py:class:`qnet.algebra.operator_algebra.OperatorTrace`)
-
-For a list of all properties and methods of an operator object, see the documentation for the basic :py:class:`qnet.algebra.operator_algebra.Operator` class.
+* Partial traces over Operators :math:`{\rm Tr}_s X`: :class:`OperatorTrace`
 
 
 Examples
 ^^^^^^^^
 
-Say we want to write a function that constructs a typical Jaynes-Cummings Hamiltonian 
+.. warning::
+
+    This example is currently not up to date with respect to the latest
+    development version of QNET
+
+Say we want to write a function that constructs a typical Jaynes-Cummings Hamiltonian
 
 .. math::
     H = \Delta \sigma^\dagger \sigma + \Theta a^\dagger a + i g(\sigma a^\dagger - \sigma^\dagger a) + i\epsilon (a - a^\dagger)
@@ -224,15 +218,15 @@ Say we want to write a function that constructs a typical Jaynes-Cummings Hamilt
 for a given set of numerical parameters::
 
     def H_JaynesCummings(Delta, Theta, epsilon, g, namespace = ''):
-    
-        # create Fock- and Atom local spaces 
+
+        # create Fock- and Atom local spaces
         fock = local_space('fock', namespace = namespace)
         tls = local_space('tls', namespace = namespace, basis = ('e', 'g'))
-    
+
         # create representations of a and sigma
         a = Destroy(fock)
         sigma = LocalSigma(tls, 'g', 'e')
-    
+
         H = (Delta * sigma.dag() * sigma                        # detuning from atomic resonance
             + Theta * a.dag() * a                               # detuning from cavity resonance
             + I * g * (sigma * a.dag() - sigma.dag() * a)       # atom-mode coupling, I = sqrt(-1)
@@ -241,8 +235,8 @@ for a given set of numerical parameters::
 
 Here we have allowed for a variable namespace which would come in handy if we wanted to construct an overall model that features multiple Jaynes-Cummings-type subsystems.
 
-By using the support for symbolic :py:mod:`sympy` expressions as scalar pre-factors to operators, one can instantiate a Jaynes-Cummings Hamiltonian with symbolic parameters:
-    
+By using the support for symbolic :mod:`sympy` expressions as scalar pre-factors to operators, one can instantiate a Jaynes-Cummings Hamiltonian with symbolic parameters:
+
 
 >>> Delta, Theta, epsilon, g = symbols('Delta, Theta, epsilon, g', real = True)
 >>> H = H_JaynesCummings(Delta, Theta, epsilon, g)
@@ -274,15 +268,110 @@ Or for higher powers one can use the ``expand()`` method:
     (6 + Create(1) * Create(1) * Create(1) * Destroy(1) * Destroy(1) * Destroy(1) + 9 * Create(1) * Create(1) * Destroy(1) * Destroy(1) + 18 * Create(1) * Destroy(1))
 
 
+.. _state_algebra:
+
+State (Ket-) Algebra
+====================
+
+.. currentmodule:: qnet.algebra.state_algebra
+
+The :mod:`~qnet.algebra.state_algebra` module implements an algebra of Hilbert space states.
+
+.. inheritance-diagram:: qnet.algebra.state_algebra
+   :parts: 1
+
+By default we represent states :math:`\psi` as :class:`Ket` vectors :math:`\psi \to | \psi \rangle`.
+However, any state can also be represented in its adjoint :class:`Bra` form, since those representations are dual:
+
+.. math::
+    \psi \leftrightarrow | \psi \rangle \leftrightarrow \langle \psi |
+
+States can be added to states of the same Hilbert space. They can be multiplied by:
+
+* scalars, to just yield a rescaled state within the original space, resulting in :class:`ScalarTimesKet`
+
+* operators that act on some of the states degrees of freedom (but none that aren't part of the state's Hilbert space), resulting in a :class:`OperatorTimesKet`
+
+* other states that have a Hilbert space corresponding to a disjoint set of degrees of freedom, resulting in a :class:`TensorKet`
+
+Furthermore,
+
+* a :class:`Ket` object can multiply a :class:`Bra` of the same space from the left to yield a :class:`KetBra` operator.
+
+And conversely,
+
+* a :class:`Bra` can multiply a :class:`Ket` from the left to create a (partial) inner product object :class:`BraKet`.
+  Currently, only full inner products are supported, i.e. the :class:`Ket` and :class:`Bra` operands need to have the same space.
+
+There are also the following symbolic states:
+
+* arbitrary :class:`KetSymbols <KetSymbol>`
+* the :obj:`TrivialKet` acting as the identity, and
+* the :obj:`ZeroKet`.
+
+
+.. _super_operator_algebra:
+
+Super-Operator Algebra
+======================
+
+.. currentmodule:: qnet.algebra.super_operator_algebra
+
+The :mod:`~qnet.algebra.super_operator_algebra` contains an implementation of a
+superoperator algebra, i.e., operators acting on Hilbert space operator or
+elements of Liouville space (density matrices).
+
+.. inheritance-diagram:: qnet.algebra.super_operator_algebra
+   :parts: 1
+
+Each super-operator has an associated `space` property which gives the Hilbert space
+on which the operators the super-operator acts non-trivially are themselves acting non-trivially.
+
+The most basic way to construct super-operators is by lifting 'normal' operators to linear pre- and post-multiplication super-operators:
+
+    >>> A, B, C = OperatorSymbol("A", FullSpace), OperatorSymbol("B", FullSpace), OperatorSymbol("C", FullSpace)
+    >>> SPre(A) * B
+        A * B
+    >>> SPost(C) * B
+        B * C
+    >>> (SPre(A) * SPost(C)) * B
+        A * B * C
+    >>> (SPre(A) - SPost(A)) * B        # Linear super-operator associated with A that maps B --> [A,B]
+        A * B - B * A
+
+
+The neutral elements of super-operator addition and multiplication are :obj:`ZeroSuperOperator` and :obj:`IdentitySuperOperator`, respectively.
+
+Super operator objects can be added together in code via the infix '+' operator and multiplied with the infix '*' operator.
+They can also be added to or multiplied by scalar objects.
+In the first case, the scalar object is multiplied by the :obj:`IdentitySuperOperator` constant.
+
+Super operators are applied to operators by multiplying an operator with superoperator from the left:
+
+    >>> S = SuperOperatorSymbol("S", FullSpace)
+    >>> A = OperatorSymbol("A", FullSpace)
+    >>> S * A
+        SuperOperatorTimesOperator(S, A)
+    >>> isinstance(S*A, Operator)
+        True
+
+The result is an operator.
 
 .. _circuit_algebra:
 
-The Circuit Algebra module
-==========================
+Circuit Algebra
+===============
 
-In their works on networks of open quantum systems [GoughJames08]_, [GoughJames09]_ Gough and James have introduced an algebraic method to derive the Quantum Markov model for a full network of cascaded quantum systems from the reduced Markov models of its constituents.
+In their works on networks of open quantum systems [GoughJames08]_, [GoughJames09]_ Gough and James have introduced an algebraic method to derive the Quantum Markov model for a full network of cascaded quantum systems from the reduced Markov models of its constituents. This method is implemented in the :mod:`~qnet.algebra.circuit_algebra` module.
+
+.. currentmodule:: qnet.algebra.circuit_algebra
+
+.. inheritance-diagram:: qnet.algebra.circuit_algebra
+   :parts: 1
+
 A general system with an equal number :math:`n` of input and output channels is described by the parameter triplet :math:`\left(\mathbf{S}, \mathbf{L}, H\right)`, where :math:`H` is the effective internal *Hamilton operator* for the system, :math:`\mathbf{L} = (L_1, L_2, \dots, L_n)^T` the *coupling vector* and :math:`\mathbf{S} = (S_{jk})_{j,k=1}^n` is the *scattering matrix* (whose elements are themselves operators).
 An element :math:`L_k` of the coupling vector is given by a system operator that describes the system's coupling to the :math:`k`-th input channel. Similarly, the elements :math:`S_{jk}` of the scattering matrix are in general given by system operators describing the scattering between different field channels :math:`j` and :math:`k`.
+
 The only conditions on the parameters are that the hamilton operator is self-adjoint and the scattering matrix is unitary:
 
 .. math::
@@ -292,22 +381,25 @@ The only conditions on the parameters are that the hamilton operator is self-adj
 
 We adhere to the conventions used by Gough and James, i.e. we write the imaginary unit is given by :math:`i := \sqrt{-1}`, the adjoint of an operator :math:`A` is given by :math:`A^*`, the element-wise adjoint of an operator matrix :math:`\mathbf{M}` is given by :math:`\mathbf{M}^\sharp`. Its transpose is given by :math:`\mathbf{M}^T` and the combination of these two operations, i.e. the adjoint operator matrix is given by :math:`\mathbf{M}^\dagger = (\mathbf{M}^T)^\sharp = (\mathbf{M}^\sharp)^T`.
 
+The matrices of operators occuring in the SLH formalism are implemented in the :mod:`~qnet.algebra.matrix_algebra` module.
+
+
 Fundamental Circuit Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The basic operations of the Gough-James circuit algebra are given by: 
+The basic operations of the Gough-James circuit algebra are given by:
 
 .. figure:: _static/plots/concatenation.png
 
-    :math:`Q_1 \boxplus Q_2` 
+    :math:`Q_1 \boxplus Q_2`
 
 .. figure:: _static/plots/series.png
 
-    :math:`Q_2 \lhd Q_1` 
+    :math:`Q_2 \lhd Q_1`
 
 .. figure:: _static/plots/feedback.png
 
-    :math:`[Q]_{1 \to 4}` 
+    :math:`[Q]_{1 \to 4}`
 
 
 In [GoughJames09]_, Gough and James have introduced two operations that allow the construction of quantum optical 'feedforward' networks:
@@ -354,7 +446,7 @@ Representation as Python objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This file features an implementation of the Gough-James circuit algebra rules as introduced in [GoughJames08]_ and [GoughJames09]_.
-Python objects that are of the :py:class:`qnet.algebra.circuit_algebra.Circuit` type have some of their operators overloaded to realize symbolic circuit algebra operations:
+Python objects that are of the :class:`~qnet.algebra.circuit_algebra.Circuit` type have some of their operators overloaded to realize symbolic circuit algebra operations::
 
     >>> A = CircuitSymbol('A', 2)
     >>> B = CircuitSymbol('B', 2)
@@ -370,33 +462,38 @@ For a thorough treatment of the circuit expression simplification rules see :ref
 Examples
 ^^^^^^^^
 
+.. warning::
+
+    This example is currently not up to date with respect to the latest
+    development version of QNET
+
 Extending the JaynesCummings problem above to an open system by adding collapse operators :math:`L_1 = \sqrt{\kappa} a` and :math:`L_2 = \sqrt{\gamma}\sigma.` ::
 
     def SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, namespace = ''):
-    
-        # create Fock- and Atom local spaces 
+
+        # create Fock- and Atom local spaces
         fock = local_space('fock', namespace = namespace)
         tls = local_space('tls', namespace = namespace, basis = ('e', 'g'))
-    
+
         # create representations of a and sigma
         a = Destroy(fock)
         sigma = LocalSigma(tls, 'g', 'e')
-    
+
         # Trivial scattering matrix
         S = identity_matrix(2)
-    
+
         # Collapse/Jump operators
         L1 = sqrt(kappa) * a                                    # Decay of cavity mode through mirror
         L2 = sqrt(gamma) * sigma                                # Atomic decay due to spontaneous emission into outside modes.
         L = Matrix([[L1], \
                     [L2]])
-    
+
         # Hamilton operator
         H = (Delta * sigma.dag() * sigma                        # detuning from atomic resonance
             + Theta * a.dag() * a                               # detuning from cavity resonance
             + I * g * (sigma * a.dag() - sigma.dag() * a)       # atom-mode coupling, I = sqrt(-1)
             + I * epsilon * (a - a.dag()))                      # external driving amplitude
-    
+
         return SLH(S, L, H)
 
 
@@ -419,79 +516,5 @@ and its overall SLH model is given by:
 
 .. math::
     \left( \begin{pmatrix} 1 & 0 & 0 \\ 0 & 0 & 1 \\ 0 & 1 & 0\end{pmatrix}, \begin{pmatrix}  \sqrt{\kappa} {a_{{{\rm fock}}_{{\rm jc1}}}} +  \sqrt{\kappa} {a_{{{\rm fock}}_{{\rm jc2}}}} \\  \sqrt{\gamma} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}_{{\rm jc2}}}} \\  \sqrt{\gamma} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}_{{\rm jc1}}}}\end{pmatrix},  \Delta {\Pi_{{\rm e}}^{{{\rm tls}}_{{\rm jc1}}}} +  \Delta {\Pi_{{\rm e}}^{{{\rm tls}}_{{\rm jc2}}}} +  \mathbf{\imath} g \left({a_{{{\rm fock}}_{{\rm jc1}}}^\dagger} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}_{{\rm jc1}}}} - {a_{{{\rm fock}}_{{\rm jc1}}}} {\sigma_{{\rm e},{\rm g}}^{{{\rm tls}}_{{\rm jc1}}}}\right) +  \mathbf{\imath} g \left({a_{{{\rm fock}}_{{\rm jc2}}}^\dagger} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}_{{\rm jc2}}}} - {a_{{{\rm fock}}_{{\rm jc2}}}} {\sigma_{{\rm e},{\rm g}}^{{{\rm tls}}_{{\rm jc2}}}}\right) +  \frac{1}{2} \mathbf{\imath} \left( \sqrt{\kappa} \sqrt{\overline{\kappa}} {a_{{{\rm fock}}_{{\rm jc1}}}^\dagger} {a_{{{\rm fock}}_{{\rm jc2}}}} -  \sqrt{\kappa} \sqrt{\overline{\kappa}} {a_{{{\rm fock}}_{{\rm jc1}}}} {a_{{{\rm fock}}_{{\rm jc2}}}^\dagger}\right) +  \mathbf{\imath} \epsilon \left( -{a_{{{\rm fock}}_{{\rm jc1}}}^\dagger} + {a_{{{\rm fock}}_{{\rm jc1}}}}\right) +  \mathbf{\imath} \epsilon \left( -{a_{{{\rm fock}}_{{\rm jc2}}}^\dagger} + {a_{{{\rm fock}}_{{\rm jc2}}}}\right) +  \Theta {a_{{{\rm fock}}_{{\rm jc1}}}^\dagger} {a_{{{\rm fock}}_{{\rm jc1}}}} +  \Theta {a_{{{\rm fock}}_{{\rm jc2}}}^\dagger} {a_{{{\rm fock}}_{{\rm jc2}}}} \right)
-
-
-
-
-.. _super_operator_algebra:
-
-The Super-Operator Algebra module
-=================================
-
-The specification of a quantum mechanics symbolic super-operator algebra.
-Each super-operator has an associated `space` property which gives the Hilbert space
-on which the operators the super-operator acts non-trivially are themselves acting non-trivially.
-
-The most basic way to construct super-operators is by lifting 'normal' operators to linear pre- and post-multiplication super-operators:
-
-    >>> A, B, C = OperatorSymbol("A", FullSpace), OperatorSymbol("B", FullSpace), OperatorSymbol("C", FullSpace)
-    >>> SPre(A) * B
-        A * B
-    >>> SPost(C) * B
-        B * C
-    >>> (SPre(A) * SPost(C)) * B
-        A * B * C
-    >>> (SPre(A) - SPost(A)) * B        # Linear super-operator associated with A that maps B --> [A,B]
-        A * B - B * A
-
-
-There exist some useful constants to specify neutral elements of super-operator addition and multiplication:
-
-    :py:class:`ZeroSuperOperator`
-    :py:class:`IdentitySuperOperator`
-
-Super operator objects can be added together in code via the infix '+' operator and multiplied with the infix '*' operator.
-They can also be added to or multiplied by scalar objects.
-In the first case, the scalar object is multiplied by the IdentitySuperOperator constant.
-
-Super operators are applied to operators by multiplying an operator with superoperator from the left:
-
-    >>> S = SuperOperatorSymbol("S", FullSpace)
-    >>> A = OperatorSymbol("A", FullSpace)
-    >>> S * A
-        SuperOperatorTimesOperator(S, A)
-    >>> isinstance(S*A, Operator)
-        True
-
-The result is an operator.
-
-
-.. _state_algebra:
-
-The State (Ket-) Algebra module
-===============================
-
-This module implements a basic Hilbert space state algebra where by default we represent states :math:`\psi` as 'Ket' vectors :math:`\psi \to | \psi \rangle`.
-However, any state can also be represented in its adjoint Bra form, since those representations are dual:
-
-.. math::
-    \psi \leftrightarrow | \psi \rangle \leftrightarrow \langle \psi |
-
-States can be added to states of the same Hilbert space. They can be multiplied by:
-
-* scalars, to just yield a rescaled state within the original space
-
-* operators that act on some of the states degrees of freedom (but none that aren't part of the state's Hilbert space)
-
-* other states that have a Hilbert space corresponding to a disjoint set of degrees of freedom
-
-Furthermore,
-
-* a ``Ket`` object can multiply a ``Bra`` of the same space from the left to yield a ``KetBra`` type operator.
-
-And conversely,
-
-* a ``Bra`` can multiply a ``Ket`` from the left to create a (partial) inner product object ``BraKet``.
-  Currently, only full inner products are supported, i.e. the ``Ket`` and ``Bra`` operands need to have the same space.
 
 

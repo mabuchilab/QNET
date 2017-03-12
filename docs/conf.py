@@ -67,6 +67,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosummary',
     'dollarmath',
+    'sphinx.ext.inheritance_diagram',
 ]
 
 intersphinx_mapping = {
