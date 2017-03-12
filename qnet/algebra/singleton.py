@@ -55,7 +55,9 @@ def singleton_object(cls):
     cls.__hash__ = lambda self: hash(cls)
     cls.__repr__ = lambda self: cls.__name__
     cls.__reduce__ = lambda self: cls.__name__
-    return cls()
+    obj = cls()
+    obj.__name__ = cls.__name__
+    return obj
 
 
 class Singleton(ABCMeta):
