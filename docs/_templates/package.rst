@@ -65,20 +65,25 @@
 {%- endfor %}
     {%- endif %}
 {%- endif %}
+
+    {%- if data %}
+
+    Data:
+
+    .. autosummary::
+        :nosignatures:
+{% for item in data %}
+        {{ item }}
+{%- endfor %}
+    {%- endif %}
+
 {% if all_refs %}
     ``__all__``: {{ all_refs|join(", ") }}
 {%- endif %}
 
-    {%- if data %}
-
-    Package data:
-
-{% for item in data %}
-    .. data:: {{ item }}
-{%- endfor %}
-{%- endif %}
 
 {% if members %}
     Reference
     ---------
-    {%- endif %}
+
+{%- endif %}

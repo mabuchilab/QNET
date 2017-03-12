@@ -11,8 +11,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-
-
 import sys
 import os
 import shlex
@@ -41,10 +39,6 @@ def run_apidoc(_):
     better_apidoc.main(
         ['better-apidoc', '-t', './_templates', '--force', '--no-toc',
          '--separate', '-o', './API', '../qnet'])
-
-
-def setup(app):
-    app.connect('builder-inited', run_apidoc)
 
 
 # -- General configuration -----------------------------------------------------
@@ -198,6 +192,21 @@ def iad_add_directive_header(self, sig):
 
 
 InstanceAttributeDocumenter.add_directive_header = iad_add_directive_header
+
+
+# -- Documenter for Singletons -------------------------------------------------
+
+from sphinx.ext.autodoc import DataDocumenter
+
+
+class SingletonDocumenter(DataDocumenter):
+    directivetype = 'data'
+    objtype = 'singleton'
+    priority = 20
+    @classmethod
+    def can_document_member(cls, member, membername, isattr, parent):
+        return isinstance(member, qnet.algebra.singleton.SingletonType)
+
 
 
 # -- Options for HTML output ---------------------------------------------------
@@ -411,3 +420,12 @@ epub_copyright = u'2012, Nikolas Tezak'
 
 # Options for autodoc
 autoclass_content = 'class'
+
+
+# -----------------------------------------------------------------------------
+
+
+def setup(app):
+    app.connect('builder-inited', run_apidoc)
+    app.add_autodocumenter(SingletonDocumenter)
+
