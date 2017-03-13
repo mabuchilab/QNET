@@ -24,10 +24,30 @@ singletons:
 
 * The :class:`Singleton` metaclass ensures that every class based on it
   produces the same object every time it is instantiated
-* The :func:`singleton_object` class decorator returns a singleton class
-  definition with the actual singleton object
+* The :func:`singleton_object` class decorator converts a singleton class
+  definition into the actual singleton object
 
 Singletons in QNET should use both of these.
+
+.. note::
+
+    In order for the Sphinx autodoc extension to correctly recognize
+    singletons, a custom documenter will have to be registered. The Sphinx
+    ``conf.py`` file must contain the following::
+
+        from sphinx.ext.autodoc import DataDocumenter
+
+        class SingletonDocumenter(DataDocumenter):
+            directivetype = 'data'
+            objtype = 'singleton'
+            priority = 20
+            @classmethod
+            def can_document_member(cls, member, membername, isattr, parent):
+                return isinstance(member, qnet.algebra.singleton.SingletonType)
+
+        def setup(app):
+            # ... (other hook settings)
+            app.add_autodocumenter(SingletonDocumenter)
 """
 from abc import ABCMeta
 
@@ -71,7 +91,8 @@ class Singleton(ABCMeta):
     >>> a is b
     True
 
-    You can check that a object is a singleton using
+    You can check that an object is a singleton using
+
     >>> isinstance(a, SingletonType)
     True
     """
