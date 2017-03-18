@@ -29,7 +29,7 @@ def test_instantiate_with_basis():
     """Test that a local space can be instantiated with an explicit basis"""
     hs1 = LocalSpace('1', basis=(0, 1))
     assert hs1.dimension == 2
-    assert hs1.basis == (0, 1)
+    assert hs1.basis == ('0', '1')
     hs1 = LocalSpace('1', basis=['g', 'e'])
     assert hs1.dimension == 2
     assert hs1.basis == ('g', 'e')
@@ -47,7 +47,7 @@ def test_basis_change():
     assert str(a) == str(b)
     assert a != b
     assert b.space.dimension == 3
-    assert b.space.basis == (-1, 0, 1)
+    assert b.space.basis == ('-1', '0', '1')
 
 
 def test_op_product_space():
@@ -84,13 +84,13 @@ def test_op_product_space():
     p = a * b
     assert p.space == hs1
     assert p.space.dimension == 3
-    assert p.space.basis == (0, 1, 2)
+    assert p.space.basis == ('0', '1', '2')
 
 
 def test_ket_product_space():
     """Test that the product of two kets has the correct Hilbert space"""
-    a = KetSymbol(0, hs=1)
-    b = KetSymbol(0, hs=2)
+    a = KetSymbol('0', hs=1)
+    b = KetSymbol('0', hs=2)
     p = a * b
     assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
     assert p.space.dimension is None

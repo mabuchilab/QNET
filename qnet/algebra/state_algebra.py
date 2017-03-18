@@ -18,7 +18,10 @@
 #
 ###########################################################################
 
-r"""This module implements a basic Hilbert space state algebra."""
+r"""This module implements the algebra of states in a Hilbert space
+
+For more details see :ref:`state_algebra`.
+"""
 import re
 from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
@@ -184,7 +187,9 @@ class KetSymbol(Ket, Expression):
 
     def __init__(self, label, *, hs):
         self._label = label
-        if not self._rx_label.match(str(label)):
+        if not isinstance(label, str):
+            raise TypeError("type of label must be str, not %s" % type(label))
+        if not self._rx_label.match(label):
             raise ValueError("label '%s' does not match pattern '%s'"
                              % (label, self._rx_label.pattern))
         if isinstance(hs, (str, int)):
@@ -316,21 +321,117 @@ class TrivialKet(Ket, Expression, metaclass=Singleton):
 
 
 class BasisKet(LocalKet):
-    """Local basis state, labeled by an integer or a string. Basis kets are
-    orthornormal
+    """Local basis state, identified by index or label.
 
-    :param LocalSpace hs: The local Hilbert space degree of freedom.
-    :param (str or int) label: The basis state label.
+    Basis kets are orthornormal, and the :meth:`next` and :meth:`prev` methods
+    can be used to move between basis states.
+
+    Args:
+        label_or_index (str or int): If `str`, the label of the basis state.
+            Must be an element of `hs.basis`. If `int`, the (zero-based) index
+            of the basis state. This works if `hs` has an unknown dimension
+        hs (LocalSpace): The Hilbert space in which the basis is defined
+
+    Raises:
+        ValueError: if `label_or_index` is not in the Hilbert space
+        TypeError: if `label_or_index` is not an `int` or `str`.
+        ~qnet.algebra.hilbert_space_algebra.BasisNotSetError: if
+            `label_or_index` is a `str` but no basis is defined for `hs`
+
+    Note:
+        Basis states that are instantiated via a label or via an index are
+        equivalent::
+
+            >>> hs = LocalSpace('tls', basis=('g', 'e'))
+            >>> BasisKet('g', hs=hs) == BasisKet(0, hs=hs)
+            True
+            >>> print(ascii(BasisKet(0, hs=hs)))
+            |g>_(tls)
     """
-    def __init__(self, label, *, hs):
+    def __init__(self, label_or_index, *, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
-        if hs.basis is not None:
-            if label not in hs.basis:
-                raise ValueError(
-                    ("label '%s' is an element of the basis %s of the "
-                     "Hilbert space '%s'") % (label, hs.basis, ascii(hs)))
+        if isinstance(label_or_index, str):
+            label = label_or_index
+            ind = hs.get_basis().index(label)  # raises BasisNotSetError
+        elif isinstance(label_or_index, int):
+            if hs.basis is not None:
+                label = hs.basis[label_or_index]
+            else:
+                label = str(label_or_index)
+            ind = label_or_index
+            if ind < 0:
+                raise ValueError("Index %d must be >= 0" % ind)
+            if hs.dimension is not None:
+                if ind >= hs.dimension:
+                    raise ValueError(
+                        "Index %s must be < the dimension %d of Hilbert "
+                        "space %s" % (ind, hs.dimension, ascii(hs)))
+        else:
+            raise TypeError("label_or_index must be an int or str, not %s"
+                            % type(label_or_index))
+        self._index = ind
         super().__init__(label, hs=hs)
+
+    @property
+    def args(self):
+        """Tuple containing `label_or_index` as its only element."""
+        if self.space.dimension is None:
+            return (self.index, )
+        else:
+            return (self.label, )
+
+    @property
+    def index(self):
+        """The index of the state in the Hilbert space basis
+
+        >>> hs =  LocalSpace('tls', basis=('g', 'e'))
+        >>> BasisKet('g', hs=hs).index
+        0
+        >>> BasisKet('e', hs=hs).index
+        1
+        >>> BasisKet(1, hs=hs).index
+        1
+        """
+        return self._index
+
+    def next(self, n=1):
+        """Move up by `n` steps in the Hilbert space::
+
+            >>> hs =  LocalSpace('tls', basis=('g', 'e'))
+            >>> ascii(BasisKet('g', hs=hs).next())
+            '|e>_(tls)'
+            >>> ascii(BasisKet(0, hs=hs).next())
+            '|e>_(tls)'
+
+        We can also go multiple steps:
+
+            >>> hs =  LocalSpace('ten', dimension=10)
+            >>> ascii(BasisKet(0, hs=hs).next(2))
+            '|2>_(ten)'
+
+        An increment that leads out of the Hilbert space returns zero::
+
+            >>> BasisKet(0, hs=hs).next(10)
+            ZeroKet
+
+        """
+        try:
+            next_index = self.space.next_basis_label_or_index(self.index, n)
+            return BasisKet(next_index, hs=self.space)
+        except IndexError:
+            return ZeroKet
+
+    def prev(self, n=1):
+        """Move down by `n` steps in the Hilbert space, cf. :meth:`next`.
+
+        >>> hs =  LocalSpace('3l', basis=('g', 'e', 'r'))
+        >>> ascii(BasisKet('r', hs=hs).prev(2))
+        '|g>_(3l)'
+        >>> BasisKet('r', hs=hs).prev(3)
+        ZeroKet
+        """
+        return self.next(n=-n)
 
 
 class CoherentStateKet(LocalKet):
@@ -1005,6 +1106,8 @@ def _algebraic_rules():
 
     ls = wc("ls", head=LocalSpace)
 
+    basisket = wc('basisket', BasisKet, kwargs={'hs': ls})
+
     ScalarTimesKet._rules += [
         (pattern_head(1, Psi),
             lambda Psi: Psi),
@@ -1036,21 +1139,29 @@ def _algebraic_rules():
             lambda ls, n, m, k: BasisKet(n, hs=ls) if m == k else ZeroKet),
 
         # harmonic oscillator
-        (pattern_head(pattern(Create, hs=ls), pattern(BasisKet, n, hs=ls)),
-            lambda ls, n: sqrt(n+1) * BasisKet(n + 1, hs=ls)),
-        (pattern_head(pattern(Destroy, hs=ls), pattern(BasisKet, n, hs=ls)),
-            lambda ls, n: sqrt(n) * BasisKet(n - 1, hs=ls)),
+        (pattern_head(pattern(Create, hs=ls), basisket),
+            lambda basisket, ls:
+            sqrt(basisket.index + 1) * basisket.next()),
+        (pattern_head(pattern(Destroy, hs=ls), basisket),
+            lambda basisket, ls:
+            sqrt(basisket.index) * basisket.prev()),
         (pattern_head(pattern(Destroy, hs=ls),
                       pattern(CoherentStateKet, u, hs=ls)),
             lambda ls, u: u * CoherentStateKet(u, hs=ls)),
 
         # spin
-        (pattern_head(pattern(Jplus, hs=ls), pattern(BasisKet, n, hs=ls)),
-            lambda ls, n: Jpjmcoeff(ls, n) * BasisKet(n+1, hs=ls)),
-        (pattern_head(pattern(Jminus, hs=ls), pattern(BasisKet, n, hs=ls)),
-            lambda ls, n: Jmjmcoeff(ls, n) * BasisKet(n-1, hs=ls)),
-        (pattern_head(pattern(Jz, hs=ls), pattern(BasisKet, n, hs=ls)),
-            lambda ls, n: Jzjmcoeff(ls, n) * BasisKet(n, hs=ls)),
+        (pattern_head(pattern(Jplus, hs=ls), basisket),
+            lambda basisket, ls:
+            Jpjmcoeff(basisket.space, basisket.index, shift=True) *
+            basisket.next()),
+        (pattern_head(pattern(Jminus, hs=ls), basisket),
+            lambda basisket, ls:
+            Jmjmcoeff(basisket.space, basisket.index, shift=True) *
+            basisket.prev()),
+        (pattern_head(pattern(Jz, hs=ls), basisket),
+            lambda basisket, ls:
+            Jzjmcoeff(basisket.space, basisket.index, shift=True) *
+            basisket),
 
         (pattern_head(A_local, Psi_tensor),
             lambda A, Psi: act_locally(A, Psi)),

@@ -241,25 +241,25 @@ class TestLocalOperatorRelations(unittest.TestCase):
         assert (jz*jm-jm*jz).expand() == -jm
         assert (jz*jp-jp*jz).expand() == jp
 
-        assert jp*LocalProjector(3, hs=h) == ZeroOperator
-        assert (jp*LocalProjector(2, hs=h) ==
-                sqrt(j*(j+1)-2*(2+1)) * LocalSigma(3, 2, hs=h))
+        assert jp*LocalProjector('3', hs=h) == ZeroOperator
+        assert (jp*LocalProjector('2', hs=h) ==
+                sqrt(j*(j+1)-2*(2+1)) * LocalSigma('3', '2', hs=h))
 
-        assert jm*LocalProjector(-3, hs=h) == ZeroOperator
-        assert (jm*LocalProjector(-2, hs=h) ==
-                sqrt(j*(j+1)-2*(2+1)) * LocalSigma(-3, -2, hs=h))
+        assert jm*LocalProjector('-3', hs=h) == ZeroOperator
+        assert (jm*LocalProjector('-2', hs=h) ==
+                sqrt(j*(j+1)-2*(2+1)) * LocalSigma('-3', '-2', hs=h))
 
-        assert jz*LocalProjector(-3, hs=h) == -3*LocalProjector(-3, hs=h)
+        assert jz*LocalProjector('-3', hs=h) == -3*LocalProjector('-3', hs=h)
 
-        assert LocalProjector(3, hs=h)*jm == ZeroOperator
-        assert (LocalProjector(2, hs=h)*jm ==
-                sqrt(j*(j+1)-2*(2+1))*LocalSigma(2, 3, hs=h))
+        assert LocalProjector('3', hs=h)*jm == ZeroOperator
+        assert (LocalProjector('2', hs=h)*jm ==
+                sqrt(j*(j+1)-2*(2+1))*LocalSigma('2', '3', hs=h))
 
-        assert LocalProjector(-3, hs=h)*jp == ZeroOperator
-        assert (LocalProjector(-2, hs=h)*jp ==
-                sqrt(j*(j+1)-2*(2+1))*LocalSigma(-2, -3, hs=h))
+        assert LocalProjector('-3', hs=h)*jp == ZeroOperator
+        assert (LocalProjector('-2', hs=h)*jp ==
+                sqrt(j*(j+1)-2*(2+1))*LocalSigma('-2', '-3', hs=h))
 
-        assert LocalProjector(-3, hs=h)*jz == -3*LocalProjector(-3, hs=h)
+        assert LocalProjector('-3', hs=h)*jz == -3*LocalProjector('-3', hs=h)
 
     def testPhase(self):
         assert Phase(5, hs=1).adjoint() == Phase(-5, hs=1)
@@ -362,9 +362,10 @@ class TestOperatorTrace(unittest.TestCase):
         assert op == ZeroOperator
         op = OperatorTrace.create(LocalSigma(1, 1, hs=1), over_space=1)
         assert op == IdentityOperator
-        op = OperatorTrace.create(LocalSigma('e', 'g', hs=1), over_space=1)
+        hs = LocalSpace(1, basis=('g', 'e'))
+        op = OperatorTrace.create(LocalSigma('e', 'g', hs=hs), over_space=hs)
         assert op == ZeroOperator
-        op = OperatorTrace.create(LocalSigma('e', 'e', hs=1), over_space=1)
+        op = OperatorTrace.create(LocalSigma('e', 'e', hs=hs), over_space=hs)
         assert op == IdentityOperator
 
     def testSimplificationMaxwellBloch(self):

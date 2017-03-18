@@ -126,9 +126,10 @@ def test_unicode_operator_elements():
     assert unicode(Destroy(hs=1)) == 'a\u0302\u207d\xb9\u207e'  # â⁽¹⁾
     assert unicode(Squeeze(0.5, hs=1)) == 'Squeeze\u207d\xb9\u207e(1/2)'
     #                                      Squeeze⁽¹⁾(1/2)
-    assert unicode(LocalSigma('e', 'g', hs=1)) == '\u03c3\u0302_e,g^(1)'
-    #                                             σ̂_e,g^(1)
-    assert (unicode(LocalSigma('e', 'e', hs=1)) ==
+    hs_tls = LocalSpace('1', basis=('g', 'e'))
+    assert unicode(LocalSigma('e', 'g', hs=hs_tls)) == '\u03c3\u0302_e,g^(1)'
+    #                                                  σ̂_e,g^(1)
+    assert (unicode(LocalSigma('e', 'e', hs=hs_tls)) ==
             '\u03a0\u0302\u2091\u207d\xb9\u207e')  # Π̂ₑ⁽¹⁾
 
 

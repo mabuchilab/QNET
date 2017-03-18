@@ -241,13 +241,13 @@ class LocalSpace(HilbertSpace, Expression):
         self._dimension = None
         if basis is None:
             if dimension is not None:
-                self._basis = tuple(range(int(dimension)))
+                self._basis = tuple([str(i) for i in range(int(dimension))])
                 self._dimension = int(dimension)
         else:
             if dimension is not None:
                 if dimension != len(basis):
                     raise ValueError("basis and dimension are incompatible")
-            self._basis = tuple(basis)
+            self._basis = tuple([str(label) for label in basis])
             self._dimension = len(basis)
         self._label = label
         if order_index is None:
@@ -272,6 +272,7 @@ class LocalSpace(HilbertSpace, Expression):
 
     @property
     def args(self):
+        """List of arguments, consisting only of `label`"""
         return (self._label, )
 
     @property
@@ -281,10 +282,12 @@ class LocalSpace(HilbertSpace, Expression):
 
     @property
     def basis(self):
+        """Tuple of basis labels, or None if no basis is set"""
         return self._basis
 
     @property
     def dimension(self):
+        """Dimension of the Hilbert space, or None if no basis is set"""
         return self._dimension
 
     @property
@@ -296,6 +299,7 @@ class LocalSpace(HilbertSpace, Expression):
         return self._minimal_kwargs
 
     def all_symbols(self):
+        """Empty list"""
         return {}
 
     def remove(self, other):
@@ -319,6 +323,45 @@ class LocalSpace(HilbertSpace, Expression):
         if other is FullSpace:
             return True
         return False
+
+    def next_basis_label_or_index(self, label_or_index, n=1):
+        """Given the label or index of a basis state, return the label/index of
+        the next basis state.
+
+        More generally, if `n` is given, return the `n`'th next basis state
+        label/index; `n` may also be negative to obtain previous basis state
+        labels/indices.
+
+        The return type is the same as the type of `label_or_index`.
+
+        Args:
+            label_or_index (int or str): If `int`, the index of a basis state;
+                if `str`, the label of a basis state
+            n (int): The increment
+
+        Raises:
+            IndexError: If going beyond the last or first basis state
+            ValueError: If `label` is not a label for any basis state in the
+                Hilbert space
+            BasisNotSetError: If the Hilbert space has no defined basis
+            TypeError: if `label_or_index` is neither a `str` nor an `int`
+        """
+        if isinstance(label_or_index, int):
+            new_index = label_or_index + n
+            if new_index < 0:
+                raise IndexError("index %d < 0" % new_index)
+            if self.dimension is not None:
+                if new_index >= self.dimension:
+                    raise IndexError("index %d out of range for basis %s"
+                                     % (new_index, self._basis))
+            return new_index
+        elif isinstance(label_or_index, str):
+            label_index = self.get_basis().index(label_or_index)
+            new_index = label_index + n
+            if (new_index < 0) or (new_index >= len(self._basis)):
+                raise IndexError("index %d out of range for basis %s"
+                                % (new_index, self._basis))
+            return self._basis[new_index]
 
 
 @singleton_object

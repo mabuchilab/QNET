@@ -104,12 +104,8 @@ def convert_to_sympy_matrix(expr, full_space=None):
             a = SympyCreate(n)
             return ((eta/2) * a**2 - (eta.conjugate()/2) * (a.H)**2).exp()
         elif isinstance(expr, LocalSigma):
-            j = expr.j
-            k = expr.k
-            j = expr.space.get_basis().index(j)
-            k = expr.space.get_basis().index(k)
-            ket = basis_state(j, n)
-            bra = basis_state(k, n).H
+            ket = basis_state(expr.index_j, n)
+            bra = basis_state(expr.index_k, n).H
             return ket * bra
         else:
             raise ValueError("Cannot convert '%s' of type %s"

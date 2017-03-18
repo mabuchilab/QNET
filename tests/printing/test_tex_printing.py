@@ -195,14 +195,19 @@ def test_tex_operator_elements():
             r'\hat{D}^{(1)}\left(\frac{1}{2}\right)')
     assert (tex(Squeeze(0.5, hs=1)) ==
             r'\text{Squeeze}^{(1)}\left(\frac{1}{2}\right)')
-    assert tex(LocalSigma('e', 'g', hs=1)) == r'\hat{\sigma}_{e,g}^{(1)}'
-    assert (tex(LocalSigma('excited', 'ground', hs=1)) ==
+    hs_tls = LocalSpace('1', basis=('g', 'e'))
+    assert tex(LocalSigma('e', 'g', hs=hs_tls)) == r'\hat{\sigma}_{e,g}^{(1)}'
+    hs_tls = LocalSpace('1', basis=('excited', 'ground'))
+    assert (tex(LocalSigma('excited', 'ground', hs=hs_tls)) ==
             r'\hat{\sigma}_{\text{excited},\text{ground}}^{(1)}')
-    assert (tex(LocalSigma('mu', 'nu', hs=1)) ==
+    hs_tls = LocalSpace('1', basis=('mu', 'nu'))
+    assert (tex(LocalSigma('mu', 'nu', hs=hs_tls)) ==
             r'\hat{\sigma}_{\mu,\nu}^{(1)}')
-    assert (tex(LocalSigma('excited', 'excited', hs=1)) ==
+    hs_tls = LocalSpace('1', basis=('excited', 'ground'))
+    assert (tex(LocalSigma('excited', 'excited', hs=hs_tls)) ==
             r'\hat{\Pi}_{\text{excited}}^{(1)}')
-    assert tex(LocalSigma('e', 'e', hs=1)) == r'\hat{\Pi}_{e}^{(1)}'
+    hs_tls = LocalSpace('1', basis=('g', 'e'))
+    assert tex(LocalSigma('e', 'e', hs=hs_tls)) == r'\hat{\Pi}_{e}^{(1)}'
 
 
 def test_tex_operator_operations():
@@ -257,7 +262,8 @@ def test_tex_ket_elements():
     assert tex(TrivialKet) == '1'
     assert (tex(BasisKet('e', hs=hs1)) ==
             r'\left|e\right\rangle_{(q_{1})}')
-    assert (tex(BasisKet('excited', hs=1)) ==
+    hs_tls = LocalSpace('1', basis=('excited', 'ground'))
+    assert (tex(BasisKet('excited', hs=hs_tls)) ==
             r'\left|\text{excited}\right\rangle_{(1)}')
     assert (tex(BasisKet(1, hs=1)) ==
             r'\left|1\right\rangle_{(1)}')

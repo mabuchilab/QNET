@@ -195,11 +195,11 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
         j = 3
         h = LocalSpace("j", basis=range(-j,j+1))
 
-        assert (Jplus(hs=h) * BasisKet(2, hs=h) ==
-                sqrt(j*(j+1)-2*(2+1)) * BasisKet(3, hs=h))
-        assert (Jminus(hs=h) * BasisKet(2, hs=h) ==
-                sqrt(j*(j+1)-2*(2-1)) * BasisKet(1, hs=h))
-        assert Jz(hs=h) * BasisKet(2, hs=h) == 2 * BasisKet(2, hs=h)
+        assert (Jplus(hs=h) * BasisKet('2', hs=h) ==
+                sqrt(j*(j+1)-2*(2+1)) * BasisKet('3', hs=h))
+        assert (Jminus(hs=h) * BasisKet('2', hs=h) ==
+                sqrt(j*(j+1)-2*(2-1)) * BasisKet('1', hs=h))
+        assert Jz(hs=h) * BasisKet('2', hs=h) == 2 * BasisKet('2', hs=h)
 
 
     def testPhase(self):

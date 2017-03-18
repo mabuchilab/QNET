@@ -136,8 +136,9 @@ def test_ascii_operator_elements():
     assert ascii(Phase(0.5, hs=1, identifier='Ph')) == 'Ph^(1)(1/2)'
     assert ascii(Displace(0.5, hs=1)) == 'D^(1)(1/2)'
     assert ascii(Squeeze(0.5, hs=1)) == 'Squeeze^(1)(1/2)'
-    assert ascii(LocalSigma('e', 'g', hs=1)) == 'sigma_e,g^(1)'
-    assert ascii(LocalSigma('e', 'e', hs=1)) == 'Pi_e^(1)'
+    hs_tls = LocalSpace('1', basis=('g', 'e'))
+    assert ascii(LocalSigma('e', 'g', hs=hs_tls)) == 'sigma_e,g^(1)'
+    assert ascii(LocalSigma('e', 'e', hs=hs_tls)) == 'Pi_e^(1)'
 
 
 def test_ascii_operator_operations():
@@ -185,8 +186,9 @@ def test_ascii_ket_elements():
     assert ascii(TrivialKet) == '1'
     assert ascii(BasisKet('e', hs=hs1)) == '|e>_(q1)'
     assert ascii(BasisKet(1, hs=1)) == '|1>_(1)'
+    assert ascii(BasisKet(1, hs=hs1)) == '|e>_(q1)'
     with pytest.raises(ValueError):
-        BasisKet(1, hs=hs1)
+        BasisKet('1', hs=hs1)
     assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2>_(1)'
 
 

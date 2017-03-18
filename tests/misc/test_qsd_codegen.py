@@ -86,15 +86,6 @@ def test_find_kets():
         find_kets({}, cls=LocalKet)
 
 
-def test_operator_hilbert_space_check():
-    circuit = SLH(identity_matrix(0), [], 1)
-    s = LocalSigma('g', 'e', hs="sys")
-    codegen = QSDCodeGen(circuit)
-    with pytest.raises(ValueError) as exc_info:
-        codegen._update_qsd_ops([s, ])
-    assert "not in the circuit's Hilbert space" in str(exc_info.value)
-
-
 def test_labeled_basis_op():
     """Check that in QSD code generation labeled basis states are translated
     into numbered basis states"""
