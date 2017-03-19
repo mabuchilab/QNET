@@ -175,6 +175,62 @@ class Operator(metaclass=ABCMeta):
         """
         return self._expand()
 
+    def expand_in_basis(self, basis_states=None, hermitian=False):
+        """Write the operator as an expansion into all :class:`KetBras
+        <qnet.algebra.state_algebra.KetBra>` spanned by `basis_states`.
+
+        Args:
+            basis_states (list or None): List of basis states
+                (:class:`~qnet.algebra.state_algebra.Ket` instances) into which
+                to expand the operator. If None, use the operator's
+                `space.basis_states`
+            hermitian (bool): If True, assume that the operator is Hermitian
+                and represent all elements in the lower triangle of the
+                expansion via :class:`OperatorPlusMinusCC`. This is meant to
+                enhance readability
+
+        Raises:
+            BasisNotSetError: If `basis_states` is None and the operator's
+                Hilbert space has no well-defined basis
+
+        Example:
+
+            >>> hs = LocalSpace(1, basis=('g', 'e'))
+            >>> op = LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs)
+            >>> print(ascii(op))
+            sigma_e,g^(1) + sigma_g,e^(1)
+            >>> print(ascii(op.expand_in_basis()))
+            |e><g|_(1) + |g><e|_(1)
+            >>> print(ascii(op.expand_in_basis(hermitian=True)))
+            |g><e|_(1) + c.c.
+        """
+        from qnet.algebra.state_algebra import KetBra  # avoid circ. import
+        if basis_states is None:
+            basis_states = list(self.space.basis_states)
+        else:
+            basis_states = list(basis_states)
+        diag_terms = []
+        terms = []
+        for i, ket_i in enumerate(basis_states):
+            for j, ket_j in enumerate(basis_states):
+                if i > j and hermitian:
+                    continue
+                op_ij = (ket_i.dag * self * ket_j).expand()
+                ketbra = KetBra(ket_i, ket_j)
+                term = op_ij * ketbra
+                if term is not ZeroOperator:
+                    if i == j:
+                        diag_terms.append(op_ij * ketbra)
+                    else:
+                        terms.append(op_ij * ketbra)
+        if hermitian:
+            res = OperatorPlus(*diag_terms)
+            if len(terms) > 0:
+                res = res + OperatorPlusMinusCC(OperatorPlus(*terms))
+            return res
+        else:
+            return OperatorPlus(*diag_terms) + OperatorPlus(*terms)
+
     @abstractmethod
     def _expand(self):
         raise NotImplementedError(self.__class__.__name__)
