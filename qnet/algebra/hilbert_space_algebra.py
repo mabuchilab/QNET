@@ -156,8 +156,19 @@ class HilbertSpace(metaclass=ABCMeta):
 
     @property
     def basis(self):
-        """Basis of the the Hilbert space, or None if no basis is set"""
+        """Basis labels of the the Hilbert space, or None if no basis is set"""
         return None
+
+    @property
+    def basis_states(self):
+        """Yield the states (:class:`Ket` instances) that form the canonical
+        basis of the Hilbert space
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        raise BasisNotSetError(
+            "Hilbert space %s has no defined basis" % str(self))
 
     def get_basis(self, raise_basis_not_set_error=True):
         """Return the `basis` property, but if `raise_basis_not_set_error` is
@@ -284,6 +295,18 @@ class LocalSpace(HilbertSpace, Expression):
     def basis(self):
         """Tuple of basis labels, or None if no basis is set"""
         return self._basis
+
+    @property
+    def basis_states(self):
+        """Yield the states (:class:`BasisKet` instances) that form the
+        canonical basis of the Hilbert space
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        from qnet.algebra.state_algebra import BasisKet  # avoid circ. import
+        for label in self.get_basis():
+            yield BasisKet(label, hs=self)
 
     @property
     def dimension(self):
@@ -487,8 +510,8 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
 
 
 class ProductSpace(HilbertSpace, Operation):
-    """Tensor product space class for an arbitrary number of LocalSpace
-    factors.
+    """Tensor product space class for an arbitrary number of
+    :class:`LocalSpace` factors.
 
     >>> hs1 = LocalSpace('1', basis=(0,1))
     >>> hs2 = LocalSpace('2', basis=(0,1))
@@ -532,8 +555,24 @@ class ProductSpace(HilbertSpace, Operation):
 
     @property
     def basis(self):
-        """Basis of the ProductSpace, from the bases of the operands"""
+        """Basis labels of the ProductSpace, from the bases of the operands"""
         return self._basis
+
+    @property
+    def basis_states(self):
+        """Yield the states (:class:`TensorKet` instances) that form the
+        canonical basis of the Hilbert space
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        from qnet.algebra.state_algebra import BasisKet, TensorKet
+        # importing locally avoids circular import
+        ls_bases = [ls.get_basis() for ls in self.local_factors]
+        for label_tuple in cartesian_product(*ls_bases):
+            yield TensorKet(
+                *[BasisKet(label, hs=ls) for (ls, label)
+                  in zip(self.local_factors, label_tuple)])
 
     @property
     def dimension(self):
@@ -554,7 +593,7 @@ class ProductSpace(HilbertSpace, Operation):
 
     @property
     def local_factors(self):
-        """The LocalSpace instances that make up the product"""
+        """The :class:`LocalSpace` instances that make up the product"""
         return self.operands
 
     @classmethod

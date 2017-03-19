@@ -22,7 +22,7 @@ import pytest
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, ProductSpace, TrivialSpace, FullSpace)
 from qnet.algebra.operator_algebra import Destroy
-from qnet.algebra.state_algebra import KetSymbol
+from qnet.algebra.state_algebra import KetSymbol, BasisKet, TensorKet
 
 
 def test_instantiate_with_basis():
@@ -175,3 +175,34 @@ def test_operations():
     assert (h12 / h13) * (h13 & h12) == h12
     assert h1 & h12 == h1
 
+
+def test_hs_basis_states():
+    """Test that we can obtain the basis states of a Hilbert space"""
+    hs1 = LocalSpace('1', basis=['g', 'e'])
+    hs2 = LocalSpace('2', dimension=2)
+    hs3 = LocalSpace('3', dimension=2)
+    hs4 = LocalSpace('4', dimension=2)
+
+    g_1, e_1 = hs1.basis_states
+    assert g_1 == BasisKet('g', hs=hs1)
+    assert e_1 == BasisKet('e', hs=hs1)
+
+    zero_2, one_2 = hs2.basis_states
+    assert zero_2 == BasisKet(0, hs=hs2)
+    assert one_2 == BasisKet(1, hs=hs2)
+
+    hs_prod = hs1 * hs2
+    g0, g1, e0, e1 = list(hs_prod.basis_states)
+    assert g0 == g_1 * zero_2
+    assert g1 == g_1 * one_2
+    assert e0 == e_1 * zero_2
+    assert e1 == e_1 * one_2
+
+    hs_prod4 = hs1 * hs2 * hs3 * hs4
+    basis = hs_prod4.basis_states
+    assert next(basis) == (BasisKet('g', hs=hs1) * BasisKet(0, hs=hs2) *
+                           BasisKet(0, hs=hs3) * BasisKet(0, hs=hs4))
+    assert next(basis) == (BasisKet('g', hs=hs1) * BasisKet(0, hs=hs2) *
+                           BasisKet(0, hs=hs3) * BasisKet(1, hs=hs4))
+    assert next(basis) == (BasisKet('g', hs=hs1) * BasisKet(0, hs=hs2) *
+                           BasisKet(1, hs=hs3) * BasisKet(0, hs=hs4))
