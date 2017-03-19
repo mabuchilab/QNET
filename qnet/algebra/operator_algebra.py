@@ -920,7 +920,8 @@ class OperatorPlus(OperatorOperation):
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
         return printer.render_sum(
-                self.operands, plus_sym='+', minus_sym='-', adjoint=adjoint)
+                self.operands, plus_sym='+', minus_sym='-', adjoint=adjoint,
+                lower_classes=(OperatorPlusMinusCC, ))
 
 
 class OperatorTimes(OperatorOperation):

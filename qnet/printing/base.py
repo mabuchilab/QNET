@@ -337,7 +337,7 @@ class Printer(metaclass=ABCMeta):
     @classmethod
     def render_sum(
             cls, operands, plus_sym='+', minus_sym='-', padding=' ',
-            adjoint=False):
+            adjoint=False, lower_classes=()):
         """Render a sum"""
         parts = []
         if len(plus_sym.strip()) > 0:
@@ -345,6 +345,8 @@ class Printer(metaclass=ABCMeta):
         padded_minus_sym = padding + minus_sym.strip() + padding
         for i_op, operand in enumerate(operands):
             part = cls.render(operand, adjoint=adjoint).strip()
+            if isinstance(operand, lower_classes):
+                part = cls.par_left + part + cls.par_right
             if i_op > 0:
                 if part.startswith(minus_sym):
                     parts.append(padded_minus_sym)
