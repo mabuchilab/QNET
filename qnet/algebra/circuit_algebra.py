@@ -1453,11 +1453,9 @@ class Feedback(Circuit, Operation):
             raise ValueError()
 
         n = circuit.cdim
-        if not n:
-            raise ValueError()
-
-        if n == 1:
-            raise ValueError()
+        if n <= 1:
+            raise ValueError("circuit dimension %d needs to be > 1 in order "
+                             "to apply a feedback" % n)
 
         if isinstance(circuit, cls.delegate_to_method):
             return circuit._feedback(out_port=out_port, in_port=in_port)
