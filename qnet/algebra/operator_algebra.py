@@ -853,12 +853,14 @@ class LocalSigma(LocalOperator):
         self.k = k  #: label/index of eigenstate  $\ket{k}$
         for jk in [j, k]:
             if isinstance(jk, str):
-                if jk in hs.get_basis():  # ensures that hs has a basis
-                    pass
+                if not hs.has_basis:
+                    raise ValueError(
+                        "Invalid to give label %s for Hilbert space %s that "
+                        "has no basis" % (jk, hs))
             elif isinstance(jk, int):
                 if jk < 0:
                     raise ValueError("Index j/k=%s must be >= 0" % jk)
-                if hs.dimension is not None:
+                if hs.has_basis:
                     if jk >= hs.dimension:
                         raise ValueError(
                             "Index j/k=%s must be < the Hilbert space "
@@ -897,7 +899,7 @@ class LocalSigma(LocalOperator):
         if isinstance(self.j, int):
             return self.j
         else:
-            return self.space.get_basis().index(self.j)
+            return self.space.basis_labels.index(self.j)
 
     @property
     def index_k(self):
@@ -905,7 +907,7 @@ class LocalSigma(LocalOperator):
         if isinstance(self.k, int):
             return self.k
         else:
-            return self.space.get_basis().index(self.k)
+            return self.space.basis_labels.index(self.k)
 
     def raise_jk(self, j_incr=0, k_incr=0):
         r'''Return a new :class:`LocalSigma` instance with incremented `j`,
@@ -1493,7 +1495,7 @@ def factor_for_trace(ls, op):
                                              over_space=ls))
         raise CannotSimplify()
     if ls & op.space == TrivialSpace:
-        return ls.get_dimension() * op
+        return ls.dimension * op
     if ls < op.space and isinstance(op, OperatorTimes):
         pull_out = [o for o in op.operands if (o.space & ls) == TrivialSpace]
 
@@ -1655,7 +1657,7 @@ def Jpjmcoeff(ls, m, shift=False):
             obtain the quantum number $m$)
     '''
     try:
-        n = ls.get_dimension()
+        n = ls.dimension
         s = sympify(n-1)/2
         assert n == int(2*s + 1)
         if isinstance(m, str):
@@ -1680,7 +1682,7 @@ def Jzjmcoeff(ls, m, shift):
     See also :func:`Jpjmcoeff`.
     '''
     try:
-        n = ls.get_dimension()
+        n = ls.dimension
         s = sympify(n-1)/2
         assert n == int(2*s + 1)
         if isinstance(m, str):
@@ -1706,7 +1708,7 @@ def Jmjmcoeff(ls, m, shift):
     See also :func:`Jpjmcoeff`.
     '''
     try:
-        n = ls.get_dimension()
+        n = ls.dimension
         s = sympify(n-1)/2
         assert n == int(2*s + 1)
         if isinstance(m, str):
@@ -2001,7 +2003,7 @@ def _algebraic_rules():
         (pattern_head(ZeroOperator, over_space=h1),
             lambda h1: ZeroOperator),
         (pattern_head(IdentityOperator, over_space=h1),
-            lambda h1: h1.get_dimension() * IdentityOperator),
+            lambda h1: h1.dimension * IdentityOperator),
         (pattern_head(A_plus, over_space=h1),
             lambda h1, A: OperatorPlus.create(
                 *[OperatorTrace.create(o, over_space=h1)

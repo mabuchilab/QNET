@@ -20,19 +20,20 @@
 import pytest
 
 from qnet.algebra.hilbert_space_algebra import (
-        LocalSpace, ProductSpace, TrivialSpace, FullSpace)
+        LocalSpace, ProductSpace, TrivialSpace, FullSpace, BasisNotSetError)
 from qnet.algebra.operator_algebra import Destroy
-from qnet.algebra.state_algebra import KetSymbol, BasisKet, TensorKet
+from qnet.algebra.state_algebra import (
+        KetSymbol, BasisKet, TensorKet, TrivialKet)
 
 
 def test_instantiate_with_basis():
     """Test that a local space can be instantiated with an explicit basis"""
     hs1 = LocalSpace('1', basis=(0, 1))
     assert hs1.dimension == 2
-    assert hs1.basis == ('0', '1')
+    assert hs1.basis_labels == ('0', '1')
     hs1 = LocalSpace('1', basis=['g', 'e'])
     assert hs1.dimension == 2
-    assert hs1.basis == ('g', 'e')
+    assert hs1.basis_labels == ('g', 'e')
 
 
 def test_basis_change():
@@ -40,14 +41,13 @@ def test_basis_change():
     through substitution"""
     a = Destroy(hs=1)
     assert a.space == LocalSpace('1')
-    assert a.space.basis is None
-    assert a.space.dimension is None
+    assert not a.space.has_basis
     subs = {LocalSpace('1'): LocalSpace('1', basis=(-1, 0, 1))}
     b = a.substitute(subs)
     assert str(a) == str(b)
     assert a != b
     assert b.space.dimension == 3
-    assert b.space.basis == ('-1', '0', '1')
+    assert b.space.basis_labels == ('-1', '0', '1')
 
 
 def test_op_product_space():
@@ -56,15 +56,13 @@ def test_op_product_space():
     b = Destroy(hs=2)
     p = a * b
     assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
-    assert p.space.dimension is None
-    assert p.space.basis is None
+    assert not p.space.has_basis
 
     hs1 = LocalSpace(1, dimension=3)
     a = a.substitute({LocalSpace(1): hs1})
     p = a * b
     assert p.space == ProductSpace(hs1, LocalSpace(2))
-    assert p.space.dimension is None
-    assert p.space.basis is None
+    assert not p.space.has_basis
 
     hs2 = LocalSpace(2, dimension=2)
     b = b.substitute({LocalSpace(2): hs2})
@@ -72,19 +70,19 @@ def test_op_product_space():
     ps = ProductSpace(hs1, hs2)
     assert p.space == ps
     assert p.space.dimension == 6
-    assert p.space.basis == ('0,0', '0,1', '1,0', '1,1', '2,0', '2,1')
+    assert p.space.basis_labels == ('0,0', '0,1', '1,0', '1,1', '2,0', '2,1')
 
     hs1_2 = LocalSpace(1, basis=('g', 'e'))
     hs2_2 = LocalSpace(2, basis=('g', 'e'))
     p = p.substitute({hs1: hs1_2, hs2: hs2_2})
     assert p.space.dimension == 4
-    assert p.space.basis == ('g,g', 'g,e', 'e,g', 'e,e')
+    assert p.space.basis_labels == ('g,g', 'g,e', 'e,g', 'e,e')
 
     b = b.substitute({hs2: hs1})
     p = a * b
     assert p.space == hs1
     assert p.space.dimension == 3
-    assert p.space.basis == ('0', '1', '2')
+    assert p.space.basis_labels == ('0', '1', '2')
 
 
 def test_ket_product_space():
@@ -93,15 +91,13 @@ def test_ket_product_space():
     b = KetSymbol('0', hs=2)
     p = a * b
     assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
-    assert p.space.dimension is None
-    assert p.space.basis is None
+    assert not p.space.has_basis
 
     hs1 = LocalSpace(1, dimension=3)
     a = a.substitute({LocalSpace(1): hs1})
     p = a * b
     assert p.space == ProductSpace(hs1, LocalSpace(2))
-    assert p.space.dimension is None
-    assert p.space.basis is None
+    assert not p.space.has_basis
 
     hs2 = LocalSpace(2, dimension=2)
     b = b.substitute({LocalSpace(2): hs2})
@@ -109,7 +105,7 @@ def test_ket_product_space():
     ps = ProductSpace(hs1, hs2)
     assert p.space == ps
     assert p.space.dimension == 6
-    assert p.space.basis == ('0,0', '0,1', '1,0', '1,1', '2,0', '2,1')
+    assert p.space.basis_labels == ('0,0', '0,1', '1,0', '1,1', '2,0', '2,1')
 
 
 def test_product_space():
@@ -141,7 +137,8 @@ def test_dimension():
     h4 = LocalSpace("h4", dimension = 100)
 
     assert (h1*h2).dimension == h1.dimension * h2.dimension
-    assert h3.dimension is None
+    with pytest.raises(BasisNotSetError):
+        h3.dimension
     assert h4.dimension == 100
 
 
@@ -178,14 +175,31 @@ def test_operations():
 
 def test_hs_basis_states():
     """Test that we can obtain the basis states of a Hilbert space"""
+    hs0 = LocalSpace('0')
     hs1 = LocalSpace('1', basis=['g', 'e'])
     hs2 = LocalSpace('2', dimension=2)
     hs3 = LocalSpace('3', dimension=2)
     hs4 = LocalSpace('4', dimension=2)
 
+    assert isinstance(hs0.basis_state(0), BasisKet)
+    assert isinstance(hs0.basis_state(1), BasisKet)
+    with pytest.raises(BasisNotSetError):
+        _ = hs0.basis_state('0')
+    with pytest.raises(BasisNotSetError):
+        _ = hs0.dimension
+
     g_1, e_1 = hs1.basis_states
+    assert hs1.dimension == 2
+    assert hs1.basis_labels == ('g', 'e')
     assert g_1 == BasisKet('g', hs=hs1)
     assert e_1 == BasisKet('e', hs=hs1)
+    assert g_1 == hs1.basis_state('g')
+    assert g_1 == hs1.basis_state(0)
+    assert e_1 == hs1.basis_state(1)
+    with pytest.raises(IndexError):
+        _ = hs1.basis_state(2)
+    with pytest.raises(KeyError):
+        _ = hs1.basis_state('r')
 
     zero_2, one_2 = hs2.basis_states
     assert zero_2 == BasisKet(0, hs=hs2)
@@ -197,6 +211,14 @@ def test_hs_basis_states():
     assert g1 == g_1 * one_2
     assert e0 == e_1 * zero_2
     assert e1 == e_1 * one_2
+    assert g0 == hs_prod.basis_state(0)
+    assert e1 == hs_prod.basis_state(3)
+    assert e1 == hs_prod.basis_state('e,1')
+    assert hs_prod.basis_labels == ('g,0', 'g,1', 'e,0', 'e,1')
+    with pytest.raises(IndexError):
+        _ = hs_prod.basis_state(4)
+    with pytest.raises(KeyError):
+        _ = hs_prod.basis_state('g0')
 
     hs_prod4 = hs1 * hs2 * hs3 * hs4
     basis = hs_prod4.basis_states
@@ -206,3 +228,12 @@ def test_hs_basis_states():
                            BasisKet(0, hs=hs3) * BasisKet(1, hs=hs4))
     assert next(basis) == (BasisKet('g', hs=hs1) * BasisKet(0, hs=hs2) *
                            BasisKet(1, hs=hs3) * BasisKet(0, hs=hs4))
+
+    assert TrivialSpace.dimension == 1
+    assert list(TrivialSpace.basis_states) == [TrivialKet, ]
+    assert TrivialSpace.basis_state(0) == TrivialKet
+
+    with pytest.raises(BasisNotSetError):
+        _ = FullSpace.dimension
+    with pytest.raises(BasisNotSetError):
+        _ = FullSpace.basis_states

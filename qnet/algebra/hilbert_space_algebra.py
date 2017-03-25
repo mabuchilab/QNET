@@ -139,30 +139,7 @@ class HilbertSpace(metaclass=ABCMeta):
 
     @property
     def dimension(self):
-        """The full dimension of the Hilbert space (or None) if the dimension
-        is not known"""
-        return None
-
-    def get_dimension(self, raise_basis_not_set_error=True):
-        """Return the `dimension` property, but if `raise_basis_not_set_error`
-        is True, raise a `BasisNotSetError` if no basis is set, instead of
-        returning None"""
-        dimension = self.dimension
-        if dimension is None:
-            if raise_basis_not_set_error:
-                raise BasisNotSetError(
-                    "Hilbert space %s has no defined basis" % str(self))
-        return dimension
-
-    @property
-    def basis(self):
-        """Basis labels of the the Hilbert space, or None if no basis is set"""
-        return None
-
-    @property
-    def basis_states(self):
-        """Yield the states (:class:`Ket` instances) that form the canonical
-        basis of the Hilbert space
+        """Full dimension of the Hilbert space.
 
         Raises:
             BasisNotSetError: if the Hilbert space has no defined basis
@@ -170,21 +147,47 @@ class HilbertSpace(metaclass=ABCMeta):
         raise BasisNotSetError(
             "Hilbert space %s has no defined basis" % str(self))
 
-    def get_basis(self, raise_basis_not_set_error=True):
-        """Return the `basis` property, but if `raise_basis_not_set_error` is
-        True, raise a `BasisNotSetError` if no basis is set, instead of
-        returning None"""
-        basis = self.basis
-        if basis is None:
-            if raise_basis_not_set_error:
-                raise BasisNotSetError(
-                    "Hilbert space %s has no defined basis" % str(self))
-        return basis
+    @property
+    def has_basis(self):
+        """True if the Hilbert space has a basis"""
+        return False
+
+    @property
+    def basis_states(self):
+        """Yield an iterator over the states (:class:`Ket` instances) that form
+        the canonical basis of the Hilbert space
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        raise BasisNotSetError(
+            "Hilbert space %s has no defined basis" % str(self))
+
+    def basis_state(self, index_or_label):
+        """Return the basis state with the given index or label.
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+            IndexError: if there is no basis state with the given index
+            KeyError: if there is not basis state with the given label
+        """
+        raise BasisNotSetError(
+            "Hilbert space %s has no defined basis" % str(self))
+
+    @property
+    def basis_labels(self):
+        """Tuple of basis labels.
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        raise BasisNotSetError(
+            "Hilbert space %s has no defined basis" % str(self))
 
     @abstractmethod
     def is_strict_subfactor_of(self, other):
         """Test whether a Hilbert space occures as a strict sub-factor in
-        (larger) Hilbert space"""
+        a (larger) Hilbert space"""
         raise NotImplementedError(self.__class__.__name__)
 
     def _render(self, fmt, adjoint=False):
@@ -266,7 +269,7 @@ class LocalSpace(HilbertSpace, Expression):
         else:
             self._order_index = int(order_index)
         self._order_key = KeyTuple((self._order_index, self._label,
-                                    str(self.dimension), str(self.basis)))
+                                    str(self._dimension), self._basis))
         self._kwargs = OrderedDict([('basis', self._basis),
                                     ('dimension', self._dimension),
                                     ('order_index', order_index)])
@@ -292,26 +295,63 @@ class LocalSpace(HilbertSpace, Expression):
         return self._label
 
     @property
-    def basis(self):
-        """Tuple of basis labels, or None if no basis is set"""
-        return self._basis
+    def has_basis(self):
+        """True if the Hilbert space has a basis"""
+        return self._basis is not None
 
     @property
     def basis_states(self):
-        """Yield the states (:class:`BasisKet` instances) that form the
-        canonical basis of the Hilbert space
+        """Yield an iterator over the states (:class:`BasisKet` instances) that
+        form the canonical basis of the Hilbert space
 
         Raises:
             BasisNotSetError: if the Hilbert space has no defined basis
         """
         from qnet.algebra.state_algebra import BasisKet  # avoid circ. import
-        for label in self.get_basis():
+        for label in self.basis_labels:
             yield BasisKet(label, hs=self)
+
+    def basis_state(self, index_or_label):
+        """Return the basis state with the given index or label.
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+            IndexError: if there is no basis state with the given index
+            KeyError: if there is not basis state with the given label
+        """
+        from qnet.algebra.state_algebra import BasisKet  # avoid circ. import
+        try:
+            return BasisKet(index_or_label, hs=self)
+        except ValueError as exc_info:
+            if isinstance(index_or_label, int):
+                raise IndexError(str(exc_info))
+            else:
+                raise KeyError(str(exc_info))
+
+    @property
+    def basis_labels(self):
+        """Tuple of basis labels.
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        if self._basis is None:
+            raise BasisNotSetError(
+                "Hilbert space %s has no defined basis" % str(self))
+        return self._basis
 
     @property
     def dimension(self):
-        """Dimension of the Hilbert space, or None if no basis is set"""
-        return self._dimension
+        """Dimension of the Hilbert space.
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        if self._dimension is not None:
+            return self._dimension
+        else:
+            raise BasisNotSetError(
+                "Hilbert space %s has no defined basis" % str(self))
 
     @property
     def kwargs(self):
@@ -373,17 +413,17 @@ class LocalSpace(HilbertSpace, Expression):
             new_index = label_or_index + n
             if new_index < 0:
                 raise IndexError("index %d < 0" % new_index)
-            if self.dimension is not None:
+            if self.has_basis:
                 if new_index >= self.dimension:
                     raise IndexError("index %d out of range for basis %s"
                                      % (new_index, self._basis))
             return new_index
         elif isinstance(label_or_index, str):
-            label_index = self.get_basis().index(label_or_index)
+            label_index = self.basis_labels.index(label_or_index)
             new_index = label_index + n
             if (new_index < 0) or (new_index >= len(self._basis)):
                 raise IndexError("index %d out of range for basis %s"
-                                % (new_index, self._basis))
+                                 % (new_index, self._basis))
             return self._basis[new_index]
 
 
@@ -409,8 +449,41 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
         return 1
 
     @property
-    def basis(self):
-        return ("empty", )
+    def has_basis(self):
+        """True, by definition (the basis is defined as
+        :obj:`~qnet.algebra.state_algebra.TrivialKet`)"""
+        return True
+
+    @property
+    def basis_states(self):
+        """Yield the :obj:`~qnet.algebra.state_algebra.TrivialKet`"""
+        from qnet.algebra.state_algebra import TrivialKet
+        yield TrivialKet
+
+    def basis_state(self, index_or_label):
+        """Return the basis state with the given index 0 or label "0".
+
+        All other indices or labels raise an exception.
+
+        Raises:
+            IndexError: if index is different from 0
+            KeyError: if label is differnt from ""
+        """
+        from qnet.algebra.state_algebra import TrivialKet
+        if index_or_label in [0, "0"]:
+            return TrivialKet
+        else:
+            if isinstance(index_or_label, int):
+                raise IndexError("No index %d in basis for TrivialSpace"
+                                 % index_or_label)
+            else:
+                raise KeyError("No label %d in basis for TrivialSpace"
+                                % index_or_label)
+
+    @property
+    def basis_labels(self):
+        """The one-element tuple containing the label '0'"""
+        return tuple(["0", ])
 
     def all_symbols(self):
         """Empty set (no symbols)"""
@@ -454,7 +527,11 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
 @singleton_object
 class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
     """The 'full space', i.e. a Hilbert space that includes any other Hilbert
-    space as a tensor factor."""
+    space as a tensor factor.
+
+    The `FullSpace` has no defined basis, any related properties will raise
+    :class:`BasisNotSetError`
+    """
 
     @property
     def args(self):
@@ -516,11 +593,10 @@ class ProductSpace(HilbertSpace, Operation):
     >>> hs1 = LocalSpace('1', basis=(0,1))
     >>> hs2 = LocalSpace('2', basis=(0,1))
     >>> hs = hs1 * hs2
-    >>> hs.basis
+    >>> hs.basis_labels
     ('0,0', '0,1', '1,0', '1,1')
     """
 
-    signature = (HilbertSpace, '*'), {}
     neutral_element = TrivialSpace
     _simplifications = [empty_trivial, assoc, convert_to_spaces, idem,
                         filter_neutral]
@@ -531,12 +607,12 @@ class ProductSpace(HilbertSpace, Operation):
         try:
             self._dimension = functools.reduce(
                     operator.mul,
-                    [ls.get_dimension() for ls in local_spaces], 1)
+                    [ls.dimension for ls in local_spaces], 1)
         except BasisNotSetError:
             self._dimension = None
-        # determine the basis automatically
+        # determine the basis labels automatically
         try:
-            ls_bases = [ls.get_basis() for ls in local_spaces]
+            ls_bases = [ls.basis_labels for ls in local_spaces]
             basis = []
             for label_tuple in cartesian_product(*ls_bases):
                 basis.append(",".join([str(l) for l in label_tuple]))
@@ -554,29 +630,84 @@ class ProductSpace(HilbertSpace, Operation):
         return super().create(*local_spaces)
 
     @property
-    def basis(self):
-        """Basis labels of the ProductSpace, from the bases of the operands"""
-        return self._basis
+    def has_basis(self):
+        """True if the all the local factors of the `ProductSpace` have a
+        defined basis"""
+        return self._basis is not None
 
     @property
     def basis_states(self):
-        """Yield the states (:class:`TensorKet` instances) that form the
-        canonical basis of the Hilbert space
+        """Yield an iterator over the states (:class:`TensorKet` instances)
+        that form the canonical basis of the Hilbert space
 
         Raises:
             BasisNotSetError: if the Hilbert space has no defined basis
         """
         from qnet.algebra.state_algebra import BasisKet, TensorKet
         # importing locally avoids circular import
-        ls_bases = [ls.get_basis() for ls in self.local_factors]
+        ls_bases = [ls.basis_labels for ls in self.local_factors]
         for label_tuple in cartesian_product(*ls_bases):
             yield TensorKet(
                 *[BasisKet(label, hs=ls) for (ls, label)
                   in zip(self.local_factors, label_tuple)])
 
     @property
+    def basis_labels(self):
+        """Tuple of basis labels. Each basis label consists of the labels of
+        the :class:`BasisKet` states that factor the basis state, separated by
+        commas.
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        if self._basis is None:
+            raise BasisNotSetError(
+                "Hilbert space %s has no defined basis" % str(self))
+        return self._basis
+
+    def basis_state(self, index_or_label):
+        """Return the basis state with the given index or label.
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+            IndexError: if there is no basis state with the given index
+            KeyError: if there is not basis state with the given label
+        """
+        from qnet.algebra.state_algebra import BasisKet, TensorKet
+        if isinstance(index_or_label, int):  # index
+            ls_bases = [ls.basis_labels for ls in self.local_factors]
+            label_tuple = list(cartesian_product(*ls_bases))[index_or_label]
+            try:
+                return TensorKet(
+                    *[BasisKet(label, hs=ls) for (ls, label)
+                        in zip(self.local_factors, label_tuple)])
+            except ValueError as exc_info:
+                raise IndexError(str(exc_info))
+        else:  # label
+            local_labels = index_or_label.split(",")
+            if len(local_labels) != len(self.local_factors):
+                raise KeyError(
+                    "label %s for Hilbert space %s must be comma-separated "
+                    "concatenation of local labels" % (index_or_label, self))
+            try:
+                return TensorKet(
+                    *[BasisKet(label, hs=ls) for (ls, label)
+                      in zip(self.local_factors, local_labels)])
+            except ValueError as exc_info:
+                raise KeyError(str(exc_info))
+
+    @property
     def dimension(self):
-        return self._dimension
+        """Dimension of the Hilbert space.
+
+        Raises:
+            BasisNotSetError: if the Hilbert space has no defined basis
+        """
+        if self._dimension is not None:
+            return self._dimension
+        else:
+            raise BasisNotSetError(
+                "Hilbert space %s has no defined basis" % str(self))
 
     def remove(self, other):
         """Remove a particular factor from a tensor product space."""

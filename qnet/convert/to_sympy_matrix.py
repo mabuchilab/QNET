@@ -71,18 +71,18 @@ def convert_to_sympy_matrix(expr, full_space=None):
     if not expr.space.is_tensor_factor_of(full_space):
         raise ValueError("expr must be in full_space")
     if expr is IdentityOperator:
-        return sympy.eye(full_space.get_dimension())
+        return sympy.eye(full_space.dimension)
     elif expr is ZeroOperator:
         return 0
     elif isinstance(expr, LocalOperator):
-        n = full_space.get_dimension()
+        n = full_space.dimension
         if full_space != expr.space:
             all_spaces = full_space.local_factors
             own_space_index = all_spaces.index(expr.space)
-            factors = [sympy.eye(s.get_dimension())
+            factors = [sympy.eye(s.dimension)
                        for s in all_spaces[:own_space_index]]
             factors.append(convert_to_sympy_matrix(expr, expr.space))
-            factors.extend([sympy.eye(s.get_dimension())
+            factors.extend([sympy.eye(s.dimension)
                             for s in all_spaces[own_space_index + 1:]])
             return tensor(*factors)
         if isinstance(expr, (Create, Jz, Jplus)):
@@ -139,7 +139,7 @@ def convert_to_sympy_matrix(expr, full_space=None):
                     ck += len(ls_ops)
                 else:
                     # if trivial action, take identity matrix
-                    by_space.append(sympy.eye(ls.get_dimension()))
+                    by_space.append(sympy.eye(ls.dimension))
             assert ck == len(expr.operands)
             # combine local factors in tensor product
             if len(by_space) == 1:

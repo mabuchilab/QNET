@@ -107,11 +107,11 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
             raise ValueError("full_space %s does not have local factors"
                              % full_space)
         else:
-            return qutip.tensor(*[qutip.qeye(s.get_dimension())
+            return qutip.tensor(*[qutip.qeye(s.dimension)
                                   for s in local_spaces])
     elif expr is ZeroOperator:
         return qutip.tensor(
-            *[qutip.Qobj(csr_matrix((s.get_dimension(), s.get_dimension())))
+            *[qutip.Qobj(csr_matrix((s.dimension, s.dimension)))
               for s in full_space.local_factors]
         )
     elif isinstance(expr, LocalOperator):
@@ -214,25 +214,25 @@ def SLH_to_qutip(slh, full_space=None, time_symbol=None,
 
 def _convert_local_operator_to_qutip(expr, full_space, mapping):
     """Convert a LocalOperator instance to qutip"""
-    n = full_space.get_dimension()
+    n = full_space.dimension
     if full_space != expr.space:
         all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
         return qutip.tensor(
-            *([qutip.qeye(s.get_dimension())
+            *([qutip.qeye(s.dimension)
                for s in all_spaces[:own_space_index]] +
               [convert_to_qutip(expr, expr.space, mapping=mapping), ] +
-              [qutip.qeye(s.get_dimension())
+              [qutip.qeye(s.dimension)
                for s in all_spaces[own_space_index + 1:]])
         )
     if isinstance(expr, Create):
         return qutip.create(n)
     elif isinstance(expr, Jz):
-        return qutip.jmat((expr.space.get_dimension()-1)/2., "z")
+        return qutip.jmat((expr.space.dimension-1)/2., "z")
     elif isinstance(expr, Jplus):
-        return qutip.jmat((expr.space.get_dimension()-1)/2., "+")
+        return qutip.jmat((expr.space.dimension-1)/2., "+")
     elif isinstance(expr, Jminus):
-        return qutip.jmat((expr.space.get_dimension()-1)/2., "-")
+        return qutip.jmat((expr.space.dimension-1)/2., "-")
     elif isinstance(expr, Destroy):
         return qutip.destroy(n)
     elif isinstance(expr, Phase):
@@ -248,8 +248,12 @@ def _convert_local_operator_to_qutip(expr, full_space, mapping):
     elif isinstance(expr, LocalSigma):
         j = expr.j
         k = expr.k
-        ket = qutip.basis(n, expr.space.basis.index(j))
-        bra = qutip.basis(n, expr.space.basis.index(k)).dag()
+        if isinstance(j, str):
+            j = expr.space.basis_labels.index(j)
+        if isinstance(k, str):
+            k = expr.space.basis_labels.index(k)
+        ket = qutip.basis(n, j)
+        bra = qutip.basis(n, k).dag()
         return ket * bra
     else:
         raise ValueError("Cannot convert '%s' of type %s"
@@ -281,7 +285,7 @@ def _convert_operator_operation_to_qutip(expr, full_space, mapping):
                 ck += len(ls_ops)
             else:
                 # if trivial action, take identity matrix
-                by_space.append(qutip.qeye(ls.get_dimension()))
+                by_space.append(qutip.qeye(ls.dimension))
         assert ck == len(expr.operands)
         # combine local factors in tensor product
         return qutip.tensor(*by_space)
@@ -291,7 +295,7 @@ def _convert_operator_operation_to_qutip(expr, full_space, mapping):
     elif isinstance(expr, PseudoInverse):
         mo = convert_to_qutip(expr.operand, full_space=full_space,
                               mapping=mapping)
-        if full_space.get_dimension() <= DENSE_DIMENSION_LIMIT:
+        if full_space.dimension <= DENSE_DIMENSION_LIMIT:
             arr = mo.data.toarray()
             from scipy.linalg import pinv
             piarr = pinv(arr)
@@ -305,7 +309,7 @@ def _convert_operator_operation_to_qutip(expr, full_space, mapping):
     elif isinstance(expr, NullSpaceProjector):
         mo = convert_to_qutip(expr.operand, full_space=full_space,
                               mapping=mapping)
-        if full_space.get_dimension() <= DENSE_DIMENSION_LIMIT:
+        if full_space.dimension <= DENSE_DIMENSION_LIMIT:
             arr = mo.data.toarray()
             from scipy.linalg import svd
             # compute Singular Value Decomposition
@@ -327,15 +331,15 @@ def _convert_operator_operation_to_qutip(expr, full_space, mapping):
 
 
 def _convert_state_operation_to_qutip(expr, full_space, mapping):
-    n = full_space.get_dimension()
+    n = full_space.dimension
     if full_space != expr.space:
         all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
         return qutip.tensor(
-            *([qutip.qeye(s.get_dimension())
+            *([qutip.qeye(s.dimension)
                for s in all_spaces[:own_space_index]] +
               convert_to_qutip(expr, expr.space, mapping=mapping) +
-              [qutip.qeye(s.get_dimension())
+              [qutip.qeye(s.dimension)
                for s in all_spaces[own_space_index + 1:]])
         )
     if isinstance(expr, BraKet):
@@ -352,19 +356,19 @@ def _convert_state_operation_to_qutip(expr, full_space, mapping):
 
 
 def _convert_ket_to_qutip(expr, full_space, mapping):
-    n = full_space.get_dimension()
+    n = full_space.dimension
     if full_space != expr.space:
         all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
         return qutip.tensor(
-            *([qutip.qeye(s.get_dimension())
+            *([qutip.qeye(s.dimension)
                for s in all_spaces[:own_space_index]] +
               convert_to_qutip(expr, expr.space, mapping=mapping) +
-              [qutip.qeye(s.get_dimension())
+              [qutip.qeye(s.dimension)
                for s in all_spaces[own_space_index + 1:]])
         )
     if isinstance(expr, BasisKet):
-        return qutip.basis(n, expr.space.basis.index(expr.operands[1]))
+        return qutip.basis(n, expr.index)
     elif isinstance(expr, CoherentStateKet):
         return qutip.coherent(n, complex(expr.operands[1]))
     elif isinstance(expr, KetPlus):
@@ -395,14 +399,14 @@ def _convert_superoperator_to_qutip(expr, full_space, mapping):
         all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
         return qutip.tensor(
-            *([qutip.qeye(s.get_dimension())
+            *([qutip.qeye(s.dimension)
                for s in all_spaces[:own_space_index]] +
               convert_to_qutip(expr, expr.space, mapping=mapping) +
-              [qutip.qeye(s.get_dimension())
+              [qutip.qeye(s.dimension)
                for s in all_spaces[own_space_index + 1:]])
         )
     if isinstance(expr, IdentitySuperOperator):
-        return qutip.spre(qutip.tensor(*[qutip.qeye(s.get_dimension())
+        return qutip.spre(qutip.tensor(*[qutip.qeye(s.dimension)
                                          for s in full_space.local_factors]))
     elif isinstance(expr, SuperOperatorPlus):
         return sum((convert_to_qutip(op, full_space, mapping=mapping)

@@ -2177,7 +2177,7 @@ def try_adiabatic_elimination(slh, k=None, fock_trunc=6, sub_P0=True):
     Y = ops[0]
     if isinstance(Y.space, LocalSpace):
         try:
-            b = Y.space.get_basis()
+            b = Y.space.basis_labels
             if len(b) > fock_trunc:
                 b = b[:fock_trunc]
         except BasisNotSetError:

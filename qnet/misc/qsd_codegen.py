@@ -447,7 +447,10 @@ class QSDCodeGen(object):
                 raise ValueError(("Operator '%s' is not in the circuit's "
                                   "Hilbert space") % str(op))
             if not op.space is TrivialSpace:
-                __ = op.space.basis # raises BasisNotSetError
+                if not op.space.has_basis:
+                    raise BasisNotSetError(
+                        "The Hilbert space of the operator %s has no defined "
+                        "basis" % op)
             if isinstance(op, IdentityOperator.__class__):
                 continue
             elif isinstance(op, (Create, Destroy)):
@@ -651,7 +654,7 @@ class QSDCodeGen(object):
         """
         if not state.space == self._full_space:
             raise QSDCodeGenError(("State %s is not in the Hilbert "
-                                    "space of the Hamiltonian") % state)
+                                   "space of the Hamiltonian") % state)
         lines = []
         if reset:
             self._qsd_states = {}
@@ -664,16 +667,9 @@ class QSDCodeGen(object):
                 # order by sorting them according to str
                 name = prfx + str(k)
                 self._qsd_states[ket] = name
-                try:
-                    N = ket.space.dimension
-                except BasisNotSetError:
-                    raise QSDCodeGenError(("Unknown dimension for Hilbert "
-                    "space '%s'. Please set the Hilbert space's dimension "
-                    "property. Alternatively, set a basis using "
-                    "qnet.algebra.HilbertSpaceAlgebra.BasisRegistry.set_basis")
-                    % str(ket.space))
+                N = ket.space.dimension
                 if isinstance(ket, BasisKet):
-                    n = ket.space.basis.index(ket.label)
+                    n = ket.index
                     instantiation = '({N:d},{n:d},FIELD)'.format(N=N, n=n)
                     comment = ' // HS %d' \
                               % self._hilbert_space_index[ket.space]

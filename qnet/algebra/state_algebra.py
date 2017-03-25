@@ -328,8 +328,9 @@ class BasisKet(LocalKet):
 
     Args:
         label_or_index (str or int): If `str`, the label of the basis state.
-            Must be an element of `hs.basis`. If `int`, the (zero-based) index
-            of the basis state. This works if `hs` has an unknown dimension
+            Must be an element of `hs.basis_labels`. If `int`, the (zero-based)
+            index of the basis state. This works if `hs` has an unknown
+            dimension
         hs (LocalSpace): The Hilbert space in which the basis is defined
 
     Raises:
@@ -353,16 +354,16 @@ class BasisKet(LocalKet):
             hs = LocalSpace(hs)
         if isinstance(label_or_index, str):
             label = label_or_index
-            ind = hs.get_basis().index(label)  # raises BasisNotSetError
+            ind = hs.basis_labels.index(label)  # raises BasisNotSetError
         elif isinstance(label_or_index, int):
-            if hs.basis is not None:
-                label = hs.basis[label_or_index]
+            if hs.has_basis:
+                label = hs.basis_labels[label_or_index]
             else:
                 label = str(label_or_index)
             ind = label_or_index
             if ind < 0:
                 raise ValueError("Index %d must be >= 0" % ind)
-            if hs.dimension is not None:
+            if hs.has_basis:
                 if ind >= hs.dimension:
                     raise ValueError(
                         "Index %s must be < the dimension %d of Hilbert "
@@ -376,10 +377,10 @@ class BasisKet(LocalKet):
     @property
     def args(self):
         """Tuple containing `label_or_index` as its only element."""
-        if self.space.dimension is None:
-            return (self.index, )
-        else:
+        if self.space.has_basis:
             return (self.label, )
+        else:
+            return (self.index, )
 
     @property
     def index(self):
