@@ -49,6 +49,8 @@ distclean: clean
 
 .venv/py35/bin/py.test:
 	@conda create -y -m -p .venv/py35 python=3.5 $(PACKAGES)
+	@find .venv/py35 -iname matplotlibrc | xargs sed -i.bak 's/backend\s*:\s*Qt5Agg/backend: Agg/'
+	@# if the conda installation does not work, simply comment out the following line, and let pip handle it
 	@conda install -y -c conda-forge -p .venv/py35 qutip
 	@.venv/py35/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
