@@ -48,7 +48,8 @@ distclean: clean
 	@rm -rf .venv
 
 .venv/py35/bin/py.test:
-	@conda create -y -c conda-forge -m -p .venv/py35 python=3.5 $(PACKAGES) qutip
+	@conda create -y -m -p .venv/py35 python=3.5 $(PACKAGES)
+	@conda install -y -c conda-forge -p .venv/py35 qutip
 	@.venv/py35/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 test35: .venv/py35/bin/py.test
@@ -62,7 +63,7 @@ coverage: test35
 
 doc: .venv/py35/bin/py.test
 	@rm -f docs/API/*.rst
-	$(MAKE) -C docs SPHINXBUILD=../.venv/py35/bin/sphinx-build html
+	$(MAKE) -C docs SPHINXBUILD=../.venv/py35/bin/sphinx-build SPHINXAPIDOC=../.venv/py35/bin/sphinx-apidoc html
 	@echo "Documentation is in docs/_build/html"
 
 .PHONY: install develop uninstall upload test-upload test-install sdist clean \
