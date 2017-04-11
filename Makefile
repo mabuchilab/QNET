@@ -2,6 +2,7 @@ PROJECT_NAME = QNET
 PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest sphinx nose ply cython coverage
 TESTPYPI = https://testpypi.python.org/pypi
 
+TESTENV = MATPLOTLIBRC=tests
 #TESTOPTIONS = --doctest-modules --cov=qnet
 TESTOPTIONS = --doctest-modules --cov=qnet
 TESTS = qnet tests
@@ -9,6 +10,21 @@ TESTS = qnet tests
 #     make test TESTS="tests/algebra"
 
 VERSION = $(shell grep __version__ < qnet/__init__.py | sed 's/.*"\(.*\)"/\1/')
+
+help:
+	@echo 'Makefile for qnet                                                      '
+	@echo '                                                                       '
+	@echo 'Usage:                                                                 '
+	@echo '   make develop       Install "editable" version of package            '
+	@echo '   make install       Install package into current environment         '
+	@echo '   make uninstall     Remove package from current environment          '
+	@echo '   make upload        Upload package to pypi                           '
+	@echo '   make test-upload   Upload package to testpypi                       '
+	@echo '   make test-install  Install fromm testpypi                           '
+	@echo '   make clean         Remove build files                               '
+	@echo '   make distclean     Restore to pristine state (clean checkout)       '
+	@echo '   make test          Run all tests                                    '
+	@echo '   make coverage      Generate coverage report htmlcov                 '
 
 develop:
 	pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
@@ -49,13 +65,12 @@ distclean: clean
 
 .venv/py35/bin/py.test:
 	@conda create -y -m -p .venv/py35 python=3.5 $(PACKAGES)
-	@find .venv/py35 -iname matplotlibrc | xargs sed -i.bak 's/backend\s*:\s*Qt5Agg/backend: Agg/'
 	@# if the conda installation does not work, simply comment out the following line, and let pip handle it
 	@conda install -y -c conda-forge -p .venv/py35 qutip
 	@.venv/py35/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
 
 test35: .venv/py35/bin/py.test
-	$< -v $(TESTOPTIONS) $(TESTS)
+	@$(TESTENV) $< -v $(TESTOPTIONS) $(TESTS)
 
 test: test35
 
