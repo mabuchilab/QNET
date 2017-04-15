@@ -51,13 +51,8 @@ setup(
                 'coverage', 'pytest-cov', 'pytest-capturelog',
                 'pytest-xdist'],
         'simulation': ['cython', 'qutip>=3.0.1'],
-        'circuit_visualization': 'pyx>0.13',
+        'circuit_visualization': 'pyx>0.14',
     },
-    dependency_links=[
-        "http://downloads.sourceforge.net/project/pyx/pyx/0.13/"
-        + "PyX-0.13.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects"
-        + "%2Fpyx%2Ffiles%2F&ts=1423687678&use_mirror=iweb",
-    ],
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 3 :: Only',
