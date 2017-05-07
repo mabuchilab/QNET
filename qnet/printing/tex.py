@@ -76,6 +76,8 @@ class LaTeXPrinter(Printer, metaclass=Singleton):
                   r'\right|_{{({space})}}')
     braket_fmt = (r'\left\langle{{}}{label_i}\right|\left.{label_j}'
                   r'\right\rangle_{{({space})}}')
+    commut_fmt = r'\left[{A}, {B}\right]'
+    anti_commut_fmt = r'\left\{{{A}, {B}\right\}}'
     cc_string = r'\text{c.c.}'
 
     op_accent = r'\hat'

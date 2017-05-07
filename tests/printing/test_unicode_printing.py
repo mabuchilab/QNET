@@ -27,7 +27,7 @@ from qnet.algebra.circuit_algebra import(
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector)
+        PseudoInverse, NullSpaceProjector, Commutator)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace)
 from qnet.algebra.matrix_algebra import Matrix
@@ -175,6 +175,9 @@ def test_unicode_operator_operations():
             '2 * A\u0302^(q\u2081) - sqrt(\u03b3) * (B\u0302^(q\u2081) '
             '+ C\u0302^(q\u2082))'])
     #       2 * Â^(q₁) - √γ * (B̂^(q₁) + Ĉ^(q₂))
+    assert (unicode(Commutator(A, B)) ==
+            '[A\u0302^(q\u2081), B\u0302^(q\u2081)]')
+    #       [Â^(q₁), B̂^(q₁)]
 
 
 def test_unicode_ket_elements():

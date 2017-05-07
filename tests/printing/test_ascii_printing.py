@@ -27,7 +27,7 @@ from qnet.algebra.circuit_algebra import(
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector)
+        PseudoInverse, NullSpaceProjector, Commutator)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace)
 from qnet.algebra.matrix_algebra import Matrix
@@ -167,6 +167,7 @@ def test_ascii_operator_operations():
     assert ascii(A - B + C) == 'A^(q_1) - B^(q_1) + C^(q_2)'
     assert (ascii(2 * A - sqrt(gamma) * (B + C)) ==
             '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))')
+    assert ascii(Commutator(A, B)) == r'[A^(q_1), B^(q_1)]'
 
 
 def test_ascii_ket_elements():

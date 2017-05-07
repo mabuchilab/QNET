@@ -28,7 +28,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import defaultdict, OrderedDict
 from itertools import product as cartesian_product
 
-from sympy import (exp, sqrt, I, sympify, Basic as SympyBasic,
+from sympy import (
     exp, sqrt, I, sympify, Basic as SympyBasic, series as sympy_series, Add as
     SympyAdd)
 
@@ -64,10 +64,11 @@ __all__ = [
     'X', 'Y', 'Z', 'adjoint', 'create_operator_pm_cc', 'decompose_space',
     'expand_operator_pm_cc', 'factor_coeff', 'factor_for_trace', 'get_coeffs',
     'scalar_free_symbols', 'simplify_scalar', 'space', 'II',
-    'IdentityOperator', 'ZeroOperator']
+    'IdentityOperator', 'ZeroOperator', 'Commutator']
 
 __private__ = [  # anything not in __all__ must be in __private__
-    'implied_local_space',  'delegate_to_method', 'scalars_to_op']
+    'implied_local_space',  'delegate_to_method', 'disjunct_hs_zero',
+    'scalars_to_op', 'commutator_order']
 
 
 
@@ -148,6 +149,34 @@ def scalars_to_op(cls, ops, kwargs):
         else:
             op_ops.append(op)
     return op_ops, kwargs
+
+
+def disjunct_hs_zero(cls, ops, kwargs):
+    """Return ZeroOperator if all the operators in `ops` have a disjunct
+    Hilbert space, or an unchanged `ops`, `kwargs` otherwise
+    """
+    hilbert_spaces = []
+    for op in ops:
+        try:
+            hs = op.space
+        except AttributeError:  # scalars
+            hs = TrivialSpace
+        for hs_prev in hilbert_spaces:
+            if not hs.isdisjoint(hs_prev):
+                return ops, kwargs
+        hilbert_spaces.append(hs)
+    return ZeroOperator
+
+
+def commutator_order(cls, ops, kwargs):
+    """Apply anti-commutative property of the commutator to apply a standard
+    ordering of the commutator arguments
+    """
+    assert len(ops) == 2
+    if cls.order_key(ops[1]) < cls.order_key(ops[0]):
+        return -1 * Commutator.create(ops[1], ops[0])
+    else:
+        return ops, kwargs
 
 
 ###############################################################################
@@ -1216,6 +1245,69 @@ class ScalarTimesOperator(Operator, Operation):
         return scalar_free_symbols(self.coeff) | self.term.all_symbols()
 
 
+class Commutator(OperatorOperation):
+    r'''Commutator of two operators
+
+    .. math::
+
+        [\Op{A}, \Op{B}] = \Op{A}\Op{B} - \Op{A}\Op{B}
+
+    '''
+    _rules = []
+    _simplifications = [disjunct_hs_zero, commutator_order, match_replace]
+
+    order_key = FullCommutativeHSOrder
+    # commutator_order makes FullCommutativeHSOrder anti-commutative
+
+    def __init__(self, A, B):
+        self._hs = A.space * B.space
+        super().__init__(A, B)
+
+    @property
+    def A(self):
+        """Left side of the commutator"""
+        return self.operands[0]
+
+    @property
+    def B(self):
+        """Left side of the commutator"""
+        return self.operands[1]
+
+    def _expand(self):
+        A = self.A.expand()
+        B = self.B.expand()
+        if isinstance(A, OperatorPlus):
+            A_summands = A.operands
+        else:
+            A_summands = (A, )
+        if isinstance(B, OperatorPlus):
+            B_summands = B.operands
+        else:
+            B_summands = (B, )
+        summands = []
+        for combo in cartesian_product(A_summands, B_summands):
+            summands.append(Commutator.create(*combo))
+        return OperatorPlus.create(*summands)
+
+    def _series_expand(self, param, about, order):
+        A_series = self.A.series_expand(param, about, order)
+        B_series = self.B.series_expand(param, about, order)
+        res = []
+        for n in range(order + 1):
+            summands = [self.__class__.create(A_series[k], B_series[n - k])
+                        for k in range(n + 1)]
+            res.append(OperatorPlus.create(*summands))
+        return tuple(res)
+
+    def _diff(self, sym):
+        return (self.__class__(self.A.diff(sym), self.B) +
+                self.__class__(self.A, self.B.diff(sym)))
+
+    def _render(self, fmt, adjoint=False):
+        printer = getattr(self, "_"+fmt+"_printer")
+        return printer.render_commutator(A=self.A, B=self.B, adjoint=adjoint)
+
+
 class OperatorTrace(SingleOperatorOperation):
     r'''Take the (partial) trace of an operator `op` ($\Op{O}) over the degrees
     of freedom of a Hilbert space `over_space` ($\mathcal{H}$):
@@ -1859,7 +1951,9 @@ def _algebraic_rules():
         (pattern_head(u, ZeroOperator),
             lambda u: ZeroOperator),
         (pattern_head(u, pattern(ScalarTimesOperator, v, A)),
-            lambda u, v, A: (u * v) * A)
+            lambda u, v, A: (u * v) * A),
+        (pattern_head(-1, A_plus),
+            lambda A: OperatorPlus.create(*[-1 * op for op in A.args])),
     ]
 
     OperatorPlus._binary_rules += [
@@ -2047,6 +2141,31 @@ def _algebraic_rules():
     PseudoInverse._rules += [
         (pattern_head(pattern(LocalSigma, m, n, hs=ls)),
             lambda ls, m, n: LocalSigma(n, m, hs=ls)),
+    ]
+
+    Commutator._rules += [
+        (pattern_head(A, A), lambda A: ZeroOperator),
+        (pattern_head(pattern(ScalarTimesOperator, u, A),
+                      pattern(ScalarTimesOperator, v, B)),
+            lambda u, v, A, B: u * v * Commutator.create(A, B)),
+        (pattern_head(pattern(ScalarTimesOperator, v, A), B),
+            lambda v, A, B: v * Commutator.create(A, B)),
+        (pattern_head(A, pattern(ScalarTimesOperator, v, B)),
+            lambda v, A, B: v * Commutator.create(A, B)),
+
+        # special known commutators
+        (pattern_head(pattern(Create, hs=ls), pattern(Destroy, hs=ls)),
+            lambda ls: ScalarTimesOperator(-1, IdentityOperator)),
+        # the remaining  rules basically defer to OperatorTimes; just writing
+        # out the commutator will generate something simple
+        (pattern_head(
+            wc('A', head=(Create, Destroy, LocalSigma, Phase, Displace)),
+            wc('B', head=(Create, Destroy, LocalSigma, Phase, Displace))),
+            lambda A, B: A * B - B * A),
+        (pattern_head(
+            wc('A', head=(LocalSigma, Jplus, Jminus, Jz)),
+            wc('B', head=(LocalSigma, Jplus, Jminus, Jz))),
+            lambda A, B: A * B - B * A),
     ]
 
 

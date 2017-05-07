@@ -96,6 +96,11 @@ class Printer(metaclass=ABCMeta):
             space
         braket_fmt (str): Format for rendering a :class:`BraKet` instance.
             Receives the formatting keys `label_i`, `label_j`, and `space`.
+        commut_fmt (str): format for rendering a commutator. Receives the
+            formatting keys `A` and `B`. Used by :meth:`render_commutator`.
+        anti_commut_fmt (str): format for rendering an anti-commutator.
+            Receives the formatting keys `A` and `B`. Used by
+            :meth:`render_commutator`.
         cc_string (str): String to indicate the complex conjugate (in a sum)
     """
 
@@ -133,6 +138,8 @@ class Printer(metaclass=ABCMeta):
     ket_fmt = r'|{label}>_({space})'
     ketbra_fmt = r'|{label_i}><{label_j}|_({space})'
     braket_fmt = r'<{label_i}|{label_j}>_({space})'
+    commut_fmt = r'[{A}, {B}]'
+    anti_commut_fmt = r'{{{A}, {B}}}'
     cc_string = r'c.c.'
 
     op_hs_super_sub = 1  # where to put Hilbert space label for operators
@@ -409,3 +416,17 @@ class Printer(metaclass=ABCMeta):
             if value.real != 0 and value.imag != 0:
                 res = cls.par_left + res + cls.par_right
         return res
+
+    @classmethod
+    def render_commutator(cls, A, B, adjoint=False, anti_commutator=False):
+        """Render a commutator or anti-commutator"""
+        A_rendered = cls.render(A)
+        B_rendered = cls.render(B)
+        if anti_commutator:
+            res = cls.anti_commut_fmt.format(A=A_rendered, B=B_rendered)
+        else:
+            res = cls.commut_fmt.format(A=A_rendered, B=B_rendered)
+        if adjoint:
+            return res + cls.daggered_sym
+        else:
+            return res

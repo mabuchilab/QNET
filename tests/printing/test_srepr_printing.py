@@ -32,7 +32,7 @@ from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
         PseudoInverse, NullSpaceProjector, OperatorPlus, OperatorTimes,
-        ScalarTimesOperator, OperatorTrace)
+        ScalarTimesOperator, OperatorTrace, Commutator)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace, ProductSpace)
 from qnet.algebra.matrix_algebra import Matrix
@@ -185,41 +185,42 @@ def operator_exprs():
     C = OperatorSymbol("C", hs=hs2)
     gamma = symbols('gamma')
     return [
-        #OperatorSymbol("A", hs=hs1),
-        #OperatorSymbol("A_1", hs=hs1*hs2),
-        #OperatorSymbol("Xi_2", hs=(r'q1', 'q2')),
-        #OperatorSymbol("Xi_full", hs=1),
-        #IdentityOperator,
-        #ZeroOperator,
-        #Create(hs=1),
-        #Create(hs=1, identifier=r'b'),
-        #Destroy(hs=1),
-        #Destroy(hs=1, identifier=r'b'),
-        #Jz(hs=1),
-        #Jz(hs=1, identifier='Z'),
-        #Jplus(hs=1, identifier='Jp'),
-        #Jminus(hs=1, identifier='Jm'),
-        #Phase(0.5, hs=1),
-        #Phase(0.5, hs=1, identifier=r'Ph'),
-        #Displace(0.5, hs=1),
-        #Squeeze(0.5, hs=1),
-        #LocalSigma('e', 'g', hs=1),
-        #LocalSigma('e', 'e', hs=1),
-        #A + B,
-        #A * B,
-        #A * C,
-        #2 * A,
-        #2j * A,
-        #(1+2j) * A,
+        OperatorSymbol("A", hs=hs1),
+        OperatorSymbol("A_1", hs=hs1*hs2),
+        OperatorSymbol("Xi_2", hs=(r'q1', 'q2')),
+        OperatorSymbol("Xi_full", hs=1),
+        IdentityOperator,
+        ZeroOperator,
+        Create(hs=1),
+        Create(hs=1, identifier=r'b'),
+        Destroy(hs=1),
+        Destroy(hs=1, identifier=r'b'),
+        Jz(hs=1),
+        Jz(hs=1, identifier='Z'),
+        Jplus(hs=1, identifier='Jp'),
+        Jminus(hs=1, identifier='Jm'),
+        Phase(0.5, hs=1),
+        Phase(0.5, hs=1, identifier=r'Ph'),
+        Displace(0.5, hs=1),
+        Squeeze(0.5, hs=1),
+        LocalSigma('e', 'g', hs=LocalSpace(1, basis=('g', 'e'))),
+        LocalSigma('e', 'e', hs=LocalSpace(1, basis=('g', 'e'))),
+        A + B,
+        A * B,
+        A * C,
+        2 * A,
+        2j * A,
+        (1+2j) * A,
         gamma**2 * A,
-        #-gamma**2/2 * A,
-        #tr(A * C, over_space=hs2),
-        #Adjoint(A),
-        #Adjoint(A + B),
-        #PseudoInverse(A),
-        #NullSpaceProjector(A),
-        #A - B,
-        #2 * A - sqrt(gamma) * (B + C),
+        -gamma**2/2 * A,
+        tr(A * C, over_space=hs2),
+        Adjoint(A),
+        Adjoint(A + B),
+        PseudoInverse(A),
+        NullSpaceProjector(A),
+        A - B,
+        2 * A - sqrt(gamma) * (B + C),
+        Commutator(A, B),
     ]
 
 
@@ -256,7 +257,7 @@ def state_exprs():
         ZeroKet,
         TrivialKet,
         BasisKet('e', hs=hs1),
-        BasisKet('excited', hs=1),
+        BasisKet('excited', hs=LocalSpace(1, basis=('ground', 'excited'))),
         BasisKet(1, hs=1),
         CoherentStateKet(2.0, hs=1),
         Bra(KetSymbol('Psi', hs=hs1)),
@@ -323,9 +324,8 @@ def sop_exprs():
 
 @pytest.mark.parametrize(
     'expr',
-    operator_exprs())
-    #(circuit_exprs() + hilbert_exprs() + matrix_exprs() + operator_exprs() +
-     #state_exprs() + sop_exprs()))
+    (circuit_exprs() + hilbert_exprs() + matrix_exprs() + operator_exprs() +
+     state_exprs() + sop_exprs()))
 def test_self_eval(expr):
     s = srepr(expr)
     assert eval(s) == expr

@@ -27,7 +27,7 @@ from qnet.algebra.circuit_algebra import(
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector)
+        PseudoInverse, NullSpaceProjector, Commutator)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace)
 from qnet.algebra.matrix_algebra import Matrix
@@ -242,6 +242,8 @@ def test_tex_operator_operations():
     assert (tex(2 * A - sqrt(gamma) * (B + C)) ==
             r'2 \hat{A}^{(q_{1})} - \sqrt{\gamma} \left(\hat{B}^{(q_{1})} + '
             r'\hat{C}^{(q_{2})}\right)')
+    assert (tex(Commutator(A, B)) ==
+            r'\left[\hat{A}^{(q_{1})}, \hat{B}^{(q_{1})}\right]')
 
 
 def test_tex_ket_elements():
