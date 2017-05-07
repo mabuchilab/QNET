@@ -29,7 +29,8 @@ from collections import defaultdict, OrderedDict
 from itertools import product as cartesian_product
 
 from sympy import (exp, sqrt, I, sympify, Basic as SympyBasic,
-        series as sympy_series, Add as SympyAdd)
+    exp, sqrt, I, sympify, Basic as SympyBasic, series as sympy_series, Add as
+    SympyAdd)
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
@@ -66,7 +67,7 @@ __all__ = [
     'IdentityOperator', 'ZeroOperator']
 
 __private__ = [  # anything not in __all__ must be in __private__
-    'implied_local_space',  'delegate_to_method']
+    'implied_local_space',  'delegate_to_method', 'scalars_to_op']
 
 
 
@@ -135,6 +136,18 @@ def delegate_to_method(mtd):
         else:
             return ops, kwargs
     return _delegate_to_method
+
+
+def scalars_to_op(cls, ops, kwargs):
+    r'''Convert any scalar $\alpha$ in `ops` into an operator $\alpha
+    \identity$'''
+    op_ops = []
+    for op in ops:
+        if isinstance(op, SCALAR_TYPES):
+            op_ops.append(ScalarTimesOperator.create(op, IdentityOperator))
+        else:
+            op_ops.append(op)
+    return op_ops, kwargs
 
 
 ###############################################################################
@@ -363,6 +376,7 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
 
     @property
     def space(self):
+        """Hilbert space of the operator"""
         return self._hs
 
     @property
@@ -959,7 +973,8 @@ class OperatorPlus(OperatorOperation):
     """
     neutral_element = ZeroOperator
     _binary_rules = []
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+    _simplifications = [assoc, scalars_to_op, orderby, filter_neutral,
+                        match_replace_binary]
 
     order_key = FullCommutativeHSOrder
 
@@ -1140,15 +1155,20 @@ class ScalarTimesOperator(Operator, Operation):
                 c = self.coeff.subs({param: about + param})
             else:
                 c = self.coeff
-            try:
-                ce = list(reversed(
-                        sympy_series(c, x=param, x0=0, n=order + 1)
-                        .as_poly(param).all_coeffs()))
-            except AttributeError:
-                ce = [c] + [0] * order
-
-            if len(ce) < order + 1:
-                ce += [0] * (order + 1 - len(ce))
+            series = sympy_series(c, x=param, x0=0, n=None)
+            ce = []
+            n_order = 0
+            while n_order <= order:
+                try:
+                    term = next(series)
+                    if n_order == 0:
+                        c = term
+                    else:
+                        c = term.coeff(param, n_order)
+                    ce.append(c)
+                except StopIteration:
+                    ce.append(0)
+                n_order += 1
             res = []
             for n in range(order + 1):
                 summands = [ce[k] * te[n - k] for k in range(n + 1)]
@@ -1807,7 +1827,6 @@ def _algebraic_rules():
     module"""
     PseudoInverse._delegate_to_method += (PseudoInverse, )
 
-    ## Expression rewriting _rules
     u = wc("u", head=SCALAR_TYPES)
     v = wc("v", head=SCALAR_TYPES)
 
