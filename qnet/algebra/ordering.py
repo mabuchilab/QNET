@@ -46,6 +46,7 @@ their replacements to all the desired algebraic classes.
 from collections import OrderedDict
 
 from .scalar_types import SCALAR_TYPES
+from ..printing import srepr
 
 __all__ = []
 
@@ -139,9 +140,8 @@ class DisjunctCommutativeHSOrder():
 
 class FullCommutativeHSOrder():
     """Auxiliary class that generates the correct pseudo-order relation for
-    operator products.  Only operators acting on disjoint Hilbert spaces
-    are commuted to reflect the order the local factors have in the total
-    Hilbert space. I.e., ``sorted(factors, key=FullCommutativeHSOrder)``
+    operator sums.  Operators are first ordered by their Hilbert space, then by
+    their order-key; ``sorted(factors, key=FullCommutativeHSOrder)``
     achieves this ordering.
     """
 
