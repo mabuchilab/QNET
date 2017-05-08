@@ -39,6 +39,7 @@ from .state_algebra import *
 from .super_operator_algebra import *
 from .pattern_matching import *
 from .scalar_types import *
+from .toolbox import *
 
 from qnet._flat_api_tools import _combine_all
 
@@ -51,7 +52,8 @@ __all__ = _combine_all(
     'qnet.algebra.state_algebra',
     'qnet.algebra.super_operator_algebra',
     'qnet.algebra.scalar_types',
-    'qnet.algebra.pattern_matching')
+    'qnet.algebra.pattern_matching',
+    'qnet.algebra.toolbox')
 
 __imported_data__ = {
     'SCALAR_TYPES': ':data:`~qnet.algebra.scalar_types.SCALAR_TYPES`'}

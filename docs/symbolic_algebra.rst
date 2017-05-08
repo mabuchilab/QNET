@@ -12,7 +12,7 @@ Expressions and Operations
 ==========================
 
 QNET includes a rich (and extensible) symbolic algebra system for quantum
-mechanics and circuit modes. The foundation of the symbolic algebra are the
+mechanics and circuit models. The foundation of the symbolic algebra are the
 :class:`~Expression` class and its subclass :class:`~Operation`.
 
 A general algebraic expression has a tree structure. The branches of the tree
@@ -119,6 +119,29 @@ and ``_binary_rules`` class attributes are always constructed using the
 Expression arguments with wildcard names.
 
 .. _hilbert_space_algebra:
+
+
+Algebraic Manipulations
+^^^^^^^^^^^^^^^^^^^^^^^
+
+While QNET automatically applies a large number of rules and simplifications if
+expressions are instantiated through the :meth:`~Expression.create` method,
+significant value is placed on manually manipulating algebraic expressions. In
+fact, this is one of the design considerations that separates it from the
+`Sympy`_ package: The rule-based transformations are both explicit and
+optional, allowing to instantiate expressions exactly in the desired form, and
+to apply specifc manipulations. Unlink in `Sympy`_, the (tex) form of an
+expressions will directly reflect the structure of the expression, and the
+ordering of terms can be configured by the user. Thus, a
+`Jupyter Notebook`_ could document a symbolic derivation in the exact form one
+would normally write that derivation out by hand.
+
+.. _Sympy: http://www.sympy.org/en/index.html
+.. _Jupyter Notebook: http://jupyter.org
+
+Common maniupulations and symbolic algorithms are collected in
+:mod:`qnet.algebra.toolbox`.
+
 
 Hilbert Space Algebra
 =====================
@@ -446,7 +469,6 @@ There already exist some investigations along these lines for the particular sub
 Representation as Python objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This file features an implementation of the Gough-James circuit algebra rules as introduced in [GoughJames08]_ and [GoughJames09]_.
 Python objects that are of the :class:`~qnet.algebra.circuit_algebra.Circuit` type have some of their operators overloaded to realize symbolic circuit algebra operations::
 
     >>> A = CircuitSymbol('A', 2)

@@ -23,6 +23,8 @@ from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.operator_algebra import (
     OperatorSymbol, Commutator, ZeroOperator, Create, Destroy, LocalSigma,
     IdentityOperator, Jplus, Jz)
+from qnet.algebra.toolbox import (
+    expand_commutators_leibniz, evaluate_commutators)
 
 
 def test_disjunct_hs():
@@ -153,4 +155,35 @@ def test_known_commutators():
     assert (
         Commutator.create(LocalSigma(1, 0, hs=hs), Create(hs=hs)) ==
         (-sqrt(2) * LocalSigma(2, 1, hs=hs)))
-    assert (Commutator.create(Jplus(hs=hs), Jz(hs=hs)) == -Jplus(hs=hs))
+    assert Commutator.create(Jplus(hs=hs), Jz(hs=hs)) == -Jplus(hs=hs)
+
+
+def test_commutator_expand_evaluate():
+    """Test expansion and evaluation of commutators"""
+    hs = LocalSpace("0")
+    A = OperatorSymbol('A', hs=hs)
+    B = OperatorSymbol('B', hs=hs)
+    C = OperatorSymbol('C', hs=hs)
+    D = OperatorSymbol('D', hs=hs)
+    E = OperatorSymbol('E', hs=hs)
+    expr = Commutator(A, B*C*D*E)
+    res = (B * C * D * Commutator(A, E) + B * C * Commutator(A, D) * E +
+           B * Commutator(A, C) * D * E + Commutator(A, B) * C * D * E)
+    assert expand_commutators_leibniz(expr) == res
+    assert evaluate_commutators(expr) == (
+        A * B * C * D * E - B * C * D * E * A)
+    assert evaluate_commutators(res).expand() == (
+        A * B * C * D * E - B * C * D * E * A)
+
+    assert expand_commutators_leibniz(expr, expand_expr=False) == (
+        B * (C * (D * Commutator(A, E) + Commutator(A, D) * E) +
+             Commutator(A, C) * D * E) + Commutator(A, B) * C * D * E)
+
+    expr = Commutator(A*B*C, D)
+    assert expand_commutators_leibniz(expr) == (
+        A*B*Commutator(C, D) + A*Commutator(B, D)*C + Commutator(A, D)*B*C)
+
+    expr = Commutator(A*B, C*D)
+    assert expand_commutators_leibniz(expr) == (
+        A * Commutator(B, C) * D + C * A * Commutator(B, D) +
+        C * Commutator(A, D) * B + Commutator(A, C) * B * D)
