@@ -430,6 +430,20 @@ def substitute(expr, var_map):
         return expr
 
 
+def _simplify_expr(expr, rules=None):
+    """Non-recursively match expr again all rules"""
+    if rules is None:
+        rules = []
+    for (rule, replacement) in rules:
+        matched = rule.match(expr)
+        if matched:
+            try:
+                return replacement(**matched)
+            except CannotSimplify:
+                pass
+    return expr
+
+
 def simplify(expr, rules=None):
     """Recursively re-instantiate the expression, while applying all of the
     given `rules` to all encountered (sub-) expressions
@@ -457,17 +471,45 @@ def simplify(expr, rules=None):
     """
     if rules is None:
         rules = []
+    stack = []
+    path = []
     if isinstance(expr, Expression):
-        return expr.simplify(rules)
+        stack.append(ProtoExpr.from_expr(expr))
+        path.append(0)
+        # print("Starting at level 1: placing expr on stack: %s" % expr)
+        while True:
+            i = path[-1]
+            try:
+                arg = stack[-1][i]
+                # print("At level %d: considering arg %d: %s"
+                #       % (len(stack), i+1, arg))
+            except IndexError:
+                # done at this level
+                path.pop()
+                expr = stack.pop().instantiate()
+                expr = _simplify_expr(expr, rules)
+                if len(stack) == 0:
+                    # print("Complete level 1: returning simplified expr: %s"
+                    #       % expr)
+                    return expr
+                else:
+                    stack[-1][path[-1]] = expr
+                    path[-1] += 1
+                    # print("Complete level %d. At level %d, setting "
+                    #       "arg %d to simplified expr: %s"
+                    #       % (len(stack)+1, len(stack), path[-1], expr))
+            else:
+                if isinstance(arg, Expression):
+                    stack.append(ProtoExpr.from_expr(arg))
+                    path.append(0)
+                    # print("   placing arg on stack")
+                else:  # scalar
+                    stack[-1][i] = _simplify_expr(arg, rules)
+                    # print("   arg is leaf, replacing with simplified "
+                    #       "expr: %s" % stack[-1][i])
+                    path[-1] += 1
     else:
-        for (rule, replacement) in rules:
-            matched = rule.match(expr)
-            if matched:
-                try:
-                    return replacement(**matched)
-                except CannotSimplify:
-                    pass
-        return expr
+        return _simplify_expr(expr, rules)
 
 
 def set_union(*sets):

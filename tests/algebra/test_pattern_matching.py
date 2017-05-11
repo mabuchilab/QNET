@@ -86,6 +86,16 @@ def test_match_dict():
     assert d['t'] == [3, 4, 1, 2, 3, 4, 3, 4, 1, 2, 3, 4]
 
 
+def test_proto_expr_as_sequence():
+    """Test sequence interface of proto-expressions"""
+    h1 = LocalSpace("h1")
+    a = OperatorSymbol("a", hs=h1)
+    proto_expr = ProtoExpr.from_expr(a)
+    assert len(proto_expr) == 2
+    assert proto_expr[0] == 'a'
+    assert proto_expr[1] == h1
+
+
 def test_wc():
     """Test that the wc() constructor produces the equivalent Pattern
     instance"""

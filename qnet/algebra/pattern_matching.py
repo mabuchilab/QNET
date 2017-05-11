@@ -32,6 +32,7 @@ that the corresponding wildcard Pattern matches.
 import re
 import unittest.mock
 from collections import namedtuple, OrderedDict
+from collections.abc import Sequence
 
 
 __all__ = [
@@ -489,18 +490,78 @@ def wc(name_mode="_", head=None, args=None, kwargs=None, *, conditions=None) \
 # In order to match Expressions before they are instantiated, we define
 # Proto-Expressions the provide just the 'args' and 'kwargs' properties,
 # allowing `match_pattern` to match them via duck typing
-class ProtoExpr():
+class ProtoExpr(Sequence):
     """Object representing an un-instantiated Expression that may matched by a
     `Pattern` created via :func:`pattern_head`
+
+    The combined values of `args` and `kwargs` are accessible as a (mutable)
+    sequence.
 
     Args:
         args (list): positional arguments that would be used in the
             instantiation of the Expression
-        kwargs (dict):  keyword arguments
+        kwargs (dict):  keyword arguments. Will we converted to an
+            :class:`OrderedDict`
+        cls (class or None): The class of the Expression that will ultimately
+            be instantiated.
     """
-    def __init__(self, args, kwargs):
-        self.args = args
-        self.kwargs = kwargs
+    def __init__(self, args, kwargs, cls=None):
+        self.args = list(args)
+        self.kwargs = OrderedDict(kwargs)
+        self.cls = cls
+
+    def __len__(self):
+        return len(self.args) + len(self.kwargs)
+
+    def __getitem__(self, i):
+        n_args = len(self.args)
+        if i < n_args:
+            return self.args[i]
+        else:
+            return list(self.kwargs.values())[i-n_args]
+
+    def __setitem__(self, i, val):
+        n_args = len(self.args)
+        if i < n_args:
+            self.args[i] = val
+        else:
+            key = list(self.kwargs.keys())[i-n_args]
+            self.kwargs[key] = val
+
+    def __str__(self):
+        if self.cls is None:
+            cls = 'None'
+        else:
+            cls = self.cls.__name__
+        return "%s(args=%s, kwargs=%s, cls=%s)" % (
+                self.__class__.__name__, self.args, self.kwargs, cls)
+
+    def __repr__(self):
+        if self.cls is None:
+            cls = 'None'
+        else:
+            cls = self.cls.__name__
+        return "%s(args=%r, kwargs=%r, cls=%s)" % (
+                self.__class__.__name__, self.args, self.kwargs, cls)
+
+    def instantiate(self, cls=None):
+        """Return an instantiated Expression as
+        ``cls.create(*self.args, **self.kwargs)``
+
+        Args:
+            cls (class): The class of the instatiated expression. If not given,
+            `self.cls` will be used.
+        """
+        if cls is None:
+            cls = self.cls
+        if cls is None:
+            raise TypeError("cls must a class")
+        return cls.create(*self.args, **self.kwargs)
+
+    @classmethod
+    def from_expr(cls, expr):
+        """Instantiate proto-expression from the given Expression"""
+        return cls(expr.args, expr.kwargs, cls=expr.__class__)
 
     def __hash__(self):
         return hash((self.__class__, ) + tuple(self.args) +
