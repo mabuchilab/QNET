@@ -381,13 +381,6 @@ class Expression(metaclass=ABCMeta):
             return not eq
         return NotImplemented
 
-    def __getstate__(self):
-        """state to be pickled"""
-        d = self.__dict__.copy()
-        if "_hash" in d:
-            del d["_hash"]
-        return d
-
 
 def _str_instance_key(key):
     """Format the key (Expression_instance_key result) as a slightly more
