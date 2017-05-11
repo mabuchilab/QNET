@@ -49,6 +49,8 @@ __private__ = [  # anything not in __all__ must be in __private__
     'assoc', 'idem', 'orderby', 'filter_neutral', 'match_replace',
     'match_replace_binary', 'cache_attr', 'check_idempotent_create']
 
+# LEVEL = 0  # for debugging create method
+
 
 def _trace(fn):
     """Function decorator to receive debugging information about function calls
@@ -193,13 +195,21 @@ class Expression(metaclass=ABCMeta):
         appropriate object (which may or may not be an instance of the original
         class)
         """
+        # global LEVEL
+        # print("\t" * LEVEL, str(cls.__name__) +
+        #       ".create(*args, **kwargs); args = %s, kwargs = %s"
+        #       % (args, kwargs))
+        # LEVEL += 1
         key = cls._instance_key(args, kwargs)
         try:
             if cls.instance_caching:
-                return cls._instances[key]
+                instance = cls._instances[key]
+                # LEVEL -= 1
+                # print("\t" * LEVEL, "(cached)-> ", str(instance))
+                return instance
         except KeyError:
             pass
-        for simplification in cls._simplifications:
+        for i, simplification in enumerate(cls._simplifications):
             simplified = simplification(cls, args, kwargs)
             try:
                 args, kwargs = simplified
@@ -218,6 +228,8 @@ class Expression(metaclass=ABCMeta):
                         #  simplified might e.g. be a scalar and not have
                         #  _instance_key
                         pass
+                # LEVEL -= 1
+                # print("\t" * LEVEL, "(simpl %d)-> " % i, str(simplified))
                 return simplified
         if len(kwargs) > 0:
             cls._has_kwargs = True
@@ -228,6 +240,8 @@ class Expression(metaclass=ABCMeta):
             key2 = cls._instance_key(args, kwargs)
             if key2 != key:
                 cls._instances[key2] = instance  # instantiated key
+        # LEVEL -= 1
+        # print("\t" * LEVEL, "-> ", str(instance))
         return instance
 
     @classmethod
