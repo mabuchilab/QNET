@@ -397,7 +397,7 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
             try:
                 args_vals.append(float(arg))
             except (TypeError, ValueError):
-                args_vals.append("~%s" % ascii(arg))
+                args_vals.append("~%s" % str(arg))
         self._order_key = KeyTuple([self.__class__.__name__,
                                     self._identifier, 1.0] +
                                     args_vals)
@@ -1129,7 +1129,7 @@ class ScalarTimesOperator(Operator, Operation):
             c = abs(float(self.coeff))  # smallest coefficients first
         except (ValueError, TypeError):
             c = float('inf')
-        return KeyTuple(t[:2] + (c, ) + t[3:] + (ascii(self.coeff), ))
+        return KeyTuple(t[:2] + (c, ) + t[3:] + (str(self.coeff), ))
 
     @property
     def space(self):
