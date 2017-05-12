@@ -33,6 +33,16 @@ from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, ProductSpace)
 
 
+def test_identity_singleton():
+    """Test the Singleton properties of the IdentityOperator"""
+    assert IdentityOperator() is IdentityOperator
+    assert IdentityOperator.__class__() is IdentityOperator
+    assert IdentityOperator.__class__.create() is IdentityOperator
+    assert IdentityOperator.create() is IdentityOperator
+    assert IdentityOperator.create(
+        *IdentityOperator.args, **IdentityOperator.kwargs) is IdentityOperator
+
+
 class TestOperatorCreation(unittest.TestCase):
 
     def testIdentity(self):

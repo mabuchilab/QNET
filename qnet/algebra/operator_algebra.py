@@ -566,9 +566,6 @@ class IdentityOperator(Operator, Expression, metaclass=Singleton):
     def args(self):
         return tuple()
 
-    def create(self):
-        return self
-
     def _adjoint(self):
         return self
 
