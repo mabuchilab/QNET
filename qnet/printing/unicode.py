@@ -206,9 +206,6 @@ class UnicodePrinter(Printer, metaclass=Singleton):
             for string in re.findall(r'[A-Za-z]+', res):
                 if string in _greek_dictionary:
                     res = res.replace(string, _greek_dictionary[string])
-        if isinstance(value, (complex, complex128)):
-            if value.real != 0 and value.imag != 0:
-                res = cls.par_left + res + cls.par_right
         return res
 
 

@@ -170,8 +170,7 @@ class LaTeXPrinter(Printer, metaclass=Singleton):
         else:
             res = sympy.latex(value)
         if isinstance(value, (complex, complex128)):
-            if value.real != 0 and value.imag != 0:
-                res = cls.par_left + res + cls.par_right
+            res = res.replace('j', 'i')
         return res
 
 

@@ -132,10 +132,10 @@ def test_ascii_operator_elements():
     assert ascii(Jz(hs=1, identifier='Z')) == "Z^(1)"
     assert ascii(Jplus(hs=1, identifier='Jp')) == "Jp^(1)"
     assert ascii(Jminus(hs=1, identifier='Jm')) == "Jm^(1)"
-    assert ascii(Phase(0.5, hs=1)) == 'Phase^(1)(1/2)'
-    assert ascii(Phase(0.5, hs=1, identifier='Ph')) == 'Ph^(1)(1/2)'
-    assert ascii(Displace(0.5, hs=1)) == 'D^(1)(1/2)'
-    assert ascii(Squeeze(0.5, hs=1)) == 'Squeeze^(1)(1/2)'
+    assert ascii(Phase(0.5, hs=1)) == 'Phase^(1)(0.5)'
+    assert ascii(Phase(0.5, hs=1, identifier='Ph')) == 'Ph^(1)(0.5)'
+    assert ascii(Displace(0.5, hs=1)) == 'D^(1)(0.5)'
+    assert ascii(Squeeze(0.5, hs=1)) == 'Squeeze^(1)(0.5)'
     hs_tls = LocalSpace('1', basis=('g', 'e'))
     assert ascii(LocalSigma('e', 'g', hs=hs_tls)) == 'sigma_e,g^(1)'
     assert ascii(LocalSigma('e', 'e', hs=hs_tls)) == 'Pi_e^(1)'
@@ -153,8 +153,8 @@ def test_ascii_operator_operations():
     assert ascii(A * B) == 'A^(q_1) * B^(q_1)'
     assert ascii(A * C) == 'A^(q_1) * C^(q_2)'
     assert ascii(2 * A) == '2 * A^(q_1)'
-    assert ascii(2j * A) == '2*I * A^(q_1)'
-    assert ascii((1+2j) * A) == '(1 + 2*I) * A^(q_1)'
+    assert ascii(2j * A) == '2j * A^(q_1)'
+    assert ascii((1+2j) * A) == '(1+2j) * A^(q_1)'
     assert ascii(gamma**2 * A) == 'gamma**2 * A^(q_1)'
     assert ascii(-gamma**2/2 * A) == '-gamma**2/2 * A^(q_1)'
     assert ascii(tr(A * C, over_space=hs2)) == 'tr_(q_2)[C^(q_2)] * A^(q_1)'
@@ -190,7 +190,7 @@ def test_ascii_ket_elements():
     assert ascii(BasisKet(1, hs=hs1)) == '|e>_(q1)'
     with pytest.raises(ValueError):
         BasisKet('1', hs=hs1)
-    assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2>_(1)'
+    assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2.0>_(1)'
 
 
 def test_ascii_bra_elements():
@@ -206,7 +206,7 @@ def test_ascii_bra_elements():
     assert ascii(Bra(TrivialKet)) == '1'
     assert ascii(BasisKet('e', hs=hs1).adjoint()) == '<e|_(q1)'
     assert ascii(BasisKet(1, hs=1).adjoint()) == '<1|_(1)'
-    assert ascii(CoherentStateKet(2.0, hs=1).dag) == '<alpha=2|_(1)'
+    assert ascii(CoherentStateKet(2.0, hs=1).dag) == '<alpha=2.0|_(1)'
 
 
 def test_ascii_ket_operations():
@@ -325,8 +325,8 @@ def test_ascii_sop_operations():
     assert ascii(A * B) == 'A^(q_1) * B^(q_1)'
     assert ascii(A * C) == 'A^(q_1) * C^(q_2)'
     assert ascii(2 * A) == '2 * A^(q_1)'
-    assert ascii(2j * A) == '2*I * A^(q_1)'
-    assert ascii((1+2j) * A) == '(1 + 2*I) * A^(q_1)'
+    assert ascii(2j * A) == '2j * A^(q_1)'
+    assert ascii((1+2j) * A) == '(1+2j) * A^(q_1)'
     assert ascii(gamma**2 * A) == 'gamma**2 * A^(q_1)'
     assert ascii(-gamma**2/2 * A) == '-gamma**2/2 * A^(q_1)'
     assert ascii(SuperAdjoint(A)) == 'A^(q_1)H'

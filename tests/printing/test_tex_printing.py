@@ -19,7 +19,7 @@
 
 import pytest
 
-from sympy import symbols, sqrt, exp, I
+from sympy import symbols, sqrt, exp, I, Rational
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -187,14 +187,16 @@ def test_tex_operator_elements():
     assert tex(Jz(hs=1, identifier='Z')) == r'\hat{Z}^{(1)}'
     assert tex(Jplus(hs=1, identifier='Jp')) == r'\hat{Jp}^{(1)}'
     assert tex(Jminus(hs=1, identifier='Jm')) == r'\hat{Jm}^{(1)}'
-    assert (tex(Phase(0.5, hs=1)) ==
+    assert (tex(Phase(Rational(1, 2), hs=1)) ==
             r'\text{Phase}^{(1)}\left(\frac{1}{2}\right)')
+    assert (tex(Phase(0.5, hs=1)) ==
+            r'\text{Phase}^{(1)}\left(0.5\right)')
     assert (tex(Phase(0.5, hs=1, identifier=r'Ph')) ==
-            r'\hat{Ph}^{(1)}\left(\frac{1}{2}\right)')
+            r'\hat{Ph}^{(1)}\left(0.5\right)')
     assert (tex(Displace(0.5, hs=1)) ==
-            r'\hat{D}^{(1)}\left(\frac{1}{2}\right)')
+            r'\hat{D}^{(1)}\left(0.5\right)')
     assert (tex(Squeeze(0.5, hs=1)) ==
-            r'\text{Squeeze}^{(1)}\left(\frac{1}{2}\right)')
+            r'\text{Squeeze}^{(1)}\left(0.5\right)')
     hs_tls = LocalSpace('1', basis=('g', 'e'))
     assert tex(LocalSigma('e', 'g', hs=hs_tls)) == r'\hat{\sigma}_{e,g}^{(1)}'
     hs_tls = LocalSpace('1', basis=('excited', 'ground'))
@@ -222,8 +224,8 @@ def test_tex_operator_operations():
     assert tex(A * B) == r'\hat{A}^{(q_{1})} \hat{B}^{(q_{1})}'
     assert tex(A * C) == r'\hat{A}^{(q_{1})} \otimes \hat{C}^{(q_{2})}'
     assert tex(2 * A) == r'2 \hat{A}^{(q_{1})}'
-    assert tex(2j * A) == r'2 i \hat{A}^{(q_{1})}'
-    assert tex((1+2j) * A) == r'\left(1 + 2 i\right) \hat{A}^{(q_{1})}'
+    assert tex(2j * A) == r'2i \hat{A}^{(q_{1})}'
+    assert tex((1+2j) * A) == r'(1+2i) \hat{A}^{(q_{1})}'
     assert tex(gamma**2 * A) == r'\gamma^{2} \hat{A}^{(q_{1})}'
     assert tex(-gamma**2/2 * A) == r'- \frac{\gamma^{2}}{2} \hat{A}^{(q_{1})}'
     assert (tex(tr(A * C, over_space=hs2)) ==
@@ -270,7 +272,7 @@ def test_tex_ket_elements():
     assert (tex(BasisKet(1, hs=1)) ==
             r'\left|1\right\rangle_{(1)}')
     assert (tex(CoherentStateKet(2.0, hs=1)) ==
-            r'\left|\alpha=2\right\rangle_{(1)}')
+            r'\left|\alpha=2.0\right\rangle_{(1)}')
 
 
 def test_tex_bra_elements():
@@ -294,7 +296,7 @@ def test_tex_bra_elements():
     assert (tex(BasisKet(1, hs=1).adjoint()) ==
             r'\left\langle{}1\right|_{(1)}')
     assert (tex(CoherentStateKet(2.0, hs=1).dag) ==
-            r'\left\langle{}\alpha=2\right|_{(1)}')
+            r'\left\langle{}\alpha=2.0\right|_{(1)}')
 
 
 def test_tex_ket_operations():
@@ -425,8 +427,8 @@ def test_tex_sop_operations():
     assert tex(A * B) == r'\mathrm{A}^{(q_{1})} \mathrm{B}^{(q_{1})}'
     assert tex(A * C) == r'\mathrm{A}^{(q_{1})} \otimes \mathrm{C}^{(q_{2})}'
     assert tex(2 * A) == r'2 \mathrm{A}^{(q_{1})}'
-    assert tex(2j * A) == r'2 i \mathrm{A}^{(q_{1})}'
-    assert tex((1+2j) * A) == r'\left(1 + 2 i\right) \mathrm{A}^{(q_{1})}'
+    assert tex(2j * A) == r'2i \mathrm{A}^{(q_{1})}'
+    assert tex((1+2j) * A) == r'(1+2i) \mathrm{A}^{(q_{1})}'
     assert tex(gamma**2 * A) == r'\gamma^{2} \mathrm{A}^{(q_{1})}'
     assert (tex(-gamma**2/2 * A) ==
             r'- \frac{\gamma^{2}}{2} \mathrm{A}^{(q_{1})}')

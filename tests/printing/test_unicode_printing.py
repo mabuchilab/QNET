@@ -19,7 +19,7 @@
 
 import pytest
 
-from sympy import symbols, sqrt, exp, I
+from sympy import symbols, sqrt, exp, I, Rational
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -124,8 +124,9 @@ def test_unicode_operator_elements():
     assert unicode(ZeroOperator) == "0"
     assert unicode(Create(hs=1)) == 'a\u0302^(1)\u2020'  # â^(1)†
     assert unicode(Destroy(hs=1)) == 'a\u0302\u207d\xb9\u207e'  # â⁽¹⁾
-    assert unicode(Squeeze(0.5, hs=1)) == 'Squeeze\u207d\xb9\u207e(1/2)'
-    #                                      Squeeze⁽¹⁾(1/2)
+    assert (unicode(Squeeze(Rational(1, 2), hs=1)) ==
+            'Squeeze\u207d\xb9\u207e(1/2)')
+    #       Squeeze⁽¹⁾(1/2)
     hs_tls = LocalSpace('1', basis=('g', 'e'))
     assert unicode(LocalSigma('e', 'g', hs=hs_tls)) == '\u03c3\u0302_e,g^(1)'
     #                                                  σ̂_e,g^(1)
@@ -148,10 +149,10 @@ def test_unicode_operator_operations():
     assert unicode(A * C) == 'A\u0302^(q\u2081) \u2297 C\u0302^(q\u2082)'
     #                         Â^(q₁) ⊗ Ĉ^(q₂)
     assert unicode(2 * A) == '2 * A\u0302^(q\u2081)'  # 2 * Â^(q₁)
-    assert unicode(2j * A) == '2\u22c5\u2148 * A\u0302^(q\u2081)'
-    #                          2⋅ⅈ * Â^(q₁)
-    assert unicode((1+2j) * A) == '(1 + 2\u22c5\u2148) * A\u0302^(q\u2081)'
-    #                              (1 + 2⋅ⅈ) * Â^(q₁)
+    assert unicode(2j * A) == '2j * A\u0302^(q\u2081)'
+    #                          2j * Â^(q₁)
+    assert unicode((1+2j) * A) == '(1+2j) * A\u0302^(q\u2081)'
+    #                              (1+2j) * Â^(q₁)
     assert unicode(gamma**2 * A) == '\u03b3**2 * A\u0302^(q\u2081)'
     #                                γ**2 * Â^(q₁)
     assert unicode(-gamma**2/2 * A) == '-\u03b3**2/2 * A\u0302^(q\u2081)'
@@ -192,7 +193,7 @@ def test_unicode_ket_elements():
     assert unicode(TrivialKet) == '1'
     assert unicode(BasisKet('e', hs=hs1)) == '|e⟩_(q₁)'
     assert unicode(BasisKet(1, hs=1)) == '|1⟩₍₁₎'
-    assert unicode(CoherentStateKet(2.0, hs=1)) == '|α=2⟩₍₁₎'
+    assert unicode(CoherentStateKet(2.0, hs=1)) == '|α=2.0⟩₍₁₎'
 
 
 def test_unicode_bra_elements():
@@ -205,7 +206,7 @@ def test_unicode_bra_elements():
     assert unicode(Bra(TrivialKet)) == '1'
     assert unicode(BasisKet('e', hs=hs1).adjoint()) == '⟨e|_(q₁)'
     assert unicode(BasisKet(1, hs=1).adjoint()) == '⟨1|₍₁₎'
-    assert unicode(CoherentStateKet(2.0, hs=1).dag) == '⟨α=2|₍₁₎'
+    assert unicode(CoherentStateKet(2.0, hs=1).dag) == '⟨α=2.0|₍₁₎'
 
 
 def test_unicode_ket_operations():
@@ -291,7 +292,7 @@ def test_unicode_sop_operations():
     assert unicode(A + B) == 'A^(q₁) + B^(q₁)'
     assert unicode(A * B) == 'A^(q₁) B^(q₁)'
     assert unicode(A * C) == 'A^(q₁) ⊗ C^(q₂)'
-    assert unicode(2j * A) == '2⋅ⅈ * A^(q₁)'
+    assert unicode(2j * A) == '2j * A^(q₁)'
     assert unicode(gamma**2 * A) == 'γ**2 * A^(q₁)'
     assert unicode(SuperAdjoint(A)) == 'A^(q₁)†'
     assert unicode(A - B + C) == 'A^(q₁) + C^(q₂) - B^(q₁)'

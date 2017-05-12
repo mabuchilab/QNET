@@ -410,9 +410,6 @@ class Printer(metaclass=ABCMeta):
             res = str(sympy.conjugate(value))
         else:
             res = str(value)
-        if isinstance(value, (complex, complex128)):
-            if value.real != 0 and value.imag != 0:
-                res = cls.par_left + res + cls.par_right
         return res
 
     @classmethod
