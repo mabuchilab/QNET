@@ -200,11 +200,9 @@ class UnicodePrinter(Printer, metaclass=Singleton):
         if adjoint:
             value = sympy.conjugate(value)
         res = sympy.pretty(
-                sympy.nsimplify(value, rational=False, constants=[sympy.pi]),
-                use_unicode=True, wrap_line=False)
+                value, use_unicode=True, wrap_line=False)
         if "\n" in res:
-            res = str(sympy.nsimplify(
-                value, rational=False, constants=[sympy.pi]))
+            res = str(value)
             for string in re.findall(r'[A-Za-z]+', res):
                 if string in _greek_dictionary:
                     res = res.replace(string, _greek_dictionary[string])

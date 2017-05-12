@@ -166,11 +166,9 @@ class LaTeXPrinter(Printer, metaclass=Singleton):
     def render_scalar(cls, value, adjoint=False):
         """Render a scalar value (numeric or symbolic)"""
         if adjoint:
-            res = sympy.latex(sympy.nsimplify(
-                sympy.conjugate(value), rational=False, constants=[sympy.pi]))
+            res = sympy.latex(sympy.conjugate(value))
         else:
-            res = sympy.latex(sympy.nsimplify(
-                value, rational=False, constants=[sympy.pi]))
+            res = sympy.latex(value)
         if isinstance(value, (complex, complex128)):
             if value.real != 0 and value.imag != 0:
                 res = cls.par_left + res + cls.par_right

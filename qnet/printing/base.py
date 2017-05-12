@@ -407,11 +407,9 @@ class Printer(metaclass=ABCMeta):
     def render_scalar(cls, value: Any, adjoint=False) -> str:
         """Render a scalar `value` (numeric or symbolic)"""
         if adjoint:
-            res = str(sympy.nsimplify(
-                sympy.conjugate(value), rational=False, constants=[sympy.pi]))
+            res = str(sympy.conjugate(value))
         else:
-            res = str(sympy.nsimplify(
-                value, rational=False, constants=[sympy.pi]))
+            res = str(value)
         if isinstance(value, (complex, complex128)):
             if value.real != 0 and value.imag != 0:
                 res = cls.par_left + res + cls.par_right
