@@ -81,8 +81,6 @@ def test_dotprint_idfunc(expr):
     """Test that using 'str' idfunc and the default idfunc yield matching
     results."""
     dot1 = dotprint(expr)
-    with open("/Users/goerz/test.dot", "w") as out_fh: # DEBUG
-        out_fh.write(dot1) # DEBUG
     dot2 = dotprint(expr, idfunc=str)
     assert compare_dotcode(dot1, dot2)
 
