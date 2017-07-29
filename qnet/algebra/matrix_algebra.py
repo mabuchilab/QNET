@@ -121,7 +121,7 @@ class Matrix(Expression):
         return (self.matrix == 0).all()
 
     @classmethod
-    def _instance_key(cls, args, kwargs):
+    def _get_instance_key(cls, args, kwargs):
         matrix = args[0]
         return (cls, tuple(matrix.flatten()), tuple(matrix.shape))
 

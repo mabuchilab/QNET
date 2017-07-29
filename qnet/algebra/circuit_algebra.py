@@ -752,11 +752,13 @@ class CircuitSymbol(Circuit, Expression):
     _rx_name = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
     def __init__(self, name, cdim):
-        self._name = str(name)
+        name = str(name)
+        cdim = int(cdim)
+        self._name = name
+        self._cdim = cdim
         if not self._rx_name.match(name):
             raise ValueError("name '%s' does not match pattern '%s'"
                              % (self.name, self._rx_name.pattern))
-        self._cdim = int(cdim)
         super().__init__(name, cdim)
 
     @property

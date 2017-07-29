@@ -186,6 +186,7 @@ class Expression(metaclass=ABCMeta):
         self._tex = None
         self._ascii = None
         self._unicode = None
+        self._instance_key = self.__class__._get_instance_key(args, kwargs)
 
     @classmethod
     def create(cls, *args, **kwargs):
@@ -200,7 +201,7 @@ class Expression(metaclass=ABCMeta):
         #       ".create(*args, **kwargs); args = %s, kwargs = %s"
         #       % (args, kwargs))
         # LEVEL += 1
-        key = cls._instance_key(args, kwargs)
+        key = cls._get_instance_key(args, kwargs)
         try:
             if cls.instance_caching:
                 instance = cls._instances[key]
@@ -220,8 +221,7 @@ class Expression(metaclass=ABCMeta):
                     cls._instances[key] = simplified
                 if cls._create_idempotent and cls.instance_caching:
                     try:
-                        key2 = simplified._instance_key(simplified.args,
-                                                        simplified.kwargs)
+                        key2 = simplified._instance_key
                         if key2 != key:
                             cls._instances[key2] = simplified  # simplified key
                     except AttributeError:
@@ -237,7 +237,7 @@ class Expression(metaclass=ABCMeta):
         if cls.instance_caching:
             cls._instances[key] = instance
         if cls._create_idempotent and cls.instance_caching:
-            key2 = cls._instance_key(args, kwargs)
+            key2 = cls._get_instance_key(args, kwargs)
             if key2 != key:
                 cls._instances[key2] = instance  # instantiated key
         # LEVEL -= 1
@@ -245,14 +245,15 @@ class Expression(metaclass=ABCMeta):
         return instance
 
     @classmethod
-    def _instance_key(cls, args, kwargs):
+    def _get_instance_key(cls, args, kwargs):
         """Function that calculates a unique "key" (as a tuple) for the
         given args and kwargs. It is the basis of the hash of an Expression,
-        and is used for the internal caching of instances.
+        and is used for the internal caching of instances. Every Expression
+        stores this key in the `_instance_key` attribute.
 
-        Two expressions for which `expr._instance_key(expr.args, expr.kwargs)`
-        gives the same result are identical by definition (although `expr1 is
-        expr2` is not guaranteed to hold)
+        Two expressions for which `expr._instance_key` is the same are
+        identical by definition (although `expr1 is expr2` generally only holds
+        for explicit Singleton instances)
         """
         return (cls,) + tuple(args) + tuple(sorted(kwargs.items()))
 
@@ -281,11 +282,15 @@ class Expression(metaclass=ABCMeta):
         return self.kwargs
 
     def __eq__(self, other):
-        return (self is other) or hash(self) == hash(other)
+        try:
+            return ((self is other) or
+                    (self._instance_key == other._instance_key))
+        except AttributeError:
+            return False
 
     def __hash__(self):
         if self._hash is None:
-            self._hash = hash(self._instance_key(self.args, self.kwargs))
+            self._hash = hash(self._instance_key)
         return self._hash
 
     def __repr__(self):

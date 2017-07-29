@@ -55,7 +55,7 @@ def get_symbols(*cdim):
 
 
 def test_circuit_symbol_hashing():
-    """Check that CircuitSymbol have the same have value if and only if they
+    """Check that CircuitSymbol have the same hash value if and only if they
     are the same"""
     A1 = CircuitSymbol('A', 1)
     A2 = CircuitSymbol('A', 2)

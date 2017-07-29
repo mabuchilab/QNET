@@ -376,7 +376,7 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
 
     _identifier = 'LocalOperator'  # must be overridden by subclasses!
     _dagger = False  # do representations include a dagger?
-    _nargs = 0 # number of arguments
+    _nargs = 0  # number of arguments
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
     def __init__(self, *args, hs, identifier=None):
@@ -398,9 +398,8 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
                 args_vals.append(float(arg))
             except (TypeError, ValueError):
                 args_vals.append("~%s" % str(arg))
-        self._order_key = KeyTuple([self.__class__.__name__,
-                                    self._identifier, 1.0] +
-                                    args_vals)
+        self._order_key = KeyTuple(
+            [self.__class__.__name__, self._identifier, 1.0] + args_vals)
         super().__init__(*args, hs=hs)
 
     @property
@@ -508,17 +507,17 @@ class OperatorSymbol(Operator, Expression):
     # a ProductSpace
 
     def __init__(self, identifier, *, hs):
+        identifier = str(identifier)
         if not LocalOperator._rx_identifier.match(identifier):
             raise ValueError("identifier '%s' does not match pattern '%s'"
                              % (identifier,
                                 LocalOperator._rx_identifier.pattern))
         self.identifier = identifier
         if isinstance(hs, (str, int)):
-            self._hs = LocalSpace(hs)
+            hs = LocalSpace(hs)
         elif isinstance(hs, tuple):
-            self._hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
-        else:
-            self._hs = hs
+            hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
+        self._hs = hs
         self._order_key = KeyTuple((self.__class__.__name__, str(identifier),
                                     1.0))
         super().__init__(identifier, hs=hs)

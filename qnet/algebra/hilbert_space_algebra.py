@@ -247,39 +247,47 @@ class LocalSpace(HilbertSpace, Expression):
     _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
 
     def __init__(self, label, *, basis=None, dimension=None, order_index=None):
+
+        default_args = []
+        if basis is None:
+            default_args.append('basis')
+        else:
+            basis = tuple([str(label) for label in basis])
+        if dimension is None:
+            default_args.append('dimension')
+        else:
+            dimension = int(dimension)
+        if order_index in [None, float('inf')]:
+            default_args.append('order_index')
+            order_index = float('inf')  # ensure sort as last
+        else:
+            order_index = int(order_index)
+
         label = str(label)
         if not self._rx_label.match(label):
             raise ValueError("label '%s' does not match pattern '%s'"
                              % (label, self._rx_label.pattern))
-        self._basis = None
-        self._dimension = None
         if basis is None:
             if dimension is not None:
-                self._basis = tuple([str(i) for i in range(int(dimension))])
-                self._dimension = int(dimension)
+                basis = tuple([str(i) for i in range(dimension)])
         else:
-            if dimension is not None:
+            if dimension is None:
+                dimension = len(basis)
+            else:
                 if dimension != len(basis):
                     raise ValueError("basis and dimension are incompatible")
-            self._basis = tuple([str(label) for label in basis])
-            self._dimension = len(basis)
+
         self._label = label
-        if order_index is None:
-            self._order_index = float('inf')  # ensure sort as last
-        else:
-            self._order_index = int(order_index)
-        self._order_key = KeyTuple((self._order_index, self._label,
-                                    str(self._dimension), self._basis))
+        self._order_key = KeyTuple((order_index, label, str(dimension), basis))
+        self._basis = basis
+        self._dimension = dimension
+        self._order_index = order_index
         self._kwargs = OrderedDict([('basis', self._basis),
                                     ('dimension', self._dimension),
-                                    ('order_index', order_index)])
+                                    ('order_index', self._order_index)])
         self._minimal_kwargs = self._kwargs.copy()
-        if basis is None:
-            del self._minimal_kwargs['basis']
-        if dimension is None:
-            del self._minimal_kwargs['dimension']
-        if order_index is None:
-            del self._minimal_kwargs['order_index']
+        for key in default_args:
+            del self._minimal_kwargs[key]
 
         super().__init__(label, basis=basis, dimension=dimension,
                          order_index=order_index)
