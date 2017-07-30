@@ -117,12 +117,7 @@ class Ket(metaclass=ABCMeta):
     dag = property(adjoint)
 
     def expand(self):
-        """Expand out distributively all products of sums. Note that this does
-        not expand out sums of scalar coefficients.
-
-        :return: A fully expanded sum of states.
-        :rtype: Ket
-        """
+        """Expand out distributively all products of sums of Kets."""
         return self._expand()
 
     @abstractmethod
@@ -807,13 +802,14 @@ class Bra(Operation):
     operand = ket
 
     def adjoint(self):
-        """The adjoint of a ``Bra`` is just the original ``Ket`` again.
-
-        :rtype: Ket
-        """
+        """The adjoint of a ``Bra`` is just the original ``Ket`` again."""
         return self.ket
 
     dag = property(adjoint)
+
+    def expand(self):
+        """Expand out distributively all products of sums of Bras."""
+        return Bra(self.ket.expand())
 
     @property
     def space(self):
@@ -982,12 +978,14 @@ class KetBra(Operator, Operation):
         return KetBra.create(*reversed(self.operands))
 
     def _expand(self):
-        k, b = self.ket, self.bra
+        k, b = self.ket, self.bra.ket
         be, ke = b.expand(), k.expand()
         kesummands = ke.operands if isinstance(ke, KetPlus) else (ke,)
         besummands = be.operands if isinstance(be, KetPlus) else (be,)
-        return sum(KetBra.create(kes, bes)
-                   for bes in besummands for kes in kesummands)
+        res_summands = []
+        for (k, b) in cartesian_product(kesummands, besummands):
+            res_summands.append(KetBra.create(k, b))
+        return OperatorPlus(*res_summands)
 
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")

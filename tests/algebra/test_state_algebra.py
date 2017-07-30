@@ -22,13 +22,14 @@ import unittest
 
 from sympy import sqrt, exp, I, pi
 
+from qnet.algebra.abstract_algebra import no_rules
 from qnet.algebra.operator_algebra import (
         OperatorSymbol, Create, Destroy, Jplus, Jminus, Jz, Phase, Displace,
-        LocalSigma, IdentityOperator)
+        LocalSigma, IdentityOperator, OperatorPlus)
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.state_algebra import (
         KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
-        TrivialKet, UnequalSpaces, TensorKet, BasisKet)
+        TrivialKet, UnequalSpaces, TensorKet, BasisKet, KetBra)
 import pytest
 
 
@@ -248,3 +249,17 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
                 BasisKet(1, hs=1))
         assert ((Create(hs=1) * Destroy(hs=1)) * BasisKet(0, hs=1) == ZeroKet)
 
+
+def test_expand_ketbra():
+    """Test expansion of KetBra"""
+    hs = LocalSpace('0', basis=('0', '1'))
+    expr = KetBra(
+        KetPlus(BasisKet('0', hs=hs), BasisKet('1', hs=hs)),
+        KetPlus(BasisKet('0', hs=hs), BasisKet('1', hs=hs)))
+    with no_rules(KetBra):
+        expr_expand = expr.expand()
+    assert expr_expand == OperatorPlus(
+        KetBra(BasisKet('0', hs=hs), BasisKet('0', hs=hs)),
+        KetBra(BasisKet('0', hs=hs), BasisKet('1', hs=hs)),
+        KetBra(BasisKet('1', hs=hs), BasisKet('0', hs=hs)),
+        KetBra(BasisKet('1', hs=hs), BasisKet('1', hs=hs)))
