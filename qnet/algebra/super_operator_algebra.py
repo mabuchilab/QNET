@@ -183,8 +183,7 @@ class SuperOperatorOperation(SuperOperator, Operation, metaclass=ABCMeta):
         return self._space
 
     def _simplify_scalar(self):
-        return self.__class__.create(*[o.simplify_scalar()
-                                       for o in self.operands])
+        return self.create(*[o.simplify_scalar() for o in self.operands])
 
     @abstractmethod
     def _expand(self):
@@ -597,7 +596,7 @@ class SPre(SuperOperator, Operation):
         return SPre.create(oe)
 
     def _simplify_scalar(self):
-        return self.__class__.create(self.operands[0].simplify_scalar())
+        return self.create(self.operands[0].simplify_scalar())
 
 
 class SPost(SuperOperator, Operation):
@@ -627,7 +626,7 @@ class SPost(SuperOperator, Operation):
         return SPost.create(oe)
 
     def _simplify_scalar(self):
-        return self.__class__.create(self.operands[0].simplify_scalar())
+        return self.create(self.operands[0].simplify_scalar())
 
 
 class SuperOperatorTimesOperator(Operator, Operation):

@@ -186,7 +186,7 @@ class Expression(metaclass=ABCMeta):
         self._tex = None
         self._ascii = None
         self._unicode = None
-        self._instance_key = self.__class__._get_instance_key(args, kwargs)
+        self._instance_key = self._get_instance_key(args, kwargs)
 
     @classmethod
     def create(cls, *args, **kwargs):
@@ -316,7 +316,7 @@ class Expression(metaclass=ABCMeta):
         new_args = [substitute(arg, var_map) for arg in self.args]
         new_kwargs = {key: substitute(val, var_map)
                       for (key, val) in self.kwargs.items()}
-        return self.__class__.create(*new_args, **new_kwargs)
+        return self.create(*new_args, **new_kwargs)
 
     def simplify(self, rules=None):
         """Recursively re-instantiate the expression, while applying all of the
@@ -326,7 +326,7 @@ class Expression(metaclass=ABCMeta):
         new_args = [simplify(arg, rules) for arg in self.args]
         new_kwargs = {key: simplify(val, rules)
                       for (key, val) in self.kwargs.items()}
-        simplified = self.__class__.create(*new_args, **new_kwargs)
+        simplified = self.create(*new_args, **new_kwargs)
         for (rule, replacement) in rules:
             matched = rule.match(simplified)
             if matched:

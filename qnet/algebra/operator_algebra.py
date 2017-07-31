@@ -465,8 +465,7 @@ class OperatorOperation(Operator, Operation, metaclass=ABCMeta):
         return self._space
 
     def _simplify_scalar(self):
-        return self.__class__.create(*[o.simplify_scalar()
-                                       for o in self.operands])
+        return self.create(*[o.simplify_scalar() for o in self.operands])
 
 class SingleOperatorOperation(Operator, Operation, metaclass=ABCMeta):
     """Base class for Operations that act on a single Operator"""
@@ -1290,7 +1289,7 @@ class Commutator(OperatorOperation):
         B_series = self.B.series_expand(param, about, order)
         res = []
         for n in range(order + 1):
-            summands = [self.__class__.create(A_series[k], B_series[n - k])
+            summands = [self.create(A_series[k], B_series[n - k])
                         for k in range(n + 1)]
             res.append(OperatorPlus.create(*summands))
         return tuple(res)
