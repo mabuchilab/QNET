@@ -28,7 +28,6 @@ def test_displace_uniqueness():
     W2 = Displace('W', alpha=-79.838356622)
     W3 = Displace('W')
     assert 'alpha' in W1.kwargs
-    assert hash(W1) != hash(W2)
     assert W1 != W2
     assert W2 != W3
     assert W1 != W3

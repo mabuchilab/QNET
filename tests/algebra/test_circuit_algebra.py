@@ -55,8 +55,8 @@ def get_symbols(*cdim):
 
 
 def test_circuit_symbol_hashing():
-    """Check that CircuitSymbol have the same hash value if and only if they
-    are the same"""
+    """Check that CircuitSymbol have the same hash value if they are the
+    same"""
     A1 = CircuitSymbol('A', 1)
     A2 = CircuitSymbol('A', 2)
     B1 = CircuitSymbol('B', 1)
@@ -65,10 +65,8 @@ def test_circuit_symbol_hashing():
     assert hash(A1) == hash(a1)
     assert A1 is not B1
     assert A1 != B1
-    assert hash(A1) != hash(B1)
     assert A1 is not A2
     assert A1 != A2
-    assert hash(A1) != hash(A2)
 
 
 def test_permutation():
