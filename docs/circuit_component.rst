@@ -78,7 +78,7 @@ This leads to two alternative ways of defining the circuit components:
 A simple example
 ----------------
 
-As an example we will now define a simple (symbolically irreducible) version of the single sided jaynes cummings model.
+As an example we will now define a simple (symbolically irreducible) version of the single sided Jaynes-Cummings model.
 The model is given by:
 
 .. math::
