@@ -33,6 +33,8 @@ from qnet.algebra.operator_algebra import (
         OperatorSymbol, sympyOne, Destroy, ZeroOperator)
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.circuit_components.displace_cc import Displace
+from qnet.circuit_components.phase_cc import Phase
+from qnet.circuit_components.beamsplitter_cc import Beamsplitter
 from qnet.circuit_components import mach_zehnder_cc
 
 
@@ -248,6 +250,45 @@ def test_feedback():
     assert (B << (cid(1)  + C)).feedback(out_port=0, in_port=1).substitute({B: (A1 + A2)}) == A2 << C << A1
     assert ((cid(1)  + C)<< P_sigma(1,0) << B).feedback(out_port=1, in_port=1).substitute({B: (A1 + A2)}) == A2 << C << A1
     assert ((cid(1)  + C)<< P_sigma(1,0) << B << (cid(1) + D)).feedback(out_port=1, in_port=1).substitute({B: (A1 + A2)}) == A2 << D<< C << A1
+
+    #check for correctness of the SLH triple in non-trivial cases, i.e.,
+    #S[k, l] != 0 _and_ L[k] != 0 when feeding back from port k to port l.
+    a = Destroy(hs=1)
+    theta, phi = sympy.symbols('theta phi', real=True)
+    gamma, epsilon = sympy.symbols('gamma epsilon', positive=True)
+
+    eip = sympy.exp(I * phi)
+    eimp = sympy.conjugate(eip)
+    ct, st = sympy.cos(theta), sympy.sin(theta)
+    sqe, sqg, sq2 = sympy.sqrt(epsilon), sympy.sqrt(gamma), sympy.sqrt(2)
+    div = 1 + eip * st ** 2
+
+    cav = SLH([[1]], [sq2 * sqg * a], 0)
+    bs = Beamsplitter('theta', theta=theta)
+    ph = Phase('phi', phi=phi)
+    flip = map_signals_circuit({1: 0}, 2)
+
+    sys = (
+        (cid(1) + ph + cid(1)) <<
+        (cid(1) + bs) <<
+        (flip + cav) <<
+        (cid(1) + bs)
+    ).coherent_input(0, 0, sqe)
+    sys_fb = sys.feedback(out_port=1, in_port=1).toSLH()
+
+    fb = SLH(
+        Matrix([[ eip * ct ** 2, -(1 + eip) * st],
+                [(1 + eip) * st,         ct ** 2]]) / div,
+        Matrix([-(1 + eip) * sqe * st - sq2 * sqg * eip * st * ct * a,
+                                   sqe * ct ** 2 + sq2 * sqg * ct * a]) / div,
+        (I * (sqe * sqg / sq2) * ct * (
+            (1 +  eip * st ** 2) * a -
+            (1 + eimp * st ** 2) * a.dag()
+        ) + I * gamma * (eip - eimp) * st ** 2 * a.dag() * a) /
+        (div * sympy.conjugate(div))
+    )
+
+    assert sys_fb.expand().simplify_scalar() == fb.expand().simplify_scalar()
 
 
 def test_ABCD():
