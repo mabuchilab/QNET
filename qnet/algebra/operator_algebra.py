@@ -755,16 +755,16 @@ class Phase(LocalOperator):
         raise NotImplementedError()
 
     def _adjoint(self):
-        return Phase(-self.phi.conjugate(), hs=self.space,
-                     identifier=self.identifier)
+        return Phase.create(-self.phi.conjugate(), hs=self.space,
+                            identifier=self.identifier)
 
     def _pseudo_inverse(self):
-        return Phase(-self.phi, hs=self.space,
-                     identifier=self.identfier)
+        return Phase.create(-self.phi, hs=self.space,
+                            identifier=self.identfier)
 
     def _simplify_scalar(self):
-        return Phase(simplify_scalar(self.phi), hs=self.space,
-                     identifier=self.identifier)
+        return Phase.create(simplify_scalar(self.phi), hs=self.space,
+                            identifier=self.identifier)
 
     def all_symbols(self):
         return scalar_free_symbols(self.space)
@@ -801,13 +801,14 @@ class Displace(LocalOperator):
         raise NotImplementedError()
 
     def _adjoint(self):
-        return Displace(-self.alpha, hs=self.space, identifier=self.identifier)
+        return Displace.create(-self.alpha, hs=self.space,
+                               identifier=self.identifier)
 
     _pseudo_inverse = _adjoint
 
     def _simplify_scalar(self):
-        return Displace(simplify_scalar(self.alpha), hs=self.space,
-                        identifier=self.identifier)
+        return Displace.create(simplify_scalar(self.alpha), hs=self.space,
+                               identifier=self.identifier)
 
     def all_symbols(self):
         return scalar_free_symbols(self.space)
