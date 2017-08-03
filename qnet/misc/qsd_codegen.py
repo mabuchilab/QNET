@@ -60,7 +60,7 @@ def local_ops(expr):
         return set([expr])
     elif isinstance(expr, Circuit):
         slh = expr.toSLH()
-        Ls = slh.L.matrix.flatten().tolist()
+        Ls = slh.L.matrix.ravel().tolist()
         H = slh.H
         return set_union(*tuple(map(local_ops, Ls))) | local_ops(H)
     elif isinstance(expr, Expression):
@@ -1116,7 +1116,7 @@ class QSDCodeGen(object):
         lines = []
         lines.append('const int nL = {nL};'.format(nL=self.circuit.cdim))
         L_op_lines = []
-        for L_op in self.circuit.L.matrix.flatten():
+        for L_op in self.circuit.L.matrix.ravel():
             L_op_lines.append(self._operator_str(L_op))
         lines.extend(
             ("Operator L[nL]={\n  " + ",\n  ".join(L_op_lines) + "\n};")

@@ -273,10 +273,8 @@ def test_SLH_elements():
     def check(S, L, H):
         for typ in typelist:
             slh = SLH(typ(S), typ(L), H)
-            n, m = slh.S.shape
-            assert all(isinstance(slh.S[i, j], Operator)
-                       for i in range(n) for j in range(m))
-            assert all(isinstance(slh.L[i, 0], Operator) for i in range(n))
+            assert all(isinstance(s, Operator) for s in slh.S.matrix.ravel())
+            assert all(isinstance(l, Operator) for l in slh.L.matrix.ravel())
             assert isinstance(slh.H, Operator)
 
     # Numbers

@@ -764,7 +764,7 @@ def liouvillian(H, Ls = []):
     :rtype: SuperOperator
     """
     if isinstance(Ls, Matrix):
-        Ls = Ls.matrix.flatten().tolist()
+        Ls = Ls.matrix.ravel().tolist()
     summands = [-I * commutator(H), ]
     summands.extend([lindblad(L) for L in Ls])
     return SuperOperatorPlus.create(*summands)

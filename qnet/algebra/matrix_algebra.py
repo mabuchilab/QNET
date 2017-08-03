@@ -123,11 +123,11 @@ class Matrix(Expression):
     @classmethod
     def _get_instance_key(cls, args, kwargs):
         matrix = args[0]
-        return (cls, tuple(matrix.flatten()), tuple(matrix.shape))
+        return (cls, tuple(matrix.ravel()), tuple(matrix.shape))
 
     def __hash__(self):
         if not self._hash:
-            self._hash = hash((tuple(self.matrix.flatten()),
+            self._hash = hash((tuple(self.matrix.ravel()),
                                self.matrix.shape, Matrix))
         return self._hash
 
@@ -246,7 +246,7 @@ class Matrix(Expression):
         :rtype: Matrix
         """
         s = self.shape
-        emat = [method(o) for o in self.matrix.flatten()]
+        emat = [method(o) for o in self.matrix.ravel()]
         return Matrix(np_array(emat).reshape(s))
 
     def series_expand(self, param, about, order):
@@ -264,7 +264,7 @@ class Matrix(Expression):
         """
         s = self.shape
         emats = zip(*[o.series_expand(param, about, order)
-                      for o in self.matrix.flatten()])
+                      for o in self.matrix.ravel()])
         return tuple((Matrix(np_array(em).reshape(s)) for em in emats))
 
     def expand(self):
@@ -291,7 +291,7 @@ class Matrix(Expression):
 
     def all_symbols(self):
         ret = set()
-        for o in self.matrix.flatten():
+        for o in self.matrix.ravel():
             if isinstance(o, Operator):
                 ret = ret | o.all_symbols()
             else:
@@ -302,7 +302,7 @@ class Matrix(Expression):
     @property
     def space(self):
         """Combined Hilbert space of all matrix elements."""
-        arg_spaces = [o.space for o in self.matrix.flatten()
+        arg_spaces = [o.space for o in self.matrix.ravel()
                       if hasattr(o, 'space')]
         if len(arg_spaces) == 0:
             return TrivialSpace

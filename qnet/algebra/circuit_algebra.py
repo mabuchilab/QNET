@@ -411,11 +411,9 @@ class SLH(Circuit, Expression):
             raise ValueError(("L has wrong shape %s. L must be a column vector "
                               "of operators (shape n × 1)") % str(L.shape))
 
-        n, m = S.shape
-        if not all(isinstance(S[i, j], Operator)
-                   for i in range(n) for j in range(m)):
+        if not all(isinstance(s, Operator) for s in S.matrix.ravel()):
             S = S * IdentityOperator
-        if not all(isinstance(L[i, 0], Operator) for i in range(n)):
+        if not all(isinstance(l, Operator) for l in L.matrix.ravel()):
             L = L * IdentityOperator
         if not isinstance(H, Operator):
             H = H * IdentityOperator
@@ -577,7 +575,7 @@ class SLH(Circuit, Expression):
         return (-I * (H * rho - rho * H) +
                 sum(Lk * rho * adjoint(Lk) -
                     (adjoint(Lk) * Lk * rho + rho * adjoint(Lk) * Lk) / 2
-                    for Lk in L.matrix.flatten()))
+                    for Lk in L.matrix.ravel()))
 
     def symbolic_heisenberg_eom(
             self, X=None, noises=None, expand_simplify=True):
@@ -599,7 +597,7 @@ class SLH(Circuit, Expression):
             X = OperatorSymbol('X', hs=(L.space | H.space))
 
         summands = [I * (H * X - X * H), ]
-        for Lk in L.matrix.flatten():
+        for Lk in L.matrix.ravel():
             summands.append(adjoint(Lk) * X * Lk)
             summands.append(-(adjoint(Lk) * Lk * X + X * adjoint(Lk) * Lk) / 2)
 
