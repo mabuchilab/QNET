@@ -20,8 +20,9 @@
 
 import unittest
 
-from numpy import array as np_array, conjugate as np_conjugate
-from sympy import symbols, sqrt, I, exp
+from numpy import (array as np_array, conjugate as np_conjugate,
+                   int_ as np_int, float_ as np_float)
+from sympy import symbols, sqrt, I, exp, sympify
 
 from qnet.algebra.operator_algebra import (
         Displace, Create, Destroy, OperatorSymbol, IdentityOperator,
@@ -41,6 +42,26 @@ def test_identity_singleton():
     assert IdentityOperator.create() is IdentityOperator
     assert IdentityOperator.create(
         *IdentityOperator.args, **IdentityOperator.kwargs) is IdentityOperator
+
+
+def test_identity_comparisons():
+    assert IdentityOperator == 1
+    assert IdentityOperator == np_float(1.0)
+    assert IdentityOperator == sympify(1)
+
+    assert IdentityOperator != np_int(-3)
+    assert IdentityOperator != 0.0
+    assert IdentityOperator != sympify(3.5)
+
+
+def test_zero_comparisons():
+    assert ZeroOperator == np_int(0)
+    assert ZeroOperator == 0.0
+    assert ZeroOperator == sympify(0.0)
+
+    assert ZeroOperator != -3
+    assert ZeroOperator != np_float(1.0)
+    assert ZeroOperator != sympify(2)
 
 
 class TestOperatorCreation(unittest.TestCase):
@@ -67,12 +88,12 @@ class TestOperatorAddition(unittest.TestCase):
     def testAdditionToScalar(self):
         hs = LocalSpace("hs")
         a = OperatorSymbol("a", hs=hs)
-        id = IdentityOperator
+        id_ = IdentityOperator
         assert a+0 == a
         assert 0+a == a
         assert 1 + a + 1 == a + 2
         lhs = a + 2
-        rhs = OperatorPlus(ScalarTimesOperator(2, id), a)
+        rhs = OperatorPlus(ScalarTimesOperator(2, id_), a)
         assert lhs == rhs
 
     def testOperatorOrdering(self):
@@ -122,9 +143,9 @@ class TestOperatorTimes(unittest.TestCase):
     def testIdentity(self):
         h1 = LocalSpace("h1")
         a = OperatorSymbol("a", hs=h1)
-        id = IdentityOperator
-        assert a * id == a
-        assert id * a == a
+        id_ = IdentityOperator
+        assert a * id_ == a
+        assert id_ * a == a
 
     def testOrdering(self):
         h1 = LocalSpace("h1")
@@ -171,6 +192,14 @@ class TestScalarTimesOperator(unittest.TestCase):
         assert 0 * a == z
         assert a*0 == z
         assert 10 * z == z
+
+    def testScalarTimesIdentity(self):
+        id_ = IdentityOperator
+
+        assert 2 * id_ == 2
+        assert id_ * 2 == np_float(2.0)
+        assert -3.7 * id_ == sympify(-3.7)
+
 
     def testHashability(self):
         assert hash(ScalarTimesOperator(1, Create(hs=1))) == \

@@ -581,7 +581,9 @@ class IdentityOperator(Operator, Expression, metaclass=Singleton):
         return printer.identity_sym
 
     def __eq__(self, other):
-        return self is other  # or other == 1
+        if isinstance(other, SCALAR_TYPES):
+            return other == 1
+        return self is other
 
     def all_symbols(self):
         return set(())
@@ -624,7 +626,9 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
         return printer.zero_sym
 
     def __eq__(self, other):
-        return self is other or other == 0
+        if isinstance(other, SCALAR_TYPES):
+            return other == 0
+        return self is other
 
     def all_symbols(self):
         return set(())
