@@ -19,6 +19,7 @@
 
 import sympy
 from sympy import I
+from numpy import array as np_array
 import pytest
 
 
@@ -30,7 +31,7 @@ from qnet.algebra.circuit_algebra import (
 from qnet.algebra.permutations import (
         permute, full_block_perm, block_perm_and_perms_within_blocks)
 from qnet.algebra.operator_algebra import (
-        OperatorSymbol, sympyOne, Destroy, ZeroOperator)
+        Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator)
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.circuit_components.displace_cc import Displace
 from qnet.circuit_components.phase_cc import Phase
@@ -224,6 +225,74 @@ def test_factorize_permutation():
     assert new_lhs == P_sigma(0,1,2,6,3,4,5)
     assert permuted_rhs == (P_sigma(0,1,3,2) << CircuitSymbol('NAND1', 4)) + cid(3)
     assert new_rhs == P_sigma(4,5,6, 0,1,2,3)
+
+
+def _symbmatrix(a):
+    try:
+        return sympy.Matrix(a)
+    except (TypeError, ValueError):
+        return np_array(a)
+
+typelist = [lambda x: x, np_array, _symbmatrix, Matrix]
+
+
+def test_SLH_equality():
+    # Verify that equality between SLH objects is symmetric (ref. #55)
+    a = Destroy(hs=1)
+    b, c, d = sympy.symbols('b c d')
+
+    S1 = [[b, c], [2.0, 4]]
+    L1 = [d, a]
+    H1 = a.dag() * a
+
+    S2 = [[c, d], [-I, 2]]
+    L2 = [a, b]
+    H2 = 0
+
+    slh1 = [SLH(typ(S1), typ(L1), H1) for typ in typelist]
+    slh2 = [SLH(typ(S2), typ(L2), H2) for typ in typelist]
+
+    m = len(typelist)
+    for i in range(m):
+        for j in range(m):
+            assert slh1[i] == slh1[j]
+            assert slh1[j] == slh1[i]
+
+            assert slh2[i] == slh2[j]
+            assert slh2[j] == slh2[i]
+
+            assert slh1[i] != slh2[j]
+            assert slh2[j] != slh1[i]
+
+
+def test_SLH_elements():
+    # Check that all elements in the SLH triple are operator valued, even if
+    # only scalars are provided (ref #55). Consider removing this test if
+    # a different way to satisfy test_SLH_equality is found.
+
+    def check(S, L, H):
+        for typ in typelist:
+            slh = SLH(typ(S), typ(L), H)
+            n, m = slh.S.shape
+            assert all(isinstance(slh.S[i, j], Operator)
+                       for i in range(n) for j in range(m))
+            assert all(isinstance(slh.L[i, 0], Operator) for i in range(n))
+            assert isinstance(slh.H, Operator)
+
+    # Numbers
+    S = [[1.0, 2.0], [3.0, 4.0]]
+    L = [5.0, 6.0]
+    H = 7.0
+
+    check(S, L, H)
+
+    # Symbols
+    a, b, c, d, e, f, g = sympy.symbols('a b c d e f g')
+    S = [[a, b], [c, d]]
+    L = [e, f]
+    H = g
+
+    check(S, L, H)
 
 
 def test_feedback():

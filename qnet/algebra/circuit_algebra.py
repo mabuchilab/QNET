@@ -401,17 +401,25 @@ class SLH(Circuit, Expression):
 
     def __init__(self, S, L, H):
         if not isinstance(S, Matrix):
-            S = Matrix(S) * IdentityOperator
+            S = Matrix(S)
         if not isinstance(L, Matrix):
-            L = Matrix(L) * IdentityOperator
-        if not isinstance(H, Operator):
-            H = H * IdentityOperator
+            L = Matrix(L)
         if S.shape[0] != L.shape[0]:
             raise ValueError('S and L misaligned: S = {!r}, L = {!r}'
                              .format(S, L))
         if L.shape[1] != 1:
             raise ValueError(("L has wrong shape %s. L must be a column vector "
                               "of operators (shape n × 1)") % str(L.shape))
+
+        n, m = S.shape
+        if not all(isinstance(S[i, j], Operator)
+                   for i in range(n) for j in range(m)):
+            S = S * IdentityOperator
+        if not all(isinstance(L[i, 0], Operator) for i in range(n)):
+            L = L * IdentityOperator
+        if not isinstance(H, Operator):
+            H = H * IdentityOperator
+
         self.S = S  #: Scattering matrix
         self.L = L  #: Coupling vector
         self.H = H  #: Hamiltonian

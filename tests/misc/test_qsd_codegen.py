@@ -23,8 +23,8 @@ from qnet.misc.qsd_codegen import (
     local_ops, find_kets, QSDCodeGen, QSDOperator, QSDCodeGenError, expand_cmd,
     compilation_worker, qsd_run_worker, _find_time_dependent_coeffs)
 from qnet.algebra.operator_algebra import (
-        IdentityOperator, Create, Destroy, LocalOperator, Operator, Operation,
-        TrivialSpace, LocalSigma)
+    ZeroOperator, IdentityOperator, Create, Destroy, LocalOperator, Operator,
+    Operation, TrivialSpace, LocalSigma)
 from qnet.algebra.state_algebra import (
     BasisKet, LocalKet, TensorKet, CoherentStateKet
 )
@@ -49,7 +49,7 @@ def test_local_ops():
     l_ops = local_ops(psa)
     a = Destroy(hs=psa.space)
     assert type(local_ops(a)) is set
-    assert set([IdentityOperator, a, a.dag()]) == l_ops
+    assert set([ZeroOperator, IdentityOperator, a, a.dag()]) == l_ops
     assert local_ops(a) == set([a])
     assert local_ops(a*a) == set([a])
     assert local_ops(a + a.dag()) == set([a,a.dag()])
