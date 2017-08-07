@@ -224,6 +224,27 @@ class TestScalarTimesOperator(unittest.TestCase):
         b = OperatorSymbol.create("b", hs=h2)
         assert (5*(a * b)).space == h1*h2
 
+    def test_series_expand(self):
+        k, l = symbols("k l")
+        a = Destroy(hs="1")
+        X = (1 + l + 2 * k + k ** 3 / 2) * a
+        half = sympify(1) / 2
+        assert X.series_expand(k, 0, 0) == ((1 + l) * a, )
+        assert X.series_expand(k, 0, 1) == ((1 + l) * a,
+                                            2 * a)
+        assert X.series_expand(k, 0, 2) == ((1 + l) * a,
+                                            2 * a,
+                                            ZeroOperator)
+        assert X.series_expand(k, 0, 3) == ((1 + l) * a,
+                                            2 * a,
+                                            ZeroOperator,
+                                            half * a)
+        assert X.series_expand(k, 0, 4) == ((1 + l) * a,
+                                            2 * a,
+                                            ZeroOperator,
+                                            half * a,
+                                            ZeroOperator)
+
 
 class TestDifferentiation(unittest.TestCase):
 

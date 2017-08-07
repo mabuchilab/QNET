@@ -1184,20 +1184,19 @@ class ScalarTimesOperator(Operator, Operation):
                 c = self.coeff.subs({param: about + param})
             else:
                 c = self.coeff
+
             series = sympy_series(c, x=param, x0=0, n=None)
             ce = []
-            n_order = 0
-            while n_order <= order:
-                try:
-                    term = next(series)
-                    if n_order == 0:
-                        c = term
-                    else:
-                        c = term.coeff(param, n_order)
-                    ce.append(c)
-                except StopIteration:
-                    ce.append(0)
-                n_order += 1
+            next_order = 0
+            for term in series:
+                c, o = term.as_coeff_exponent(param)
+                if o > order:
+                    break
+                ce.extend([0] * (o - next_order))
+                ce.append(c)
+                next_order = o + 1
+            ce.extend([0] * (order + 1 - next_order))
+
             res = []
             for n in range(order + 1):
                 summands = [ce[k] * te[n - k] for k in range(n + 1)]
