@@ -19,6 +19,7 @@
 
 
 import unittest
+import pytest
 
 from numpy import (array as np_array, conjugate as np_conjugate,
                    int_ as np_int, float_ as np_float)
@@ -227,6 +228,8 @@ class TestScalarTimesOperator(unittest.TestCase):
     def test_series_expand(self):
         k, l = symbols("k l")
         a = Destroy(hs="1")
+        
+        # Test for a finite polynomial with some vanishing terms
         X = (1 + l + 2 * k + k ** 3 / 2) * a
         half = sympify(1) / 2
         assert X.series_expand(k, 0, 0) == ((1 + l) * a, )
@@ -244,6 +247,15 @@ class TestScalarTimesOperator(unittest.TestCase):
                                             ZeroOperator,
                                             half * a,
                                             ZeroOperator)
+
+        # Test for an infinite series, with expansion around nonzero center
+        Y = -a / k
+        for n in range(6):
+            assert Y.series_expand(k, -1.0, n) == (a, ) * (n + 1)
+
+        # Test at a singularity
+        with pytest.raises(ValueError):
+            Y.series_expand(k, 0, 0)
 
 
 class TestDifferentiation(unittest.TestCase):

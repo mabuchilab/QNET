@@ -1190,6 +1190,9 @@ class ScalarTimesOperator(Operator, Operation):
             next_order = 0
             for term in series:
                 c, o = term.as_coeff_exponent(param)
+                if o < 0:
+                    raise ValueError("{} is singular at expansion point "
+                                     "{} = {}.".format(self, param, about))
                 if o > order:
                     break
                 ce.extend([0] * (o - next_order))
