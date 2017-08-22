@@ -109,6 +109,20 @@ def test_scalar_coeffs():
     assert 2 * convert_to_qutip(a) == convert_to_qutip(2 * a)
 
 
+def test_tensor_key():
+    hs_mech = LocalSpace('m', dimension=5)
+    hs_opt = LocalSpace('o', dimension=5)
+    hs = hs_mech * hs_opt
+    ket00 = hs.basis_state(0)
+    ket0m = hs_mech.basis_state(0)
+    ket0o = hs_opt.basis_state(0)
+    qutip_ket00 = convert_to_qutip(ket00)
+    qutip_ket0m = convert_to_qutip(ket0m)
+    qutip_ket0o = convert_to_qutip(ket0o)
+    expected = qutip.tensor(qutip_ket0m, qutip_ket0o)
+    assert ((qutip_ket00 - expected).norm() < 1e-15)
+
+
 def test_symbol():
     expN = OperatorSymbol("expN", hs=1)
     hs1 = LocalSpace("sym1", dimension=10)

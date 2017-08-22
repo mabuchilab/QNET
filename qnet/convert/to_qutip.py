@@ -68,6 +68,7 @@ DENSE_DIMENSION_LIMIT = 1000
 
 __all__ = ['convert_to_qutip', 'SLH_to_qutip']
 
+
 def convert_to_qutip(expr, full_space=None, mapping=None):
     """Convert a QNET expression to a qutip object
 
@@ -88,7 +89,8 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
     if full_space is None:
         full_space = expr.space
     if not expr.space.is_tensor_factor_of(full_space):
-        raise ValueError("expr must be in full_space")
+        raise ValueError(
+            "expr '%s' must be in full_space %s" % (expr, full_space))
     if full_space == TrivialSpace:
         raise AlgebraError(
             "Cannot convert object in TrivialSpace to qutip. "
@@ -191,12 +193,12 @@ def SLH_to_qutip(slh, full_space=None, time_symbol=None,
             "You may pass a non-trivial `full_space`")
     slh = move_drive_to_H(slh)
     if time_symbol is None:
-        H = convert_to_qutip(slh.H, full_space)
+        H = convert_to_qutip(slh.H, full_space=full_space)
         Ls = []
         for L in slh.Ls:
             if isinstance(L, SCALAR_TYPES):
                 L = L * IdentityOperator
-            L_qutip = convert_to_qutip(L, full_space)
+            L_qutip = convert_to_qutip(L, full_space=full_space)
             if L_qutip.norm() > 0:
                 Ls.append(L_qutip)
     else:
@@ -331,7 +333,6 @@ def _convert_operator_operation_to_qutip(expr, full_space, mapping):
 
 
 def _convert_state_operation_to_qutip(expr, full_space, mapping):
-    n = full_space.dimension
     if full_space != expr.space:
         all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
@@ -343,12 +344,12 @@ def _convert_state_operation_to_qutip(expr, full_space, mapping):
                for s in all_spaces[own_space_index + 1:]])
         )
     if isinstance(expr, BraKet):
-        bq = convert_to_qutip(expr.bra, n, mapping=mapping)
-        kq = convert_to_qutip(expr.ket, n, mapping=mapping)
+        bq = convert_to_qutip(expr.bra, full_space, mapping=mapping)
+        kq = convert_to_qutip(expr.ket, full_space, mapping=mapping)
         return bq * kq
     elif isinstance(expr, KetBra):
-        bq = convert_to_qutip(expr.bra, n, mapping=mapping)
-        kq = convert_to_qutip(expr.ket, n, mapping=mapping)
+        bq = convert_to_qutip(expr.bra, full_space, mapping=mapping)
+        kq = convert_to_qutip(expr.ket, full_space, mapping=mapping)
         return kq * bq
     else:
         raise ValueError("Cannot convert '%s' of type %s"
@@ -360,19 +361,18 @@ def _convert_ket_to_qutip(expr, full_space, mapping):
     if full_space != expr.space:
         all_spaces = full_space.local_factors
         own_space_index = all_spaces.index(expr.space)
-        return qutip.tensor(
-            *([qutip.qeye(s.dimension)
-               for s in all_spaces[:own_space_index]] +
-              convert_to_qutip(expr, expr.space, mapping=mapping) +
-              [qutip.qeye(s.dimension)
-               for s in all_spaces[own_space_index + 1:]])
+        factors = (
+            [qutip.qeye(s.dimension) for s in all_spaces[:own_space_index]] +
+            [convert_to_qutip(expr, expr.space, mapping=mapping), ] +
+            [qutip.qeye(s.dimension) for s in all_spaces[own_space_index + 1:]]
         )
+        return qutip.tensor(*factors)
     if isinstance(expr, BasisKet):
         return qutip.basis(n, expr.index)
     elif isinstance(expr, CoherentStateKet):
         return qutip.coherent(n, complex(expr.operands[1]))
     elif isinstance(expr, KetPlus):
-        return sum((convert_to_qutip(op, n, mapping=mapping)
+        return sum((convert_to_qutip(op, full_space, mapping=mapping)
                     for op in expr.operands), 0)
     elif isinstance(expr, TensorKet):
         if any(len(op.space) > 1 for op in expr.operands):
@@ -380,15 +380,16 @@ def _convert_ket_to_qutip(expr, full_space, mapping):
             if se == expr:
                 raise ValueError("Cannot represent as QuTiP "
                                  "object: {!s}".format(expr))
-            return convert_to_qutip(se, n, mapping=mapping)
-        return qutip.tensor(*[convert_to_qutip(o, n, mapping=mapping)
-                              for o in expr.operands])
+            return convert_to_qutip(se, full_space, mapping=mapping)
+        factors = [convert_to_qutip(o, o.space, mapping=mapping)
+                   for o in expr.operands]
+        return qutip.tensor(*factors)
     elif isinstance(expr, ScalarTimesKet):
-        return complex(expr.coeff) * convert_to_qutip(expr.term, n,
+        return complex(expr.coeff) * convert_to_qutip(expr.term, full_space,
                                                       mapping=mapping)
     elif isinstance(expr, OperatorTimesKet):
-        return convert_to_qutip(expr.coeff, n, mapping=mapping) * \
-                convert_to_qutip(expr.term, n, mapping=mapping)
+        return convert_to_qutip(expr.coeff, full_space, mapping=mapping) * \
+                convert_to_qutip(expr.term, full_space, mapping=mapping)
     else:
         raise ValueError("Cannot convert '%s' of type %s"
                          % (str(expr), type(expr)))
