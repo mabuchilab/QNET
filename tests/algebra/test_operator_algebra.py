@@ -29,7 +29,7 @@ from qnet.algebra.operator_algebra import (
         Displace, Create, Destroy, OperatorSymbol, IdentityOperator,
         ZeroOperator, OperatorPlus, LocalSigma, LocalProjector, OperatorTrace,
         Adjoint, X, Y, Z, ScalarTimesOperator, OperatorTimes, Jz,
-        Jplus, Jminus, Phase)
+        Jplus, Jminus, Phase, LocalOperator)
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, ProductSpace)
@@ -228,7 +228,7 @@ class TestScalarTimesOperator(unittest.TestCase):
     def test_series_expand(self):
         k, l = symbols("k l")
         a = Destroy(hs="1")
-        
+
         # Test for a finite polynomial with some vanishing terms
         X = (1 + l + 2 * k + k ** 3 / 2) * a
         half = sympify(1) / 2
@@ -497,3 +497,11 @@ class TestOperatorMatrices(unittest.TestCase):
 
     def testElementExpand(self):
         assert Matrix([[(Create(hs=1) + Create(hs=2)) * Create(hs=3)]]).expand() == Matrix([[Create(hs=1)*Create(hs=3) + Create(hs=2)*Create(hs=3)]])
+
+
+def test_local_operator_init():
+    """Test that LocalOperators with different identifiers can be
+    distinguished"""
+    x = LocalOperator(identifier='x', hs=0)
+    p = LocalOperator(identifier='p', hs=0)
+    assert x != p

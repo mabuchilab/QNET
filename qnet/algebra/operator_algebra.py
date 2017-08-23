@@ -400,7 +400,7 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
                 args_vals.append("~%s" % str(arg))
         self._order_key = KeyTuple(
             [self.__class__.__name__, self._identifier, 1.0] + args_vals)
-        super().__init__(*args, hs=hs)
+        super().__init__(*args, hs=hs, identifier=self._identifier)
 
     @property
     def space(self):
