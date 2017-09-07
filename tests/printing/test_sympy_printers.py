@@ -22,7 +22,9 @@ import pytest
 from sympy import symbols, sqrt, exp, I, Rational
 from sympy.core import S
 
-from qnet.printing.sympy import SympyUnicodePrinter, derationalize_denom
+from qnet.printing.sympy import (
+    SympyUnicodePrinter, SympyLatexPrinter, SympyStrPrinter,
+    derationalize_denom)
 
 
 def test_derationalize_denom():
@@ -39,7 +41,6 @@ def test_derationalize_denom():
     assert str(exc_info.value) == 'Cannot derationalize'
     with pytest.raises(ValueError):
         derationalize_denom(sqrt(3)/sqrt(2))
-
 
 
 @pytest.mark.parametrize("expr,expected_str", [
@@ -73,8 +74,75 @@ def test_derationalize_denom():
         'exp(-ⅈ φ)/(-η₀ + 1)²'),
 ])
 def test_sympy_unicode(expr, expected_str):
-    #stop = I * symbols("alpha_1") / sqrt(2) # DEBUG
-    #if expr == stop: # DEBUG
-        #from IPython.terminal.debugger import set_trace; set_trace() # DEBUG
     out_str = SympyUnicodePrinter().doprint(expr)
+    assert out_str == expected_str
+
+
+@pytest.mark.parametrize("expr,expected_str", [
+    (symbols('alpha'),
+        'alpha'),
+    (symbols("alpha_1"),
+        'alpha_1'),
+    (symbols("alpha_1")**2,
+        'alpha_1**2'),
+    (symbols("alpha_1")**(symbols('n') + 1),
+        'alpha_1**(n + 1)'),
+    (symbols("alpha_1")**((symbols('n') + 1) / 2),
+        'alpha_1**(n/2 + 1/2)'),
+    (I * symbols("alpha_1"),
+        'I*alpha_1'),
+    (sqrt(2),
+        'sqrt(2)'),
+    (3/sqrt(2),
+        '3/sqrt(2)'),
+    (symbols("alpha_1") / sqrt(2),
+        'alpha_1 / sqrt(2)'),
+    (I * symbols("alpha_1") / sqrt(2),
+        '(I*alpha_1) / sqrt(2)'),
+    ((symbols('x') + I * symbols('y')) / sqrt(2),
+        '(x + I*y) / sqrt(2)'),
+    (sqrt(symbols('mu_1') - symbols('mu_2')) * symbols("alpha_1"),
+        'alpha_1*sqrt(mu_1 - mu_2)'),
+    (exp(-I * symbols("phi")),
+        'exp(-I*phi)'),
+    (exp(-I * symbols("phi")) / (1 - symbols('eta_0'))**2,
+        'exp(-I*phi)/(-eta_0 + 1)**2'),
+])
+def test_sympy_str(expr, expected_str):
+    out_str = SympyStrPrinter().doprint(expr)
+    assert out_str == expected_str
+
+
+@pytest.mark.parametrize("expr,expected_str", [
+    (symbols('alpha'),
+        r'\alpha'),
+    (symbols("alpha_1"),
+        r'\alpha_{1}'),
+    (symbols("alpha_1")**2,
+        r'\alpha_{1}^{2}'),
+    (symbols("alpha_1")**(symbols('n') + 1),
+        r'\alpha_{1}^{n + 1}'),
+    (symbols("alpha_1")**((symbols('n') + 1) / 2),
+        r'\alpha_{1}^{\frac{n}{2} + \frac{1}{2}}'),
+    (I * symbols("alpha_1"),
+        r'i \alpha_{1}'),
+    (sqrt(2),
+        r'\sqrt{2}'),
+    (3/sqrt(2),
+        r'\frac{3}{\sqrt{2}}'),
+    (symbols("alpha_1") / sqrt(2),
+        r'\frac{\alpha_{1}}{\sqrt{2}}'),
+    (I * symbols("alpha_1") / sqrt(2),
+        r'\frac{i \alpha_{1}}{\sqrt{2}}'),
+    ((symbols('x') + I * symbols('y')) / sqrt(2),
+        r'\frac{x + i y}{\sqrt{2}}'),
+    (sqrt(symbols('mu_1') - symbols('mu_2')) * symbols("alpha_1"),
+        r'\alpha_{1} \sqrt{\mu_{1} - \mu_{2}}'),
+    (exp(-I * symbols("phi")),
+        r'e^{- i \phi}'),
+    (exp(-I * symbols("phi")) / (1 - symbols('eta_0'))**2,
+        r'\frac{e^{- i \phi}}{\left(- \eta_{0} + 1\right)^{2}}'),
+])
+def test_sympy_latex(expr, expected_str):
+    out_str = SympyLatexPrinter().doprint(expr)
     assert out_str == expected_str

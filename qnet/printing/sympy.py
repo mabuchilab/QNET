@@ -15,14 +15,13 @@
 #
 # Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #############################################################################
-"""
-Custom Printers for Sympy expressions
-"""
+"""Custom Printers for Sympy expressions"""
 from sympy import sqrt
 from sympy.core import S, Rational, Mul, Pow
 from sympy.core.mul import _keep_coeff
 from sympy.printing.precedence import precedence, PRECEDENCE
 from sympy.printing.str import StrPrinter
+from sympy.printing.latex import LatexPrinter
 from sympy.printing.pretty.pretty_symbology import pretty_symbol
 from sympy.printing.pretty.stringpict import prettyForm
 
@@ -73,6 +72,52 @@ def derationalize_denom(expr):
             raise ValueError("Cannot derationalize")
     else:
         raise ValueError("expr is not a Mul instance")
+
+
+class SympyStrPrinter(StrPrinter):
+    """Variation of sympy StrPrinter that derationalizes denominators"""
+
+    def _print_Mul(self, expr):
+
+        prec = precedence(expr)
+
+        try:
+            numerator, denom_sq, post_factor = derationalize_denom(expr)
+            if post_factor == S.One:
+                return "%s/sqrt(%s)" % (numerator, denom_sq)
+            else:
+                if numerator == 1:
+                    return "%s / sqrt(%s)" % (
+                        self.parenthesize(post_factor, prec), denom_sq)
+                else:
+                    return "(%s/sqrt(%s)) %s" % (
+                        numerator, denom_sq,
+                        self.parenthesize(post_factor, prec))
+        except ValueError:
+            return super()._print_Mul(expr)
+
+
+class SympyLatexPrinter(LatexPrinter):
+    """Variation of sympy LatexPrinter that derationalizes denominators"""
+
+    def _print_Mul(self, expr):
+
+        prec = precedence(expr)
+
+        try:
+            numerator, denom_sq, post_factor = derationalize_denom(expr)
+            if post_factor == S.One:
+                return r'\frac{%s}{\sqrt{%s}}' % (numerator, denom_sq)
+            else:
+                if numerator == 1:
+                    return r'\frac{%s}{\sqrt{%s}}' % (
+                        self._print(post_factor), denom_sq)
+                else:
+                    return r'\frac{%s}{\sqrt{%s}} %s' % (
+                        numerator, denom_sq,
+                        self.parenthesize(post_factor, prec))
+        except ValueError:
+            return super()._print_Mul(expr)
 
 
 class SympyUnicodePrinter(StrPrinter):
