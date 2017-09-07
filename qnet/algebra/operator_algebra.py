@@ -1091,16 +1091,9 @@ class OperatorTimes(OperatorOperation):
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
 
-        def dynamic_prod_sym(a, b):
-            if a.space == b.space:
-                return printer.op_product_sym
-            else:
-                return printer.tensor_sym
-
         return printer.render_product(
-                self.operands, prod_sym=printer.tensor_sym,
-                sum_classes=(OperatorPlus, OperatorPlusMinusCC),
-                dynamic_prod_sym=dynamic_prod_sym)
+                self.operands, prod_sym=printer.op_product_sym,
+                sum_classes=(OperatorPlus, OperatorPlusMinusCC))
 
 
 class ScalarTimesOperator(Operator, Operation):
