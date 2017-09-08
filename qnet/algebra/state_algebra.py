@@ -985,7 +985,7 @@ class KetBra(Operator, Operation):
         res_summands = []
         for (k, b) in cartesian_product(kesummands, besummands):
             res_summands.append(KetBra.create(k, b))
-        return OperatorPlus(*res_summands)
+        return OperatorPlus.create(*res_summands)
 
     def _render(self, fmt, adjoint=False):
         printer = getattr(self, "_"+fmt+"_printer")
