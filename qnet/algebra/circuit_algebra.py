@@ -2188,25 +2188,29 @@ def try_adiabatic_elimination(slh, k=None, fock_trunc=6, sub_P0=True):
                 b = b[:fock_trunc]
         except BasisNotSetError:
             b = range(fock_trunc)
-        projectors = set(LocalProjector(Y.space, ll) for ll in b)
+        projectors = set(LocalProjector(ll, hs=Y.space) for ll in b)
         Id_trunc = sum(projectors, ZeroOperator)
-        Yprojection = ((Id_trunc * Y).expand()
-                       * Id_trunc).expand().simplify_scalar()
+        Yprojection = (
+            ((Id_trunc * Y).expand() * Id_trunc)
+            .expand().simplify_scalar())
         termcoeffs = get_coeffs(Yprojection)
         terms = set(termcoeffs.keys())
 
         for term in terms - projectors:
-            if (not isinstance(term, LocalSigma) or not term.operands[1] == term.operands[2]):
+            cannot_eliminate = (
+                not isinstance(term, LocalSigma) or
+                not term.operands[1] == term.operands[2])
+            if cannot_eliminate:
                 raise CannotEliminateAutomatically(
-                    "Proj. Y operator has off-diagonal term: ~{}".format(term)
-                    )
+                    "Proj. Y operator has off-diagonal term: ~{}".format(term))
         P0 = sum(projectors - terms, ZeroOperator)
         if P0 == ZeroOperator:
             raise CannotEliminateAutomatically("Empty null-space of Y!")
 
         Yinv = sum(t/termcoeffs[t] for t in terms & projectors)
-        assert ((Yprojection*Yinv).expand().simplify_scalar()
-                == (Id_trunc - P0).expand())
+        assert (
+            (Yprojection*Yinv).expand().simplify_scalar() ==
+            (Id_trunc - P0).expand())
         slhlim = eval_adiabatic_limit(ops, Yinv, P0)
 
         if sub_P0:
