@@ -272,22 +272,11 @@ class Matrix(Expression):
         :return: Expanded matrix.
         :rtype: Matrix
         """
-        m = lambda o: o.expand() if isinstance(o, Operator) else o
-        return self.element_wise(m)
+        return self.element_wise(
+            lambda o: o.expand() if isinstance(o, Operator) else o)
 
     def _substitute(self, var_map):
-
-        def _substitute(o):
-            sympy_var_map = {k: v for (k, v) in var_map.items()
-                             if isinstance(k, SympyBasic)}
-            if isinstance(o, Operation):
-                return substitute(o, var_map)
-            elif isinstance(o, SympyBasic):
-                return o.subs(sympy_var_map)
-            else:
-                return o
-
-        return self.element_wise(_substitute)
+        return self.element_wise(lambda o: substitute(o, var_map))
 
     def all_symbols(self):
         ret = set()
@@ -297,7 +286,6 @@ class Matrix(Expression):
             else:
                 ret = ret | scalar_free_symbols(o)
         return ret
-
 
     @property
     def space(self):

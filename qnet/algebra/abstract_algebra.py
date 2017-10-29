@@ -32,6 +32,8 @@ from contextlib import contextmanager
 from copy import copy
 from functools import reduce
 
+from sympy import Basic as SympyBasic
+
 from .pattern_matching import (
     ProtoExpr, match_pattern, wc, pattern_head, pattern)
 from .singleton import Singleton
@@ -435,7 +437,13 @@ def substitute(expr, var_map):
         var_map (dict): The substitution dictionary.
     """
     try:
-        return expr.substitute(var_map)
+        if isinstance(expr, SympyBasic):
+            sympy_var_map = {
+                k: v for (k, v) in var_map.items()
+                if isinstance(k, SympyBasic)}
+            return expr.subs(sympy_var_map)
+        else:
+            return expr.substitute(var_map)
     except AttributeError:
         if expr in var_map:
             return var_map[expr]
