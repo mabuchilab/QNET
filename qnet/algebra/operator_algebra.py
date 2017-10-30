@@ -892,9 +892,8 @@ class LocalSigma(LocalOperator):
     def __init__(self, j, k, *, hs, identifier=None):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
-        self.j = j  #: label/index of eigenstate  $\ket{j}$
-        self.k = k  #: label/index of eigenstate  $\ket{k}$
-        for jk in [j, k]:
+        for ind_jk in range(2):
+            jk = j if ind_jk == 0 else k
             if isinstance(jk, str):
                 if not hs.has_basis:
                     raise ValueError(
@@ -908,9 +907,15 @@ class LocalSigma(LocalOperator):
                         raise ValueError(
                             "Index j/k=%s must be < the Hilbert space "
                             "dimension %d" % (jk, hs.dimension))
+                    if ind_jk == 0:
+                        j = hs.basis_labels[jk]
+                    else:
+                        k = hs.basis_labels[jk]
             else:
                 raise TypeError("Index j/k must be an int or str, not %s"
                                 % type(jk))
+        self.j = j  #: label/index of eigenstate  $\ket{j}$
+        self.k = k  #: label/index of eigenstate  $\ket{k}$
         self._is_projector = False
         self._custom_identifier = None
         if identifier is not None:

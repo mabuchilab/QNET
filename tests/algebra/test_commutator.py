@@ -154,7 +154,7 @@ def test_known_commutators():
         LocalSigma(1, 0, hs=hs))
     assert (
         Commutator.create(LocalSigma(1, 0, hs=hs), Create(hs=hs)) ==
-        (-sqrt(2) * LocalSigma(2, 1, hs=hs)))
+        (-sqrt(2) * LocalSigma(2, 0, hs=hs)))
     assert Commutator.create(Jplus(hs=hs), Jz(hs=hs)) == -Jplus(hs=hs)
 
 
