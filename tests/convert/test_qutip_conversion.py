@@ -26,8 +26,11 @@ import pytest
 
 from qnet.algebra.operator_algebra import (
     Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol,
-    ScalarTimesOperator)
-from qnet.convert.to_qutip import _time_dependent_to_qutip, convert_to_qutip
+    ScalarTimesOperator, ZeroOperator)
+from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.matrix_algebra import identity_matrix, Matrix
+from qnet.convert.to_qutip import (
+    _time_dependent_to_qutip, convert_to_qutip, SLH_to_qutip)
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 _hs_counter = 0
@@ -197,6 +200,23 @@ def test_time_dependent_to_qutip():
     expected = sorted([str(op.coeff) for op in H.expand().operands
                        if isinstance(op, ScalarTimesOperator)])
     assert terms == expected
+
+
+def test_non_herm_lindblad_conversion():
+    """Test that Lindblad operators with trace 0 are correctly converted to
+    qutip.
+
+    This tests the resolution of issue #57.
+    """
+    slh = SLH(
+        identity_matrix(1),
+        Matrix([[Create(hs=LocalSpace('1', dimension=3)), ]]),
+        ZeroOperator)
+    H, Ls = SLH_to_qutip(slh)
+    assert H.shape == (3, 3)
+    assert H.norm('max') == 0
+    assert len(Ls) == 1
+    assert (Ls[0] - qutip.create(3)).norm('max') < 1e-14
 
 
 def test_trivial_space_conversion():
