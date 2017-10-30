@@ -977,7 +977,7 @@ class LocalSigma(LocalOperator):
             else:  # str
                 new_j = self.space.next_basis_label_or_index(self.j, j_incr)
             if isinstance(self.k, int):
-                new_k = self.k + j_incr
+                new_k = self.k + k_incr
             else:  # str
                 new_k = self.space.next_basis_label_or_index(self.k, k_incr)
             identifier = None
