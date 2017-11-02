@@ -31,11 +31,12 @@ from abc import ABCMeta, abstractproperty
 from contextlib import contextmanager
 from copy import copy
 from functools import reduce
+from collections import OrderedDict
 
 from sympy import Basic as SympyBasic
 
 from .pattern_matching import (
-    ProtoExpr, match_pattern, wc, pattern_head, pattern)
+    ProtoExpr, match_pattern, wc, pattern_head, Pattern, pattern)
 from .singleton import Singleton
 from .scalar_types import SCALAR_TYPES
 from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter
@@ -49,7 +50,8 @@ __all__ = [
 
 __private__ = [  # anything not in __all__ must be in __private__
     'assoc', 'idem', 'orderby', 'filter_neutral', 'match_replace',
-    'match_replace_binary', 'cache_attr', 'check_idempotent_create']
+    'match_replace_binary', 'cache_attr', 'check_idempotent_create',
+    'check_rules_dict']
 
 # LEVEL = 0  # for debugging create method
 
@@ -279,7 +281,7 @@ class Expression(metaclass=ABCMeta):
 
     @property
     def minimal_kwargs(self):
-        """A "minimal" dictionary of keyword-only arguments, i.e. a subsect of
+        """A "minimal" dictionary of keyword-only arguments, i.e. a subset of
         `kwargs` that may exclude default options"""
         return self.kwargs
 
@@ -322,15 +324,27 @@ class Expression(metaclass=ABCMeta):
 
     def simplify(self, rules=None):
         """Recursively re-instantiate the expression, while applying all of the
-        given `rules` to all encountered (sub-) expressions"""
+        given `rules` to all encountered (sub-) expressions
+
+        Args:
+            rules (list, OrderedDict): List of rules or dictionary mapping
+                names to rules, where each rule is a tuple
+                (Pattern, replacement callable)
+        """
         if rules is None:
-            rules = []
+            rules = {}
         new_args = [simplify(arg, rules) for arg in self.args]
         new_kwargs = {key: simplify(val, rules)
                       for (key, val) in self.kwargs.items()}
         simplified = self.create(*new_args, **new_kwargs)
-        for (rule, replacement) in rules:
-            matched = rule.match(simplified)
+        try:
+            # `rules` is an OrderedDict key => (pattern, replacement)
+            items = rules.items()
+        except AttributeError:
+            # `rules` is a list of (pattern, replacement) tuples
+            items = enumerate(rules)
+        for key, (pat, replacement) in items:
+            matched = pat.match(simplified)
             if matched:
                 try:
                     return replacement(**matched)
@@ -453,9 +467,15 @@ def substitute(expr, var_map):
 def _simplify_expr(expr, rules=None):
     """Non-recursively match expr again all rules"""
     if rules is None:
-        rules = []
-    for (rule, replacement) in rules:
-        matched = rule.match(expr)
+        rules = {}
+    try:
+        # `rules` is an OrderedDict key => (pattern, replacement)
+        items = rules.items()
+    except AttributeError:
+        # `rules` is a list of (pattern, replacement) tuples
+        items = enumerate(rules)
+    for key, (pat, replacement) in items:
+        matched = pat.match(expr)
         if matched:
             try:
                 return replacement(**matched)
@@ -470,9 +490,10 @@ def simplify(expr, rules=None):
 
     Args:
         expr:  Any Expression or scalar object
-        rules (list): A list of tuples ``(pattern, replacement)`` where `rule`
-            is an instance of :class:`Pattern`) and `replacement` is a
-            callable.  The pattern will be matched against any expression that
+        rules (list, OrderedDict): A list of rules dictionary mapping names to
+            rules, where each rule is a tuple ``(pattern, replacement)`` where
+            `pattern` is an instance of :class:`Pattern`) and `replacement` is
+            a callable. The pattern will be matched against any expression that
             is encountered during the re-instantiation. If the `pattern`
             matches, then the (sub-)expression is replaced by the result of
             calling `replacement` while passing any wildcards from `pattern` as
@@ -484,13 +505,14 @@ def simplify(expr, rules=None):
         combined with e.g. `extra_rules` / `extra_binary_rules` context
         managers. If a simplification can be handled through these context
         managers, this is usually more efficient than an equivalent rule.
-        However, both really are complemetary: the rules defined in the context
-        managers are applied *before* instantation (hence these these patterns
-        are instantiated through `pattern_head`). In contrast, the patterns
-        defined in `rules` are applied against instantiated expressions.
+        However, both really are complementary: the rules defined in the
+        context managers are applied *before* instantiation (hence these these
+        patterns are instantiated through `pattern_head`). In contrast, the
+        patterns defined in `rules` are applied against instantiated
+        expressions.
     """
     if rules is None:
-        rules = []
+        rules = {}
     stack = []
     path = []
     if isinstance(expr, Expression):
@@ -654,7 +676,7 @@ def match_replace(cls, ops, kwargs):
     First define an operation::
 
         >>> class Invert(Operation):
-        ...     _rules = []
+        ...     _rules = OrderedDict()
         ...     _simplifications = [match_replace, ]
 
     Then some _rules::
@@ -662,10 +684,10 @@ def match_replace(cls, ops, kwargs):
         >>> A = wc("A")
         >>> A_float = wc("A", head=float)
         >>> Invert_A = pattern(Invert, A)
-        >>> Invert._rules += [
-        ...     (pattern_head(Invert_A), lambda A: A),
-        ...     (pattern_head(A_float), lambda A: 1./A),
-        ... ]
+        >>> Invert._rules.update([
+        ...     ('r1', (pattern_head(Invert_A), lambda A: A)),
+        ...     ('r2', (pattern_head(A_float), lambda A: 1./A)),
+        ... ])
 
     Check rule application::
 
@@ -679,9 +701,9 @@ def match_replace(cls, ops, kwargs):
     A pattern can also have the same wildcard appear twice::
 
         >>> class X(Operation):
-        ...     _rules = [
-        ...         (pattern_head(A, A), lambda A: A),
-        ...     ]
+        ...     _rules = {
+        ...         'r1': (pattern_head(A, A), lambda A: A),
+        ...     }
         ...     _simplifications = [match_replace, ]
         >>> X.create(1,2)
         X(1, 2)
@@ -690,8 +712,9 @@ def match_replace(cls, ops, kwargs):
 
     """
     expr = ProtoExpr(ops, kwargs)
-    for expr_or_pattern, replacement in cls._rules:
-        match_dict = match_pattern(expr_or_pattern, expr)
+    for key, rule in cls._rules.items():
+        pat, replacement = rule
+        match_dict = match_pattern(pat, expr)
         if match_dict:
             try:
                 return replacement(**match_dict)
@@ -704,8 +727,9 @@ def match_replace(cls, ops, kwargs):
 def _get_binary_replacement(first, second, rules):
     """Helper function for match_replace_binary"""
     expr = ProtoExpr([first, second], {})
-    for exp_or_pattern, replacement in rules:
-        match_dict = match_pattern(exp_or_pattern, expr)
+    for key, rule in rules.items():
+        pat, replacement = rule
+        match_dict = match_pattern(pat, expr)
         if match_dict:
             try:
                 return replacement(**match_dict)
@@ -720,7 +744,8 @@ def match_replace_binary(cls, ops, kwargs):
 
         >>> A = wc("A")
         >>> class FilterDupes(Operation):
-        ...     _binary_rules = [(pattern_head(A,A), lambda A: A), ]
+        ...     _binary_rules = {
+        ...          'filter_dupes': (pattern_head(A,A), lambda A: A)}
         ...     _simplifications = [match_replace_binary, assoc]
         ...     neutral_element = 0
         >>> FilterDupes.create(1,2,3,4)         # No duplicates
@@ -789,6 +814,63 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
 ###############################################################################
 
 
+def check_rules_dict(rules):
+    """Verify the `rules` that classes may use for the `_rules` or
+    `_binary_rules` class attribute.
+
+    Specifically, `rules` must be a :class:`OrderedDict`-compatible object
+    (list of key-value tuples, dict, OrderedDict) that
+    maps a rule name (:class:`str`) to a rule. Each rule consists of a
+    :class:`~qnet.algebra.pattern_matching.Pattern` and a replaceent callable.
+    The Pattern must be set up to match a
+    :class:`~qnet.algebra.pattern_matching.ProtoExpr`. That is,
+    the Pattern should be constructed through the
+    :func:`~qnet.algebra.pattern_matching.pattern_head` routine.
+
+    Raises:
+        TypeError: If `rules` is not compatible with :class:`OrderedDict`, the
+            keys in `rules` are not strings, or rule is not a tuple of
+            (:class:`~qnet.algebra.pattern_matching.Pattern`, `callable`)
+        ValueError: If the `head`-attribute of each Pattern is not an instance
+            of :class:`~qnet.algebra.pattern_matching.ProtoExpr`, or if there
+            are duplicate keys in `rules`
+
+    Returns:
+        ``OrderedDict(rules)``
+    """
+    if hasattr(rules, 'items'):
+        items = rules.items()  # `rules` is already a dict / OrderedDict
+    else:
+        items = rules  # `rules` is a list of (key, value) tuples
+    keys = set()
+    for key_rule in items:
+        try:
+            key, rule = key_rule
+        except ValueError:
+            raise TypeError("rules does not contain (key, rule) tuples")
+        if not isinstance(key, str):
+            raise TypeError("Key '%s' is not a string" % key)
+        if key in keys:
+            raise ValueError("Duplicate key '%s'" % key)
+        else:
+            keys.add(key)
+        try:
+            pat, replacement = rule
+        except TypeError:
+            raise TypeError(
+                "Rule in '%s' is not a (pattern, replacement) tuple" % key)
+        if not isinstance(pat, Pattern):
+            raise TypeError(
+                "Pattern in '%s' is not a Pattern instance" % key)
+        if pat.head is not ProtoExpr:
+            raise ValueError(
+                "Pattern in '%s' does not match a ProtoExpr" % key)
+        if not callable(replacement):
+            raise ValueError(
+                "replacement in '%s' is not callable" % key)
+    return OrderedDict(rules)
+
+
 @contextmanager
 def no_instance_caching():
     """Temporarily disable the caching of instances through
@@ -819,7 +901,8 @@ def extra_rules(cls, rules):
     processed by `match_replace`. Implies `temporary_instance_cache`.
     """
     orig_rules = copy(cls._rules)
-    cls._rules.extend(rules)
+    rules = check_rules_dict(rules)
+    cls._rules.update(check_rules_dict(rules))
     orig_instances = cls._instances
     cls._instances = {}
     yield
@@ -833,7 +916,7 @@ def extra_binary_rules(cls, rules):
     processed by `match_replace_binary`. Implies `temporary_instance_cache`.
     """
     orig_rules = copy(cls._binary_rules)
-    cls._binary_rules.extend(rules)
+    cls._binary_rules.update(check_rules_dict(rules))
     orig_instances = cls._instances
     cls._instances = {}
     yield
@@ -853,12 +936,12 @@ def no_rules(cls):
     cls._instances = {}
     try:
         orig_rules = cls._rules
-        cls._rules = []
+        cls._rules = OrderedDict([])
     except AttributeError:
         has_rules = False
     try:
         orig_binary_rules = cls._binary_rules
-        cls._binary_rules = []
+        cls._binary_rules = OrderedDict([])
     except AttributeError:
         has_binary_rules = False
     yield

@@ -17,8 +17,6 @@
 #
 ###########################################################################
 
-import pytest
-
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.operator_algebra import (
     OperatorSymbol, ScalarTimesOperator, OperatorPlus, Operator,
@@ -44,20 +42,22 @@ def test_simplify():
     C_ = wc('C', head=Operator)
 
     def b_times_c_equal_d(B, C):
-        if (B.identifier == 'b' and C.identifier =='c'):
+        if (B.identifier == 'b' and C.identifier == 'c'):
             return d
         else:
             raise CannotSimplify
 
     with extra_binary_rules(
-            OperatorTimes, [(pattern_head(B_, C_), b_times_c_equal_d), ]):
+            OperatorTimes,
+            {'extra': (pattern_head(B_, C_), b_times_c_equal_d)}):
         new_expr = simplify(expr)
 
     commutator_rule = (
-            pattern(OperatorPlus,
+            pattern(
+                OperatorPlus,
                 pattern(OperatorTimes, A_, B_),
-                pattern(ScalarTimesOperator,
-                        -1, pattern(OperatorTimes, B_, A_))),
+                pattern(
+                    ScalarTimesOperator, -1, pattern(OperatorTimes, B_, A_))),
             lambda A, B: OperatorSymbol(
                 "Commut%s%s" % (A.identifier.upper(), B.identifier.upper()),
                 hs=A.space)
@@ -65,7 +65,8 @@ def test_simplify():
     assert commutator_rule[0].match(new_expr.term)
 
     with extra_binary_rules(
-            OperatorTimes, [(pattern_head(B_, C_), b_times_c_equal_d), ]):
+            OperatorTimes, {
+                'extra': (pattern_head(B_, C_), b_times_c_equal_d)}):
         new_expr = simplify(expr, [commutator_rule, ])
     assert (srepr(new_expr) ==
             "ScalarTimesOperator(2, OperatorSymbol('CommutAD', "

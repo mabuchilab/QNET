@@ -20,6 +20,7 @@
 """Collection of tools to manually manipulate algebraic expressions"""
 
 from functools import partial
+from collections import OrderedDict
 
 from .abstract_algebra import simplify
 from .operator_algebra import Operator, Commutator, OperatorTimes
@@ -62,11 +63,13 @@ def expand_commutators_leibniz(expr, expand_expr=True):
         B = OperatorTimes(*AB.operands[1:])
         return A * Commutator.create(B, C) + Commutator.create(A, C) * B
 
-    rules = [
-        (pattern(Commutator, A, BC),
-            lambda A, BC: recurse(leibniz_right(A, BC).expand())),
-        (pattern(Commutator, AB, C),
-            lambda AB, C: recurse(leibniz_left(AB, C).expand()))]
+    rules = OrderedDict([
+        ('leibniz1', (
+            pattern(Commutator, A, BC),
+            lambda A, BC: recurse(leibniz_right(A, BC).expand()))),
+        ('leibniz2', (
+            pattern(Commutator, AB, C),
+            lambda AB, C: recurse(leibniz_left(AB, C).expand())))])
 
     if expand_expr:
         res = simplify(expr.expand(), rules).expand()

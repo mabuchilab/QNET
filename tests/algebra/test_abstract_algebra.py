@@ -19,6 +19,7 @@
 
 from sympy import symbols
 import unittest
+from collections import OrderedDict
 import pytest
 
 from qnet.algebra.abstract_algebra import (
@@ -62,17 +63,16 @@ class TestOperationSimplifcations(unittest.TestCase):
         b_str = wc("b", head=str)
 
         class MatchReplaceBinary(Operation):
-            _binary_rules = [
-                (pattern_head(a_int, b_str),
-                    lambda a, b: mult_str_int_if_pos(b,a)),
-                (pattern_head(a_negint, b_str),
-                    lambda a, b: mult_inv_str_int_if_neg(b,a)),
-                (pattern_head(a_str, b_str),
-                    lambda a, b: a + b)
-            ]
+            _binary_rules = OrderedDict([
+                ('r1', (pattern_head(a_int, b_str),
+                    lambda a, b: mult_str_int_if_pos(b,a))),
+                ('r2', (pattern_head(a_negint, b_str),
+                    lambda a, b: mult_inv_str_int_if_neg(b,a))),
+                ('r3', (pattern_head(a_str, b_str),
+                    lambda a, b: a + b))
+            ])
             neutral_element = 1
             _simplifications = [assoc, match_replace_binary]
-
 
         class Idem(Operation):
             order_key = expr_order_key
