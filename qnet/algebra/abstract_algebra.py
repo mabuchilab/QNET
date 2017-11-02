@@ -32,6 +32,7 @@ from contextlib import contextmanager
 from copy import copy
 from functools import reduce
 from collections import OrderedDict
+import logging
 
 from sympy import Basic as SympyBasic
 
@@ -53,7 +54,11 @@ __private__ = [  # anything not in __all__ must be in __private__
     'match_replace_binary', 'cache_attr', 'check_idempotent_create',
     'check_rules_dict']
 
-# LEVEL = 0  # for debugging create method
+LEVEL = 0  # for debugging create method
+
+LOG = True  # emit debug logging messages?
+# TODO: test if `LOG = False` results in significant performance increase. If
+# not, remove the flag
 
 
 def _trace(fn):
@@ -200,21 +205,29 @@ class Expression(metaclass=ABCMeta):
         appropriate object (which may or may not be an instance of the original
         class)
         """
-        # global LEVEL
-        # print("\t" * LEVEL, str(cls.__name__) +
-        #       ".create(*args, **kwargs); args = %s, kwargs = %s"
-        #       % (args, kwargs))
-        # LEVEL += 1
+        global LEVEL
+        if LOG:
+            logger = logging.getLogger(__name__ + '.create')
+            logger.debug(
+                "%s%s.create(*args, **kwargs); args = %s, kwargs = %s",
+                ("  " * LEVEL), cls.__name__, args, kwargs)
+            LEVEL += 1
         key = cls._get_instance_key(args, kwargs)
         try:
             if cls.instance_caching:
                 instance = cls._instances[key]
-                # LEVEL -= 1
-                # print("\t" * LEVEL, "(cached)-> ", str(instance))
+                if LOG:
+                    LEVEL -= 1
+                    logger.debug("%s(cached)-> %s", ("  " * LEVEL), instance)
                 return instance
         except KeyError:
             pass
         for i, simplification in enumerate(cls._simplifications):
+            if LOG:
+                try:
+                    simpl_name = simplification.__name__
+                except AttributeError:
+                    simpl_name = "simpl%d" % i
             simplified = simplification(cls, args, kwargs)
             try:
                 args, kwargs = simplified
@@ -232,8 +245,10 @@ class Expression(metaclass=ABCMeta):
                         #  simplified might e.g. be a scalar and not have
                         #  _instance_key
                         pass
-                # LEVEL -= 1
-                # print("\t" * LEVEL, "(simpl %d)-> " % i, str(simplified))
+                if LOG:
+                    LEVEL -= 1
+                    logger.debug(
+                        "%s(%s)-> %s", ("  " * LEVEL), simpl_name, simplified)
                 return simplified
         if len(kwargs) > 0:
             cls._has_kwargs = True
@@ -244,8 +259,9 @@ class Expression(metaclass=ABCMeta):
             key2 = cls._get_instance_key(args, kwargs)
             if key2 != key:
                 cls._instances[key2] = instance  # instantiated key
-        # LEVEL -= 1
-        # print("\t" * LEVEL, "-> ", str(instance))
+        if LOG:
+            LEVEL -= 1
+            logger.debug("%s -> %s", ("  " * LEVEL), instance)
         return instance
 
     @classmethod
@@ -511,6 +527,8 @@ def simplify(expr, rules=None):
         patterns defined in `rules` are applied against instantiated
         expressions.
     """
+    if LOG:
+        logger = logging.getLogger(__name__ + '.simplify')
     if rules is None:
         rules = {}
     stack = []
@@ -518,37 +536,48 @@ def simplify(expr, rules=None):
     if isinstance(expr, Expression):
         stack.append(ProtoExpr.from_expr(expr))
         path.append(0)
-        # print("Starting at level 1: placing expr on stack: %s" % expr)
+        if LOG:
+            logger.debug(
+                "Starting at level 1: placing expr on stack: %s", expr)
         while True:
             i = path[-1]
             try:
                 arg = stack[-1][i]
-                # print("At level %d: considering arg %d: %s"
-                #       % (len(stack), i+1, arg))
+                if LOG:
+                    logger.debug(
+                        "At level %d: considering arg %d: %s",
+                        len(stack), i+1, arg)
             except IndexError:
                 # done at this level
                 path.pop()
                 expr = stack.pop().instantiate()
                 expr = _simplify_expr(expr, rules)
                 if len(stack) == 0:
-                    # print("Complete level 1: returning simplified expr: %s"
-                    #       % expr)
+                    if LOG:
+                        logger.debug(
+                            "Complete level 1: returning simplified expr: %s",
+                            expr)
                     return expr
                 else:
                     stack[-1][path[-1]] = expr
                     path[-1] += 1
-                    # print("Complete level %d. At level %d, setting "
-                    #       "arg %d to simplified expr: %s"
-                    #       % (len(stack)+1, len(stack), path[-1], expr))
+                    if LOG:
+                        logger.debug(
+                            "Complete level %d. At level %d, setting arg %d "
+                            "to simplified expr: %s", len(stack)+1, len(stack),
+                            path[-1], expr)
             else:
                 if isinstance(arg, Expression):
                     stack.append(ProtoExpr.from_expr(arg))
                     path.append(0)
-                    # print("   placing arg on stack")
+                    if LOG:
+                        logger.debug("   placing arg on stack")
                 else:  # scalar
                     stack[-1][i] = _simplify_expr(arg, rules)
-                    # print("   arg is leaf, replacing with simplified "
-                    #       "expr: %s" % stack[-1][i])
+                    if LOG:
+                        logger.debug(
+                            "   arg is leaf, replacing with simplified expr: "
+                            "%s", stack[-1][i])
                     path[-1] += 1
     else:
         return _simplify_expr(expr, rules)
@@ -712,27 +741,41 @@ def match_replace(cls, ops, kwargs):
 
     """
     expr = ProtoExpr(ops, kwargs)
+    if LOG:
+        logger = logging.getLogger(__name__ + '.create')
     for key, rule in cls._rules.items():
         pat, replacement = rule
         match_dict = match_pattern(pat, expr)
         if match_dict:
             try:
-                return replacement(**match_dict)
+                replaced = replacement(**match_dict)
+                if LOG:
+                    logger.debug(
+                        "%sRule %s.%s: (%s, %s) -> %s", ("  " * (LEVEL)),
+                        cls.__name__, key, expr.args, expr.kwargs, replaced)
+                return replaced
             except CannotSimplify:
                 continue
     # No matching rules
     return ops, kwargs
 
 
-def _get_binary_replacement(first, second, rules):
+def _get_binary_replacement(first, second, cls):
     """Helper function for match_replace_binary"""
     expr = ProtoExpr([first, second], {})
-    for key, rule in rules.items():
+    if LOG:
+        logger = logging.getLogger(__name__ + '.create')
+    for key, rule in cls._binary_rules.items():
         pat, replacement = rule
         match_dict = match_pattern(pat, expr)
         if match_dict:
             try:
-                return replacement(**match_dict)
+                replaced = replacement(**match_dict)
+                if LOG:
+                    logger.debug(
+                        "%sRule %s.%s: (%s, %s) -> %s", ("  " * (LEVEL)),
+                        cls.__name__, key, expr.args, expr.kwargs, replaced)
+                return replaced
             except CannotSimplify:
                 continue
     return None
@@ -794,7 +837,7 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
     """combine two fully reduced lists a, b"""
     if len(a) == 0 or len(b) == 0:
         return a + b
-    r = _get_binary_replacement(a[-1], b[0], cls._binary_rules)
+    r = _get_binary_replacement(a[-1], b[0], cls)
     if r is None:
         return a + b
     if r == cls.neutral_element:
