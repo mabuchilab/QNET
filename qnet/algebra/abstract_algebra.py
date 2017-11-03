@@ -31,11 +31,13 @@ from abc import ABCMeta, abstractproperty
 from contextlib import contextmanager
 from copy import copy
 from functools import reduce
+from collections import OrderedDict
+import logging
 
 from sympy import Basic as SympyBasic
 
 from .pattern_matching import (
-    ProtoExpr, match_pattern, wc, pattern_head, pattern)
+    ProtoExpr, match_pattern, wc, pattern_head, Pattern, pattern)
 from .singleton import Singleton
 from .scalar_types import SCALAR_TYPES
 from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter
@@ -49,9 +51,14 @@ __all__ = [
 
 __private__ = [  # anything not in __all__ must be in __private__
     'assoc', 'idem', 'orderby', 'filter_neutral', 'match_replace',
-    'match_replace_binary', 'cache_attr', 'check_idempotent_create']
+    'match_replace_binary', 'cache_attr', 'check_idempotent_create',
+    'check_rules_dict']
 
-# LEVEL = 0  # for debugging create method
+LEVEL = 0  # for debugging create method
+
+LOG = True  # emit debug logging messages?
+# TODO: test if `LOG = False` results in significant performance increase. If
+# not, remove the flag
 
 
 def _trace(fn):
@@ -198,21 +205,29 @@ class Expression(metaclass=ABCMeta):
         appropriate object (which may or may not be an instance of the original
         class)
         """
-        # global LEVEL
-        # print("\t" * LEVEL, str(cls.__name__) +
-        #       ".create(*args, **kwargs); args = %s, kwargs = %s"
-        #       % (args, kwargs))
-        # LEVEL += 1
+        global LEVEL
+        if LOG:
+            logger = logging.getLogger(__name__ + '.create')
+            logger.debug(
+                "%s%s.create(*args, **kwargs); args = %s, kwargs = %s",
+                ("  " * LEVEL), cls.__name__, args, kwargs)
+            LEVEL += 1
         key = cls._get_instance_key(args, kwargs)
         try:
             if cls.instance_caching:
                 instance = cls._instances[key]
-                # LEVEL -= 1
-                # print("\t" * LEVEL, "(cached)-> ", str(instance))
+                if LOG:
+                    LEVEL -= 1
+                    logger.debug("%s(cached)-> %s", ("  " * LEVEL), instance)
                 return instance
         except KeyError:
             pass
         for i, simplification in enumerate(cls._simplifications):
+            if LOG:
+                try:
+                    simpl_name = simplification.__name__
+                except AttributeError:
+                    simpl_name = "simpl%d" % i
             simplified = simplification(cls, args, kwargs)
             try:
                 args, kwargs = simplified
@@ -230,8 +245,10 @@ class Expression(metaclass=ABCMeta):
                         #  simplified might e.g. be a scalar and not have
                         #  _instance_key
                         pass
-                # LEVEL -= 1
-                # print("\t" * LEVEL, "(simpl %d)-> " % i, str(simplified))
+                if LOG:
+                    LEVEL -= 1
+                    logger.debug(
+                        "%s(%s)-> %s", ("  " * LEVEL), simpl_name, simplified)
                 return simplified
         if len(kwargs) > 0:
             cls._has_kwargs = True
@@ -242,8 +259,9 @@ class Expression(metaclass=ABCMeta):
             key2 = cls._get_instance_key(args, kwargs)
             if key2 != key:
                 cls._instances[key2] = instance  # instantiated key
-        # LEVEL -= 1
-        # print("\t" * LEVEL, "-> ", str(instance))
+        if LOG:
+            LEVEL -= 1
+            logger.debug("%s -> %s", ("  " * LEVEL), instance)
         return instance
 
     @classmethod
@@ -279,7 +297,7 @@ class Expression(metaclass=ABCMeta):
 
     @property
     def minimal_kwargs(self):
-        """A "minimal" dictionary of keyword-only arguments, i.e. a subsect of
+        """A "minimal" dictionary of keyword-only arguments, i.e. a subset of
         `kwargs` that may exclude default options"""
         return self.kwargs
 
@@ -322,15 +340,27 @@ class Expression(metaclass=ABCMeta):
 
     def simplify(self, rules=None):
         """Recursively re-instantiate the expression, while applying all of the
-        given `rules` to all encountered (sub-) expressions"""
+        given `rules` to all encountered (sub-) expressions
+
+        Args:
+            rules (list, OrderedDict): List of rules or dictionary mapping
+                names to rules, where each rule is a tuple
+                (Pattern, replacement callable)
+        """
         if rules is None:
-            rules = []
+            rules = {}
         new_args = [simplify(arg, rules) for arg in self.args]
         new_kwargs = {key: simplify(val, rules)
                       for (key, val) in self.kwargs.items()}
         simplified = self.create(*new_args, **new_kwargs)
-        for (rule, replacement) in rules:
-            matched = rule.match(simplified)
+        try:
+            # `rules` is an OrderedDict key => (pattern, replacement)
+            items = rules.items()
+        except AttributeError:
+            # `rules` is a list of (pattern, replacement) tuples
+            items = enumerate(rules)
+        for key, (pat, replacement) in items:
+            matched = pat.match(simplified)
             if matched:
                 try:
                     return replacement(**matched)
@@ -453,9 +483,15 @@ def substitute(expr, var_map):
 def _simplify_expr(expr, rules=None):
     """Non-recursively match expr again all rules"""
     if rules is None:
-        rules = []
-    for (rule, replacement) in rules:
-        matched = rule.match(expr)
+        rules = {}
+    try:
+        # `rules` is an OrderedDict key => (pattern, replacement)
+        items = rules.items()
+    except AttributeError:
+        # `rules` is a list of (pattern, replacement) tuples
+        items = enumerate(rules)
+    for key, (pat, replacement) in items:
+        matched = pat.match(expr)
         if matched:
             try:
                 return replacement(**matched)
@@ -470,9 +506,10 @@ def simplify(expr, rules=None):
 
     Args:
         expr:  Any Expression or scalar object
-        rules (list): A list of tuples ``(pattern, replacement)`` where `rule`
-            is an instance of :class:`Pattern`) and `replacement` is a
-            callable.  The pattern will be matched against any expression that
+        rules (list, OrderedDict): A list of rules dictionary mapping names to
+            rules, where each rule is a tuple ``(pattern, replacement)`` where
+            `pattern` is an instance of :class:`Pattern`) and `replacement` is
+            a callable. The pattern will be matched against any expression that
             is encountered during the re-instantiation. If the `pattern`
             matches, then the (sub-)expression is replaced by the result of
             calling `replacement` while passing any wildcards from `pattern` as
@@ -484,49 +521,63 @@ def simplify(expr, rules=None):
         combined with e.g. `extra_rules` / `extra_binary_rules` context
         managers. If a simplification can be handled through these context
         managers, this is usually more efficient than an equivalent rule.
-        However, both really are complemetary: the rules defined in the context
-        managers are applied *before* instantation (hence these these patterns
-        are instantiated through `pattern_head`). In contrast, the patterns
-        defined in `rules` are applied against instantiated expressions.
+        However, both really are complementary: the rules defined in the
+        context managers are applied *before* instantiation (hence these these
+        patterns are instantiated through `pattern_head`). In contrast, the
+        patterns defined in `rules` are applied against instantiated
+        expressions.
     """
+    if LOG:
+        logger = logging.getLogger(__name__ + '.simplify')
     if rules is None:
-        rules = []
+        rules = {}
     stack = []
     path = []
     if isinstance(expr, Expression):
         stack.append(ProtoExpr.from_expr(expr))
         path.append(0)
-        # print("Starting at level 1: placing expr on stack: %s" % expr)
+        if LOG:
+            logger.debug(
+                "Starting at level 1: placing expr on stack: %s", expr)
         while True:
             i = path[-1]
             try:
                 arg = stack[-1][i]
-                # print("At level %d: considering arg %d: %s"
-                #       % (len(stack), i+1, arg))
+                if LOG:
+                    logger.debug(
+                        "At level %d: considering arg %d: %s",
+                        len(stack), i+1, arg)
             except IndexError:
                 # done at this level
                 path.pop()
                 expr = stack.pop().instantiate()
                 expr = _simplify_expr(expr, rules)
                 if len(stack) == 0:
-                    # print("Complete level 1: returning simplified expr: %s"
-                    #       % expr)
+                    if LOG:
+                        logger.debug(
+                            "Complete level 1: returning simplified expr: %s",
+                            expr)
                     return expr
                 else:
                     stack[-1][path[-1]] = expr
                     path[-1] += 1
-                    # print("Complete level %d. At level %d, setting "
-                    #       "arg %d to simplified expr: %s"
-                    #       % (len(stack)+1, len(stack), path[-1], expr))
+                    if LOG:
+                        logger.debug(
+                            "Complete level %d. At level %d, setting arg %d "
+                            "to simplified expr: %s", len(stack)+1, len(stack),
+                            path[-1], expr)
             else:
                 if isinstance(arg, Expression):
                     stack.append(ProtoExpr.from_expr(arg))
                     path.append(0)
-                    # print("   placing arg on stack")
+                    if LOG:
+                        logger.debug("   placing arg on stack")
                 else:  # scalar
                     stack[-1][i] = _simplify_expr(arg, rules)
-                    # print("   arg is leaf, replacing with simplified "
-                    #       "expr: %s" % stack[-1][i])
+                    if LOG:
+                        logger.debug(
+                            "   arg is leaf, replacing with simplified expr: "
+                            "%s", stack[-1][i])
                     path[-1] += 1
     else:
         return _simplify_expr(expr, rules)
@@ -654,7 +705,7 @@ def match_replace(cls, ops, kwargs):
     First define an operation::
 
         >>> class Invert(Operation):
-        ...     _rules = []
+        ...     _rules = OrderedDict()
         ...     _simplifications = [match_replace, ]
 
     Then some _rules::
@@ -662,10 +713,10 @@ def match_replace(cls, ops, kwargs):
         >>> A = wc("A")
         >>> A_float = wc("A", head=float)
         >>> Invert_A = pattern(Invert, A)
-        >>> Invert._rules += [
-        ...     (pattern_head(Invert_A), lambda A: A),
-        ...     (pattern_head(A_float), lambda A: 1./A),
-        ... ]
+        >>> Invert._rules.update([
+        ...     ('r1', (pattern_head(Invert_A), lambda A: A)),
+        ...     ('r2', (pattern_head(A_float), lambda A: 1./A)),
+        ... ])
 
     Check rule application::
 
@@ -679,9 +730,9 @@ def match_replace(cls, ops, kwargs):
     A pattern can also have the same wildcard appear twice::
 
         >>> class X(Operation):
-        ...     _rules = [
-        ...         (pattern_head(A, A), lambda A: A),
-        ...     ]
+        ...     _rules = {
+        ...         'r1': (pattern_head(A, A), lambda A: A),
+        ...     }
         ...     _simplifications = [match_replace, ]
         >>> X.create(1,2)
         X(1, 2)
@@ -690,25 +741,41 @@ def match_replace(cls, ops, kwargs):
 
     """
     expr = ProtoExpr(ops, kwargs)
-    for expr_or_pattern, replacement in cls._rules:
-        match_dict = match_pattern(expr_or_pattern, expr)
+    if LOG:
+        logger = logging.getLogger(__name__ + '.create')
+    for key, rule in cls._rules.items():
+        pat, replacement = rule
+        match_dict = match_pattern(pat, expr)
         if match_dict:
             try:
-                return replacement(**match_dict)
+                replaced = replacement(**match_dict)
+                if LOG:
+                    logger.debug(
+                        "%sRule %s.%s: (%s, %s) -> %s", ("  " * (LEVEL)),
+                        cls.__name__, key, expr.args, expr.kwargs, replaced)
+                return replaced
             except CannotSimplify:
                 continue
     # No matching rules
     return ops, kwargs
 
 
-def _get_binary_replacement(first, second, rules):
+def _get_binary_replacement(first, second, cls):
     """Helper function for match_replace_binary"""
     expr = ProtoExpr([first, second], {})
-    for exp_or_pattern, replacement in rules:
-        match_dict = match_pattern(exp_or_pattern, expr)
+    if LOG:
+        logger = logging.getLogger(__name__ + '.create')
+    for key, rule in cls._binary_rules.items():
+        pat, replacement = rule
+        match_dict = match_pattern(pat, expr)
         if match_dict:
             try:
-                return replacement(**match_dict)
+                replaced = replacement(**match_dict)
+                if LOG:
+                    logger.debug(
+                        "%sRule %s.%s: (%s, %s) -> %s", ("  " * (LEVEL)),
+                        cls.__name__, key, expr.args, expr.kwargs, replaced)
+                return replaced
             except CannotSimplify:
                 continue
     return None
@@ -720,7 +787,8 @@ def match_replace_binary(cls, ops, kwargs):
 
         >>> A = wc("A")
         >>> class FilterDupes(Operation):
-        ...     _binary_rules = [(pattern_head(A,A), lambda A: A), ]
+        ...     _binary_rules = {
+        ...          'filter_dupes': (pattern_head(A,A), lambda A: A)}
         ...     _simplifications = [match_replace_binary, assoc]
         ...     neutral_element = 0
         >>> FilterDupes.create(1,2,3,4)         # No duplicates
@@ -769,7 +837,7 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
     """combine two fully reduced lists a, b"""
     if len(a) == 0 or len(b) == 0:
         return a + b
-    r = _get_binary_replacement(a[-1], b[0], cls._binary_rules)
+    r = _get_binary_replacement(a[-1], b[0], cls)
     if r is None:
         return a + b
     if r == cls.neutral_element:
@@ -787,6 +855,63 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
 ###############################################################################
 ############################## CONTEXT MANAGERS ###############################
 ###############################################################################
+
+
+def check_rules_dict(rules):
+    """Verify the `rules` that classes may use for the `_rules` or
+    `_binary_rules` class attribute.
+
+    Specifically, `rules` must be a :class:`OrderedDict`-compatible object
+    (list of key-value tuples, dict, OrderedDict) that
+    maps a rule name (:class:`str`) to a rule. Each rule consists of a
+    :class:`~qnet.algebra.pattern_matching.Pattern` and a replaceent callable.
+    The Pattern must be set up to match a
+    :class:`~qnet.algebra.pattern_matching.ProtoExpr`. That is,
+    the Pattern should be constructed through the
+    :func:`~qnet.algebra.pattern_matching.pattern_head` routine.
+
+    Raises:
+        TypeError: If `rules` is not compatible with :class:`OrderedDict`, the
+            keys in `rules` are not strings, or rule is not a tuple of
+            (:class:`~qnet.algebra.pattern_matching.Pattern`, `callable`)
+        ValueError: If the `head`-attribute of each Pattern is not an instance
+            of :class:`~qnet.algebra.pattern_matching.ProtoExpr`, or if there
+            are duplicate keys in `rules`
+
+    Returns:
+        ``OrderedDict(rules)``
+    """
+    if hasattr(rules, 'items'):
+        items = rules.items()  # `rules` is already a dict / OrderedDict
+    else:
+        items = rules  # `rules` is a list of (key, value) tuples
+    keys = set()
+    for key_rule in items:
+        try:
+            key, rule = key_rule
+        except ValueError:
+            raise TypeError("rules does not contain (key, rule) tuples")
+        if not isinstance(key, str):
+            raise TypeError("Key '%s' is not a string" % key)
+        if key in keys:
+            raise ValueError("Duplicate key '%s'" % key)
+        else:
+            keys.add(key)
+        try:
+            pat, replacement = rule
+        except TypeError:
+            raise TypeError(
+                "Rule in '%s' is not a (pattern, replacement) tuple" % key)
+        if not isinstance(pat, Pattern):
+            raise TypeError(
+                "Pattern in '%s' is not a Pattern instance" % key)
+        if pat.head is not ProtoExpr:
+            raise ValueError(
+                "Pattern in '%s' does not match a ProtoExpr" % key)
+        if not callable(replacement):
+            raise ValueError(
+                "replacement in '%s' is not callable" % key)
+    return OrderedDict(rules)
 
 
 @contextmanager
@@ -819,7 +944,8 @@ def extra_rules(cls, rules):
     processed by `match_replace`. Implies `temporary_instance_cache`.
     """
     orig_rules = copy(cls._rules)
-    cls._rules.extend(rules)
+    rules = check_rules_dict(rules)
+    cls._rules.update(check_rules_dict(rules))
     orig_instances = cls._instances
     cls._instances = {}
     yield
@@ -833,7 +959,7 @@ def extra_binary_rules(cls, rules):
     processed by `match_replace_binary`. Implies `temporary_instance_cache`.
     """
     orig_rules = copy(cls._binary_rules)
-    cls._binary_rules.extend(rules)
+    cls._binary_rules.update(check_rules_dict(rules))
     orig_instances = cls._instances
     cls._instances = {}
     yield
@@ -853,12 +979,12 @@ def no_rules(cls):
     cls._instances = {}
     try:
         orig_rules = cls._rules
-        cls._rules = []
+        cls._rules = OrderedDict([])
     except AttributeError:
         has_rules = False
     try:
         orig_binary_rules = cls._binary_rules
-        cls._binary_rules = []
+        cls._binary_rules = OrderedDict([])
     except AttributeError:
         has_binary_rules = False
     yield
