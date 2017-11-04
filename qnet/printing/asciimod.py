@@ -16,18 +16,27 @@
 # Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
-from .base import Printer
-from ..algebra.singleton import Singleton, singleton_object
+"""ASCII Printer"""
+from .base import QnetBasePrinter
+from .sympy import SympyStrPrinter
 
 
-@singleton_object
-class AsciiPrinter(Printer, metaclass=Singleton):
-    """Printer for a string (ASCII) representation. See class:`Printer` for
-    details"""
-    _registry = {}
+class QnetAsciiPrinter(QnetBasePrinter):
+    """Printer for a string (ASCII) representation."""
+    sympy_printer_cls = SympyStrPrinter
+    printmethod = '_ascii'
 
 
-def ascii(expr):
+def ascii(expr, **options):
     """Return an ascii textual representation of the given object /
     expression"""
-    return AsciiPrinter.render(expr)
+    try:
+        if len(options) == 0:
+            return ascii.printer.doprint(expr)
+        else:
+            return ascii._printer_cls(**options).doprint(expr)
+    except AttributeError:
+        # init_printing was not called. Setting up defaults
+        ascii._printer_cls = QnetAsciiPrinter
+        ascii.printer = ascii._printer_cls()
+        return ascii(expr, **options)

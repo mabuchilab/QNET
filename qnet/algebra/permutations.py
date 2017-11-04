@@ -301,7 +301,6 @@ def block_perm_and_perms_within_blocks(permutation, block_structure):
     :rtype: tuple
     """
     nblocks = len(block_structure)
-    cdim = sum(block_structure)
 
     offsets = [sum(block_structure[:k]) for k in range(nblocks)]
     images = [permutation[offset: offset + length] for (offset, length) in zip(offsets, block_structure)]

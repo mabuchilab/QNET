@@ -36,16 +36,14 @@ from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
         Expression, Operation, assoc, orderby, filter_neutral,
         match_replace_binary, match_replace, set_union, substitute,
-        CannotSimplify, cache_attr)
+        CannotSimplify)
 from .singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
-        TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError,
-        FullSpace)
+        TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError)
 from .pattern_matching import wc, pattern_head, pattern
 from .ordering import (
-        KeyTuple, expr_order_key, DisjunctCommutativeHSOrder,
+        KeyTuple, DisjunctCommutativeHSOrder,
         FullCommutativeHSOrder)
-from ..printing import ascii, srepr
 
 sympyOne = sympify(1)
 
@@ -422,15 +420,6 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
         else:
             return self.kwargs
 
-    def _render(self, fmt, adjoint=False):
-        if adjoint:
-            dagger = not self._dagger
-        else:
-            dagger = self._dagger
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_op(self._identifier, self._hs,
-                                 dagger=dagger, args=self.args)
-
     @property
     def identifier(self):
         """The name / identifying symbol of the operator"""
@@ -529,10 +518,6 @@ class OperatorSymbol(Operator, Expression):
     def kwargs(self):
         return {'hs': self._hs}
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_op(self.identifier, self._hs, dagger=adjoint)
-
     @property
     def space(self):
         return self._hs
@@ -576,10 +561,6 @@ class IdentityOperator(Operator, Expression, metaclass=Singleton):
     def _pseudo_inverse(self):
         return self
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.identity_sym
-
     def __eq__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return other == 1
@@ -620,10 +601,6 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
 
     def _pseudo_inverse(self):
         return self
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.zero_sym
 
     def __eq__(self, other):
         if isinstance(other, SCALAR_TYPES):

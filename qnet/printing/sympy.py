@@ -25,7 +25,7 @@ from sympy.printing.latex import LatexPrinter
 from sympy.printing.pretty.pretty_symbology import pretty_symbol
 from sympy.printing.pretty.stringpict import prettyForm
 
-from .unicode import superscript_mapping
+from ._unicode_mappings import superscript_mapping
 
 
 def derationalize_denom(expr):

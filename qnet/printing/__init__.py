@@ -18,115 +18,126 @@
 ###########################################################################
 """Printing system for QNET Expressions and related objects"""
 
-import copy
+import sys
 from contextlib import contextmanager
+from pydoc import locate
 
-import sympy
+from sympy.printing.printer import Printer as SympyPrinter
 
-from .base import Printer
-from .ascii import AsciiPrinter, ascii
-from .unicode import UnicodePrinter, unicode
-from .tex import LaTeXPrinter, tex
-from .srepr import SReprPrinter, srepr
-from .tree import tree
+from .base import QnetBasePrinter
+from .asciimod import ascii
+from .unicodemod import unicode
+from .latexmod import latex
+from .sreprmod import srepr
+from .treemod import tree
+from .dotmod import dot
 
 
-__all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'tex',
-           'srepr', 'tree']
+__all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'latex',
+           'srepr', 'tree', 'dot']
+
+
+def _printer_cls(label, class_address, require_base=QnetBasePrinter):
+    cls = locate(class_address)
+    if cls is None:
+        raise ValueError("%s '%s' does not exist" % (label, class_address))
+    try:
+        if require_base is not None:
+            if not issubclass(cls, require_base):
+                raise ValueError(
+                    "%s '%s' must be a subclass of %s"
+                    % (label, class_address, require_base.__name__))
+    except TypeError:
+            raise ValueError(
+                "%s '%s' must be a class" % (label, class_address))
+    else:
+        return cls
+
+
+PRINT_FUNC = {
+    'ascii': ascii,
+    'unicode': unicode,
+}
 
 
 def init_printing(
-    use_unicode=True, str_printer=None, repr_printer=None,
-    cached_rendering=True, implicit_tensor=False, _init_sympy=True):
-    """Initialize printing
+        inifile=None, str_format=None, repr_format=None,
+        ascii_printer='qnet.printing.asciimod.QnetAsciiPrinter',
+        ascii_sympy_printer='qnet.printing.sympy.SympyStrPrinter',
+        unicode_printer='qnet.printing.unicodemod.QnetUnicodePrinter',
+        unicode_sympy_printer='qnet.printing.sympy.SympyUnicodePrinter',
+        **settings):
+    """Initialize printing"""
+    # TODO: handle inifile (and recurse)
 
-    * Initialize `sympy` printing with the given `use_unicode`
-      (i.e. call `sympy.init_printing`)
-    * Set the printers for textual representations (``str`` and ``repr``) of
-      Expressions
-    * Configure whether `ascii`, `unicode`, and `tex` representations should be
-      cached. If caching is enabled, the representations are rendered only
-      once. This means that any configuration of the corresponding printers
-      must be made before generating the representation for the first time.
-
-    Args:
-        use_unicode (bool): If True, use unicode symbols. If False, restrict to
-            ascii. Besides initializing `sympy` printing, this only determins
-            the default `str` and `repr` printer. Thus, if `str_printer` and
-            `repr_printer` are given, `use_unicode` has almost no effect.
-        str_printer (Printer, str, or None): The printer to be used for
-            ``str(expr)``. Must be an instance of :class:`Printer` or one of
-            the strings 'ascii', 'unicode', 'unicode', 'latex', or 'srepr',
-            corresponding to `AsciiPrinter`, `UnicodePrinter`, `LaTeXPrinter`,
-            and `SReprPrinter` respectively. If not given, either
-            `AsciiPrinter` or `UnicodePrinter` is set, depending on
-            `use_unicode`.
-        repr_printer (Printer, str, or None): Like `str_printer`, but for
-            ``repr(expr)``. This is also what is displayed in an interactive
-            Python session
-        cached_rendering (bool): Flag whether the results of ``ascii(expr)``,
-            ``unicode(expr)``, and ``tex(expr)`` should be cached
-        implicit_tensor (bool): If True, don't use tensor product symbols in
-            the standard tex representation
-
-    Notes:
-        * This routine does not set custom printers for rendering `ascii`,
-          `unicode`, and `tex`. To use a non-default printer, you must assign
-          directly to the corresponding class attributes of `Expression`.
-        * `str` and `repr` representations are never *directly* cached (but the
-          printers they delegate to may use caching)
-
-    """
-    from qnet.algebra.abstract_algebra import Expression
-    sympy.init_printing(use_unicode=use_unicode)
-    # Set the default _str_ and _repr_ printers
-    printer_codes = {
-        'ascii': AsciiPrinter,
-        'unicode': UnicodePrinter,
-        'tex': LaTeXPrinter,
-        'latex': LaTeXPrinter,
-        'srepr': SReprPrinter,
+    # collect settings
+    settings_map = {
+        'ascii': {},
+        'unicode': {}
     }
-    if str_printer is None:
-        if use_unicode:
-            Expression._str_printer = UnicodePrinter
-        else:
-            Expression._str_printer = AsciiPrinter
-    else:
-        if str_printer in printer_codes:
-            str_printer = printer_codes[str_printer]
-        if not isinstance(str_printer, Printer):
-            raise TypeError("str_printer must be a Printer instance")
-        Expression._str_printer = str_printer
-    if repr_printer is None:
-        if use_unicode:
-            Expression._repr_printer = UnicodePrinter
-        else:
-            Expression._repr_printer = AsciiPrinter
-    else:
-        if repr_printer in printer_codes:
-            repr_printer = printer_codes[repr_printer]
-        if not isinstance(repr_printer, Printer):
-            raise TypeError("repr_printer must be a Printer instance")
-        Expression._repr_printer = repr_printer
-    if implicit_tensor:
-        LaTeXPrinter.tensor_sym = ' '
-    # Set cached rendering
-    Expression._cached_rendering = cached_rendering
+    global_settings = {}
+    for key, val in settings.values():
+        is_global = True
+        for prefix in settings_map.keys():
+            if key.startwith(prefix):
+                settings_map[prefix][key[len(prefix):]] = val
+                is_global = False
+                break
+        if is_global:
+            global_settings[key] = val
+    QnetBasePrinter.set_global_settings(**global_settings)
+
+    # initialize all print functions
+    print_cls_map = {
+        'ascii': (ascii_printer, ascii_sympy_printer),
+        'unicode': (unicode_printer, unicode_sympy_printer),
+    }
+    for name in print_cls_map.keys():
+        print_func = PRINT_FUNC[name]
+        qnet_printer_address, sympy_printer_address = print_cls_map[name]
+        print_func._printer_cls = _printer_cls(
+            name + '_printer', qnet_printer_address)
+        print_func._printer_cls.sympy_printer_cls = _printer_cls(
+            name + '_sympy_printer', sympy_printer_address,
+            require_base=SympyPrinter)
+        print_func.printer = print_func._printer_cls(
+            settings=settings_map[name])
+
+    # set up the __str__ and __repr__ printers
+    has_unicode = "UTF-8" in sys.stdout.encoding
+    if str_format is None:
+        str_format = 'unicode' if has_unicode else 'ascii'
+    try:
+        str_func = PRINT_FUNC[str_format]
+    except KeyError:
+        raise ValueError(
+            "str_format must be one of %s" % ", ".join(PRINT_FUNC.keys()))
+    if repr_format is None:
+        repr_format = 'unicode' if has_unicode else 'ascii'
+    try:
+        repr_func = PRINT_FUNC[repr_format]
+    except KeyError:
+        raise ValueError(
+            "repr_format must be one of %s" % ", ".join(PRINT_FUNC.keys()))
+    from qnet.algebra.abstract_algebra import Expression
+    Expression.__str__ = lambda self: str_func(self)
+    Expression.__repr__ = lambda self: repr_func(self)
+    Expression._repr_latex = lambda self: "$" + latex(self) + "$"
 
 
 @contextmanager
 def configure_printing(**kwargs):
     """context manager for temporarily changing the printing paremters. This
     takes the same values as `init_printing`"""
-    from qnet.algebra.abstract_algebra import Expression
-    str_printer = Expression._str_printer
-    repr_printer = Expression._repr_printer
-    cached_rendering = Expression._cached_rendering
-    latex_settings = copy.copy(LaTeXPrinter.__dict__)
-    init_printing(_init_sympy=False, **kwargs)
+    # TODO
+    #from qnet.algebra.abstract_algebra import Expression
+    #str_printer = Expression._str_printer
+    #repr_printer = Expression._repr_printer
+    #cached_rendering = Expression._cached_rendering
+    #latex_settings = copy.copy(LaTeXPrinter.__dict__)
+    #init_printing(_init_sympy=False, **kwargs)
     yield
-    Expression._str_printer = str_printer
-    Expression._repr_printer = repr_printer
-    Expression._cached_rendering = cached_rendering
-    LaTeXPrinter.__dict__ = latex_settings
+    #Expression._str_printer = str_printer
+    #Expression._repr_printer = repr_printer
+    #Expression._cached_rendering = cached_rendering
+    #LaTeXPrinter.__dict__ = latex_settings

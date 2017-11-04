@@ -18,14 +18,14 @@
 ###########################################################################
 """`DOT`_ printer for Expressions.
 
-This module provides the :func:`dotprint` function that generates a `DOT`_
+This module provides the :func:`dot` function that generates a `DOT`_
 diagram for a given expression. For example::
 
     >>> from qnet.algebra.operator_algebra import OperatorSymbol, Adjoint
     >>> A = OperatorSymbol("A", hs=1)
     >>> B = OperatorSymbol("B", hs=1)
     >>> expr = 2 * (A + B)
-    >>> dot = dotprint(expr)
+    >>> dot = dot(expr)
     >>> dot.strip() == r'''
     ... digraph{
     ...
@@ -58,7 +58,7 @@ The ``dot`` commandline program renders the code into an image:
 
 .. figure:: ../_static/dotprint.svg
 
-The various options of :func:`dotprint` allow for arbitrary customization of
+The various options of :func:`dot` allow for arbitrary customization of
 the graph's structural and visual properties.
 
 .. _DOT: http://www.graphviz.org
@@ -66,7 +66,7 @@ the graph's structural and visual properties.
 
 from ..algebra.abstract_algebra import Expression, Operation
 
-__all__ = ['dotprint']
+__all__ = ['dot']
 
 template = r'''
 digraph{
@@ -150,8 +150,7 @@ def _op_children(expr):
         return []
 
 
-def dotprint(
-        expr, styles=None, maxdepth=None, repeat=True,
+def dot(expr, styles=None, maxdepth=None, repeat=True,
         labelfunc=expr_labelfunc(str, str),
         idfunc=None, get_children=_op_children, **kwargs):
     """`DOT`_ (graph) description of an Expression tree

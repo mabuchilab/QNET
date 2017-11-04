@@ -26,7 +26,7 @@ from sympy import Basic as SympyBasic, I, sympify
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-        Expression, Operation, cache_attr, substitute)
+        Expression, Operation, substitute)
 from .operator_algebra import Operator, scalar_free_symbols, simplify_scalar
 from .hilbert_space_algebra import TrivialSpace, ProductSpace
 from .permutations import check_permutation
@@ -197,28 +197,6 @@ class Matrix(Expression):
         return self.T.conjugate()
 
     dag = adjoint
-
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        row_strs = []
-        if len(self.matrix) == 0:
-            row_strs.append(
-                    printer.matrix_row_left_sym +
-                    printer.matrix_row_right_sym)
-            row_strs.append(
-                    printer.matrix_row_left_sym +
-                    printer.matrix_row_right_sym)
-        else:
-            for row in self.matrix:
-                row_strs.append(
-                        printer.matrix_row_left_sym +
-                        printer.matrix_col_sep_sym.join(
-                            [printer.render(entry) for entry in row]) +
-                        printer.matrix_row_right_sym)
-        return (printer.matrix_left_sym +
-                printer.matrix_row_sep_sym.join(row_strs) +
-                printer.matrix_right_sym)
 
     def trace(self):
         if self.shape[0] == self.shape[1]:
