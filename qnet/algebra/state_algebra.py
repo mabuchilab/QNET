@@ -25,24 +25,25 @@ For more details see :ref:`state_algebra`.
 import re
 from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
+from collections import OrderedDict
 
 from sympy import (
-        Basic as SympyBasic, series as sympy_series, sqrt, exp, I)
+    Basic as SympyBasic, series as sympy_series, sqrt, exp, I)
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-        Operation, Expression, substitute, AlgebraError, assoc, orderby,
-        filter_neutral, match_replace, match_replace_binary,
-        CannotSimplify)
+    Operation, Expression, substitute, AlgebraError, assoc, orderby,
+    filter_neutral, match_replace, match_replace_binary,
+    CannotSimplify, check_rules_dict)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
-        FullSpace, TrivialSpace, LocalSpace, ProductSpace)
+    FullSpace, TrivialSpace, LocalSpace, ProductSpace)
 from .operator_algebra import (
-        Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
-        IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
-        Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff,
-        Jmjmcoeff, Displace, Phase)
+    Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
+    IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
+    Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
+    Phase)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
 
 __all__ = [
@@ -476,7 +477,7 @@ class KetPlus(Ket, Operation):
     :type summands: Ket
     """
     neutral_element = ZeroKet
-    _binary_rules = []  # see end of module
+    _binary_rules = OrderedDict()  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, check_kets_same_space,
                         match_replace_binary]
 
@@ -510,7 +511,7 @@ class TensorKet(Ket, Operation):
     :param factors: Ket factors.
     :type factors: Ket
     """
-    _binary_rules = []  # see end of module
+    _binary_rules = OrderedDict()  # see end of module
     neutral_element = TrivialKet
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
@@ -594,7 +595,7 @@ class ScalarTimesKet(Ket, Operation):
     :param term: The ket that is multiplied.
     :type term: Ket
     """
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [match_replace, ]
 
     @property
@@ -655,7 +656,7 @@ class OperatorTimesKet(Ket, Operation):
     :param Operator op: The multiplying operator.
     :param Ket ket: The ket that is multiplied.
     """
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [match_replace, check_op_ket_space]
 
     @property
@@ -789,7 +790,7 @@ class BraKet(Operator, Operation):
     :param Ket bra: The anti-linear state argument.
     :param Ket ket: The linear state argument.
     """
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _space = TrivialSpace
     _simplifications = [check_kets_same_space, match_replace]
 
@@ -834,7 +835,7 @@ class KetBra(Operator, Operation):
     :param Ket ket: The first state that defines the range of the operator.
     :param Ket bra: The second state that defines the Kernel of the operator.
     """
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [check_kets_same_space, match_replace]
 
     def __init__(self, ket, bra):
@@ -865,7 +866,7 @@ class KetBra(Operator, Operation):
         res_summands = []
         for (k, b) in cartesian_product(kesummands, besummands):
             res_summands.append(KetBra.create(k, b))
-        return OperatorPlus(*res_summands)
+        return OperatorPlus.create(*res_summands)
 
     def _series_expand(self, param, about, order):
         ke = self.ket.series_expand(param, about, order)
@@ -951,150 +952,205 @@ def _algebraic_rules():
 
     basisket = wc('basisket', BasisKet, kwargs={'hs': ls})
 
-    ScalarTimesKet._rules += [
-        (pattern_head(1, Psi),
-            lambda Psi: Psi),
-        (pattern_head(0, Psi),
-            lambda Psi: ZeroKet),
-        (pattern_head(u, ZeroKet),
-            lambda u: ZeroKet),
-        (pattern_head(u, pattern(ScalarTimesKet, v, Psi)),
-            lambda u, v, Psi: (u * v) * Psi)
-    ]
+    ScalarTimesKet._rules.update(check_rules_dict([
+        ('one', (
+            pattern_head(1, Psi),
+            lambda Psi: Psi)),
+        ('zero', (
+            pattern_head(0, Psi),
+            lambda Psi: ZeroKet)),
+        ('uzero', (
+            pattern_head(u, ZeroKet),
+            lambda u: ZeroKet)),
+        ('uvpsi', (
+            pattern_head(u, pattern(ScalarTimesKet, v, Psi)),
+            lambda u, v, Psi: (u * v) * Psi))
+    ]))
 
     # local_rule = lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)
 
     def local_rule(A, B, Psi):
         return OperatorTimes.create(*A) * (B * Psi)
 
-    OperatorTimesKet._rules += [
-        (pattern_head(IdentityOperator, Psi),
-            lambda Psi: Psi),
-        (pattern_head(ZeroOperator, Psi),
-            lambda Psi: ZeroKet),
-        (pattern_head(A, ZeroKet),
-            lambda A: ZeroKet),
-        (pattern_head(A, pattern(ScalarTimesKet, v, Psi)),
-            lambda A, v, Psi:  v * (A * Psi)),
+    OperatorTimesKet._rules.update(check_rules_dict([
+        ('id', (
+            pattern_head(IdentityOperator, Psi),
+            lambda Psi: Psi)),
+        ('zeroop', (
+            pattern_head(ZeroOperator, Psi),
+            lambda Psi: ZeroKet)),
+        ('zeroket', (
+            pattern_head(A, ZeroKet),
+            lambda A: ZeroKet)),
+        ('vApsi', (
+            pattern_head(A, pattern(ScalarTimesKet, v, Psi)),
+            lambda A, v, Psi:  v * (A * Psi))),
 
-        (pattern_head(pattern(LocalSigma, n, m, hs=ls),
-                      pattern(BasisKet, k, hs=ls)),
-            lambda ls, n, m, k: BasisKet(n, hs=ls) if m == k else ZeroKet),
+        ('sig', (
+            pattern_head(
+                pattern(LocalSigma, n, m, hs=ls),
+                pattern(BasisKet, k, hs=ls)),
+            lambda ls, n, m, k: BasisKet(n, hs=ls) if m == k else ZeroKet)),
 
         # harmonic oscillator
-        (pattern_head(pattern(Create, hs=ls), basisket),
+        ('create', (
+            pattern_head(pattern(Create, hs=ls), basisket),
             lambda basisket, ls:
-            sqrt(basisket.index + 1) * basisket.next()),
-        (pattern_head(pattern(Destroy, hs=ls), basisket),
+                sqrt(basisket.index + 1) * basisket.next())),
+        ('destroy', (
+            pattern_head(pattern(Destroy, hs=ls), basisket),
             lambda basisket, ls:
-            sqrt(basisket.index) * basisket.prev()),
-        (pattern_head(pattern(Destroy, hs=ls),
-                      pattern(CoherentStateKet, u, hs=ls)),
-            lambda ls, u: u * CoherentStateKet(u, hs=ls)),
+                sqrt(basisket.index) * basisket.prev())),
+        ('coherent', (
+            pattern_head(
+                pattern(Destroy, hs=ls),
+                pattern(CoherentStateKet, u, hs=ls)),
+            lambda ls, u: u * CoherentStateKet(u, hs=ls))),
 
         # spin
-        (pattern_head(pattern(Jplus, hs=ls), basisket),
+        ('jplus', (
+            pattern_head(pattern(Jplus, hs=ls), basisket),
             lambda basisket, ls:
-            Jpjmcoeff(basisket.space, basisket.index, shift=True) *
-            basisket.next()),
-        (pattern_head(pattern(Jminus, hs=ls), basisket),
+                Jpjmcoeff(basisket.space, basisket.index, shift=True) *
+                basisket.next())),
+        ('jminus', (
+            pattern_head(pattern(Jminus, hs=ls), basisket),
             lambda basisket, ls:
-            Jmjmcoeff(basisket.space, basisket.index, shift=True) *
-            basisket.prev()),
-        (pattern_head(pattern(Jz, hs=ls), basisket),
+                Jmjmcoeff(basisket.space, basisket.index, shift=True) *
+                basisket.prev())),
+        ('jz', (
+            pattern_head(pattern(Jz, hs=ls), basisket),
             lambda basisket, ls:
-            Jzjmcoeff(basisket.space, basisket.index, shift=True) *
-            basisket),
+                Jzjmcoeff(basisket.space, basisket.index, shift=True) *
+                basisket)),
 
-        (pattern_head(A_local, Psi_tensor),
-            lambda A, Psi: act_locally(A, Psi)),
-        (pattern_head(A_times, Psi_tensor),
-            lambda A, Psi: act_locally_times_tensor(A, Psi)),
-        (pattern_head(A, pattern(OperatorTimesKet, B, Psi)),
+        ('local1', (
+            pattern_head(A_local, Psi_tensor),
+            lambda A, Psi: act_locally(A, Psi))),
+        ('prod', (
+            pattern_head(A_times, Psi_tensor),
+            lambda A, Psi: act_locally_times_tensor(A, Psi))),
+        ('ABPsi', (
+            pattern_head(A, pattern(OperatorTimesKet, B, Psi)),
             lambda A, B, Psi: (
                 (A * B) * Psi
                 if (B * Psi) == OperatorTimesKet(B, Psi)
-                else A * (B * Psi))),
-        (pattern_head(pattern(OperatorTimes, A__, B_local), Psi_local),
-            local_rule),
-        (pattern_head(pattern(ScalarTimesOperator, u, A), Psi),
-            lambda u, A, Psi: u * (A * Psi)),
-        (pattern_head(pattern(Displace, u, hs=ls),
-                      pattern(BasisKet, 0, hs=ls)),
-            lambda ls, u: CoherentStateKet(u, hs=ls)),
-        (pattern_head(pattern(Displace, u, hs=ls),
-                      pattern(CoherentStateKet, v, hs=ls)),
+                else A * (B * Psi)))),
+        ('local2', (
+            pattern_head(pattern(OperatorTimes, A__, B_local), Psi_local),
+            local_rule)),
+        ('uAPsi', (
+            pattern_head(pattern(ScalarTimesOperator, u, A), Psi),
+            lambda u, A, Psi: u * (A * Psi))),
+        ('displace1', (
+            pattern_head(
+                pattern(Displace, u, hs=ls),
+                pattern(BasisKet, 0, hs=ls)),
+            lambda ls, u: CoherentStateKet(u, hs=ls))),
+        ('displace2', (
+            pattern_head(
+                pattern(Displace, u, hs=ls),
+                pattern(CoherentStateKet, v, hs=ls)),
             lambda ls, u, v:
                 ((Displace(u, hs=ls) * Displace(v, hs=ls)) *
-                 BasisKet(0, hs=ls))),
-        (pattern_head(pattern(Phase, u, hs=ls), pattern(BasisKet, m, hs=ls)),
-            lambda ls, u, m: exp(I * u * m) * BasisKet(m, hs=ls)),
-        (pattern_head(pattern(Phase, u, hs=ls),
-                      pattern(CoherentStateKet, v, hs=ls)),
-            lambda ls, u, v: CoherentStateKet(v * exp(I * u), hs=ls)),
-    ]
+                 BasisKet(0, hs=ls)))),
+        ('phase1', (
+            pattern_head(
+                pattern(Phase, u, hs=ls), pattern(BasisKet, m, hs=ls)),
+            lambda ls, u, m: exp(I * u * m) * BasisKet(m, hs=ls))),
+        ('phase2', (
+            pattern_head(
+                pattern(Phase, u, hs=ls),
+                pattern(CoherentStateKet, v, hs=ls)),
+            lambda ls, u, v: CoherentStateKet(v * exp(I * u), hs=ls))),
+    ]))
 
-    KetPlus._binary_rules += [
-        (pattern_head(pattern(ScalarTimesKet, u, Psi),
-                      pattern(ScalarTimesKet, v, Psi)),
-            lambda u, v, Psi: (u + v) * Psi),
-        (pattern_head(pattern(ScalarTimesKet, u, Psi), Psi),
-            lambda u, Psi: (u + 1) * Psi),
-        (pattern_head(Psi, pattern(ScalarTimesKet, v, Psi)),
-            lambda v, Psi: (1 + v) * Psi),
-        (pattern_head(Psi, Psi),
-            lambda Psi: 2 * Psi),
-    ]
+    KetPlus._binary_rules.update(check_rules_dict([
+        ('scalsum', (
+            pattern_head(
+                pattern(ScalarTimesKet, u, Psi),
+                pattern(ScalarTimesKet, v, Psi)),
+            lambda u, v, Psi: (u + v) * Psi)),
+        ('up1', (
+            pattern_head(pattern(ScalarTimesKet, u, Psi), Psi),
+            lambda u, Psi: (u + 1) * Psi)),
+        ('1pv', (
+            pattern_head(Psi, pattern(ScalarTimesKet, v, Psi)),
+            lambda v, Psi: (1 + v) * Psi)),
+        ('2psi', (
+            pattern_head(Psi, Psi),
+            lambda Psi: 2 * Psi)),
+    ]))
 
-    TensorKet._binary_rules += [
-        (pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
-            lambda u, Psi, Phi: u * (Psi * Phi)),
-        (pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
-            lambda Psi, u, Phi: u * (Psi * Phi)),
-    ]
+    TensorKet._binary_rules.update(check_rules_dict([
+        ('scal1', (
+            pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
+            lambda u, Psi, Phi: u * (Psi * Phi))),
+        ('scal2', (
+            pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
+            lambda Psi, u, Phi: u * (Psi * Phi))),
+    ]))
 
-    BraKet._rules += [
-        (pattern_head(Phi, ZeroKet),
-            lambda Phi: 0),
-        (pattern_head(ZeroKet, Phi),
-            lambda Phi: 0),
-        (pattern_head(pattern(BasisKet, m, hs=ls),
-                      pattern(BasisKet, n, hs=ls)),
-            lambda ls, m, n: 1 if m == n else 0),
-        (pattern_head(pattern(BasisKet, nsym, hs=ls),
-                      pattern(BasisKet, nsym, hs=ls)),
-            lambda ls, nsym: 1),
-        (pattern_head(Psi_tensor, Phi_tensor),
-            lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create)),
-        (pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
-            lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi)),
-        (pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
-            lambda A, Psi, Phi: (Psi.adjoint() * (A.dag() * Phi))),
-        (pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
-            lambda Psi, u, Phi: u * (Psi.adjoint() * Phi)),
-    ]
+    BraKet._rules.update(check_rules_dict([
+        ('zero2', (
+            pattern_head(Phi, ZeroKet),
+            lambda Phi: 0)),
+        ('zero1', (
+            pattern_head(ZeroKet, Phi),
+            lambda Phi: 0)),
+        ('dirac', (
+            pattern_head(
+                pattern(BasisKet, m, hs=ls), pattern(BasisKet, n, hs=ls)),
+            lambda ls, m, n: 1 if m == n else 0)),
+        ('norm', (
+            pattern_head(
+                pattern(BasisKet, nsym, hs=ls),
+                pattern(BasisKet, nsym, hs=ls)),
+            lambda ls, nsym: 1)),
+        ('tensor', (
+            pattern_head(Psi_tensor, Phi_tensor),
+            lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create))),
+        ('scal1', (
+            pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
+            lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi))),
+        ('op', (
+            pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
+            lambda A, Psi, Phi: (Psi.adjoint() * (A.dag() * Phi)))),
+        ('scal2', (
+            pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
+            lambda Psi, u, Phi: u * (Psi.adjoint() * Phi))),
+    ]))
 
-    KetBra._rules += [
-        (pattern_head(pattern(BasisKet, m, hs=ls),
-                      pattern(BasisKet, n, hs=ls)),
-            lambda ls, m, n: LocalSigma(m, n, hs=ls)),
-        (pattern_head(pattern(CoherentStateKet, u, hs=ls), Phi),
-            lambda ls, u, Phi: (Displace(u, hs=ls) * (BasisKet(0, hs=ls) *
-                                Phi.adjoint()))),
-        (pattern_head(Phi, pattern(CoherentStateKet, u, hs=ls)),
-            lambda ls, u, Phi: ((Phi * BasisKet(0, hs=ls).adjoint()) *
-                                Displace(-u, hs=ls))),
-        (pattern_head(Psi_tensor, Phi_tensor),
-            lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, KetBra.create)),
-        (pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
-            lambda A, Psi, Phi: A * (Psi * Phi.adjoint())),
-        (pattern_head(Psi, pattern(OperatorTimesKet, A, Phi)),
-            lambda Psi, A, Phi: (Psi * Phi.adjoint()) * A.adjoint()),
-        (pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
-            lambda u, Psi, Phi: u * (Psi * Phi.adjoint())),
-        (pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
-            lambda Psi, u, Phi: u.conjugate() * (Psi * Phi.adjoint())),
-    ]
+    KetBra._rules.update(check_rules_dict([
+        ('sig', (
+            pattern_head(
+                pattern(BasisKet, m, hs=ls),
+                pattern(BasisKet, n, hs=ls)),
+            lambda ls, m, n: LocalSigma(m, n, hs=ls))),
+        ('coherent1', (
+            pattern_head(pattern(CoherentStateKet, u, hs=ls), Phi),
+            lambda ls, u, Phi: (
+                Displace(u, hs=ls) * (BasisKet(0, hs=ls) * Phi.adjoint())))),
+        ('coherent2', (
+            pattern_head(Phi, pattern(CoherentStateKet, u, hs=ls)),
+            lambda ls, u, Phi: (
+                (Phi * BasisKet(0, hs=ls).adjoint()) * Displace(-u, hs=ls)))),
+        ('tensor', (
+            pattern_head(Psi_tensor, Phi_tensor),
+            lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, KetBra.create))),
+        ('op1', (
+            pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
+            lambda A, Psi, Phi: A * (Psi * Phi.adjoint()))),
+        ('op2', (
+            pattern_head(Psi, pattern(OperatorTimesKet, A, Phi)),
+            lambda Psi, A, Phi: (Psi * Phi.adjoint()) * A.adjoint())),
+        ('scal1', (
+            pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
+            lambda u, Psi, Phi: u * (Psi * Phi.adjoint()))),
+        ('scal2', (
+            pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
+            lambda Psi, u, Phi: u.conjugate() * (Psi * Phi.adjoint()))),
+    ]))
 
 
 _algebraic_rules()

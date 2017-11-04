@@ -44,7 +44,7 @@ import numpy as np
 from .abstract_algebra import (
         AlgebraException, AlgebraError, Operation, Expression, assoc,
         filter_neutral, match_replace_binary, match_replace,
-        CannotSimplify, substitute, set_union)
+        CannotSimplify, substitute, set_union, check_rules_dict)
 from .singleton import Singleton, singleton_object
 from .operator_algebra import (
         Operator, ScalarTimesOperator, IdentityOperator, Create,
@@ -1195,7 +1195,7 @@ class SeriesProduct(Circuit, Operation):
     """
     _simplifications = [assoc, filter_neutral, check_cdims,
                         match_replace_binary]
-    _binary_rules = []  # see end of module
+    _binary_rules = OrderedDict()  # see end of module
 
     _space = None  # lazily evaluated
 
@@ -1251,7 +1251,7 @@ class Concatenation(Circuit, Operation):
 
     _simplifications = [assoc, filter_neutral, match_replace_binary]
 
-    _binary_rules = []  # see end of module
+    _binary_rules = OrderedDict()  # see end of module
 
     def __init__(self, *operands):
         self._space = None
@@ -1369,7 +1369,7 @@ class Feedback(Circuit, Operation):
 
     _simplifications = [match_replace, ]
 
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
 
     def __init__(self, circuit: Circuit, *, out_port: int, in_port: int):
         self.out_port = int(out_port)
@@ -2121,25 +2121,29 @@ def try_adiabatic_elimination(slh, k=None, fock_trunc=6, sub_P0=True):
                 b = b[:fock_trunc]
         except BasisNotSetError:
             b = range(fock_trunc)
-        projectors = set(LocalProjector(Y.space, ll) for ll in b)
+        projectors = set(LocalProjector(ll, hs=Y.space) for ll in b)
         Id_trunc = sum(projectors, ZeroOperator)
-        Yprojection = ((Id_trunc * Y).expand()
-                       * Id_trunc).expand().simplify_scalar()
+        Yprojection = (
+            ((Id_trunc * Y).expand() * Id_trunc)
+            .expand().simplify_scalar())
         termcoeffs = get_coeffs(Yprojection)
         terms = set(termcoeffs.keys())
 
         for term in terms - projectors:
-            if (not isinstance(term, LocalSigma) or not term.operands[1] == term.operands[2]):
+            cannot_eliminate = (
+                not isinstance(term, LocalSigma) or
+                not term.operands[1] == term.operands[2])
+            if cannot_eliminate:
                 raise CannotEliminateAutomatically(
-                    "Proj. Y operator has off-diagonal term: ~{}".format(term)
-                    )
+                    "Proj. Y operator has off-diagonal term: ~{}".format(term))
         P0 = sum(projectors - terms, ZeroOperator)
         if P0 == ZeroOperator:
             raise CannotEliminateAutomatically("Empty null-space of Y!")
 
         Yinv = sum(t/termcoeffs[t] for t in terms & projectors)
-        assert ((Yprojection*Yinv).expand().simplify_scalar()
-                == (Id_trunc - P0).expand())
+        assert (
+            (Yprojection*Yinv).expand().simplify_scalar() ==
+            (Id_trunc - P0).expand())
         slhlim = eval_adiabatic_limit(ops, Yinv, P0)
 
         if sub_P0:
@@ -2249,68 +2253,93 @@ def _algebraic_rules():
     j_int = wc("j", head=int)
     k_int = wc("k", head=int)
 
-    SeriesProduct._binary_rules += [
-        (pattern_head(A_CPermutation, B_CPermutation),
-            lambda A, B: A.series_with_permutation(B)),
-        (pattern_head(A_SLH, B_SLH),
-            lambda A, B: A.series_with_slh(B)),
-        (pattern_head(A_ABCD, B_ABCD),
-            lambda A, B: A.series_with_abcd(B)),
-        (pattern_head(A_Circuit, B_Circuit),
-            lambda A, B: _tensor_decompose_series(A, B)),
-        (pattern_head(A_CPermutation, B_Circuit),
-            lambda A, B: _factor_permutation_for_blocks(A, B)),
-        (pattern_head(A_Circuit, pattern(SeriesInverse, A_Circuit)),
-            lambda A: cid(A.cdim)),
-        (pattern_head(pattern(SeriesInverse, A_Circuit), A_Circuit),
-            lambda A: cid(A.cdim)),
-    ]
+    SeriesProduct._binary_rules.update(check_rules_dict([
+        ('perm', (
+            pattern_head(A_CPermutation, B_CPermutation),
+            lambda A, B: A.series_with_permutation(B))),
+        ('slh', (
+            pattern_head(A_SLH, B_SLH),
+            lambda A, B: A.series_with_slh(B))),
+        ('abcd', (
+            pattern_head(A_ABCD, B_ABCD),
+            lambda A, B: A.series_with_abcd(B))),
+        ('circuit', (
+            pattern_head(A_Circuit, B_Circuit),
+            lambda A, B: _tensor_decompose_series(A, B))),
+        ('permcirc', (
+            pattern_head(A_CPermutation, B_Circuit),
+            lambda A, B: _factor_permutation_for_blocks(A, B))),
+        ('inv2', (
+            pattern_head(A_Circuit, pattern(SeriesInverse, A_Circuit)),
+            lambda A: cid(A.cdim))),
+        ('inv1', (
+            pattern_head(pattern(SeriesInverse, A_Circuit), A_Circuit),
+            lambda A: cid(A.cdim))),
+    ]))
 
-    Concatenation._binary_rules += [
-        (pattern_head(A_SLH, B_SLH),
-            lambda A, B: A.concatenate_slh(B)),
-        (pattern_head(A_ABCD, B_ABCD),
-            lambda A, B: A.concatenate_abcd(B)),
-        (pattern_head(A_CPermutation, B_CPermutation),
+    Concatenation._binary_rules.update(check_rules_dict([
+        ('slh', (
+            pattern_head(A_SLH, B_SLH),
+            lambda A, B: A.concatenate_slh(B))),
+        ('abcd', (
+            pattern_head(A_ABCD, B_ABCD),
+            lambda A, B: A.concatenate_abcd(B))),
+        ('perm', (
+            pattern_head(A_CPermutation, B_CPermutation),
             lambda A, B: CPermutation.create(
-                                concatenate_permutations(A.permutation,
-                                                         B.permutation))),
-        (pattern_head(A_CPermutation, CIdentity),
+                concatenate_permutations(A.permutation, B.permutation)))),
+        ('permId', (
+            pattern_head(A_CPermutation, CIdentity),
             lambda A: CPermutation.create(
-                            concatenate_permutations(A.permutation, (0,)))),
-        (pattern_head(CIdentity, B_CPermutation),
+                concatenate_permutations(A.permutation, (0,))))),
+        ('Idperm', (
+            pattern_head(CIdentity, B_CPermutation),
             lambda B: CPermutation.create(
-                            concatenate_permutations((0,), B.permutation))),
-        (pattern_head(pattern(SeriesProduct, A__Circuit, B_CPermutation),
-                      pattern(SeriesProduct, C__Circuit, D_CPermutation)),
-            lambda A, B, C, D: ((SeriesProduct.create(*A) +
-                                SeriesProduct.create(*C)) << (B + D))),
-        (pattern_head(pattern(SeriesProduct, A__Circuit, B_CPermutation),
-                      C_Circuit),
-            lambda A, B, C: ((SeriesProduct.create(*A) + C) <<
-                             (B + cid(C.cdim)))),
-        (pattern_head(A_Circuit,
-                      pattern(SeriesProduct, B__Circuit, C_CPermutation)),
+                concatenate_permutations((0,), B.permutation)))),
+        ('sp1', (
+            pattern_head(
+                pattern(SeriesProduct, A__Circuit, B_CPermutation),
+                pattern(SeriesProduct, C__Circuit, D_CPermutation)),
+            lambda A, B, C, D: (
+                (SeriesProduct.create(*A) + SeriesProduct.create(*C)) <<
+                (B + D)))),
+        ('sp2', (
+            pattern_head(
+                pattern(SeriesProduct, A__Circuit, B_CPermutation), C_Circuit),
+            lambda A, B, C: (
+                (SeriesProduct.create(*A) + C) << (B + cid(C.cdim))))),
+        ('sp3', (
+            pattern_head(
+                A_Circuit, pattern(SeriesProduct, B__Circuit, C_CPermutation)),
             lambda A, B, C: ((A + SeriesProduct.create(*B)) <<
-                             (cid(A.cdim) + C))),
-    ]
+                             (cid(A.cdim) + C)))),
+    ]))
 
-    Feedback._rules += [
-        (pattern_head(A_SeriesProduct, out_port=j_int, in_port=k_int),
-            lambda A, j, k: _series_feedback(A, out_port=j, in_port=k)),
-        (pattern_head(pattern(SeriesProduct, A_CPermutation, B__Circuit),
-                      out_port=j_int, in_port=k_int),
-            lambda A, B, j, k: _pull_out_perm_lhs(A, B, j, k)),
-        (pattern_head(pattern(SeriesProduct, A_Concatenation, B__Circuit),
-                      out_port=j_int, in_port=k_int),
-            lambda A, B, j, k: _pull_out_unaffected_blocks_lhs(A, B, j, k)),
-        (pattern_head(pattern(SeriesProduct, A__Circuit, B_CPermutation),
-                      out_port=j_int, in_port=k_int),
-            lambda A, B, j, k: _pull_out_perm_rhs(A, B, j, k)),
-        (pattern_head(pattern(SeriesProduct, A__Circuit, B_Concatenation),
-                      out_port=j_int, in_port=k_int),
-            lambda A, B, j, k: _pull_out_unaffected_blocks_rhs(A, B, j, k)),
-    ]
+    Feedback._rules.update(check_rules_dict([
+        ('series', (
+            pattern_head(A_SeriesProduct, out_port=j_int, in_port=k_int),
+            lambda A, j, k: _series_feedback(A, out_port=j, in_port=k))),
+        ('pull1', (
+            pattern_head(
+                pattern(SeriesProduct, A_CPermutation, B__Circuit),
+                out_port=j_int, in_port=k_int),
+            lambda A, B, j, k: _pull_out_perm_lhs(A, B, j, k))),
+        ('pull2', (
+            pattern_head(
+                pattern(SeriesProduct, A_Concatenation, B__Circuit),
+                out_port=j_int, in_port=k_int),
+            lambda A, B, j, k: _pull_out_unaffected_blocks_lhs(A, B, j, k))),
+        ('pull3', (
+            pattern_head(
+                pattern(SeriesProduct, A__Circuit, B_CPermutation),
+                out_port=j_int, in_port=k_int),
+            lambda A, B, j, k: _pull_out_perm_rhs(A, B, j, k))),
+        ('pull4', (
+            pattern_head(
+                pattern(SeriesProduct, A__Circuit, B_Concatenation),
+                out_port=j_int, in_port=k_int),
+            lambda A, B, j, k: _pull_out_unaffected_blocks_rhs(A, B, j, k))),
+    ]))
 
 
 _algebraic_rules()

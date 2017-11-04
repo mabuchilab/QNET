@@ -1,6 +1,10 @@
 QNET
 ====
 
+.. image:: https://badges.gitter.im/mabuchilab/QNET.svg
+   :alt: Join the chat at https://gitter.im/mabuchilab/QNET
+   :target: https://gitter.im/mabuchilab/QNET?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+
 .. image:: https://travis-ci.org/mabuchilab/QNET.svg
     :target: https://travis-ci.org/mabuchilab/QNET
     :alt: Build Status

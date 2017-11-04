@@ -199,7 +199,7 @@ def SLH_to_qutip(slh, full_space=None, time_symbol=None,
             if isinstance(L, SCALAR_TYPES):
                 L = L * IdentityOperator
             L_qutip = convert_to_qutip(L, full_space=full_space)
-            if L_qutip.norm() > 0:
+            if L_qutip.norm('max') > 0:
                 Ls.append(L_qutip)
     else:
         H = _time_dependent_to_qutip(slh.H, full_space, time_symbol,

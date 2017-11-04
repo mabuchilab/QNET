@@ -65,6 +65,169 @@ def test_zero_comparisons():
     assert ZeroOperator != sympify(2)
 
 
+def test_local_sigma_raise_jk():
+    sig = LocalSigma(1, 1, hs='1')
+    assert sig.raise_jk() == sig
+    assert sig.raise_jk(j_incr=1) == LocalSigma(2, 1, hs='1')
+    assert sig.raise_jk(j_incr=-1) == LocalSigma(0, 1, hs='1')
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == LocalSigma(1, 2, hs='1')
+    assert sig.raise_jk(k_incr=-1) == LocalSigma(1, 0, hs='1')
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == LocalSigma(2, 2, hs='1')
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == LocalSigma(0, 0, hs='1')
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == LocalSigma(0, 2, hs='1')
+    sig = LocalSigma(0, 0, hs='1')
+    assert sig.raise_jk(j_incr=1) == LocalSigma(1, 0, hs='1')
+    assert sig.raise_jk(j_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == LocalSigma(0, 1, hs='1')
+    assert sig.raise_jk(k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == LocalSigma(1, 1, hs='1')
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == ZeroOperator
+    sig = LocalSigma(1, 0, hs='1')
+    assert sig.raise_jk() == sig
+    assert sig.raise_jk(j_incr=1) == LocalSigma(2, 0, hs='1')
+    assert sig.raise_jk(j_incr=-1) == LocalSigma(0, 0, hs='1')
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == LocalSigma(1, 1, hs='1')
+    assert sig.raise_jk(k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == LocalSigma(2, 1, hs='1')
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == LocalSigma(0, 1, hs='1')
+    # in TLS, we cannot go out of the subspace
+    hil_tls = LocalSpace(label='tls', dimension=2)
+    sig = LocalSigma(1, 1, hs=hil_tls)
+    assert sig.raise_jk() == sig
+    assert sig.raise_jk(j_incr=1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1) == LocalSigma(0, 1, hs=hil_tls)
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == ZeroOperator
+    assert sig.raise_jk(k_incr=-1) == LocalSigma(1, 0, hs=hil_tls)
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == LocalSigma(0, 0, hs=hil_tls)
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == ZeroOperator
+    sig = LocalSigma(0, 0, hs=hil_tls)
+    assert sig.raise_jk(j_incr=1) == LocalSigma(1, 0, hs=hil_tls)
+    assert sig.raise_jk(j_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == LocalSigma(0, 1, hs=hil_tls)
+    assert sig.raise_jk(k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == LocalSigma(1, 1, hs=hil_tls)
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == ZeroOperator
+    sig = LocalSigma(1, 0, hs=hil_tls)
+    assert sig.raise_jk() == sig
+    assert sig.raise_jk(j_incr=1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1) == LocalSigma(0, 0, hs=hil_tls)
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == LocalSigma(1, 1, hs=hil_tls)
+    assert sig.raise_jk(k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == LocalSigma(0, 1, hs=hil_tls)
+    # same for string-based labels
+    hil_ge = LocalSpace(label='tls', dimension=2, basis=('g', 'e'))
+    sig = LocalSigma(1, 1, hs=hil_ge)
+    assert sig == LocalSigma('e', 'e', hs=hil_ge)
+    assert sig.raise_jk() == sig
+    assert sig.raise_jk(j_incr=1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1) == LocalSigma(0, 1, hs=hil_ge)
+    assert sig.raise_jk(j_incr=-1) == LocalSigma('g', 'e', hs=hil_ge)
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == ZeroOperator
+    assert sig.raise_jk(k_incr=-1) == LocalSigma(1, 0, hs=hil_ge)
+    assert sig.raise_jk(k_incr=-1) == LocalSigma('e', 'g', hs=hil_ge)
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == LocalSigma(0, 0, hs=hil_ge)
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == ZeroOperator
+    sig = LocalSigma('g', 'g', hs=hil_ge)
+    assert sig.raise_jk(j_incr=1) == LocalSigma(1, 0, hs=hil_ge)
+    assert sig.raise_jk(j_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == LocalSigma(0, 1, hs=hil_ge)
+    assert sig.raise_jk(k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == LocalSigma(1, 1, hs=hil_ge)
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == ZeroOperator
+    sig = LocalSigma(1, 0, hs=hil_ge)
+    assert sig.raise_jk() == sig
+    assert sig.raise_jk(j_incr=1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1) == LocalSigma('g', 'g', hs=hil_ge)
+    assert sig.raise_jk(j_incr=-2) == ZeroOperator
+    assert sig.raise_jk(k_incr=1) == LocalSigma('e', 'e', hs=hil_ge)
+    assert sig.raise_jk(k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=1, k_incr=1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=-1) == ZeroOperator
+    assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
+    assert sig.raise_jk(j_incr=-1, k_incr=1) == LocalSigma(0, 1, hs=hil_ge)
+
+
+def test_proj_create_destroy_product():
+    """Test some products for Creation operator, Annihilation Operators, and
+    projectors, as they typically occur during adiabatic eliminiation"""
+    a = Destroy(hs="1")
+    a_dag = a.dag()
+    P1 = LocalProjector(1, hs="1")
+
+    rhs = IdentityOperator + OperatorTimes(a_dag, a)
+    lhs = a * a_dag
+    assert lhs == rhs
+    lhs = OperatorTimes.create(a, a_dag)
+    assert lhs == rhs
+
+    rhs = OperatorTimes(a_dag, a)
+    lhs = a_dag * a
+    assert lhs == rhs
+    lhs = OperatorTimes.create(a_dag, a)
+    assert lhs == rhs
+
+    rhs = LocalSigma(1, 0, hs="1")
+    lhs = P1 * a_dag
+    assert lhs == rhs
+    lhs = OperatorTimes.create(P1, a_dag)
+    assert lhs == rhs
+
+    rhs = P1
+    lhs = P1 * a_dag * a
+    assert lhs == rhs
+    lhs = OperatorTimes.create(P1, a_dag, a)
+    assert lhs == rhs
+
+    rhs = 2 * P1
+    assert rhs == (P1 * (1 + P1)).expand()
+    lhs = P1 * a * a_dag
+    assert lhs == rhs
+    lhs = OperatorTimes.create(P1, a, a_dag).expand()
+    assert lhs == rhs
+
+    kappa = symbols('kappa')
+    Y = (-kappa / 2) * a.dag() * a
+    Id5 = OperatorPlus.create(*[LocalProjector(i, hs="1") for i in range(5)])
+    prod = Id5 * Y
+    res = prod.expand()
+    res_expect = OperatorPlus.create(
+        *[(-(i * kappa)/2) * LocalProjector(i, hs="1") for i in range(5)])
+    assert res == res_expect
+
+
 class TestOperatorCreation(unittest.TestCase):
 
     def testIdentity(self):

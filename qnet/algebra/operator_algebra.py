@@ -34,16 +34,16 @@ from sympy import (
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-        Expression, Operation, assoc, orderby, filter_neutral,
-        match_replace_binary, match_replace, set_union, substitute,
-        CannotSimplify)
+    Expression, Operation, assoc, orderby, filter_neutral,
+    match_replace_binary, match_replace, set_union, substitute,
+    CannotSimplify, check_rules_dict)
 from .singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
-        TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError)
+    TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError)
 from .pattern_matching import wc, pattern_head, pattern
 from .ordering import (
-        KeyTuple, DisjunctCommutativeHSOrder,
-        FullCommutativeHSOrder)
+    KeyTuple, DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
+from ..printing import ascii
 
 sympyOne = sympify(1)
 
@@ -715,7 +715,7 @@ class Phase(LocalOperator):
     """
     _identifier = 'Phase'
     _nargs = 1
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
     def __init__(self, phi, *, hs, identifier=None):
@@ -761,7 +761,7 @@ class Displace(LocalOperator):
     """
     _identifier = 'D'
     _nargs = 1
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
     def __init__(self, alpha, *, hs, identifier=None):
@@ -805,7 +805,7 @@ class Squeeze(LocalOperator):
     """
     _identifier = "Squeeze"
     _nargs = 1
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
     def __init__(self, eta, *, hs, identifier=None):
@@ -869,9 +869,8 @@ class LocalSigma(LocalOperator):
     def __init__(self, j, k, *, hs, identifier=None):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
-        self.j = j  #: label/index of eigenstate  $\ket{j}$
-        self.k = k  #: label/index of eigenstate  $\ket{k}$
-        for jk in [j, k]:
+        for ind_jk in range(2):
+            jk = j if ind_jk == 0 else k
             if isinstance(jk, str):
                 if not hs.has_basis:
                     raise ValueError(
@@ -885,9 +884,15 @@ class LocalSigma(LocalOperator):
                         raise ValueError(
                             "Index j/k=%s must be < the Hilbert space "
                             "dimension %d" % (jk, hs.dimension))
+                    if ind_jk == 0:
+                        j = hs.basis_labels[jk]
+                    else:
+                        k = hs.basis_labels[jk]
             else:
                 raise TypeError("Index j/k must be an int or str, not %s"
                                 % type(jk))
+        self.j = j  #: label/index of eigenstate  $\ket{j}$
+        self.k = k  #: label/index of eigenstate  $\ket{k}$
         self._is_projector = False
         self._custom_identifier = None
         if identifier is not None:
@@ -954,7 +959,7 @@ class LocalSigma(LocalOperator):
             else:  # str
                 new_j = self.space.next_basis_label_or_index(self.j, j_incr)
             if isinstance(self.k, int):
-                new_k = self.k + j_incr
+                new_k = self.k + k_incr
             else:  # str
                 new_k = self.space.next_basis_label_or_index(self.k, k_incr)
             identifier = None
@@ -978,7 +983,7 @@ class OperatorPlus(OperatorOperation):
         operands (list): Operator summands
     """
     neutral_element = ZeroOperator
-    _binary_rules = []
+    _binary_rules = OrderedDict()
     _simplifications = [assoc, scalars_to_op, orderby, filter_neutral,
                         match_replace_binary]
 
@@ -1012,7 +1017,7 @@ class OperatorTimes(OperatorOperation):
     """
 
     neutral_element = IdentityOperator
-    _binary_rules = []  # see end of module
+    _binary_rules = OrderedDict()  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = DisjunctCommutativeHSOrder
@@ -1081,7 +1086,7 @@ class ScalarTimesOperator(Operator, Operation):
     :param term: The operator that is multiplied.
     :type term: Operator
     """
-    _rules = []
+    _rules = OrderedDict()
     _simplifications = [match_replace, ]
 
     @staticmethod
@@ -1225,7 +1230,7 @@ class Commutator(OperatorOperation):
         [\Op{A}, \Op{B}] = \Op{A}\Op{B} - \Op{A}\Op{B}
 
     '''
-    _rules = []
+    _rules = OrderedDict()
     _simplifications = [disjunct_hs_zero, commutator_order, match_replace]
 
     order_key = FullCommutativeHSOrder
@@ -1292,7 +1297,7 @@ class OperatorTrace(SingleOperatorOperation):
         over_space (HilbertSpace): The degrees of freedom to trace over
         op (Opwerator): The operator to take the trace of.
     '''
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [implied_local_space(keys=['over_space', ]),
                         match_replace, ]
 
@@ -1352,7 +1357,7 @@ class Adjoint(SingleOperatorOperation):
     :param op: The operator to take the adjoint of.
     :type op: Operator
     """
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [match_replace, delegate_to_method('_adjoint')]
 
     def _expand(self):
@@ -1442,7 +1447,7 @@ class PseudoInverse(SingleOperatorOperation):
     :param X: The operator to take the adjoint of.
     :type X: Operator
     """
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _delegate_to_method = (ScalarTimesOperator, Squeeze, Displace,
                            ZeroOperator.__class__, IdentityOperator.__class__)
     _simplifications = [match_replace, delegate_to_method('_pseudo_inverse')]
@@ -1473,7 +1478,7 @@ class NullSpaceProjector(SingleOperatorOperation):
     :type X: Operator
     """
 
-    _rules = []  # see end of module
+    _rules = OrderedDict()  # see end of module
     _simplifications = [match_replace, ]
 
     def _expand(self):
@@ -1858,13 +1863,17 @@ def create_operator_pm_cc():
     c = wc("c", head=SCALAR_TYPES)
     d = wc("d", head=SCALAR_TYPES)
     return [
-        (pattern_head(A, B),
-            _combine_operator_p_cc),
-        (pattern_head(pattern(ScalarTimesOperator, -1, B), A),
-            _combine_operator_m_cc),
-        (pattern_head(pattern(ScalarTimesOperator, c, A),
-                      pattern(ScalarTimesOperator, d, B)),
-            _scal_combine_operator_pm_cc),
+        ('pmCC1', (
+            pattern_head(A, B),
+            _combine_operator_p_cc)),
+        ('pmCC2', (
+            pattern_head(pattern(ScalarTimesOperator, -1, B), A),
+            _combine_operator_m_cc)),
+        ('pmCC3', (
+            pattern_head(
+                pattern(ScalarTimesOperator, c, A),
+                pattern(ScalarTimesOperator, d, B)),
+            _scal_combine_operator_pm_cc)),
     ]
 
 
@@ -1875,10 +1884,14 @@ def expand_operator_pm_cc():
     Inverse of :func:`create_operator_pm_cc`.
     """
     A = wc("A", head=Operator)
-    return [
-        (pattern(OperatorPlusMinusCC, A, sign=+1), lambda A: A + A.dag()),
-        (pattern(OperatorPlusMinusCC, A, sign=-1), lambda A: A - A.dag()),
-    ]
+    return OrderedDict([
+        ('pmCCexpand1', (
+            pattern(OperatorPlusMinusCC, A, sign=+1),
+            lambda A: A + A.dag())),
+        ('pmCCexpand2', (
+            pattern(OperatorPlusMinusCC, A, sign=-1),
+            lambda A: A - A.dag())),
+    ])
 
 
 ###############################################################################
@@ -1915,230 +1928,304 @@ def _algebraic_rules():
     rc = wc("rc", head=(int, str))
     rd = wc("rd", head=(int, str))
 
-    ScalarTimesOperator._rules += [
-        (pattern_head(1, A),
-            lambda A: A),
-        (pattern_head(0, A),
-            lambda A: ZeroOperator),
-        (pattern_head(u, ZeroOperator),
-            lambda u: ZeroOperator),
-        (pattern_head(u, pattern(ScalarTimesOperator, v, A)),
-            lambda u, v, A: (u * v) * A),
-        (pattern_head(-1, A_plus),
-            lambda A: OperatorPlus.create(*[-1 * op for op in A.args])),
-    ]
+    ScalarTimesOperator._rules.update(check_rules_dict([
+        ('1A', (
+            pattern_head(1, A),
+            lambda A: A)),
+        ('0A', (
+            pattern_head(0, A),
+            lambda A: ZeroOperator)),
+        ('u0', (
+            pattern_head(u, ZeroOperator),
+            lambda u: ZeroOperator)),
+        ('assoc_coeff', (
+            pattern_head(u, pattern(ScalarTimesOperator, v, A)),
+            lambda u, v, A: (u * v) * A)),
+        ('negsum', (
+            pattern_head(-1, A_plus),
+            lambda A: OperatorPlus.create(*[-1 * op for op in A.args]))),
+    ]))
 
-    OperatorPlus._binary_rules += [
-        (pattern_head(pattern(ScalarTimesOperator, u, A),
-                      pattern(ScalarTimesOperator, v, A)),
-            lambda u, v, A: (u + v) * A),
-        (pattern_head(pattern(ScalarTimesOperator, u, A), A),
-            lambda u, A: (u + 1) * A),
-        (pattern_head(A, pattern(ScalarTimesOperator, v, A)),
-            lambda v, A: (1 + v) * A),
-        (pattern_head(A, A),
-            lambda A: 2 * A),
-    ]
+    OperatorPlus._binary_rules.update(check_rules_dict([
+        ('upv', (
+            pattern_head(
+                pattern(ScalarTimesOperator, u, A),
+                pattern(ScalarTimesOperator, v, A)),
+            lambda u, v, A: (u + v) * A)),
+        ('up1', (
+            pattern_head(pattern(ScalarTimesOperator, u, A), A),
+            lambda u, A: (u + 1) * A)),
+        ('1pv', (
+            pattern_head(A, pattern(ScalarTimesOperator, v, A)),
+            lambda v, A: (1 + v) * A)),
+        ('2A', (
+            pattern_head(A, A),
+            lambda A: 2 * A)),
+    ]))
 
-    OperatorTimes._binary_rules += [
-        (pattern_head(pattern(ScalarTimesOperator, u, A), B),
-            lambda u, A, B: u * (A * B)),
+    OperatorTimes._binary_rules.update(check_rules_dict([
+        ('uAB', (
+            pattern_head(pattern(ScalarTimesOperator, u, A), B),
+            lambda u, A, B: u * (A * B))),
 
-        (pattern_head(ZeroOperator, B),
-            lambda B: ZeroOperator),
-        (pattern_head(A, ZeroOperator),
-            lambda A: ZeroOperator),
+        ('zero1', (
+            pattern_head(ZeroOperator, B),
+            lambda B: ZeroOperator)),
+        ('zero2', (
+            pattern_head(A, ZeroOperator),
+            lambda A: ZeroOperator)),
 
-        (pattern_head(A, pattern(ScalarTimesOperator, u, B)),
-            lambda A, u, B: u * (A * B)),
+        ('coeff', (
+            pattern_head(A, pattern(ScalarTimesOperator, u, B)),
+            lambda A, u, B: u * (A * B))),
 
-        (pattern_head(pattern(LocalSigma, ra, rb, hs=ls),
-                      pattern(LocalSigma, rc, rd, hs=ls)),
-            lambda ls, ra, rb, rc, rd: LocalSigma(ra, rd, hs=ls)
-                                       if rb == rc else ZeroOperator),
+        ('sig', (
+            pattern_head(
+                pattern(LocalSigma, ra, rb, hs=ls),
+                pattern(LocalSigma, rc, rd, hs=ls)),
+            lambda ls, ra, rb, rc, rd:
+                LocalSigma(ra, rd, hs=ls) if rb == rc else ZeroOperator)),
 
         # Harmonic oscillator rules
-        (pattern_head(pattern(Create, hs=ls), localsigma),
+        ('hamos1', (
+            pattern_head(pattern(Create, hs=ls), localsigma),
             lambda ls, localsigma:
-            sqrt(localsigma.index_j + 1) * localsigma.raise_jk(j_incr=1)),
+                sqrt(localsigma.index_j + 1) * localsigma.raise_jk(j_incr=1))),
 
-        (pattern_head(pattern(Destroy, hs=ls), localsigma),
+        ('hamos2', (
+            pattern_head(pattern(Destroy, hs=ls), localsigma),
             lambda ls, localsigma:
-            sqrt(localsigma.index_j) * localsigma.raise_jk(j_incr=-1)),
+                sqrt(localsigma.index_j) * localsigma.raise_jk(j_incr=-1))),
 
-        (pattern_head(localsigma, pattern(Destroy, hs=ls)),
+        ('hamos3', (
+            pattern_head(localsigma, pattern(Destroy, hs=ls)),
             lambda ls, localsigma:
-            sqrt(localsigma.index_k + 1) * localsigma.raise_jk(k_incr=1)),
+                sqrt(localsigma.index_k + 1) * localsigma.raise_jk(k_incr=1))),
 
-        (pattern_head(localsigma, pattern(Create, hs=ls)),
+        ('hamos4', (
+            pattern_head(localsigma, pattern(Create, hs=ls)),
             lambda ls, localsigma:
-            sqrt(localsigma.index_k) * localsigma.raise_jk(k_incr=-1)),
+                sqrt(localsigma.index_k) * localsigma.raise_jk(k_incr=-1))),
 
         # Normal ordering for harmonic oscillator <=> all a^* to the left, a to
         # the right.
-        (pattern_head(pattern(Destroy, hs=ls), pattern(Create, hs=ls)),
-            lambda ls: IdentityOperator + Create(hs=ls) * Destroy(hs=ls)),
+        ('hamosord', (
+            pattern_head(pattern(Destroy, hs=ls), pattern(Create, hs=ls)),
+            lambda ls: IdentityOperator + Create(hs=ls) * Destroy(hs=ls))),
 
         # Oscillator unitary group rules
-        (pattern_head(pattern(Phase, u, hs=ls), pattern(Phase, v, hs=ls)),
-            lambda ls, u, v: Phase.create(u + v, hs=ls)),
-        (pattern_head(pattern(Displace, u, hs=ls),
-                      pattern(Displace, v, hs=ls)),
-            lambda ls, u, v: (exp((u * v.conjugate() - u.conjugate() * v) /
-                                  2) * Displace.create(u + v, hs=ls))),
+        ('phase2', (
+            pattern_head(pattern(Phase, u, hs=ls), pattern(Phase, v, hs=ls)),
+            lambda ls, u, v: Phase.create(u + v, hs=ls))),
+        ('displace2', (
+            pattern_head(
+                pattern(Displace, u, hs=ls),
+                pattern(Displace, v, hs=ls)),
+            lambda ls, u, v: (
+                exp((u * v.conjugate() - u.conjugate() * v) / 2) *
+                Displace.create(u + v, hs=ls)))),
 
-        (pattern_head(pattern(Destroy, hs=ls), pattern(Phase, u, hs=ls)),
+        ('dphase', (
+            pattern_head(pattern(Destroy, hs=ls), pattern(Phase, u, hs=ls)),
             lambda ls, u:
-                exp(I * u) * Phase.create(u, hs=ls) * Destroy(hs=ls)),
-        (pattern_head(pattern(Destroy, hs=ls), pattern(Displace, u, hs=ls)),
-            lambda ls, u: Displace.create(u, hs=ls) * (Destroy(hs=ls) + u)),
+                exp(I * u) * Phase.create(u, hs=ls) * Destroy(hs=ls))),
+        ('ddisplace', (
+            pattern_head(pattern(Destroy, hs=ls), pattern(Displace, u, hs=ls)),
+            lambda ls, u: Displace.create(u, hs=ls) * (Destroy(hs=ls) + u))),
 
-        (pattern_head(pattern(Phase, u, hs=ls), pattern(Create, hs=ls)),
-            lambda ls, u: exp(I * u) * Create(hs=ls) * Phase.create(u, hs=ls)),
-        (pattern_head(pattern(Displace, u, hs=ls), pattern(Create, hs=ls)),
+        ('phasec', (
+            pattern_head(pattern(Phase, u, hs=ls), pattern(Create, hs=ls)),
+            lambda ls, u:
+                exp(I * u) * Create(hs=ls) * Phase.create(u, hs=ls))),
+        ('displacec', (
+            pattern_head(pattern(Displace, u, hs=ls), pattern(Create, hs=ls)),
             lambda ls, u: (((Create(hs=ls) - u.conjugate()) *
-                            Displace.create(u, hs=ls)))),
+                            Displace.create(u, hs=ls))))),
 
-        (pattern_head(pattern(Phase, u, hs=ls), localsigma),
+        ('phasesig', (
+            pattern_head(pattern(Phase, u, hs=ls), localsigma),
             lambda ls, u, localsigma:
-            exp(I * u * localsigma.index_j) * localsigma),
-        (pattern_head(localsigma, pattern(Phase, u, hs=ls)),
+            exp(I * u * localsigma.index_j) * localsigma)),
+        ('sigphase', (
+            pattern_head(localsigma, pattern(Phase, u, hs=ls)),
             lambda ls, u, localsigma:
-            exp(I * u * localsigma.index_k) * localsigma),
+            exp(I * u * localsigma.index_k) * localsigma)),
 
         # Spin rules
-        (pattern_head(pattern(Jplus, hs=ls), localsigma),
+        ('spin1', (
+            pattern_head(pattern(Jplus, hs=ls), localsigma),
             lambda ls, localsigma:
-            Jpjmcoeff(ls, localsigma.index_j, shift=True) *
-            localsigma.raise_jk(j_incr=1)),
+                Jpjmcoeff(ls, localsigma.index_j, shift=True) *
+                localsigma.raise_jk(j_incr=1))),
 
-        (pattern_head(pattern(Jminus, hs=ls), localsigma),
+        ('spin2', (
+            pattern_head(pattern(Jminus, hs=ls), localsigma),
             lambda ls, localsigma:
-            Jmjmcoeff(ls, localsigma.index_j, shift=True) *
-            localsigma.raise_jk(j_incr=-1)),
+                Jmjmcoeff(ls, localsigma.index_j, shift=True) *
+                localsigma.raise_jk(j_incr=-1))),
 
-        (pattern_head(pattern(Jz, hs=ls), localsigma),
+        ('spin3', (
+            pattern_head(pattern(Jz, hs=ls), localsigma),
             lambda ls, localsigma:
-            Jzjmcoeff(ls, localsigma.index_j, shift=True) * localsigma),
+                Jzjmcoeff(ls, localsigma.index_j, shift=True) * localsigma)),
 
-        (pattern_head(localsigma, pattern(Jplus, hs=ls)),
+        ('spin4', (
+            pattern_head(localsigma, pattern(Jplus, hs=ls)),
             lambda ls, localsigma:
-            Jmjmcoeff(ls, localsigma.index_k, shift=True) *
-            localsigma.raise_jk(k_incr=-1)),
+                Jmjmcoeff(ls, localsigma.index_k, shift=True) *
+                localsigma.raise_jk(k_incr=-1))),
 
-        (pattern_head(localsigma, pattern(Jminus, hs=ls)),
+        ('spin5', (
+            pattern_head(localsigma, pattern(Jminus, hs=ls)),
             lambda ls, localsigma:
-            Jpjmcoeff(ls, localsigma.index_k, shift=True) *
-            localsigma.raise_jk(k_incr=+1)),
+                Jpjmcoeff(ls, localsigma.index_k, shift=True) *
+                localsigma.raise_jk(k_incr=+1))),
 
-        (pattern_head(localsigma, pattern(Jz, hs=ls)),
+        ('sphin6', (
+            pattern_head(localsigma, pattern(Jz, hs=ls)),
             lambda ls, localsigma:
-            Jzjmcoeff(ls, localsigma.index_k, shift=True) * localsigma),
+                Jzjmcoeff(ls, localsigma.index_k, shift=True) * localsigma)),
 
         # Normal ordering for angular momentum <=> all J_+ to the left, J_z to
         # center and J_- to the right
-        (pattern_head(pattern(Jminus, hs=ls), pattern(Jplus, hs=ls)),
-            lambda ls: -2*Jz(hs=ls) + Jplus(hs=ls) * Jminus(hs=ls)),
+        ('spinord1', (
+            pattern_head(pattern(Jminus, hs=ls), pattern(Jplus, hs=ls)),
+            lambda ls: -2*Jz(hs=ls) + Jplus(hs=ls) * Jminus(hs=ls))),
 
-        (pattern_head(pattern(Jminus, hs=ls), pattern(Jz, hs=ls)),
-            lambda ls: Jz(hs=ls) * Jminus(hs=ls) + Jminus(hs=ls)),
+        ('spinord2', (
+            pattern_head(pattern(Jminus, hs=ls), pattern(Jz, hs=ls)),
+            lambda ls: Jz(hs=ls) * Jminus(hs=ls) + Jminus(hs=ls))),
 
-        (pattern_head(pattern(Jz, hs=ls), pattern(Jplus, hs=ls)),
-            lambda ls: Jplus(hs=ls) * Jz(hs=ls) + Jplus(hs=ls)),
-    ]
+        ('spinord3', (
+            pattern_head(pattern(Jz, hs=ls), pattern(Jplus, hs=ls)),
+            lambda ls: Jplus(hs=ls) * Jz(hs=ls) + Jplus(hs=ls))),
+    ]))
 
-    Adjoint._rules += [
-        (pattern_head(pattern(ScalarTimesOperator, u, A)),
-            lambda u, A: u.conjugate() * A.adjoint()),
-        (pattern_head(A_plus),
+    Adjoint._rules.update(check_rules_dict([
+        ('uA', (
+            pattern_head(pattern(ScalarTimesOperator, u, A)),
+            lambda u, A: u.conjugate() * A.adjoint())),
+        ('plus', (
+            pattern_head(A_plus),
             lambda A: OperatorPlus.create(*[o.adjoint()
-                                            for o in A.operands])),
-        (pattern_head(A_times),
+                                            for o in A.operands]))),
+        ('times', (
+            pattern_head(A_times),
             lambda A: OperatorTimes.create(*[o.adjoint()
-                                             for o in A.operands[::-1]])),
-        (pattern_head(pattern(Adjoint, A)),
-            lambda A: A),
-        (pattern_head(pattern(Create, hs=ls, identifier=id)),
-            lambda ls, id: Destroy(hs=ls, identifier=id)),
-        (pattern_head(pattern(Destroy, hs=ls, identifier=id)),
-            lambda ls, id: Create(hs=ls, identifier=id)),
-        (pattern_head(pattern(Jplus, hs=ls)),
-            lambda ls: Jminus(hs=ls)),
-        (pattern_head(pattern(Jminus, hs=ls)),
-            lambda ls: Jplus(hs=ls)),
-        (pattern_head(pattern(Jz, hs=ls, identifier=id)),
-            lambda ls, id: Jz(hs=ls, identifier=id)),
-        (pattern_head(pattern(LocalSigma, ra, rb, hs=ls, identifier=id)),
-            lambda ls, ra, rb, id: LocalSigma(rb, ra, hs=ls, identifier=id)),
-    ]
+                                             for o in A.operands[::-1]]))),
+        ('adjoint', (
+            pattern_head(pattern(Adjoint, A)),
+            lambda A: A)),
+        ('create', (
+            pattern_head(pattern(Create, hs=ls, identifier=id)),
+            lambda ls, id: Destroy(hs=ls, identifier=id))),
+        ('destroy', (
+            pattern_head(pattern(Destroy, hs=ls, identifier=id)),
+            lambda ls, id: Create(hs=ls, identifier=id))),
+        ('jplus', (
+            pattern_head(pattern(Jplus, hs=ls)),
+            lambda ls: Jminus(hs=ls))),
+        ('jminus', (
+            pattern_head(pattern(Jminus, hs=ls)),
+            lambda ls: Jplus(hs=ls))),
+        ('jz', (
+            pattern_head(pattern(Jz, hs=ls, identifier=id)),
+            lambda ls, id: Jz(hs=ls, identifier=id))),
+        ('sig', (
+            pattern_head(pattern(LocalSigma, ra, rb, hs=ls, identifier=id)),
+            lambda ls, ra, rb, id: LocalSigma(rb, ra, hs=ls, identifier=id))),
+    ]))
 
-    Displace._rules += [
-        (pattern_head(0, hs=ls), lambda ls: IdentityOperator)
-    ]
-    Phase._rules += [
-        (pattern_head(0, hs=ls), lambda ls: IdentityOperator)
-    ]
-    Squeeze._rules += [
-        (pattern_head(0, hs=ls), lambda ls: IdentityOperator)
-    ]
+    Displace._rules.update(check_rules_dict([
+        ('zero', (
+            pattern_head(0, hs=ls), lambda ls: IdentityOperator))
+    ]))
+    Phase._rules.update(check_rules_dict([
+        ('zero', (
+            pattern_head(0, hs=ls), lambda ls: IdentityOperator))
+    ]))
+    Squeeze._rules.update(check_rules_dict([
+        ('zero', (
+            pattern_head(0, hs=ls), lambda ls: IdentityOperator))
+    ]))
 
-    OperatorTrace._rules += [
-        (pattern_head(A, over_space=TrivialSpace),
-            lambda A: A),
-        (pattern_head(ZeroOperator, over_space=h1),
-            lambda h1: ZeroOperator),
-        (pattern_head(IdentityOperator, over_space=h1),
-            lambda h1: h1.dimension * IdentityOperator),
-        (pattern_head(A_plus, over_space=h1),
+    OperatorTrace._rules.update(check_rules_dict([
+        ('triv', (
+            pattern_head(A, over_space=TrivialSpace),
+            lambda A: A)),
+        ('zero', (
+            pattern_head(ZeroOperator, over_space=h1),
+            lambda h1: ZeroOperator)),
+        ('id', (
+            pattern_head(IdentityOperator, over_space=h1),
+            lambda h1: h1.dimension * IdentityOperator)),
+        ('plus', (
+            pattern_head(A_plus, over_space=h1),
             lambda h1, A: OperatorPlus.create(
                 *[OperatorTrace.create(o, over_space=h1)
-                  for o in A.operands])),
-        (pattern_head(pattern(Adjoint, A), over_space=h1),
+                  for o in A.operands]))),
+        ('adjoint', (
+            pattern_head(pattern(Adjoint, A), over_space=h1),
             lambda h1, A: Adjoint.create(
-                OperatorTrace.create(A, over_space=h1))),
-        (pattern_head(pattern(ScalarTimesOperator, u, A), over_space=h1),
-            lambda h1, u, A: u * OperatorTrace.create(A, over_space=h1)),
-        (pattern_head(A, over_space=H_ProductSpace),
-            lambda H, A: decompose_space(H, A)),
-        (pattern_head(pattern(Create, hs=ls), over_space=ls),
-            lambda ls: ZeroOperator),
-        (pattern_head(pattern(Destroy, hs=ls), over_space=ls),
-            lambda ls: ZeroOperator),
-        (pattern_head(pattern(LocalSigma, n, m, hs=ls), over_space=ls),
-            lambda ls, n, m: IdentityOperator if n == m else ZeroOperator),
-        (pattern_head(A, over_space=ls),
-            lambda ls, A: factor_for_trace(ls, A)),
-    ]
+                OperatorTrace.create(A, over_space=h1)))),
+        ('uA', (
+            pattern_head(pattern(ScalarTimesOperator, u, A), over_space=h1),
+            lambda h1, u, A: u * OperatorTrace.create(A, over_space=h1))),
+        ('prodspace', (
+            pattern_head(A, over_space=H_ProductSpace),
+            lambda H, A: decompose_space(H, A))),
+        ('create', (
+            pattern_head(pattern(Create, hs=ls), over_space=ls),
+            lambda ls: ZeroOperator)),
+        ('destroy', (
+            pattern_head(pattern(Destroy, hs=ls), over_space=ls),
+            lambda ls: ZeroOperator)),
+        ('sigma', (
+            pattern_head(pattern(LocalSigma, n, m, hs=ls), over_space=ls),
+            lambda ls, n, m: IdentityOperator if n == m else ZeroOperator)),
+        ('factor', (
+            pattern_head(A, over_space=ls),
+            lambda ls, A: factor_for_trace(ls, A))),
+    ]))
 
-    PseudoInverse._rules += [
-        (pattern_head(pattern(LocalSigma, m, n, hs=ls)),
-            lambda ls, m, n: LocalSigma(n, m, hs=ls)),
-    ]
+    PseudoInverse._rules.update(check_rules_dict([
+        ('sig', (
+            pattern_head(pattern(LocalSigma, m, n, hs=ls)),
+            lambda ls, m, n: LocalSigma(n, m, hs=ls))),
+    ]))
 
-    Commutator._rules += [
-        (pattern_head(A, A), lambda A: ZeroOperator),
-        (pattern_head(pattern(ScalarTimesOperator, u, A),
-                      pattern(ScalarTimesOperator, v, B)),
-            lambda u, v, A, B: u * v * Commutator.create(A, B)),
-        (pattern_head(pattern(ScalarTimesOperator, v, A), B),
-            lambda v, A, B: v * Commutator.create(A, B)),
-        (pattern_head(A, pattern(ScalarTimesOperator, v, B)),
-            lambda v, A, B: v * Commutator.create(A, B)),
+    Commutator._rules.update(check_rules_dict([
+        ('AA', (
+            pattern_head(A, A), lambda A: ZeroOperator)),
+        ('uAvB', (
+            pattern_head(
+                pattern(ScalarTimesOperator, u, A),
+                pattern(ScalarTimesOperator, v, B)),
+            lambda u, v, A, B: u * v * Commutator.create(A, B))),
+        ('vAB', (
+            pattern_head(pattern(ScalarTimesOperator, v, A), B),
+            lambda v, A, B: v * Commutator.create(A, B))),
+        ('AvB', (
+            pattern_head(A, pattern(ScalarTimesOperator, v, B)),
+            lambda v, A, B: v * Commutator.create(A, B))),
 
         # special known commutators
-        (pattern_head(pattern(Create, hs=ls), pattern(Destroy, hs=ls)),
-            lambda ls: ScalarTimesOperator(-1, IdentityOperator)),
+        ('crdest', (
+            pattern_head(pattern(Create, hs=ls), pattern(Destroy, hs=ls)),
+            lambda ls: ScalarTimesOperator(-1, IdentityOperator))),
         # the remaining  rules basically defer to OperatorTimes; just writing
         # out the commutator will generate something simple
-        (pattern_head(
-            wc('A', head=(Create, Destroy, LocalSigma, Phase, Displace)),
-            wc('B', head=(Create, Destroy, LocalSigma, Phase, Displace))),
-            lambda A, B: A * B - B * A),
-        (pattern_head(
-            wc('A', head=(LocalSigma, Jplus, Jminus, Jz)),
-            wc('B', head=(LocalSigma, Jplus, Jminus, Jz))),
-            lambda A, B: A * B - B * A),
-    ]
+        ('expand1', (
+            pattern_head(
+                wc('A', head=(Create, Destroy, LocalSigma, Phase, Displace)),
+                wc('B', head=(Create, Destroy, LocalSigma, Phase, Displace))),
+            lambda A, B: A * B - B * A)),
+        ('expand2', (
+            pattern_head(
+                wc('A', head=(LocalSigma, Jplus, Jminus, Jz)),
+                wc('B', head=(LocalSigma, Jplus, Jminus, Jz))),
+            lambda A, B: A * B - B * A)),
+    ]))
 
 
 _algebraic_rules()

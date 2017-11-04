@@ -27,11 +27,13 @@ from qnet.algebra.circuit_algebra import (
         SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
         SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
         map_signals_circuit, FB, getABCD, connect, CIdentity,
-        pad_with_identity, move_drive_to_H)
+        pad_with_identity, move_drive_to_H, try_adiabatic_elimination)
 from qnet.algebra.permutations import (
         permute, full_block_perm, block_perm_and_perms_within_blocks)
 from qnet.algebra.operator_algebra import (
-        Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator)
+        Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator, LocalSigma,
+        LocalProjector, IdentityOperator)
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.circuit_components.displace_cc import Displace
 from qnet.circuit_components.phase_cc import Phase
@@ -420,6 +422,49 @@ def connect_data():
 def test_connect(components, connections, expected):
     res = connect(components, connections, force_SLH=False)
     assert res == expected
+
+
+def test_adiabatic_elimination():
+    fock = LocalSpace('fock')
+    tls = LocalSpace('tls', basis=('e', 'g'))
+
+    Delta, Theta, g = sympy.symbols('Delta, Theta, g', real=True)
+    kappa, gamma = sympy.symbols('kappa, gamma', positive=True)
+
+    a = Destroy(hs=fock)
+    sigma = LocalSigma('g', 'e', hs=tls)
+
+    S = identity_matrix(2)
+
+    L1 = sympy.sqrt(kappa) * a
+    L2 = sympy.sqrt(gamma) * sigma
+    L = Matrix([[L1],
+                [L2]])
+
+    H = (Delta * sigma.dag() * sigma +
+         Theta * a.dag() * a +
+         I * g * (sigma * a.dag() - sigma.dag() * a))
+
+    slh = SLH(S, L, H)
+
+    k = sympy.symbols("k", positive=True)
+    subst = {
+        kappa: k**2 * kappa,
+        g: g * k,
+    }
+
+    slh_limit = try_adiabatic_elimination(
+        slh.substitute(subst), k)
+
+    expected = SLH(
+        Matrix([[-1 * IdentityOperator, ZeroOperator],
+                [ZeroOperator, IdentityOperator]]),
+        Matrix([[(2*g/sympy.sqrt(kappa)) * LocalSigma('g', 'e', hs=tls)],
+                [sympy.sqrt(gamma) * LocalSigma('g', 'e', hs=tls)]]),
+        Delta * LocalProjector('e', hs=tls))
+
+    assert slh_limit == expected
+
 
 
 def test_move_drive_to_H():
