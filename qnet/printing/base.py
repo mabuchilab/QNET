@@ -60,6 +60,13 @@ class QnetBasePrinter(SympyPrinter):
             that will be used to print any Sympy expression.
         _print_level (int): The recursion depth of :meth:`doprint`
             (>= 1 inside any of the ``_print*`` methods)
+        _parenth_left (str): String to use for a left parenthesis
+            (e.g. '\left(' in LaTeX). Used by :meth:`_split_op`
+        _parenth_left (str): String to use for a right parenthesis
+        _dagger_sym (str): Symbol that indicates the complex conjugate of an
+            operator. Used by :meth:`_split_op`
+        _tensor_sym (str): Symbol to use for tensor products. Used by
+            :meth:`_render_hs_label`.
 
     Raises:
         TypeError: If any key in `settings` is not defined in the
@@ -70,9 +77,14 @@ class QnetBasePrinter(SympyPrinter):
     sympy_printer_cls = SympyStrPrinter
 
     _default_settings = {
-        'show_hilbert_space': True,
-        'head_repr_fmt': r'{head}({args}{kwargs})'
+        'show_hilbert_space': True,  # alternatively: False, 'subscript'
+        'local_sigma_as_ketbra': True,
     }
+
+    _parenth_left = '('
+    _parenth_right = ')'
+    _dagger_sym = 'H'
+    _tensor_sym = '*'
 
     printmethod = None
 
@@ -99,6 +111,107 @@ class QnetBasePrinter(SympyPrinter):
         themeselves, nor for which the printer has a suitable ``_print*``
         method"""
         return render_head_repr(expr)
+
+    def _isinstance(expr, classname):
+        """Check whether `expr` is an instance of the class with name
+        `classname`
+
+        This is like the builtin `isinstance`, but it take the `classname` a
+        string, instead of the class directly. Useful for when we don't want to
+        import the class for which we want to check (also, remember that
+        printer choose rendering method based on the class name, so this is
+        totally ok)
+        """
+        for cls in type(expr).__mro__:
+            if cls.__name__ == classname:
+                return True
+        return False
+
+    def _split_identifier(self, identifier):
+        """Split the given identifier at the first underscore into (rendered)
+        name and subscript. Both `name` and `subscript` are rendered as
+        strings"""
+        try:
+            name, subscript = identifier.split("_", 1)
+        except (TypeError, ValueError):
+            name = identifier
+            subscript = ''
+        return self._str(name), self._str(subscript)
+
+    def _split_op(
+            self, identifier, hs_label=None, dagger=False, args=None):
+        """Return `name`, total `subscript`, total `superscript` and
+        `arguments` str. All of the returned strings are fully rendered.
+
+        Args:
+            identifier (str): An (non-rendered/ascii) identifier that may
+                include a subscript. The output `name` will be the `identifier`
+                without any subscript
+            hs_label (str): The rendered label for the Hilbert space of the
+                operator, or None. Returned unchanged.
+            dagger (bool): Flag to indicate whether the operator is daggered.
+                If True, :attr:`dagger_sym` will be included in the
+                `superscript` (or  `subscript`, depending on the settings)
+            args (list or None): List of arguments (expressions). Each element
+                will be rendered with :meth:`doprint`. The total list of args
+                will then be joined with commas, enclosed
+                with :attr:`_parenth_left` and :attr:`parenth_right`, and
+                returnd as the `arguments` string
+        """
+        name, total_subscript = self._split_identifier(identifier)
+        total_superscript = ''
+        if (hs_label not in [None, '']):
+            if self._settings['show_hilbert_space'] == 'subscript':
+                if len(total_subscript) == 0:
+                    total_subscript = '(' + hs_label + ')'
+                else:
+                    total_subscript += ',(' + hs_label + ')'
+            else:
+                total_superscript += '(' + hs_label + ')'
+        if dagger:
+            total_superscript += self._dagger_sym
+        args_str = ''
+        if (args is not None) and (len(args) > 0):
+            args_str = (self._parenth_left +
+                        ",".join([self.doprint(arg) for arg in args]) +
+                        self._parenth_right)
+        return name, total_subscript, total_superscript, args_str
+
+    def _render_hs_label(self, hs):
+        """Return the label of the given Hilbert space as a string"""
+        if isinstance(hs.__class__, Singleton):
+            return self._str(hs.label)
+        else:
+            return self._tensor_sym.join(
+                [self._str(ls.label) for ls in hs.local_factors])
+
+    def _render_op(
+            self, identifier, hs=None, dagger=False, args=None, superop=False):
+        """Render an operator
+
+        Args:
+            identifier (str): The identifier (name/symbol) of the operator. May
+                include a subscript, denoted by '_'.
+            hs (qnet.algebra.hilbert_space_algebra.HilbertSpace): The Hilbert
+                space in which the operator is defined
+            dagger (bool): Whether the operator should be daggered
+            args (list): A list of expressions that will be rendered with
+                :meth:`doprint`, joined with commas, enclosed in parenthesis
+            superop (bool): Whether the operator is a super-operator
+        """
+        hs_label = None
+        if hs is not None and self._settings['show_hilbert_space']:
+            hs_label = self._render_hs_label(hs)
+        name, total_subscript, total_superscript, args_str \
+            = self._split_op(identifier, hs_label, dagger, args)
+        res = name
+        if len(total_subscript) > 0:
+            res += "_" + total_subscript
+        if len(total_superscript) > 0:
+            res += "^" + total_superscript
+        if len(args_str) > 0:
+            res += args_str
+        return res
 
     def _get_from_cache(self, expr):
         """Get the result of :meth:`doprint` from the internal cache"""

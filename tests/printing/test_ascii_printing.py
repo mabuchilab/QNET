@@ -26,8 +26,8 @@ from qnet.algebra.circuit_algebra import(
         Feedback, SeriesInverse)
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector, Commutator)
+        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
+        tr, Adjoint, PseudoInverse, NullSpaceProjector, Commutator)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace)
 from qnet.algebra.matrix_algebra import Matrix
@@ -117,6 +117,9 @@ def test_ascii_operator_elements():
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
     assert ascii(OperatorSymbol("A", hs=hs1)) == 'A^(q1)'
+    A_1 = OperatorSymbol("A_1", hs=1)
+    assert ascii(A_1, show_hilbert_space='subscript') == 'A_1,(1)'
+    assert ascii(OperatorSymbol("A", hs=hs1), show_hilbert_space=False) == 'A'
     assert ascii(OperatorSymbol("A_1", hs=hs1*hs2)) == 'A_1^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_2", hs=('q1', 'q2'))) == 'Xi_2^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_full", hs=1)) == 'Xi_full^(1)'
@@ -125,6 +128,8 @@ def test_ascii_operator_elements():
     assert ascii(IdentityOperator) == "1"
     assert ascii(ZeroOperator) == "0"
     assert ascii(Create(hs=1)) == "a^(1)H"
+    assert ascii(Create(hs=1), show_hilbert_space=False) == "a^H"
+    assert ascii(Create(hs=1), show_hilbert_space='subscript') == "a_(1)^H"
     assert ascii(Create(hs=1, identifier='b')) == "b^(1)H"
     assert ascii(Destroy(hs=1)) == "a^(1)"
     assert ascii(Destroy(hs=1, identifier='b')) == "b^(1)"
@@ -137,8 +142,11 @@ def test_ascii_operator_elements():
     assert ascii(Displace(0.5, hs=1)) == 'D^(1)(0.5)'
     assert ascii(Squeeze(0.5, hs=1)) == 'Squeeze^(1)(0.5)'
     hs_tls = LocalSpace('1', basis=('g', 'e'))
-    assert ascii(LocalSigma('e', 'g', hs=hs_tls)) == 'sigma_e,g^(1)'
-    assert ascii(LocalSigma('e', 'e', hs=hs_tls)) == 'Pi_e^(1)'
+    sig_e_g = LocalSigma('e', 'g', hs=hs_tls)
+    assert ascii(sig_e_g) == '|e><g|^(1)'
+    assert ascii(sig_e_g, local_sigma_as_ketbra=False) == 'sigma_e,g^(1)'
+    sig_e_e = LocalProjector('e', hs=hs_tls)
+    assert ascii(sig_e_e, local_sigma_as_ketbra=False) == 'Pi_e^(1)'
 
 
 def test_ascii_operator_operations():
