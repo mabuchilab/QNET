@@ -27,16 +27,16 @@ class QnetAsciiPrinter(QnetBasePrinter):
     printmethod = '_ascii'
 
 
-def ascii(expr, **options):
+def ascii(expr, cache=None, **settings):
     """Return an ascii textual representation of the given object /
     expression"""
     try:
-        if len(options) == 0:
+        if cache is None and len(settings) == 0:
             return ascii.printer.doprint(expr)
         else:
-            return ascii._printer_cls(**options).doprint(expr)
+            return ascii._printer_cls(cache, settings).doprint(expr)
     except AttributeError:
         # init_printing was not called. Setting up defaults
         ascii._printer_cls = QnetAsciiPrinter
         ascii.printer = ascii._printer_cls()
-        return ascii(expr, **options)
+        return ascii(expr, cache, **settings)

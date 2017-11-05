@@ -35,19 +35,19 @@ class QnetLatexPrinter(QnetBasePrinter):
     printmethod = '_latex'
 
 
-def latex(expr, **options):
+def latex(expr, cache=None, **settings):
     """Return a LaTeX textual representation of the given object /
     expression"""
     try:
-        if len(options) == 0:
+        if cache is None and len(settings) == 0:
             return latex.printer.doprint(expr)
         else:
-            return latex._printer_cls(**options).doprint(expr)
+            return latex._printer_cls(cache, settings).doprint(expr)
     except AttributeError:
         # init_printing was not called. Setting up defaults
         latex._printer_cls = QnetLatexPrinter
         latex.printer = latex._printer_cls()
-        return latex(expr, **options)
+        return latex(expr, cache, **settings)
 
 
 _tex_greek_dictionary = {

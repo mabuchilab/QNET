@@ -26,16 +26,16 @@ class QnetUnicodePrinter(QnetBasePrinter):
     printmethod = '_unicode'
 
 
-def unicode(expr, **options):
+def unicode(expr, cache=None, **settings):
     """Return a unicode textual representation of the given object /
     expression"""
     try:
-        if len(options) == 0:
+        if cache is None and len(settings) == 0:
             return unicode.printer.doprint(expr)
         else:
-            return unicode._printer_cls(**options).doprint(expr)
+            return unicode._printer_cls(cache, **settings).doprint(expr)
     except AttributeError:
         # init_printing was not called. Setting up defaults
         unicode._printer_cls = QnetUnicodePrinter
         unicode.printer = unicode._printer_cls()
-        return unicode(expr, **options)
+        return unicode(expr, cache, **settings)
