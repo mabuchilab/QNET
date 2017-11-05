@@ -30,11 +30,11 @@ from .unicodemod import unicode
 from .latexmod import latex
 from .sreprmod import srepr
 from .treemod import tree
-from .dotmod import dot
+from .dotmod import dotprint
 
 
 __all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'latex',
-           'srepr', 'tree', 'dot']
+           'srepr', 'tree', 'dotprint']
 
 
 def _printer_cls(label, class_address, require_base=QnetBasePrinter):

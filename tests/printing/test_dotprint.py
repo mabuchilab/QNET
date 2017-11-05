@@ -26,7 +26,7 @@ from qnet.algebra.scalar_types import SCALAR_TYPES
 from qnet.algebra.abstract_algebra import Expression, Operation
 from qnet.algebra.operator_algebra import OperatorSymbol, Adjoint
 from qnet.printing.dotmod import expr_labelfunc
-from qnet.printing import dot, ascii, srepr
+from qnet.printing import dotprint, ascii, srepr
 
 
 def compare_line(line1, line2, rx=None, match_keys=None):
@@ -79,15 +79,15 @@ def expr():
 def test_dot_idfunc(expr):
     """Test that using 'str' idfunc and the default idfunc yield matching
     results."""
-    dot1 = dot(expr)
-    dot2 = dot(expr, idfunc=str)
+    dot1 = dotprint(expr)
+    dot2 = dotprint(expr, idfunc=str)
     assert compare_dotcode(dot1, dot2)
 
 
 def test_dot_ascii_id(expr):
     """Test the default dot-rendering of expr (except for using 'str' idfunc,
     since the default 'hash' is non-stable)"""
-    dotstr = dot(expr, idfunc=ascii)
+    dotstr = dotprint(expr, idfunc=ascii)
     assert dotstr.strip() == dedent(r'''
     digraph{
 
@@ -134,7 +134,7 @@ def test_dot_ascii_id(expr):
 
 def test_dot_maxdepth2(expr):
     """Test dot-representation with restricted depth"""
-    dotstr = dot(expr, maxdepth=2)
+    dotstr = dotprint(expr, maxdepth=2)
     assert dotstr.strip() == dedent(r'''
     digraph{
 
@@ -177,7 +177,7 @@ def test_dot_show_args(expr):
         else:
             return []
 
-    dotstr = dot(expr, get_children=_expr_args)
+    dotstr = dotprint(expr, get_children=_expr_args)
     assert dotstr.strip() == dedent(r'''
     digraph{
 
@@ -234,7 +234,7 @@ def test_dot_show_args(expr):
 
 def test_dot_no_repeat(expr):
     """Test dot-representation with repeating identical nodes"""
-    dotstr = dot(expr, idfunc=ascii, repeat=False)
+    dotstr = dotprint(expr, idfunc=ascii, repeat=False)
     assert dotstr.strip() == dedent(r'''
     digraph{
 
@@ -281,7 +281,7 @@ def test_dot_no_repeat(expr):
 
 def test_dot_custom_labelfunc(expr):
     """Test dot-representation with custom labelfunc"""
-    dotstr = dot(expr, labelfunc=expr_labelfunc(srepr, str))
+    dotstr = dotprint(expr, labelfunc=expr_labelfunc(srepr, str))
     assert dotstr.strip() == dedent(r'''
     digraph{
 
@@ -329,7 +329,7 @@ def test_dot_custom_labelfunc(expr):
 
 def test_dot_no_styles(expr):
     """Test dot-representation with emtpy 'styles'"""
-    dotstr = dot(expr, styles=[])
+    dotstr = dotprint(expr, styles=[])
     assert dotstr.strip() == dedent(r'''
     digraph{
 
@@ -384,7 +384,7 @@ def test_dot_custom_styles(expr):
             {'color': 'red', 'shape': 'box', 'fontsize': 12}),
         (lambda expr: isinstance(expr, Operation),
             {'color': 'black', 'shape': 'ellipse'})]
-    dotstr = dot(expr, styles=styles)
+    dotstr = dotprint(expr, styles=styles)
     assert dotstr.strip() == dedent(r'''
     digraph{
 
@@ -432,7 +432,7 @@ def test_dot_custom_styles(expr):
 
 def test_dot_custom_kwargs(expr):
     """Test dot-representation with custom kwargs for graph attributes"""
-    dotstr = dot(
+    dotstr = dotprint(
         expr, rankdir='LR', splines='curved',
         label='Expression Tree')
     assert dotstr.strip() == dedent(r'''

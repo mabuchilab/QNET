@@ -25,7 +25,7 @@ diagram for a given expression. For example::
     >>> A = OperatorSymbol("A", hs=1)
     >>> B = OperatorSymbol("B", hs=1)
     >>> expr = 2 * (A + B)
-    >>> dot = dot(expr)
+    >>> dot = dotprint(expr)
     >>> dot.strip() == r'''
     ... digraph{
     ...
@@ -66,7 +66,7 @@ the graph's structural and visual properties.
 
 from ..algebra.abstract_algebra import Expression, Operation
 
-__all__ = ['dot']
+__all__ = ['dotprint']
 
 template = r'''
 digraph{
@@ -150,7 +150,7 @@ def _op_children(expr):
         return []
 
 
-def dot(expr, styles=None, maxdepth=None, repeat=True,
+def dotprint(expr, styles=None, maxdepth=None, repeat=True,
         labelfunc=expr_labelfunc(str, str),
         idfunc=None, get_children=_op_children, **kwargs):
     """`DOT`_ (graph) description of an Expression tree
@@ -211,6 +211,9 @@ def dot(expr, styles=None, maxdepth=None, repeat=True,
         use ``dotprint(..., rankdir='LR')``.
 
     """
+    # the routine is called 'dotprint' to match sympy (even though most of the
+    # similar routines for the other printers are called e.g. 'latex', not
+    # 'latexprint'
     if idfunc is None:
         if repeat:
             idfunc = lambda expr: 'node'
