@@ -77,6 +77,9 @@ class QnetBasePrinter(SympyPrinter):
     printmethod = None
 
     def __init__(self, cache=None, settings=None):
+        # This would be more elegant if we declared this as **settings, but we
+        # want to closely mirror the SymPy implementation. The frontend-facing
+        # routines, e.g. init_printing or ascii do flatten out the settings
         self.cache = {}
         if cache is not None:
             self.cache = cache
@@ -97,6 +100,32 @@ class QnetBasePrinter(SympyPrinter):
         method"""
         return render_head_repr(expr)
 
+    def _get_from_cache(self, expr):
+        """Get the result of :meth:`doprint` from the internal cache"""
+        # The reason method this is separated out from `doprint` is that
+        # printers that use identation, e.g. IndentedSReprPrinter, need to
+        # override how caching is handled, applying variable indentation even
+        # for cached results
+        try:
+            is_cached = expr in self.cache
+        except TypeError:
+            # expr is unhashable
+            is_cached = False
+        if is_cached:
+            return True, self.cache[expr]
+        else:
+            return False,  None
+
+    def _write_to_cache(self, expr, res):
+        """Store the result of :meth:`doprint` in the internal cache"""
+        # Well be overwritten by printers that use indentation, see
+        # _get_from_cache
+        try:
+            self.cache[expr] = res
+        except TypeError:
+            # expr is unhashable
+            pass
+
     def doprint(self, expr):
         """Returns printer's representation for expr (as a string)
 
@@ -110,16 +139,16 @@ class QnetBasePrinter(SympyPrinter):
         4. Take the best fitting ``_print_*`` method of the printer
         5. As fallback, delegate to :meth:`emptyPrinter`
         """
-        if expr in self.cache:
-            return self.cache[expr]
-        else:
+        is_cached, res = self._get_from_cache(expr)
+        if not is_cached:
             if isinstance(expr, SympyBasic):
+                self._sympy_printer._print_level = self._print_level + 1
                 res = self._sympy_printer.doprint(expr)
             else:
                 # the _print method, inherited from SympyPrinter implements the
                 # internal dispatcher for (3-5)
                 res = self._str(self._print(expr))
-        self.cache[expr] = res
+            self._write_to_cache(expr, res)
         return res
 
 
@@ -151,14 +180,14 @@ def render_head_repr(
         keys = expr.minimal_kwargs.keys()
         kwargs = ''
         if len(keys) > 0:
-            kwargs = ",".join(
+            kwargs = ", ".join(
                         ["%s=%s" % (key, key_sub_render(expr.kwargs[key]))
                             for key in keys])
             if len(args) > 0:
-                kwargs = "," + kwargs
+                kwargs = ", " + kwargs
         return head_repr_fmt.format(
             head=expr.__class__.__name__,
-            args=",".join([sub_render(arg) for arg in args]),
+            args=", ".join([sub_render(arg) for arg in args]),
             kwargs=kwargs)
     elif isinstance(expr, SympyBasic):
         return sympy_srepr(expr)
