@@ -26,6 +26,7 @@ from sympy.printing.repr import srepr as sympy_srepr
 
 from ..algebra.singleton import Singleton
 from ..algebra.abstract_algebra import Expression
+from .precedence import precedence, PRECEDENCE
 from .sympy import SympyStrPrinter
 
 
@@ -112,6 +113,7 @@ class QnetBasePrinter(SympyPrinter):
         method"""
         return render_head_repr(expr)
 
+    @staticmethod
     def _isinstance(expr, classname):
         """Check whether `expr` is an instance of the class with name
         `classname`
@@ -239,6 +241,19 @@ class QnetBasePrinter(SympyPrinter):
             # expr is unhashable
             pass
 
+    def parenthesize(self, expr, level, strict=False):
+        """Render `expr` and wrap the result in parentheses if the precedence
+        of `expr` is below the given `level` (or at the given `level` if
+        `strict` is True"""
+        needs_parenths = (
+            (precedence(expr) < level) or
+            ((not strict) and precedence(expr) <= level))
+        if needs_parenths:
+            return (
+                self._parenth_left + self.doprint(expr) + self._parenth_right)
+        else:
+            return self.doprint(expr)
+
     def doprint(self, expr):
         """Returns printer's representation for expr (as a string)
 
@@ -263,6 +278,151 @@ class QnetBasePrinter(SympyPrinter):
                 res = self._str(self._print(expr))
             self._write_to_cache(expr, res)
         return res
+
+    def _print_CircuitSymbol(self, expr):
+        return self._str(expr.name)
+
+    def _print_CPermutation(self, expr):
+        return r'Perm(%s)' % (
+                ", ".join(map(self._str, self.permutation)))
+
+    def _print_SeriesProduct(self, expr):
+        raise NotImplementedError  # TODO
+
+    def _print_OperatorSymbol(self, expr, adjoint=False):
+        return self._render_op(expr.identifier, expr._hs, dagger=adjoint)
+
+    def _print_LocalOperator(self, expr, adjoint=False):
+        if adjoint:
+            dagger = not expr._dagger
+        else:
+            dagger = expr._dagger
+        return self._render_op(
+            expr._identifier, expr._hs, dagger=dagger, args=expr.args)
+
+    def _print_LocalSigma(self, expr, adjoint=False):
+        if self._settings['local_sigma_as_ketbra']:
+            if adjoint:
+                res = "|%s><%s|" % (expr.k, expr.j)
+            else:
+                res = "|%s><%s|" % (expr.j, expr.k)
+            if self._settings['show_hilbert_space']:
+                hs_label = self._render_hs_label(expr._hs)
+                if self._settings['show_hilbert_space'] == 'subscript':
+                    res += '_(%s)' % hs_label
+                else:
+                    res += '^(%s)' % hs_label
+                return res
+        else:
+            if expr._is_projector:
+                identifier = "%s_%s" % (expr._identifier, expr.j)
+            else:
+                if adjoint:
+                    identifier = "%s_%s,%s" % (
+                        expr._identifier, expr.k, expr.j)
+                else:
+                    identifier = "%s_%s,%s" % (
+                        expr._identifier, expr.j, expr.k)
+            return self._render_op(identifier, expr._hs, dagger=adjoint)
+
+    def _print_IdentityOperator(self, expr):
+        return "1"
+
+    def _print_ZeroOperator(self, expr):
+        return "0"
+
+    def _print_OperatorPlus(self, expr, adjoint=False):
+        prec = precedence(expr)
+        l = []
+        for term in expr.args:
+            t = self.doprint(term)
+            if t.startswith('-'):
+                sign = "-"
+                t = t[1:]
+            else:
+                sign = "+"
+            if precedence(term) < prec:
+                l.extend([sign, self._parenth_left + t + self._parenth_right])
+            else:
+                l.extend([sign, t])
+        sign = l.pop(0)
+        if sign == '+':
+            sign = ""
+        return sign + ' '.join(l)
+
+    def _print_OperatorTimes(self, expr):
+        prec = precedence(expr)
+        return " * ".join(
+            [self.parenthesize(op, prec) for op in expr.operands])
+
+    def _print_ScalarTimesOperator(self, expr, product_sym=" * "):
+        prec = PRECEDENCE['Mul']
+        coeff, term = expr.coeff, expr.term
+        term_str = self.doprint(term)
+        if precedence(term) < prec:
+            term_str = self._parenth_left + term_str + self._parenth_right
+
+        if coeff == -1:
+            if term_str.startswith(self._parenth_left):
+                return "- " + term_str
+            else:
+                return "-" + term_str
+        coeff_str = self.doprint(coeff)
+
+        if term_str == '1':
+            return coeff_str
+        else:
+            coeff_str = coeff_str.strip()
+            if precedence(coeff) < prec and precedence(-coeff) < prec:
+                # the above precedence check catches on only for true sums
+                coeff_str = (
+                    self._parenth_left + coeff_str + self._parenth_right)
+            return coeff_str + product_sym + term_str.strip()
+
+    def _print_Commutator(self, expr):
+        return "[" + self.doprint(expr.A) + ", " + self.doprint(expr.B) + "]"
+
+    def _print_OperatorTrace(self, expr):
+        s = self._render_hs_label(expr._over_space)
+        o = self.doprint(expr.operand)
+        return r'tr_({space})[{operand}]'.format(space=s, operand=o)
+
+    def _print_Adjoint(self, expr, adjoint=False):
+        o = expr.operand
+        if self._isinstance(o, 'LocalOperator'):
+            if adjoint:
+                dagger = o._dagger
+            else:
+                dagger = not o._dagger
+            return self._render_op(
+                o.identifier, hs=o.space, dagger=dagger, args=o.args[1:])
+        elif self._isinstance(o, 'OperatorSymbol'):
+            return self._render_op(
+                o.identifier, hs=o.space, dagger=(not adjoint))
+        else:
+            if adjoint:
+                return self.doprint(o)
+            else:
+                return (
+                    self._parenth_left + self.doprint(o) +
+                    self._parenth_right + "^" + self._dagger_sym)
+
+    def _print_OperatorPlusMinusCC(self, expr):
+        prec = precedence(expr)
+        o = expr.operand
+        sign_str = ' + '
+        if expr._sign < 0:
+            sign_str = ' - '
+        return self.parenthesize(o, prec) + sign_str + "c.c."
+
+    def _print_PseudoInverse(self, expr):
+        prec = precedence(expr)
+        return self.parenthesize(expr.operand, prec) + "^+"
+
+    def _print_NullSpaceProjector(self, expr, adjoint=False):
+        null_space_proj_sym = 'P_Ker'
+        return self._render_op(
+            null_space_proj_sym, hs=None, args=expr.operands, dagger=adjoint)
 
 
 def render_head_repr(

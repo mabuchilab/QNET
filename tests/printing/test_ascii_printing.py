@@ -27,14 +27,15 @@ from qnet.algebra.circuit_algebra import(
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
-        tr, Adjoint, PseudoInverse, NullSpaceProjector, Commutator)
+        tr, Adjoint, PseudoInverse, NullSpaceProjector, Commutator,
+        OperatorTimes, OperatorPlusMinusCC)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace)
 from qnet.algebra.matrix_algebra import Matrix
 from qnet.algebra.state_algebra import (
         KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet, CoherentStateKet,
-        UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
-        OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra)
+        UnequalSpaces, Bra, OverlappingSpaces, SpaceTooLargeError, BraKet,
+        KetBra)
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
@@ -156,16 +157,30 @@ def test_ascii_operator_operations():
     A = OperatorSymbol("A", hs=hs1)
     B = OperatorSymbol("B", hs=hs1)
     C = OperatorSymbol("C", hs=hs2)
+    D = OperatorSymbol("D", hs=hs1)
     gamma = symbols('gamma', positive=True)
     assert ascii(A + B) == 'A^(q_1) + B^(q_1)'
     assert ascii(A * B) == 'A^(q_1) * B^(q_1)'
     assert ascii(A * C) == 'A^(q_1) * C^(q_2)'
+    assert ascii(A * (B + D)) == 'A^(q_1) * (B^(q_1) + D^(q_1))'
+    assert ascii(A * (B - D)) == 'A^(q_1) * (B^(q_1) - D^(q_1))'
+    assert (
+        ascii((A + B) * (-2 * B - D)) ==
+        '(A^(q_1) + B^(q_1)) * (-2 * B^(q_1) - D^(q_1))')
+    assert ascii(OperatorTimes(A, -B)) == 'A^(q_1) * (-B^(q_1))'
+    assert ascii(OperatorTimes(A, -B), show_hilbert_space=False) == 'A * (-B)'
     assert ascii(2 * A) == '2 * A^(q_1)'
     assert ascii(2j * A) == '2j * A^(q_1)'
     assert ascii((1+2j) * A) == '(1+2j) * A^(q_1)'
     assert ascii(gamma**2 * A) == 'gamma**2 * A^(q_1)'
     assert ascii(-gamma**2/2 * A) == '-gamma**2/2 * A^(q_1)'
     assert ascii(tr(A * C, over_space=hs2)) == 'tr_(q_2)[C^(q_2)] * A^(q_1)'
+    expr = A + OperatorPlusMinusCC(B * D)
+    assert ascii(expr, show_hilbert_space=False) == 'A + (B * D + c.c.)'
+    expr = A + OperatorPlusMinusCC(B + D)
+    assert ascii(expr, show_hilbert_space=False) == 'A + (B + D + c.c.)'
+    expr = A * OperatorPlusMinusCC(B * D)
+    assert ascii(expr, show_hilbert_space=False) == 'A * (B * D + c.c.)'
     assert ascii(Adjoint(A)) == 'A^(q_1)H'
     assert ascii(Adjoint(Create(hs=1))) == 'a^(1)'
     assert ascii(Adjoint(A + B)) == '(A^(q_1) + B^(q_1))^H'
@@ -173,8 +188,8 @@ def test_ascii_operator_operations():
     assert ascii(NullSpaceProjector(A)) == 'P_Ker(A^(q_1))'
     assert ascii(A - B) == 'A^(q_1) - B^(q_1)'
     assert ascii(A - B + C) == 'A^(q_1) - B^(q_1) + C^(q_2)'
-    assert (ascii(2 * A - sqrt(gamma) * (B + C)) ==
-            '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))')
+    expr = 2 * A - sqrt(gamma) * (B + C)
+    assert ascii(expr) == '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))'
     assert ascii(Commutator(A, B)) == r'[A^(q_1), B^(q_1)]'
 
 
