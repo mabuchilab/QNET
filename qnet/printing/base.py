@@ -316,6 +316,14 @@ class QnetBasePrinter(SympyPrinter):
         return r'[{operand}]^{{-1}}'.format(
             operand=self.doprint(expr.operand))
 
+    def _print_HilbertSpace(self, expr):
+        return r'H_{label}'.format(
+            label=self._render_hs_label(expr))
+
+    def _print_ProductSpace(self, expr):
+        return " * ".join(
+            [self.doprint(op) for op in expr.operands])
+
     def _print_OperatorSymbol(self, expr, adjoint=False):
         return self._render_op(expr.identifier, expr._hs, dagger=adjoint)
 
