@@ -284,10 +284,37 @@ class QnetBasePrinter(SympyPrinter):
 
     def _print_CPermutation(self, expr):
         return r'Perm(%s)' % (
-                ", ".join(map(self._str, self.permutation)))
+                ", ".join(map(self._str, expr.permutation)))
 
     def _print_SeriesProduct(self, expr):
-        raise NotImplementedError  # TODO
+        prec = precedence(expr)
+        return " << ".join(
+            [self.parenthesize(op, prec) for op in expr.operands])
+
+    def _print_Concatenation(self, expr):
+        prec = precedence(expr)
+        reduced_operands = []  # reduce consecutive identities to a str
+        id_count = 0
+        for o in expr.operands:
+            if self._isinstance(o, 'CIdentity'):
+                id_count += 1
+            else:
+                if id_count > 0:
+                    reduced_operands.append(
+                        "cid({cdim}".format(cdim=id_count))
+                    id_count = 0
+                reduced_operands.append(o)
+        return " + ".join(
+            [self.parenthesize(op, prec) for op in reduced_operands])
+
+    def _print_Feedback(self, expr):
+        o, i = expr.out_in_pair
+        return '[{operand}]_{{{output}->{input}}}'.format(
+            operand=self.doprint(expr.operand), output=o, input=i)
+
+    def _print_SeriesInverse(self, expr):
+        return r'[{operand}]^{{-1}}'.format(
+            operand=self.doprint(expr.operand))
 
     def _print_OperatorSymbol(self, expr, adjoint=False):
         return self._render_op(expr.identifier, expr._hs, dagger=adjoint)

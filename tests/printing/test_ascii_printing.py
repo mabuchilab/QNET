@@ -50,8 +50,8 @@ def test_ascii_circuit_elements():
     assert ascii(CircuitSymbol("Xi_full", 2)) == 'Xi_full'
     with pytest.raises(ValueError):
         CircuitSymbol(r'\Xi^2', 2)
-    assert ascii(CIdentity) == 'cid(1)'
-    assert ascii(CircuitZero) == 'cid(0)'
+    assert ascii(CIdentity) == 'CIdentity'
+    assert ascii(CircuitZero) == 'CircuitZero'
 
 
 def test_ascii_circuit_operations():

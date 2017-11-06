@@ -36,6 +36,9 @@ PRECEDENCE_VALUES = {
     "SingleOperatorOperation": PRECEDENCE["Atom"],
     "OperatorPlusMinusCC": PRECEDENCE["Add"] - 1,
     "OperatorCommutator": PRECEDENCE["Atom"],
+    "SeriesProduct": PRECEDENCE["Mul"],
+    "Concatenation": PRECEDENCE["Add"],
+    "SeriesInverse": PRECEDENCE["Atom"],
 }
 PRECEDENCE_VALUES.update(SYMPY_PRECEDENCE_VALUES)
 
