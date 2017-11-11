@@ -39,6 +39,10 @@ PRECEDENCE_VALUES = {
     "SeriesProduct": PRECEDENCE["Mul"],
     "Concatenation": PRECEDENCE["Add"],
     "SeriesInverse": PRECEDENCE["Atom"],
+    "KetPlus": PRECEDENCE["Add"],
+    "TensorKet": PRECEDENCE["Mul"],
+    "BraKet": PRECEDENCE["Mul"],
+    "KetBra": PRECEDENCE["Mul"],
 }
 PRECEDENCE_VALUES.update(SYMPY_PRECEDENCE_VALUES)
 
@@ -50,14 +54,27 @@ PRECEDENCE_VALUES.update(SYMPY_PRECEDENCE_VALUES)
 # Precedence functions
 
 
-def precedence_ScalarTimesOperator(item):
-    if item.has_minus_prefactor:
+def precedence_ScalarTimesX(expr):
+    if str(expr.coeff).startswith('-'):
         return PRECEDENCE["Add"]
     return PRECEDENCE["Mul"]
 
 
+def precedence_OperatorTimesKet(expr):
+    if str(expr.operator).startswith('-'):
+        return PRECEDENCE["Add"]
+    return PRECEDENCE["Mul"]
+
+
+def precedence_Bra(expr):
+    return precedence(expr.ket)
+
+
 PRECEDENCE_FUNCTIONS = {
-    "ScalarTimesOperator": precedence_ScalarTimesOperator,
+    "ScalarTimesOperator": precedence_ScalarTimesX,
+    "ScalarTimesKet": precedence_ScalarTimesX,
+    "OperatorTimesKet": precedence_OperatorTimesKet,
+    "Bra": precedence_Bra,
 }
 PRECEDENCE_FUNCTIONS.update(SYMPY_PRECEDENCE_FUNCTIONS)
 
