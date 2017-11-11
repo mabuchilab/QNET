@@ -549,6 +549,28 @@ class QnetAsciiPrinter(QnetBasePrinter):
         ct = self.doprint(op)
         return "%s[%s]" % (cs, ct)
 
+    def _print_Matrix(self, expr):
+        matrix_left_sym = '['
+        matrix_right_sym = ']'
+        matrix_row_left_sym = '['
+        matrix_row_right_sym = ']'
+        matrix_col_sep_sym = ', '
+        matrix_row_sep_sym = ', '
+        row_strs = []
+        if len(expr.matrix) == 0:
+            row_strs.append(matrix_row_left_sym + matrix_row_right_sym)
+            row_strs.append(matrix_row_left_sym + matrix_row_right_sym)
+        else:
+            for row in expr.matrix:
+                row_strs.append(
+                    matrix_row_left_sym +
+                    matrix_col_sep_sym.join(
+                        [self.doprint(entry) for entry in row]) +
+                    matrix_row_right_sym)
+        return (
+            matrix_left_sym + matrix_row_sep_sym.join(row_strs) +
+            matrix_right_sym)
+
 
 def ascii(expr, cache=None, **settings):
     """Return an ascii textual representation of the given object /
