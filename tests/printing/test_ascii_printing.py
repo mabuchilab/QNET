@@ -363,7 +363,7 @@ def test_ascii_sop_operations():
     assert ascii(SuperAdjoint(A)) == 'A^(q_1)H'
     assert ascii(SuperAdjoint(A + B)) == '(A^(q_1) + B^(q_1))^H'
     assert ascii(A - B) == 'A^(q_1) - B^(q_1)'
-    assert ascii(A - B + C) == 'A^(q_1) + C^(q_2) - B^(q_1)'
+    assert ascii(A - B + C) == 'A^(q_1) - B^(q_1) + C^(q_2)'
     assert (ascii(2 * A - sqrt(gamma) * (B + C)) ==
             '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))')
     assert ascii(SPre(A_op)) == 'SPre(A^(1))'

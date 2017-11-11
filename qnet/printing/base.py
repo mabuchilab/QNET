@@ -183,7 +183,7 @@ class QnetBasePrinter(SympyPrinter):
         """
         allow_caching = self._allow_caching
         is_cached = False
-        if len(args) == len(kwargs) == 0:
+        if len(args) > 0 or len(kwargs) > 0:
             # we don't want to cache "custom" rendering, such as the adjoint of
             # the actual expression (kwargs['adjoint'] is True). Otherwise, we
             # might return a cached values for args/kwargs that are different

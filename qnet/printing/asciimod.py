@@ -257,14 +257,16 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _print_ZeroOperator(self, expr):
         return "0"
 
-    def _print_OperatorPlus(self, expr, adjoint=False):
+    def _print_OperatorPlus(self, expr, adjoint=False, superop=False):
         prec = precedence(expr)
         l = []
+        kwargs = {}
+        if adjoint:
+            kwargs['adjoint'] = adjoint
+        if superop:
+            kwargs['superop'] = superop
         for term in expr.args:
-            if adjoint:
-                t = self.doprint(term, adjoint=True)
-            else:
-                t = self.doprint(term)
+            t = self.doprint(term, **kwargs)
             if t.startswith('-'):
                 sign = "-"
                 t = t[1:]
@@ -279,15 +281,15 @@ class QnetAsciiPrinter(QnetBasePrinter):
             sign = ""
         return sign + ' '.join(l)
 
-    def _print_OperatorTimes(self, expr):
+    def _print_OperatorTimes(self, expr, **kwargs):
         prec = precedence(expr)
         return " * ".join(
-            [self.parenthesize(op, prec) for op in expr.operands])
+            [self.parenthesize(op, prec, **kwargs) for op in expr.operands])
 
-    def _print_ScalarTimesOperator(self, expr, product_sym=" * "):
+    def _print_ScalarTimesOperator(self, expr, product_sym=" * ", **kwargs):
         prec = PRECEDENCE['Mul']
         coeff, term = expr.coeff, expr.term
-        term_str = self.doprint(term)
+        term_str = self.doprint(term, **kwargs)
         if precedence(term) < prec:
             term_str = self._parenth_left + term_str + self._parenth_right
 
@@ -296,7 +298,10 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 return "- " + term_str
             else:
                 return "-" + term_str
-        coeff_str = self.doprint(coeff)
+        if 'adjoint' in kwargs:
+            coeff_str = self.doprint(coeff, adjoint=kwargs['adjoint'])
+        else:
+            coeff_str = self.doprint(coeff)
 
         if term_str == '1':
             return coeff_str
@@ -492,6 +497,57 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 return rendered_bra + rendered_ket
             else:
                 return rendered_ket + rendered_bra
+
+    def _print_SuperOperatorSymbol(self, expr, adjoint=False, superop=True):
+        return self._render_op(
+            expr.label, expr._hs, dagger=adjoint, superop=True)
+
+    def _print_IdentitySuperOperator(self, expr):
+        return "1"
+
+    def _print_ZeroSuperOperator(self, expr):
+        return "0"
+
+    def _print_SuperOperatorPlus(self, expr, adjoint=False, superop=True):
+        return self._print_OperatorPlus(expr, adjoint=adjoint, superop=True)
+
+    def _print_SuperOperatorTimes(self, expr, adjoint=False, superop=True):
+        return self._print_OperatorTimes(expr, adjoint=adjoint, superop=True)
+
+    def _print_ScalarTimesSuperOperator(
+            self, expr, adjoint=False, superop=True):
+        return self._print_ScalarTimesOperator(
+            expr, adjoint=adjoint, superop=True)
+
+    def _print_SuperAdjoint(self, expr, adjoint=False, superop=True):
+        o = expr.operand
+        if self._isinstance(o, 'SuperOperatorSymbol'):
+            return self._render_op(
+                o.label, hs=o.space, dagger=(not adjoint), superop=True)
+        else:
+            if adjoint:
+                return self.doprint(o)
+            else:
+                return (
+                    self._parenth_left + self.doprint(o) +
+                    self._parenth_right + "^" + self._dagger_sym)
+
+    def _print_SPre(self, expr, superop=True):
+        return (
+            "SPre" + self._parenth_left + self.doprint(expr.operands[0]) +
+            self._parenth_right)
+
+    def _print_SPost(self, expr, superop=True):
+        return (
+            "SPost" + self._parenth_left + self.doprint(expr.operands[0]) +
+            self._parenth_right)
+
+    def _print_SuperOperatorTimesOperator(self, expr):
+        prec = precedence(expr)
+        sop, op = expr.sop, expr.op
+        cs = self.parenthesize(sop, prec)
+        ct = self.doprint(op)
+        return "%s[%s]" % (cs, ct)
 
 
 def ascii(expr, cache=None, **settings):

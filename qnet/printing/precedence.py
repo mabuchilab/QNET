@@ -19,7 +19,6 @@
 """A module providing information about the necessity of parenthesis when
 printing"""
 
-from sympy.core.function import _coeff_isneg
 from sympy.printing.precedence import (
     PRECEDENCE,
     PRECEDENCE_VALUES as SYMPY_PRECEDENCE_VALUES,
@@ -43,6 +42,10 @@ PRECEDENCE_VALUES = {
     "TensorKet": PRECEDENCE["Mul"],
     "BraKet": PRECEDENCE["Mul"],
     "KetBra": PRECEDENCE["Mul"],
+    "Adjoint": PRECEDENCE["Pow"],
+    "SuperOperatorPlus": PRECEDENCE["Add"],
+    "SuperOperatorTimes": PRECEDENCE["Mul"],
+    "SuperAdjoint": PRECEDENCE["Pow"],
 }
 PRECEDENCE_VALUES.update(SYMPY_PRECEDENCE_VALUES)
 
@@ -55,6 +58,8 @@ PRECEDENCE_VALUES.update(SYMPY_PRECEDENCE_VALUES)
 
 
 def precedence_ScalarTimesX(expr):
+    # TODO: can we avoid rendering expr.coeff, cf.
+    # from sympy.core.function import _coeff_isneg
     if str(expr.coeff).startswith('-'):
         return PRECEDENCE["Add"]
     return PRECEDENCE["Mul"]
@@ -70,11 +75,19 @@ def precedence_Bra(expr):
     return precedence(expr.ket)
 
 
+def precedence_SuperOperatorTimesOperator(expr):
+    if str(expr.sop).startswith('-'):
+        return PRECEDENCE["Add"]
+    return PRECEDENCE["Mul"]
+
+
 PRECEDENCE_FUNCTIONS = {
     "ScalarTimesOperator": precedence_ScalarTimesX,
     "ScalarTimesKet": precedence_ScalarTimesX,
     "OperatorTimesKet": precedence_OperatorTimesKet,
     "Bra": precedence_Bra,
+    "ScalarTimesSuperOperator": precedence_ScalarTimesX,
+    "SuperOperatorTimesOperator": precedence_SuperOperatorTimesOperator,
 }
 PRECEDENCE_FUNCTIONS.update(SYMPY_PRECEDENCE_FUNCTIONS)
 
