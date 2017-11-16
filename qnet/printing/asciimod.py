@@ -42,6 +42,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
     _parenth_right = ')'
     _dagger_sym = 'H'
     _tensor_sym = '*'
+    _circuit_series_sym = "<<"
+    _circuit_concat_sym = "+"
 
     def _split_identifier(self, identifier):
         """Split the given identifier at the first underscore into (rendered)
@@ -52,7 +54,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         except (TypeError, ValueError):
             name = identifier
             subscript = ''
-        return self._str(name), self._str(subscript)
+        return self._render_str(name), self._render_str(subscript)
 
     def _split_op(
             self, identifier, hs_label=None, dagger=False, args=None):
@@ -96,10 +98,10 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _render_hs_label(self, hs):
         """Return the label of the given Hilbert space as a string"""
         if isinstance(hs.__class__, Singleton):
-            return self._str(hs.label)
+            return self._render_str(hs.label)
         else:
             return self._tensor_sym.join(
-                [self._str(ls.label) for ls in hs.local_factors])
+                [self._render_str(ls.label) for ls in hs.local_factors])
 
     def _braket_fmt(self, expr_type):
         """Return a format string for printing an `expr_type`
@@ -171,15 +173,16 @@ class QnetAsciiPrinter(QnetBasePrinter):
             return self.doprint(expr, *args, **kwargs)
 
     def _print_CircuitSymbol(self, expr):
-        return self._str(expr.name)
+        return self._render_str(expr.name)
 
     def _print_CPermutation(self, expr):
         return r'Perm(%s)' % (
-                ", ".join(map(self._str, expr.permutation)))
+                ", ".join(map(self._render_str, expr.permutation)))
 
     def _print_SeriesProduct(self, expr):
         prec = precedence(expr)
-        return " << ".join(
+        circuit_series_sym = " " + self._circuit_series_sym + " "
+        return circuit_series_sym.join(
             [self.parenthesize(op, prec) for op in expr.operands])
 
     def _print_Concatenation(self, expr):
@@ -195,7 +198,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
                         "cid({cdim}".format(cdim=id_count))
                     id_count = 0
                 reduced_operands.append(o)
-        return " + ".join(
+        circuit_concat_sym = " " + self._circuit_concat_sym + " "
+        return circuit_concat_sym.join(
             [self.parenthesize(op, prec) for op in reduced_operands])
 
     def _print_Feedback(self, expr):
@@ -228,17 +232,17 @@ class QnetAsciiPrinter(QnetBasePrinter):
 
     def _print_LocalSigma(self, expr, adjoint=False):
         if self._settings['local_sigma_as_ketbra']:
+            fmt = self._braket_fmt('ketbra')
             if adjoint:
-                res = "|%s><%s|" % (expr.k, expr.j)
+                return fmt.format(
+                    label_i=self._render_str(expr.k),
+                    label_j=self._render_str(expr.j),
+                    space=self._render_hs_label(expr.space))
             else:
-                res = "|%s><%s|" % (expr.j, expr.k)
-            if self._settings['show_hilbert_space']:
-                hs_label = self._render_hs_label(expr._hs)
-                if self._settings['show_hilbert_space'] == 'subscript':
-                    res += '_(%s)' % hs_label
-                else:
-                    res += '^(%s)' % hs_label
-                return res
+                return fmt.format(
+                    label_i=self._render_str(expr.j),
+                    label_j=self._render_str(expr.k),
+                    space=self._render_hs_label(expr.space))
         else:
             if expr._is_projector:
                 identifier = "%s_%s" % (expr._identifier, expr.j)
@@ -364,7 +368,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         else:
             fmt = self._braket_fmt('ket')
         return fmt.format(
-            label=self._str(expr.label),
+            label=self._render_str(expr.label),
             space=self._render_hs_label(expr.space))
 
     def _print_ZeroKet(self, expr, adjoint=False):
@@ -379,7 +383,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         else:
             fmt = self._braket_fmt('ket')
         return fmt.format(
-            label=(self._str('alpha=') + self.doprint(expr._ampl)),
+            label=(self._render_str('alpha=') + self.doprint(expr._ampl)),
             space=self._render_hs_label(expr.space))
 
     def _print_KetPlus(self, expr, adjoint=False):
@@ -400,7 +404,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
             fmt = self._braket_fmt('ket')
             if adjoint:
                 fmt = self._braket_fmt('bra')
-            label = ",".join([self._str(o.label) for o in expr.operands])
+            label = ",".join(
+                [self._render_str(o.label) for o in expr.operands])
             space = self._render_hs_label(expr.space)
             return fmt.format(label=label, space=space)
 
@@ -450,13 +455,13 @@ class QnetAsciiPrinter(QnetBasePrinter):
             fmt = self._braket_fmt('braket')
             if adjoint:
                 return fmt.format(
-                    label_i=self._str(ket_label),
-                    label_j=self._str(bra_label),
+                    label_i=self._render_str(ket_label),
+                    label_j=self._render_str(bra_label),
                     space=self._render_hs_label(expr.ket.space))
             else:
                 return fmt.format(
-                    label_i=self._str(bra_label),
-                    label_j=self._str(ket_label),
+                    label_i=self._render_str(bra_label),
+                    label_j=self._render_str(ket_label),
                     space=self._render_hs_label(expr.ket.space))
         else:
             prec = precedence(expr)
@@ -481,13 +486,13 @@ class QnetAsciiPrinter(QnetBasePrinter):
             fmt = self._braket_fmt('ketbra')
             if adjoint:
                 return fmt.format(
-                    label_i=self._str(bra_label),
-                    label_j=self._str(ket_label),
+                    label_i=self._render_str(bra_label),
+                    label_j=self._render_str(ket_label),
                     space=self._render_hs_label(expr.ket.space))
             else:
                 return fmt.format(
-                    label_i=self._str(ket_label),
-                    label_j=self._str(bra_label),
+                    label_i=self._render_str(ket_label),
+                    label_j=self._render_str(bra_label),
                     space=self._render_hs_label(expr.ket.space))
         else:
             prec = precedence(expr)

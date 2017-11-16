@@ -42,7 +42,8 @@ def latex(expr, cache=None, **settings):
         if cache is None and len(settings) == 0:
             return latex.printer.doprint(expr)
         else:
-            return latex._printer_cls(cache, settings).doprint(expr)
+            printer = latex._printer_cls(cache, settings)
+            return printer.doprint(expr)
     except AttributeError:
         # init_printing was not called. Setting up defaults
         latex._printer_cls = QnetLatexPrinter

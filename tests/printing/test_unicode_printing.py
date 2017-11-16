@@ -44,7 +44,9 @@ from qnet.printing import unicode
 def test_unicode_circuit_elements():
     """Test the unicode representation of "atomic" circuit algebra elements"""
     assert unicode(CircuitSymbol("C", cdim=2)) == 'C'
-    assert unicode(CircuitSymbol("C_1", cdim=2)) == 'C₁'
+    C_1 = CircuitSymbol("C_1", cdim=2)
+    assert unicode(C_1) == 'C₁'
+    assert unicode(C_1, unicode_sub_super=False) == 'C_1'
     assert unicode(CircuitSymbol("Xi_2", 2)) == 'Ξ₂'
     assert unicode(CircuitSymbol("Xi_full", 2)) == 'Ξ_full'
     assert unicode(CIdentity) == 'cid(1)'
@@ -116,6 +118,9 @@ def test_unicode_operator_elements():
     hs2 = LocalSpace('q2', dimension=2)
     assert unicode(OperatorSymbol("A", hs=hs1)) == 'A\u0302^(q\u2081)'
     #                                               Â^(q₁)
+    assert unicode(
+        OperatorSymbol("A", hs=hs1),
+        operator_hats=False, unicode_sub_super=False) == 'A^(q_1)'
     assert (unicode(OperatorSymbol("A_1", hs=hs1*hs2)) ==
             'A\u0302_1^(q\u2081\u2297q\u2082)')  # Â_1^(q₁⊗q₂)
     assert (unicode(OperatorSymbol("Xi_2", hs=('q1', 'q2'))) ==
@@ -124,14 +129,30 @@ def test_unicode_operator_elements():
     assert unicode(ZeroOperator) == "0"
     assert unicode(Create(hs=1)) == 'a\u0302^(1)\u2020'  # â^(1)†
     assert unicode(Destroy(hs=1)) == 'a\u0302\u207d\xb9\u207e'  # â⁽¹⁾
+    assert (
+        unicode(Destroy(hs=1), unicode_sub_super=False) == 'a\u0302^(1)')
+    assert (
+        unicode(Destroy(hs=1), operator_hats=False) == 'a\u207d\xb9\u207e')
+    assert (
+        unicode(
+            Destroy(hs=1), operator_hats=False, unicode_sub_super=False) ==
+        'a^(1)')
     assert (unicode(Squeeze(Rational(1, 2), hs=1)) ==
             'Squeeze\u207d\xb9\u207e(1/2)')
     #       Squeeze⁽¹⁾(1/2)
     hs_tls = LocalSpace('1', basis=('g', 'e'))
-    assert unicode(LocalSigma('e', 'g', hs=hs_tls)) == '\u03c3\u0302_e,g^(1)'
-    #                                                  σ̂_e,g^(1)
-    assert (unicode(LocalSigma('e', 'e', hs=hs_tls)) ==
-            '\u03a0\u0302\u2091\u207d\xb9\u207e')  # Π̂ₑ⁽¹⁾
+    sig_e_g = LocalSigma('e', 'g', hs=hs_tls)
+    assert unicode(sig_e_g) == '|e⟩⟨g|⁽¹⁾'
+    assert unicode(sig_e_g, unicode_sub_super=False) == '|e⟩⟨g|^(1)'
+    assert unicode(sig_e_g, show_hilbert_space=False) == '|e⟩⟨g|'
+    assert (
+        unicode(sig_e_g, local_sigma_as_ketbra=False) ==
+        '\u03c3\u0302_e,g^(1)')  # σ̂_e,g^(1)
+    sig_e_e = LocalSigma('e', 'e', hs=hs_tls)
+    assert unicode(sig_e_e) == '|e⟩⟨e|⁽¹⁾'
+    assert (
+        unicode(sig_e_e, local_sigma_as_ketbra=False) ==
+        '\u03a0\u0302\u2091\u207d\xb9\u207e')  # Π̂ₑ⁽¹⁾
 
 
 def test_unicode_operator_operations():

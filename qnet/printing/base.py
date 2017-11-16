@@ -79,7 +79,7 @@ class QnetBasePrinter(SympyPrinter):
         'local_sigma_as_ketbra': True,
     }
 
-    _allow_caching = False
+    _allow_caching = True
 
     printmethod = None
 
@@ -100,6 +100,9 @@ class QnetBasePrinter(SympyPrinter):
                     qnet_settings[key] = val
         self._sympy_printer = self.sympy_printer_cls(settings=sympy_settings)
         super().__init__(settings=qnet_settings)
+
+    def _render_str(self, string):
+        return str(string)
 
     def emptyPrinter(self, expr):
         """Fallback method for expressions that neither know how to print
@@ -162,7 +165,7 @@ class QnetBasePrinter(SympyPrinter):
                 kwargs = {
                     key: val for (key, val) in kwargs.items()
                     if key != 'adjoint'}
-            res = self._str(self._print(expr, *args, **kwargs))
+            res = self._render_str(self._print(expr, *args, **kwargs))
         return res
 
     def doprint(self, expr, *args, **kwargs):
