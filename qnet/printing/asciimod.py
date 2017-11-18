@@ -216,7 +216,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
             label=self._render_hs_label(expr))
 
     def _print_ProductSpace(self, expr):
-        return " * ".join(
+        tensor_sym = " " + self._tensor_sym + " "
+        return tensor_sym.join(
             [self.doprint(op) for op in expr.operands])
 
     def _print_OperatorSymbol(self, expr, adjoint=False):

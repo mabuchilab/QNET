@@ -42,6 +42,16 @@ from qnet.algebra.super_operator_algebra import (
 from qnet.printing import ascii
 
 
+def test_ascii_scalar():
+    """Test rendering of scalar values"""
+    assert ascii(2) == '2'
+    ascii.printer.cache = {}
+    # we always want 2.0 to be printed as '2'. Without this normalization, the
+    # state of the cache might introduce non-reproducible behavior, as 2==2.0
+    assert ascii(2.0) == '2'
+    assert ascii(1j) == '1j'
+
+
 def test_ascii_circuit_elements():
     """Test the ascii representation of "atomic" circuit algebra elements"""
     assert ascii(CircuitSymbol("C", cdim=2)) == 'C'
@@ -216,7 +226,8 @@ def test_ascii_ket_elements():
     assert ascii(BasisKet(1, hs=hs1)) == '|e>^(q1)'
     with pytest.raises(ValueError):
         BasisKet('1', hs=hs1)
-    assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2.0>^(1)'
+    assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2>^(1)'
+    assert ascii(CoherentStateKet(2.1, hs=1)) == '|alpha=2.1>^(1)'
 
 
 def test_ascii_bra_elements():
@@ -235,7 +246,9 @@ def test_ascii_bra_elements():
     assert ascii(Bra(TrivialKet)) == '1'
     assert ascii(BasisKet('e', hs=hs1).adjoint()) == '<e|^(q1)'
     assert ascii(BasisKet(1, hs=1).adjoint()) == '<1|^(1)'
-    assert ascii(CoherentStateKet(2.0, hs=1).dag) == '<alpha=2.0|^(1)'
+    assert ascii(CoherentStateKet(2.0, hs=1).dag) == '<alpha=2|^(1)'
+    assert ascii(CoherentStateKet(2.1, hs=1).dag) == '<alpha=2.1|^(1)'
+    assert ascii(CoherentStateKet(0.5j, hs=1).dag) == '<alpha=0.5j|^(1)'
 
 
 def test_ascii_ket_operations():

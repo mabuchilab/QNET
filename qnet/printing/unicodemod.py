@@ -79,6 +79,7 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
         'unicode_sub_super': True,
         'operator_hats': True,
     }
+    # TODO: allow to drop '*' from products
 
     _dagger_sym = '†'
     _tensor_sym = '⊗'
@@ -161,7 +162,27 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
         res += args_str
         return res
 
+    def _print_Feedback(self, expr):
+        operand = self.doprint(expr.operand)
+        o, i = expr.out_in_pair
+        if self._settings['unicode_sub_super']:
+            return render_unicode_sub_super(
+                '[%s]' % operand, subs=['%s-%s' % (o, i)], subscript_max_len=9)
+        else:
+            return '[%s]_%s→%s' % (operand, o, i)
+
+    def _print_SeriesInverse(self, expr):
+        return r'[{operand}]⁻¹'.format(
+            operand=self.doprint(expr.operand))
+
+    def _print_HilbertSpace(self, expr):
+        return render_unicode_sub_super(
+            'ℌ', subs=[self._render_hs_label(expr)])
+
     def _print_IdentityOperator(self, expr):
+        return "𝟙"
+
+    def _print_IdentitySuperOperator(self, expr):
         return "𝟙"
 
 
@@ -221,8 +242,8 @@ _SUPERSCRIPT_MAPPING = {
 
 
 def render_unicode_sub_super(
-        name, subs, supers, sub_first=True, translate_symbols=True,
-        unicode_sub_super=True, sep=','):
+        name, subs=None, supers=None, sub_first=True, translate_symbols=True,
+        unicode_sub_super=True, sep=',', subscript_max_len=1):
     """Assemble a string from the primary name and the given sub- and
     superscripts::
 
@@ -240,15 +261,23 @@ def render_unicode_sub_super(
 
     Args:
         name (str):  the string without the subscript/superscript
-        subs (list): list of subscripts
-        supers (list): list of superscripts
+        subs (list or None): list of subscripts
+        supers (list or None): list of superscripts
         translate_symbols (bool): If True, try to translate (Greek) symbols in
             `name, `subs`, and `supers` to unicode
         unicode_sub_super (bool): It True, try to use unicode
             subscript/superscript symbols
         sep (str): Separator to use if there are multiple
             subscripts/superscripts
+        subscript_max_len (int): Maximum character length of subscript that is
+            eligible to be rendered in unicode. This defaults to 1, because
+            spelling out enire words as a unicode subscript looks terrible in
+            monospace (letter spacing too large)
     """
+    if subs is None:
+        subs = []
+    if supers is None:
+        supers = []
     if translate_symbols:
         supers = [_translate_symbols(sup) for sup in supers]
         subs = [_translate_symbols(sub) for sub in subs]
@@ -260,7 +289,8 @@ def render_unicode_sub_super(
                     _unicode_sub_super(s, _SUPERSCRIPT_MAPPING)
                     for s in supers]
             subs_modified = [
-                    _unicode_sub_super(s, _SUBSCRIPT_MAPPING, max_len=1)
+                    _unicode_sub_super(
+                        s, _SUBSCRIPT_MAPPING, max_len=subscript_max_len)
                     for s in subs]
             if sub_first:
                 if len(subs_modified) > 0:

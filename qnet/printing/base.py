@@ -79,7 +79,7 @@ class QnetBasePrinter(SympyPrinter):
         'local_sigma_as_ketbra': True,
     }
 
-    _allow_caching = True
+    _allow_caching = True  # DEBUG
 
     printmethod = None
 
@@ -92,6 +92,7 @@ class QnetBasePrinter(SympyPrinter):
             self.cache = cache
         sympy_settings = {}
         qnet_settings = {}
+        # TODO: just pass settings to sympy if they're acceptable
         if settings is not None:
             for key, val in settings.items():
                 if key.startswith('sympy_'):
@@ -161,6 +162,14 @@ class QnetBasePrinter(SympyPrinter):
             self._sympy_printer._print_level = self._print_level + 1
             res = self._sympy_printer.doprint(expr)
         else:
+            try:
+                if int(expr) == expr:
+                    # In Python, objects that evaluate equal (e.g. 2.0 == 2)
+                    # have the same hash. We want to normalize this, so that we
+                    # get consistent results when printing with a cache
+                    expr = int(expr)
+            except TypeError:
+                pass
             if adjoint:
                 kwargs = {
                     key: val for (key, val) in kwargs.items()
