@@ -128,7 +128,6 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
             hs_setting = 'subscript'
         return mapping[expr_type][hs_setting]
 
-
     def _render_op(
             self, identifier, hs=None, dagger=False, args=None, superop=False):
         """Render an operator

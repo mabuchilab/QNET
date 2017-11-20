@@ -42,8 +42,16 @@ class QnetAsciiPrinter(QnetBasePrinter):
     _parenth_right = ')'
     _dagger_sym = 'H'
     _tensor_sym = '*'
+    _product_sym = '*'
     _circuit_series_sym = "<<"
     _circuit_concat_sym = "+"
+
+    @property
+    def _spaced_product_sym(self):
+        if len(self._product_sym.strip()) == 0:
+            return self._product_sym
+        else:
+            return " %s " % self._product_sym
 
     def _split_identifier(self, identifier):
         """Split the given identifier at the first underscore into (rendered)
@@ -274,7 +282,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
             t = self.doprint(term, **kwargs)
             if t.startswith('-'):
                 sign = "-"
-                t = t[1:]
+                t = t[1:].strip()
             else:
                 sign = "+"
             if precedence(term) < prec:
@@ -288,10 +296,10 @@ class QnetAsciiPrinter(QnetBasePrinter):
 
     def _print_OperatorTimes(self, expr, **kwargs):
         prec = precedence(expr)
-        return " * ".join(
+        return self._spaced_product_sym.join(
             [self.parenthesize(op, prec, **kwargs) for op in expr.operands])
 
-    def _print_ScalarTimesOperator(self, expr, product_sym=" * ", **kwargs):
+    def _print_ScalarTimesOperator(self, expr, **kwargs):
         prec = PRECEDENCE['Mul']
         coeff, term = expr.coeff, expr.term
         term_str = self.doprint(term, **kwargs)
@@ -316,14 +324,17 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 # the above precedence check catches on only for true sums
                 coeff_str = (
                     self._parenth_left + coeff_str + self._parenth_right)
-            return coeff_str + product_sym + term_str.strip()
+            return coeff_str + self._spaced_product_sym + term_str.strip()
 
     def _print_Commutator(self, expr):
         return "[" + self.doprint(expr.A) + ", " + self.doprint(expr.B) + "]"
 
-    def _print_OperatorTrace(self, expr):
+    def _print_OperatorTrace(self, expr, adjoint=False):
         s = self._render_hs_label(expr._over_space)
-        o = self.doprint(expr.operand)
+        kwargs = {}
+        if adjoint:
+            kwargs['adjoint'] = adjoint
+        o = self.doprint(expr.operand, **kwargs)
         return r'tr_({space})[{operand}]'.format(space=s, operand=o)
 
     def _print_Adjoint(self, expr, adjoint=False):
@@ -383,9 +394,9 @@ class QnetAsciiPrinter(QnetBasePrinter):
             fmt = self._braket_fmt('bra')
         else:
             fmt = self._braket_fmt('ket')
-        return fmt.format(
-            label=(self._render_str('alpha=') + self.doprint(expr._ampl)),
-            space=self._render_hs_label(expr.space))
+        label = self._render_str('alpha=') + self.doprint(expr._ampl)
+        space = self._render_hs_label(expr.space)
+        return fmt.format(label=label, space=space)
 
     def _print_KetPlus(self, expr, adjoint=False):
         # this behaves exactly like Operators
@@ -424,7 +435,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
             else:
                 return "-" + term_str
         coeff_str = self.doprint(coeff, **kwargs)
-        return (coeff_str.strip() + ' * ' + term_str.strip())
+        return (
+            coeff_str.strip() + self._spaced_product_sym + term_str.strip())
 
     def _print_OperatorTimesKet(self, expr, adjoint=False):
         prec = precedence(expr)
@@ -469,9 +481,9 @@ class QnetAsciiPrinter(QnetBasePrinter):
             rendered_bra = self.parenthesize(expr.bra, prec, adjoint=adjoint)
             rendered_ket = self.parenthesize(expr.ket, prec, adjoint=adjoint)
             if adjoint:
-                return rendered_ket + ' * ' + rendered_bra
+                return rendered_ket + self._spaced_product_sym + rendered_bra
             else:
-                return rendered_bra + ' * ' + rendered_ket
+                return rendered_bra + self._spaced_product_sym + rendered_ket
 
     def _print_KetBra(self, expr, adjoint=False):
         trivial = True
