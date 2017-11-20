@@ -366,6 +366,7 @@ class Operator(metaclass=ABCMeta):
         else:
             return NotImplemented
 
+
 class LocalOperator(Operator, Expression, metaclass=ABCMeta):
     """Base class for all kinds of operators that act *locally*,
     i.e. only on a single degree of freedom."""

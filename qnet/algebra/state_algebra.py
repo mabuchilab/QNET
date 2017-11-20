@@ -42,8 +42,7 @@ from .hilbert_space_algebra import (
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
-    Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
-    Phase)
+    Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace, Phase)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
 
 __all__ = [
@@ -425,7 +424,10 @@ class CoherentStateKet(LocalKet):
 
     def __init__(self, ampl, *, hs):
         self._ampl = ampl
-        label = 'alpha=%s' % str(ampl)
+        label = 'alpha=' + str(hash(ampl))
+        # The "label" here is something that is solely used to set the
+        # _instance_key / uniquely identify the instance. Using the hash gets
+        # around variations in str(ampl) due to printer settings
         super().__init__(label, hs=hs)
 
     @property
@@ -435,6 +437,10 @@ class CoherentStateKet(LocalKet):
     @property
     def args(self):
         return (self._ampl, )
+
+    @property
+    def label(self):
+        return 'alpha'
 
     @property
     def kwargs(self):
