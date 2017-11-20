@@ -18,18 +18,14 @@
 ###########################################################################
 """Provides the base class for Printers"""
 
-from typing import Any
-
 from sympy.core.basic import Basic as SympyBasic
 from sympy.printing.printer import Printer as SympyPrinter
-from sympy.printing.repr import srepr as sympy_srepr
 
-from ..algebra.singleton import Singleton
 from ..algebra.scalar_types import SCALAR_TYPES
-from ..algebra.abstract_algebra import Expression
 from .sympy import SympyStrPrinter
+from ._render_head_repr import render_head_repr
 
-__all__ = ['QnetBasePrinter', 'render_head_repr']
+__all__ = ['QnetBasePrinter']
 
 
 class QnetBasePrinter(SympyPrinter):
@@ -214,46 +210,3 @@ class QnetBasePrinter(SympyPrinter):
             if allow_caching:
                 self._write_to_cache(expr, res)
         return res
-
-
-def render_head_repr(
-        expr: Any, sub_render=None, key_sub_render=None) -> str:
-    """Render a textual representation of `expr` using
-    Positional and keyword arguments are recursively
-    rendered using `sub_render`, which defaults to `render_head_repr` by
-    default.  If desired, a different renderer may be used for keyword
-    arguments by giving `key_sub_renderer`
-
-    Raises:
-        AttributeError: if `expr` is not an instance of
-            :class:`Expression`, or more specifically, if `expr` does not
-            have `args` and `kwargs` (respectively `minimal_kwargs`)
-            properties
-    """
-    head_repr_fmt = r'{head}({args}{kwargs})'
-    if sub_render is None:
-        sub_render = render_head_repr
-    if key_sub_render is None:
-        key_sub_render = sub_render
-    if isinstance(expr.__class__, Singleton):
-        # We exploit that Singletons override __expr__ to directly return
-        # their name
-        return repr(expr)
-    if isinstance(expr, Expression):
-        args = expr.args
-        keys = expr.minimal_kwargs.keys()
-        kwargs = ''
-        if len(keys) > 0:
-            kwargs = ", ".join(
-                        ["%s=%s" % (key, key_sub_render(expr.kwargs[key]))
-                            for key in keys])
-            if len(args) > 0:
-                kwargs = ", " + kwargs
-        return head_repr_fmt.format(
-            head=expr.__class__.__name__,
-            args=", ".join([sub_render(arg) for arg in args]),
-            kwargs=kwargs)
-    elif isinstance(expr, SympyBasic):
-        return sympy_srepr(expr)
-    else:
-        return repr(expr)

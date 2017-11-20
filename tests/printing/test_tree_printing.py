@@ -38,7 +38,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.printing import tree as tree_str
+from qnet.printing.treemod import tree_str
 
 import pytest
 
@@ -48,16 +48,16 @@ def test_circuit_tree():
     A = CircuitSymbol("A_test", cdim=2)
     beta = CircuitSymbol("beta", cdim=1)
     gamma = CircuitSymbol("gamma", cdim=1)
-    tree = tree_str(Feedback((A << (beta + gamma)) + CIdentity,
-                             out_port=2, in_port=0))
+    expr = Feedback((A << (beta + gamma)) + CIdentity, out_port=2, in_port=0)
+    tree = tree_str(expr)
     assert tree == dedent(r'''
     . Feedback(..., out_port=2, in_port=0)
-      └─ Concatenation(..., cid(1))
+      └─ Concatenation(..., CIdentity)
          ├─ SeriesProduct(A_test, β ⊞ γ)
-         │  ├─ CircuitSymbol(A_test, 2)
+         │  ├─ CircuitSymbol('A_test', 2)
          │  └─ Concatenation(β, γ)
-         │     ├─ CircuitSymbol(beta, 1)
-         │     └─ CircuitSymbol(gamma, 1)
+         │     ├─ CircuitSymbol('beta', 1)
+         │     └─ CircuitSymbol('gamma', 1)
          └─ CIdentity
     ''').strip()
 
@@ -69,8 +69,8 @@ def test_hilbert_tree():
     tree = tree_str(H1 * H2)
     assert tree == dedent(r'''
     . ProductSpace(ℌ₁, ℌ₂)
-      ├─ LocalSpace(1)
-      └─ LocalSpace(2)
+      ├─ LocalSpace('1')
+      └─ LocalSpace('2')
     ''').strip()
 
 
@@ -88,12 +88,12 @@ def test_operator_tree():
     . OperatorPlus(2 * A^(q_1), ...)
       +- ScalarTimesOperator(2, A^(q_1))
       |  +- 2
-      |  +- OperatorSymbol(A, hs=H_q_1)
+      |  +- OperatorSymbol('A', hs=H_q_1)
       +- ScalarTimesOperator(-sqrt(gamma), ...)
-         +- -sqrt(gamma)
+         +- Mul(Integer(-1), Pow(Symbol('gamma', positive=True), Rational(1, 2)))
          +- OperatorPlus(B^(q_1), C^(q_2))
-            +- OperatorSymbol(B, hs=H_q_1)
-            +- OperatorSymbol(C, hs=H_q_2)
+            +- OperatorSymbol('B', hs=H_q_1)
+            +- OperatorSymbol('C', hs=H_q_2)
     ''').strip()
 
 
@@ -112,26 +112,26 @@ def test_ket_tree():
     tree = tree_str(KetBra.create(bell1, bell2))
     assert tree == dedent(r'''
     . ScalarTimesOperator(1/2, ...)
-      ├─ 1/2
+      ├─ Rational(1, 2)
       └─ KetBra(..., ...)
-         ├─ KetPlus(|e,g⟩_(q₁⊗q₂), ...)
-         │  ├─ TensorKet(|e⟩_(q₁), |g⟩_(q₂))
-         │  │  ├─ BasisKet(e, hs=ℌ_q₁)
-         │  │  └─ BasisKet(g, hs=ℌ_q₂)
-         │  └─ ScalarTimesKet(-exp(-I*γ), |g,e⟩_(q₁⊗q₂))
-         │     ├─ -exp(-I*gamma)
-         │     └─ TensorKet(|g⟩_(q₁), |e⟩_(q₂))
-         │        ├─ BasisKet(g, hs=ℌ_q₁)
-         │        └─ BasisKet(e, hs=ℌ_q₂)
-         └─ KetPlus(|e,e⟩_(q₁⊗q₂), -|g,g⟩_(q₁⊗q₂))
-            ├─ TensorKet(|e⟩_(q₁), |e⟩_(q₂))
-            │  ├─ BasisKet(e, hs=ℌ_q₁)
-            │  └─ BasisKet(e, hs=ℌ_q₂)
-            └─ ScalarTimesKet(-1, |g,g⟩_(q₁⊗q₂))
+         ├─ KetPlus(|e,g⟩^(q₁⊗q₂), ...)
+         │  ├─ TensorKet(|e⟩^(q₁), |g⟩^(q₂))
+         │  │  ├─ BasisKet('e', hs=ℌ_q₁)
+         │  │  └─ BasisKet('g', hs=ℌ_q₂)
+         │  └─ ScalarTimesKet(-exp(-ⅈ γ), |g,e⟩^(q₁⊗q₂))
+         │     ├─ Mul(Integer(-1), exp(Mul(Integer(-1), I, Symbol('gamma', positive=True))))
+         │     └─ TensorKet(|g⟩^(q₁), |e⟩^(q₂))
+         │        ├─ BasisKet('g', hs=ℌ_q₁)
+         │        └─ BasisKet('e', hs=ℌ_q₂)
+         └─ KetPlus(|e,e⟩^(q₁⊗q₂), -|g,g⟩^(q₁⊗q₂))
+            ├─ TensorKet(|e⟩^(q₁), |e⟩^(q₂))
+            │  ├─ BasisKet('e', hs=ℌ_q₁)
+            │  └─ BasisKet('e', hs=ℌ_q₂)
+            └─ ScalarTimesKet(-1, |g,g⟩^(q₁⊗q₂))
                ├─ -1
-               └─ TensorKet(|g⟩_(q₁), |g⟩_(q₂))
-                  ├─ BasisKet(g, hs=ℌ_q₁)
-                  └─ BasisKet(g, hs=ℌ_q₂)
+               └─ TensorKet(|g⟩^(q₁), |g⟩^(q₂))
+                  ├─ BasisKet('g', hs=ℌ_q₁)
+                  └─ BasisKet('g', hs=ℌ_q₂)
     ''').strip()
 
 
@@ -149,23 +149,10 @@ def test_sop_operations():
         . SuperOperatorPlus(2 * A^(q₁), ...)
           ├─ ScalarTimesSuperOperator(2, A^(q₁))
           │  ├─ 2
-          │  └─ SuperOperatorSymbol(A, hs=ℌ_q₁)
+          │  └─ SuperOperatorSymbol('A', hs=ℌ_q₁)
           └─ ScalarTimesSuperOperator(-√γ, B^(q₁) + C^(q₂))
-             ├─ -sqrt(gamma)
+             ├─ Mul(Integer(-1), Pow(Symbol('gamma', positive=True), Rational(1, 2)))
              └─ SuperOperatorPlus(B^(q₁), C^(q₂))
-                ├─ SuperOperatorSymbol(B, hs=ℌ_q₁)
-                └─ SuperOperatorSymbol(C, hs=ℌ_q₂)
-        ''').strip() or
-        # The sympy printer doesn't always give exactly the same result,
-        # depending on context
-        tree == dedent(r'''
-        . SuperOperatorPlus(2 * A^(q₁), ...)
-          ├─ ScalarTimesSuperOperator(2, A^(q₁))
-          │  ├─ 2
-          │  └─ SuperOperatorSymbol(A, hs=ℌ_q₁)
-          └─ ScalarTimesSuperOperator(-sqrt(γ), B^(q₁) + C^(q₂))
-             ├─ -sqrt(gamma)
-             └─ SuperOperatorPlus(B^(q₁), C^(q₂))
-                ├─ SuperOperatorSymbol(B, hs=ℌ_q₁)
-                └─ SuperOperatorSymbol(C, hs=ℌ_q₂)
+                ├─ SuperOperatorSymbol('B', hs=ℌ_q₁)
+                └─ SuperOperatorSymbol('C', hs=ℌ_q₂)
         ''').strip())
