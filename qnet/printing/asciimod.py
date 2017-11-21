@@ -45,6 +45,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
     _product_sym = '*'
     _circuit_series_sym = "<<"
     _circuit_concat_sym = "+"
+    _cid = 'cid(%d)'
 
     @property
     def _spaced_product_sym(self):
@@ -202,13 +203,25 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 id_count += 1
             else:
                 if id_count > 0:
-                    reduced_operands.append(
-                        "cid({cdim}".format(cdim=id_count))
+                    reduced_operands.append(self._cid % id_count)
                     id_count = 0
                 reduced_operands.append(o)
+        if id_count > 0:
+            reduced_operands.append(self._cid % id_count)
         circuit_concat_sym = " " + self._circuit_concat_sym + " "
-        return circuit_concat_sym.join(
-            [self.parenthesize(op, prec) for op in reduced_operands])
+        parts = []
+        for op in reduced_operands:
+            if self._isinstance(op, 'SeriesProduct'):
+                # while a SeriesProduct has a higher precedence than a
+                # Concatenation, for most readers, extra parentheses will be
+                # helpful
+                # TODO: make this an option
+                parts.append(
+                    self._parenth_left + self.doprint(op) +
+                    self._parenth_right)
+            else:
+                parts.append(self.parenthesize(op, prec))
+        return circuit_concat_sym.join(parts)
 
     def _print_Feedback(self, expr):
         o, i = expr.out_in_pair
@@ -218,6 +231,18 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _print_SeriesInverse(self, expr):
         return r'[{operand}]^{{-1}}'.format(
             operand=self.doprint(expr.operand))
+
+    def _print_Component(self, expr):
+        name = self._render_str(expr.name)
+        res = name
+        params = []
+        if len(expr._parameters) > 0:
+            for param in expr._parameters:
+                val = getattr(expr, param)
+                params.append("%s=%s" % (param, self.doprint(val)))
+            res += (
+                self._parenth_left + ", ".join(params) + self._parenth_right)
+        return res
 
     def _print_HilbertSpace(self, expr):
         return r'H_{label}'.format(

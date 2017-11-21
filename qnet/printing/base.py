@@ -157,7 +157,7 @@ class QnetBasePrinter(SympyPrinter):
         if isinstance(expr, SympyBasic):
             self._sympy_printer._print_level = self._print_level + 1
             res = self._sympy_printer.doprint(expr)
-        else:
+        else:  # numeric type
             try:
                 if int(expr) == expr:
                     # In Python, objects that evaluate equal (e.g. 2.0 == 2)
@@ -170,7 +170,7 @@ class QnetBasePrinter(SympyPrinter):
                 kwargs = {
                     key: val for (key, val) in kwargs.items()
                     if key != 'adjoint'}
-            res = self._render_str(self._print(expr, *args, **kwargs))
+            res = self._print(expr, *args, **kwargs)
         return res
 
     def doprint(self, expr, *args, **kwargs):
@@ -203,6 +203,8 @@ class QnetBasePrinter(SympyPrinter):
         if not is_cached:
             if isinstance(expr, SCALAR_TYPES):
                 res = self._print_SCALAR_TYPES(expr, *args, **kwargs)
+            elif isinstance(expr, str):
+                return self._render_str(expr)
             else:
                 # the _print method, inherited from SympyPrinter implements the
                 # internal dispatcher for (3-5)

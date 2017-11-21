@@ -161,6 +161,9 @@ class SympyUnicodePrinter(StrPrinter):
     def _print_Inverse(self, I):
         return "%s⁻¹" % self.parenthesize(I.arg, PRECEDENCE["Pow"])
 
+    def _print_Pi(self, expr):
+        return 'π'
+
     def _print_Mul(self, expr):
 
         prec = precedence(expr)

@@ -166,7 +166,8 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
         o, i = expr.out_in_pair
         if self._settings['unicode_sub_super']:
             return render_unicode_sub_super(
-                '[%s]' % operand, subs=['%s-%s' % (o, i)], subscript_max_len=9)
+                '[%s]' % operand, subs=['%s-%s' % (o, i)],
+                translate_symbols=False, subscript_max_len=9)
         else:
             return '[%s]_%s→%s' % (operand, o, i)
 

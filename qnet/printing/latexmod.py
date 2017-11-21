@@ -54,6 +54,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
     _product_sym = ' '
     _circuit_series_sym = r'\lhd'
     _circuit_concat_sym = r'\boxplus'
+    _cid = r'{\rm cid}(%d)'
 
     def _print_SCALAR_TYPES(self, expr, *args, **kwargs):
         res = super()._print_SCALAR_TYPES(expr, *args, **kwargs)
@@ -110,7 +111,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
                         r'\left\langle {label} \right\rvert^{{({space})}}',
                     False:
                         r'\left\langle {label} \right\rvert'},
-            'ket': {
+                'ket': {
                     True:
                         r'\left\lvert {label} \right\rangle^{{({space})}}',
                     'subscript':
@@ -215,6 +216,18 @@ class QnetLatexPrinter(QnetAsciiPrinter):
 
     def _print_CircuitZero(self, expr):
         return r'{\rm cid}(0)'
+
+    def _print_Component(self, expr):
+        name = r'\text{%s}' % expr.name
+        res = name
+        params = []
+        if len(expr._parameters) > 0:
+            for param in expr._parameters:
+                val = getattr(expr, param)
+                params.append(self.doprint(val))
+            res += (
+                self._parenth_left + ", ".join(params) + self._parenth_right)
+        return res
 
     def _print_HilbertSpace(self, expr):
         return r'\mathcal{{H}}_{{{label}}}'.format(

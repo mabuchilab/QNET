@@ -35,6 +35,9 @@ class QnetSReprPrinter(QnetBasePrinter):
 
     sympy_printer_cls = SympyReprPrinter
 
+    def _render_str(self, string):
+        return repr(string)
+
     def emptyPrinter(self, expr):
         """Fallback printer"""
         return render_head_repr(expr, sub_render=self.doprint)
@@ -83,6 +86,9 @@ class IndentedSReprPrinter(QnetBasePrinter):
         keyname"""
         res = dedent(res)
         super()._write_to_cache(expr, res)
+
+    def _render_str(self, string):
+        return "    " * self._print_level + repr(string)
 
     def emptyPrinter(self, expr):
         """Fallback printer"""

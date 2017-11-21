@@ -17,11 +17,15 @@
 #
 ###########################################################################
 
+import sympy
 from sympy import symbols, sqrt, exp, I, Rational
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-        Feedback, SeriesInverse)
+        Feedback, SeriesInverse, cid)
+from qnet.circuit_components.beamsplitter_cc import Beamsplitter
+from qnet.circuit_components.three_port_kerr_cavity_cc import (
+        ThreePortKerrCavity)
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
@@ -51,6 +55,8 @@ def test_unicode_scalar():
     assert I/2 == 0.5j
     assert unicode(I/2) == 'ⅈ/2'
     assert unicode(0.5j) == '0.5j'
+    assert unicode(sympy.pi) == 'π'
+    assert unicode(sympy.pi/4) == 'π/4'
 
 
 def test_unicode_circuit_elements():
@@ -62,7 +68,23 @@ def test_unicode_circuit_elements():
     assert unicode(CircuitSymbol("Xi_2", 2)) == 'Ξ₂'
     assert unicode(CircuitSymbol("Xi_full", 2)) == 'Ξ_full'
     assert unicode(CIdentity) == 'CIdentity'
+    assert unicode(cid(4)) == 'cid(4)'
     assert unicode(CircuitZero) == 'CircuitZero'
+
+
+def test_unicode_circuit_components():
+    """Test ascii-printing of some of the circuit components"""
+    B11 = Beamsplitter('Latch.B11')
+    assert unicode(B11) == 'Latch.B11(theta=π/4)'
+    C1 = ThreePortKerrCavity('Latch.C1')
+    assert (
+        unicode(C1) == 'Latch.C1(Delta=Δ, chi=χ, kappa_1=κ₁, kappa_2=κ₂, '
+        'kappa_3=κ₃, FOCK_DIM=75)')
+    A = CircuitSymbol("A", cdim=2)
+    expr = A << B11
+    assert unicode(expr) == 'A ◁ Latch.B11(theta=π/4)'
+    expr = Feedback(Beamsplitter('BS'), out_port=1, in_port=0)
+    assert unicode(expr) == '[BS(theta=π/4)]₁₋₀'
 
 
 def test_unicode_circuit_operations():
@@ -77,7 +99,7 @@ def test_unicode_circuit_operations():
     assert unicode(A << B << C) == "A_test ◁ B_test ◁ C_test"
     assert unicode(A + B + C) == 'A_test ⊞ B_test ⊞ C_test'
     assert unicode(A << (beta + gamma)) == "A_test ◁ (β ⊞ γ)"
-    assert unicode(A + (B << C)) == "A_test ⊞ B_test ◁ C_test"
+    assert unicode(A + (B << C)) == "A_test ⊞ (B_test ◁ C_test)"
     assert unicode(perm) == "Perm(2, 1, 0, 3)"
     assert (unicode(SeriesProduct(perm, (A+B))) ==
             "Perm(2, 1, 0, 3) ◁ (A_test ⊞ B_test)")

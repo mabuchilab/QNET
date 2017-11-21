@@ -116,11 +116,6 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
     def _all_symbols(self):
         return set(())
 
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_string(self.name)
-
     @abstractmethod
     def _toSLH(self):
         raise NotImplementedError()

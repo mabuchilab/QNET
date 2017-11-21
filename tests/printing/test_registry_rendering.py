@@ -88,31 +88,40 @@ def test_latch_srepr(datadir):
     assert eval(rendered) == expr
 
     expected = (
-        r'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ [(cid(4) ⊞ Perm(0, 4, 1, 2, 3) '
-        r'◁ (Latch.B11)) ◁ Perm(0, 1, 2, 3, 4, 6, 7, 8, 5) ◁ '
-        r'(Perm(0, 1, 2, 3, 4, 7, 5, 6) ◁ (Perm(0, 1, 5, 3, 4, 2) ◁ '
-        r'[(cid(2) ⊞ (Latch.B3) ◁ Perm(0, 2, 1) ◁ (Latch.B12)) ◁ '
-        r'Perm(0, 1, 4, 5, 6, 2, 3) ◁ ((cid(1) ⊞ (cid(1) ⊞ (Latch.Phase3 '
-        r'⊞ Latch.Phase2) ◁ Latch.B22) ◁ Perm(0, 1, 3, 2) ◁ (Latch.C2 ⊞ '
-        r'Latch.W2(α))) ◁ (Latch.B21 ◁ (Latch.Phase1)))]₄₋₀) ◁ (cid(4) ⊞ '
-        r'Perm(0, 2, 3, 1) ◁ (Perm(1, 0, 2) ◁ Latch.C1 ⊞ '
-        r'Latch.W1(α))))]₈₋₄ ◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
+        r'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ '
+        r'[(cid(4) ⊞ (Perm(0, 4, 1, 2, 3) ◁ (Latch.B11(theta=π/4) ⊞ cid(3)))) '
+        r'◁ Perm(0, 1, 2, 3, 4, 6, 7, 8, 5) ◁ ((Perm(0, 1, 2, 3, 4, 7, 5, 6) '
+        r'◁ ((Perm(0, 1, 5, 3, 4, 2) ◁ [(cid(2) ⊞ '
+        r'((Latch.B3(theta=π/4) ⊞ cid(1)) ◁ Perm(0, 2, 1) '
+        r'◁ (Latch.B12(theta=π/4) ⊞ cid(1))) ⊞ cid(2)) '
+        r'◁ Perm(0, 1, 4, 5, 6, 2, 3) ◁ (((cid(1) ⊞ ((cid(1) '
+        r'⊞ ((Latch.Phase3(phi=φ) ⊞ Latch.Phase2(phi=φ)) '
+        r'◁ Latch.B22(theta=π/4)) ⊞ cid(1)) ◁ Perm(0, 1, 3, 2) '
+        r'◁ (Latch.C2(Delta=Δ, chi=χ, kappa_1=κ₁, kappa_2=κ₂, kappa_3=κ₃, '
+        r'FOCK_DIM=75) ⊞ Latch.W2(alpha=α)))) ◁ ((Latch.B21(theta=π/4) '
+        r'◁ (Latch.Phase1(phi=φ) ⊞ cid(1))) ⊞ cid(3))) ⊞ cid(2))]₄₋₀) '
+        r'⊞ cid(2)) ◁ (cid(4) ⊞ (Perm(0, 2, 3, 1) ◁ ((Perm(1, 0, 2) ◁ '
+        r'Latch.C1(Delta=Δ, chi=χ, kappa_1=κ₁, kappa_2=κ₂, kappa_3=κ₃, '
+        r'FOCK_DIM=75)) ⊞ Latch.W1(alpha=α))))) ⊞ cid(1))]₈₋₄ '
+        r'◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
     assert unicode(expr) == expected
     cache = {
         B11: 'B11', B12: 'B12', B21: 'B21', B22: 'B22', B3: 'B3', C1: 'C1',
         C2: 'C2', Phase1: 'Phase1', Phase2: 'Phase2', Phase3: 'Phase3',
         W1: 'W1', W2: 'W2'}
     expected = (
-        r'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ [(cid(4) ⊞ Perm(0, 4, 1, 2, 3) ◁ '
-        r'(B11)) ◁ Perm(0, 1, 2, 3, 4, 6, 7, 8, 5) ◁ '
-        r'(Perm(0, 1, 2, 3, 4, 7, 5, 6) ◁ (Perm(0, 1, 5, 3, 4, 2) ◁ '
-        r'[(cid(2) ⊞ (B3) ◁ Perm(0, 2, 1) ◁ (B12)) ◁ '
-        r'Perm(0, 1, 4, 5, 6, 2, 3) ◁ ((cid(1) ⊞ (cid(1) ⊞ '
-        r'(Phase3 ⊞ Phase2) ◁ B22) ◁ Perm(0, 1, 3, 2) ◁ (C2 ⊞ W2)) ◁ '
-        r'(B21 ◁ (Phase1)))]₄₋₀) ◁ (cid(4) ⊞ Perm(0, 2, 3, 1) ◁ '
-        r'(Perm(1, 0, 2) ◁ C1 ⊞ W1)))]₈₋₄ ◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
+        r'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ [(cid(4) ⊞ (Perm(0, 4, 1, 2, 3) '
+        r'◁ (B11 ⊞ cid(3)))) ◁ Perm(0, 1, 2, 3, 4, 6, 7, 8, 5) '
+        r'◁ ((Perm(0, 1, 2, 3, 4, 7, 5, 6) ◁ ((Perm(0, 1, 5, 3, 4, 2) '
+        r'◁ [(cid(2) ⊞ ((B3 ⊞ cid(1)) ◁ Perm(0, 2, 1) ◁ (B12 ⊞ cid(1))) '
+        r'⊞ cid(2)) ◁ Perm(0, 1, 4, 5, 6, 2, 3) ◁ (((cid(1) ⊞ ((cid(1) '
+        r'⊞ ((Phase3 ⊞ Phase2) ◁ B22) ⊞ cid(1)) ◁ Perm(0, 1, 3, 2) '
+        r'◁ (C2 ⊞ W2))) ◁ ((B21 ◁ (Phase1 ⊞ cid(1))) ⊞ cid(3))) '
+        r'⊞ cid(2))]₄₋₀) ⊞ cid(2)) ◁ (cid(4) ⊞ (Perm(0, 2, 3, 1) '
+        r'◁ ((Perm(1, 0, 2) ◁ C1) ⊞ W1)))) ⊞ cid(1))]₈₋₄ '
+        r'◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')
     assert unicode(expr, cache=cache) == expected
-    cache[expr.operands[1]] = 'main_term'
+    cache = {expr.operands[1]: 'main_term'}
     expected = (
         'Perm(1, 2, 3, 4, 5, 6, 7, 0) ◁ main_term '
         '◁ Perm(7, 0, 6, 3, 1, 2, 4, 5)')

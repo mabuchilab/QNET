@@ -21,7 +21,10 @@ from sympy import symbols, sqrt, exp, I, Rational
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-        Feedback, SeriesInverse)
+        Feedback, SeriesInverse, cid)
+from qnet.circuit_components.beamsplitter_cc import Beamsplitter
+from qnet.circuit_components.three_port_kerr_cavity_cc import (
+        ThreePortKerrCavity)
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
@@ -46,6 +49,7 @@ def test_tex_render_string():
     assert printer._render_str('A') == r'A'
     assert printer._render_str('longword') == r'\text{longword}'
     assert printer._render_str('alpha') == r'\alpha'
+    assert latex('alpha') == r'\alpha'
     assert printer._render_str('Alpha') == r'A'
     assert printer._render_str('Beta') == r'B'
     assert printer._render_str('Gamma') == r'\Gamma'
@@ -89,7 +93,25 @@ def test_tex_circuit_elements():
     assert latex(CircuitSymbol("Xi_2", 2)) == r'\Xi_{2}'
     assert latex(CircuitSymbol("Xi_full", 2)) == r'\Xi_{\text{full}}'
     assert latex(CIdentity) == r'{\rm cid}(1)'
+    assert latex(cid(4)) == r'{\rm cid}(4)'
     assert latex(CircuitZero) == r'{\rm cid}(0)'
+
+
+def test_tex_circuit_components():
+    """Test ascii-printing of some of the circuit components"""
+    B11 = Beamsplitter('Latch.B11')
+    assert latex(B11) == r'\text{Latch.B11}\left(\frac{\pi}{4}\right)'
+    C1 = ThreePortKerrCavity('Latch.C1')
+    assert (
+        latex(C1) == r'\text{Latch.C1}\left(\Delta, \chi, \kappa_{1}, '
+        r'\kappa_{2}, \kappa_{3}, 75\right)')
+    A = CircuitSymbol("A", cdim=2)
+    expr = A << B11
+    assert latex(expr) == r'A \lhd \text{Latch.B11}\left(\frac{\pi}{4}\right)'
+    expr = Feedback(Beamsplitter('BS'), out_port=1, in_port=0)
+    assert (
+        latex(expr) == r'\left\lfloor{\text{BS}'
+        r'\left(\frac{\pi}{4}\right)}\right\rfloor_{1\rightarrow{}0}')
 
 
 def test_tex_circuit_operations():
@@ -109,7 +131,8 @@ def test_tex_circuit_operations():
     assert (latex(A << (beta + gamma)) ==
             r'A_{\text{test}} \lhd \left(\beta \boxplus \gamma\right)')
     assert (latex(A + (B << C)) ==
-            r'A_{\text{test}} \boxplus B_{\text{test}} \lhd C_{\text{test}}')
+            r'A_{\text{test}} \boxplus '
+            r'\left(B_{\text{test}} \lhd C_{\text{test}}\right)')
     assert (latex(perm) ==
             r'\mathbf{P}_{\sigma}\begin{pmatrix} 0 & 1 & 2 & 3 \\ '
             r'2 & 1 & 0 & 3 \end{pmatrix}')

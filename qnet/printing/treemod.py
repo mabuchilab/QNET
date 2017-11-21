@@ -20,6 +20,7 @@
 from ._render_head_repr import render_head_repr
 from .unicodemod import unicode as unicode_printer
 from .asciimod import ascii as ascii_printer
+from .sreprmod import srepr
 
 all = ['tree', 'tree_str']
 
@@ -48,7 +49,7 @@ def _shorten_render_ascii():
 
 def tree(expr, attr='operands', padding='',
          exclude_type=None, depth=None, unicode=True,
-         _last=False, _root=True, _level=0, _print=True):
+         srepr_leaves=False, _last=False, _root=True, _level=0, _print=True):
     """Print a tree representation of the structure of `expr`
 
     Args:
@@ -61,6 +62,8 @@ def tree(expr, attr='operands', padding='',
         unicode (bool): If True, use unicode line-drawing symbols for the tree,
             and print expressions in a unicode representation.
             If False, use an ASCII approximation.
+        srepr_leaves (bool): Whether or not to render leaves with `srepr`,
+            instead of `ascii`/`unicode`
 
     See also:
         :func:`tree_str` return the result as a string, instead of printing it
@@ -99,17 +102,25 @@ def tree(expr, attr='operands', padding='',
                 lines += tree(
                     child, attr, padding + ' ',
                     exclude_type=exclude_type, depth=depth, unicode=unicode,
-                    _last=True, _root=False, _level=_level+1)
+                    srepr_leaves=srepr_leaves, _last=True, _root=False,
+                    _level=_level+1)
             else:
                 lines += tree(
                     child, attr, padding + draw['line'],
                     exclude_type=exclude_type, depth=depth, unicode=unicode,
-                    _last=False, _root=False, _level=_level+1)
+                    srepr_leaves=srepr_leaves, _last=False, _root=False,
+                    _level=_level+1)
         else:
             if count == len(children)-1:
-                lines.append(padding + draw['leaf'] + to_str(child))
+                if srepr_leaves:
+                    lines.append(padding + draw['leaf'] + srepr(child))
+                else:
+                    lines.append(padding + draw['leaf'] + to_str(child))
             else:
-                lines.append(padding + draw['branch'] + to_str(child))
+                if srepr_leaves:
+                    lines.append(padding + draw['branch'] + srepr(child))
+                else:
+                    lines.append(padding + draw['branch'] + to_str(child))
     if _root:
         if _print:
             print("\n".join(lines))
