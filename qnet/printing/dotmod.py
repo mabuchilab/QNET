@@ -22,10 +22,12 @@ This module provides the :func:`dot` function that generates a `DOT`_
 diagram for a given expression. For example::
 
     >>> from qnet.algebra.operator_algebra import OperatorSymbol, Adjoint
+    >>> from qnet.printing import configure_printing
     >>> A = OperatorSymbol("A", hs=1)
     >>> B = OperatorSymbol("B", hs=1)
     >>> expr = 2 * (A + B)
-    >>> dot = dotprint(expr)
+    >>> with configure_printing(str_format='unicode'):
+    ...     dot = dotprint(expr)
     >>> dot.strip() == r'''
     ... digraph{
     ...

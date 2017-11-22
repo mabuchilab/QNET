@@ -353,11 +353,11 @@ def render_latex_sub_super(
     superscripts::
 
     >>> render_latex_sub_super(name='alpha', subs=['mu', 'nu'], supers=[2])
-    '\alpha_{\mu,\nu}^2'
+    '\\alpha_{\\mu,\\nu}^{2}'
 
     >>> render_latex_sub_super(
     ...     name='alpha', subs=['1', '2'], supers=['(1)'], sep='')
-    '\alpha_{12}^{(1)}
+    '\\alpha_{12}^{(1)}'
 
     Args:
         name (str):  the string without the subscript/superscript
@@ -373,8 +373,8 @@ def render_latex_sub_super(
     if supers is None:
         supers = []
     if translate_symbols:
-        supers = [_translate_symbols(sup) for sup in supers]
-        subs = [_translate_symbols(sub) for sub in subs]
+        supers = [_translate_symbols(str(sup)) for sup in supers]
+        subs = [_translate_symbols(str(sub)) for sub in subs]
         name = _translate_symbols(name)
     res = name
     sub = sep.join(subs)
