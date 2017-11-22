@@ -237,12 +237,12 @@ class Operator(metaclass=ABCMeta):
 
             >>> hs = LocalSpace(1, basis=('g', 'e'))
             >>> op = LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs)
-            >>> print(ascii(op))
+            >>> print(ascii(op, local_sigma_as_ketbra=False))
             sigma_e,g^(1) + sigma_g,e^(1)
             >>> print(ascii(op.expand_in_basis()))
-            |e><g|_(1) + |g><e|_(1)
+            |e><g|^(1) + |g><e|^(1)
             >>> print(ascii(op.expand_in_basis(hermitian=True)))
-            |g><e|_(1) + c.c.
+            |g><e|^(1) + c.c.
         """
         from qnet.algebra.state_algebra import KetBra  # avoid circ. import
         if basis_states is None:

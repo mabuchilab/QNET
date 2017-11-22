@@ -658,6 +658,7 @@ def match_replace(cls, ops, kwargs):
 
     Check rule application::
 
+        >>> from qnet.printing import srepr
         >>> print(srepr(Invert.create("hallo")))  # matches no rule
         Invert('hallo')
         >>> Invert.create(Invert("hallo"))        # matches first rule

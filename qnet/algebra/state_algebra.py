@@ -326,7 +326,7 @@ class BasisKet(LocalKet):
             >>> BasisKet('g', hs=hs) == BasisKet(0, hs=hs)
             True
             >>> print(ascii(BasisKet(0, hs=hs)))
-            |g>_(tls)
+            |g>^(tls)
     """
     def __init__(self, label_or_index, *, hs):
         if isinstance(hs, (str, int)):
@@ -380,15 +380,15 @@ class BasisKet(LocalKet):
 
             >>> hs =  LocalSpace('tls', basis=('g', 'e'))
             >>> ascii(BasisKet('g', hs=hs).next())
-            '|e>_(tls)'
+            '|e>^(tls)'
             >>> ascii(BasisKet(0, hs=hs).next())
-            '|e>_(tls)'
+            '|e>^(tls)'
 
         We can also go multiple steps:
 
             >>> hs =  LocalSpace('ten', dimension=10)
             >>> ascii(BasisKet(0, hs=hs).next(2))
-            '|2>_(ten)'
+            '|2>^(ten)'
 
         An increment that leads out of the Hilbert space returns zero::
 
@@ -407,7 +407,7 @@ class BasisKet(LocalKet):
 
         >>> hs =  LocalSpace('3l', basis=('g', 'e', 'r'))
         >>> ascii(BasisKet('r', hs=hs).prev(2))
-        '|g>_(3l)'
+        '|g>^(3l)'
         >>> BasisKet('r', hs=hs).prev(3)
         ZeroKet
         """
