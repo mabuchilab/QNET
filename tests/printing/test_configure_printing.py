@@ -78,6 +78,10 @@ def test_custom_options():
     ket = CoherentStateKet(symbols('alpha'), hs=1)
 
     assert ascii(A) == r'A^(1)'
+    assert ascii(A, show_hilbert_space=False) == 'A'
+    with pytest.raises(TypeError) as exc_info:
+        ascii(A, some_bogus_option=False)
+    assert "Unknown setting" in str(exc_info.value)
     assert ascii(sig) == r'|0><1|^(1)'
     assert ascii(ket) == r'|alpha=alpha>^(1)'
     assert unicode(A) == r'Â⁽¹⁾'
