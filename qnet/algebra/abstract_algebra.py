@@ -35,6 +35,7 @@ from collections import OrderedDict
 import logging
 
 from sympy import Basic as SympyBasic
+from sympy.core.sympify import SympifyError
 
 from .pattern_matching import (
     ProtoExpr, match_pattern, wc, pattern_head, Pattern, pattern)
@@ -331,7 +332,15 @@ class Expression(metaclass=ABCMeta):
         # This method will be replaced by init_printing()
         from qnet.printing import init_printing
         init_printing()
-        return self._repr_latex(self)
+        return self._repr_latex_(self)
+
+    def _sympy_(self):
+        # By default, when a QNET expression occurring in a SymPy context (e.g.
+        # when converting a QNET Matrix to a Sympy Matrix), sympify will try to
+        # parse the string representation of the Expression. This will usually
+        # fail, but when it doesn't, it always produces nonsense. Thus, we make
+        # it fail explicitly
+        raise SympifyError("QNET expressions cannot be converted to SymPy")
 
     def all_symbols(self):
         """Set of all_symbols contained within the expression."""
