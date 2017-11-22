@@ -23,9 +23,8 @@ from sympy.printing.precedence import precedence, PRECEDENCE
 from sympy.printing.str import StrPrinter
 from sympy.printing.latex import LatexPrinter
 from sympy.printing.pretty.pretty_symbology import pretty_symbol
-from sympy.printing.pretty.stringpict import prettyForm
 
-from ._unicode_mappings import superscript_mapping
+from ._unicode_mappings import _SUPERSCRIPT_MAPPING
 
 
 def derationalize_denom(expr):
@@ -253,7 +252,7 @@ class SympyUnicodePrinter(StrPrinter):
             if e.startswith('(Rational'):
                 return '%s**%s' % (self.parenthesize(expr.base, PREC), e[1:-1])
         try:
-            e_super = ''.join([superscript_mapping[l] for l in e])
+            e_super = ''.join([_SUPERSCRIPT_MAPPING[l] for l in e])
             return '%s%s' % (self.parenthesize(expr.base, PREC), e_super)
         except KeyError:
             return '%s**%s' % (self.parenthesize(expr.base, PREC), e)
@@ -263,7 +262,7 @@ class SympyUnicodePrinter(StrPrinter):
         b = str(self.parenthesize(expr.base, PREC))
         e = str(self.parenthesize(expr.exp, PREC))
         try:
-            e_super = ''.join([superscript_mapping[l] for l in e])
+            e_super = ''.join([_SUPERSCRIPT_MAPPING[l] for l in e])
             return '%s%s' % (b, e_super)
         except KeyError:
             return '%s**%s' % (b, e)
