@@ -73,13 +73,11 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
     printmethod = '_unicode'
 
     _default_settings = {
-        'show_hilbert_space': True,  # alternatively: False, 'subscript'
-        'local_sigma_as_ketbra': True,
+        'show_hs_label': True,  # alternatively: False, 'subscript'
+        'sig_as_ketbra': True,
         'unicode_sub_super': True,
-        'operator_hats': True,
+        'unicode_op_hats': True,
     }
-    # TODO: allow to drop '*' from products
-
     _dagger_sym = '†'
     _tensor_sym = '⊗'
     _circuit_series_sym = '◁'
@@ -122,8 +120,8 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
                     '⟨{label_i}|{label_j}⟩', sub='({space})'),
                 False:  sub_sup_fmt('⟨{label_i}|{label_j}⟩')},
         }
-        hs_setting = bool(self._settings['show_hilbert_space'])
-        if self._settings['show_hilbert_space'] == 'subscript':
+        hs_setting = bool(self._settings['show_hs_label'])
+        if self._settings['show_hs_label'] == 'subscript':
             hs_setting = 'subscript'
         return mapping[expr_type][hs_setting]
 
@@ -142,11 +140,11 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
             superop (bool): Whether the operator is a super-operator
         """
         hs_label = None
-        if hs is not None and self._settings['show_hilbert_space']:
+        if hs is not None and self._settings['show_hs_label']:
             hs_label = self._render_hs_label(hs)
         name, total_subscript, total_superscript, args_str \
             = self._split_op(identifier, hs_label, dagger, args)
-        if self._settings['operator_hats'] and len(name) == 1:
+        if self._settings['unicode_op_hats'] and len(name) == 1:
             if superop:
                 res = name
             else:

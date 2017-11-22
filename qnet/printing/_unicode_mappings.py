@@ -140,8 +140,12 @@ def _unicode_sub_super(string, mapping, max_len=None):
     """Try to render a subscript or superscript string in unicode, fall back on
     ascii if this is not possible"""
     string = str(string)
+    if string.startswith('(') and string.endswith(')'):
+        len_string = len(string) - 2
+    else:
+        len_string = len(string)
     if max_len is not None:
-        if len(string) > max_len:
+        if len_string > max_len:
             raise KeyError("max_len exceeded")
     unicode_letters = []
     for letter in string:

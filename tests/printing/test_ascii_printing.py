@@ -144,8 +144,8 @@ def test_ascii_operator_elements():
     hs2 = LocalSpace('q2', dimension=2)
     assert ascii(OperatorSymbol("A", hs=hs1)) == 'A^(q1)'
     A_1 = OperatorSymbol("A_1", hs=1)
-    assert ascii(A_1, show_hilbert_space='subscript') == 'A_1,(1)'
-    assert ascii(OperatorSymbol("A", hs=hs1), show_hilbert_space=False) == 'A'
+    assert ascii(A_1, show_hs_label='subscript') == 'A_1,(1)'
+    assert ascii(OperatorSymbol("A", hs=hs1), show_hs_label=False) == 'A'
     assert ascii(OperatorSymbol("A_1", hs=hs1*hs2)) == 'A_1^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_2", hs=('q1', 'q2'))) == 'Xi_2^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_full", hs=1)) == 'Xi_full^(1)'
@@ -154,8 +154,8 @@ def test_ascii_operator_elements():
     assert ascii(IdentityOperator) == "1"
     assert ascii(ZeroOperator) == "0"
     assert ascii(Create(hs=1)) == "a^(1)H"
-    assert ascii(Create(hs=1), show_hilbert_space=False) == "a^H"
-    assert ascii(Create(hs=1), show_hilbert_space='subscript') == "a_(1)^H"
+    assert ascii(Create(hs=1), show_hs_label=False) == "a^H"
+    assert ascii(Create(hs=1), show_hs_label='subscript') == "a_(1)^H"
     assert ascii(Create(hs=1, identifier='b')) == "b^(1)H"
     assert ascii(Destroy(hs=1)) == "a^(1)"
     assert ascii(Destroy(hs=1, identifier='b')) == "b^(1)"
@@ -170,9 +170,9 @@ def test_ascii_operator_elements():
     hs_tls = LocalSpace('1', basis=('g', 'e'))
     sig_e_g = LocalSigma('e', 'g', hs=hs_tls)
     assert ascii(sig_e_g) == '|e><g|^(1)'
-    assert ascii(sig_e_g, local_sigma_as_ketbra=False) == 'sigma_e,g^(1)'
+    assert ascii(sig_e_g, sig_as_ketbra=False) == 'sigma_e,g^(1)'
     sig_e_e = LocalProjector('e', hs=hs_tls)
-    assert ascii(sig_e_e, local_sigma_as_ketbra=False) == 'Pi_e^(1)'
+    assert ascii(sig_e_e, sig_as_ketbra=False) == 'Pi_e^(1)'
 
 
 def test_ascii_operator_operations():
@@ -193,7 +193,7 @@ def test_ascii_operator_operations():
         ascii((A + B) * (-2 * B - D)) ==
         '(A^(q_1) + B^(q_1)) * (-2 * B^(q_1) - D^(q_1))')
     assert ascii(OperatorTimes(A, -B)) == 'A^(q_1) * (-B^(q_1))'
-    assert ascii(OperatorTimes(A, -B), show_hilbert_space=False) == 'A * (-B)'
+    assert ascii(OperatorTimes(A, -B), show_hs_label=False) == 'A * (-B)'
     assert ascii(2 * A) == '2 * A^(q_1)'
     assert ascii(2j * A) == '2j * A^(q_1)'
     assert ascii((1+2j) * A) == '(1+2j) * A^(q_1)'
@@ -201,11 +201,11 @@ def test_ascii_operator_operations():
     assert ascii(-gamma**2/2 * A) == '-gamma**2/2 * A^(q_1)'
     assert ascii(tr(A * C, over_space=hs2)) == 'tr_(q_2)[C^(q_2)] * A^(q_1)'
     expr = A + OperatorPlusMinusCC(B * D)
-    assert ascii(expr, show_hilbert_space=False) == 'A + (B * D + c.c.)'
+    assert ascii(expr, show_hs_label=False) == 'A + (B * D + c.c.)'
     expr = A + OperatorPlusMinusCC(B + D)
-    assert ascii(expr, show_hilbert_space=False) == 'A + (B + D + c.c.)'
+    assert ascii(expr, show_hs_label=False) == 'A + (B + D + c.c.)'
     expr = A * OperatorPlusMinusCC(B * D)
-    assert ascii(expr, show_hilbert_space=False) == 'A * (B * D + c.c.)'
+    assert ascii(expr, show_hs_label=False) == 'A * (B * D + c.c.)'
     assert ascii(Adjoint(A)) == 'A^(q_1)H'
     assert ascii(Adjoint(Create(hs=1))) == 'a^(1)'
     assert ascii(Adjoint(A + B)) == '(A^(q_1) + B^(q_1))^H'
@@ -225,8 +225,8 @@ def test_ascii_ket_elements():
     assert ascii(KetSymbol('Psi', hs=hs1)) == '|Psi>^(q1)'
     psi = KetSymbol('Psi', hs=1)
     assert ascii(psi) == '|Psi>^(1)'
-    assert ascii(psi, show_hilbert_space='subscript') == '|Psi>_(1)'
-    assert ascii(psi, show_hilbert_space=False) == '|Psi>'
+    assert ascii(psi, show_hs_label='subscript') == '|Psi>_(1)'
+    assert ascii(psi, show_hs_label=False) == '|Psi>'
     assert ascii(KetSymbol('Psi', hs=(1, 2))) == '|Psi>^(1*2)'
     assert ascii(KetSymbol('Psi', hs=hs1*hs2)) == '|Psi>^(q1*q2)'
     with pytest.raises(ValueError):
@@ -252,8 +252,8 @@ def test_ascii_bra_elements():
     bra = Bra(KetSymbol('Psi', hs=1))
     assert ascii(Bra(KetSymbol('Psi', hs=hs1))) == '<Psi|^(q1)'
     assert ascii(bra) == '<Psi|^(1)'
-    assert ascii(bra, show_hilbert_space=False) == '<Psi|'
-    assert ascii(bra, show_hilbert_space='subscript') == '<Psi|_(1)'
+    assert ascii(bra, show_hs_label=False) == '<Psi|'
+    assert ascii(bra, show_hs_label='subscript') == '<Psi|_(1)'
     assert ascii(Bra(KetSymbol('Psi', hs=(1, 2)))) == '<Psi|^(1*2)'
     assert ascii(Bra(KetSymbol('Psi', hs=hs1*hs2))) == '<Psi|^(q1*q2)'
     assert ascii(LocalKet('Psi', hs=1).dag) == '<Psi|^(1)'

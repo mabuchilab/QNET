@@ -67,10 +67,8 @@ class QnetBasePrinter(SympyPrinter):
 
     sympy_printer_cls = SympyStrPrinter
 
-    _default_settings = {
-        'show_hilbert_space': True,  # alternatively: False, 'subscript'
-        'local_sigma_as_ketbra': True,
-    }
+    _default_settings = {}
+    # note that subclasses should always define their own _default_settings
 
     _allow_caching = True
 

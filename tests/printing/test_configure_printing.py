@@ -74,11 +74,12 @@ def test_no_cached_rendering():
 def test_custom_options():
     """Test the implicit_tensor printing options"""
     A = OperatorSymbol('A', hs=1)
+    CNOT = OperatorSymbol('CNOT', hs=1)
     sig = LocalSigma(0, 1, hs=1)
     ket = CoherentStateKet(symbols('alpha'), hs=1)
 
     assert ascii(A) == r'A^(1)'
-    assert ascii(A, show_hilbert_space=False) == 'A'
+    assert ascii(A, show_hs_label=False) == 'A'
     with pytest.raises(TypeError) as exc_info:
         ascii(A, some_bogus_option=False)
     assert "Unknown setting" in str(exc_info.value)
@@ -94,11 +95,11 @@ def test_custom_options():
     assert latex(ket) == r'\left\lvert \alpha=\alpha \right\rangle^{(1)}'
 
     with configure_printing(
-            operator_hats=False, operator_macro=r'\Op{{{name}}}'):
+            unicode_op_hats=False, tex_op_macro=r'\Op{{{name}}}'):
         assert unicode(A) == r'A⁽¹⁾'
         assert latex(A) == r'\Op{A}^{(1)}'
 
-    with configure_printing(show_hilbert_space=False):
+    with configure_printing(show_hs_label=False):
         assert ascii(A) == r'A'
         assert ascii(sig) == r'|0><1|'
         assert ascii(ket) == r'|alpha=alpha>'
@@ -106,24 +107,28 @@ def test_custom_options():
         assert unicode(sig) == r'|0⟩⟨1|'
         assert unicode(ket) == r'|α=α⟩'
         assert latex(A) == r'\hat{A}'
-        assert latex(A, show_hilbert_space=True) == r'\hat{A}^{(1)}'
+        assert latex(A, show_hs_label=True) == r'\hat{A}^{(1)}'
         assert latex(A) == r'\hat{A}'
         assert (
             latex(sig) ==
             r'\left\lvert 0 \middle\rangle\!\middle\langle 1 \right\rvert')
         assert latex(ket) == r'\left\lvert \alpha=\alpha \right\rangle'
 
-    init_printing(show_hilbert_space=False)
+    assert latex(CNOT) == r'\text{CNOT}^{(1)}'
+    with configure_printing(tex_textop_macro=r'\Op{{{name}}}'):
+        assert latex(CNOT) == r'\Op{CNOT}^{(1)}'
+
+    init_printing(show_hs_label=False)
     assert unicode(A) == r'Â'
     assert latex(A) == r'\hat{A}'
     with configure_printing(
-            operator_hats=False, operator_macro=r'\Op{{{name}}}'):
+            unicode_op_hats=False, tex_op_macro=r'\Op{{{name}}}'):
         assert unicode(A) == r'A'
         assert latex(A) == r'\Op{A}'
-        with configure_printing(operator_macro=r'\op{{{name}}}'):
+        with configure_printing(tex_op_macro=r'\op{{{name}}}'):
             assert unicode(A) == r'A'
             assert latex(A) == r'\op{A}'
-            with configure_printing(braket=True):
+            with configure_printing(tex_use_braket=True):
                 assert latex(sig) == r'\Ket{0}\!\Bra{1}'
     assert unicode(A) == r'Â'
     assert latex(A) == r'\hat{A}'

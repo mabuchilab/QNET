@@ -37,14 +37,14 @@ class QnetLatexPrinter(QnetAsciiPrinter):
     printmethod = '_latex'
 
     _default_settings = {
-        'show_hilbert_space': True,  # alternatively: False, 'subscript'
-        'local_sigma_as_ketbra': True,
-        'operator_macro': r'\hat{{{name}}}',
-        'long_operator_macro': r'\text{{{name}}}',
-        'super_operator_macro': r'\mathrm{{{name}}}',
-        'long_super_operator_macro': r'\mathrm{{{name}}}',
-        'identity_sym': r'\mathbb{1}',
-        'braket': False,  # use the braket package?
+        'show_hs_label': True,  # alternatively: False, 'subscript'
+        'sig_as_ketbra': True,
+        'tex_op_macro': r'\hat{{{name}}}',
+        'tex_textop_macro': r'\text{{{name}}}',
+        'tex_sop_macro': r'\mathrm{{{name}}}',
+        'tex_textsop_macro': r'\mathrm{{{name}}}',
+        'tex_identity_sym': r'\mathbb{1}',
+        'tex_use_braket': False,  # use the braket package?
     }
 
     _parenth_left = r'\left('
@@ -138,10 +138,10 @@ class QnetLatexPrinter(QnetAsciiPrinter):
                         r'\left\langle {label_i} \middle\vert '
                         r'{label_j} \right\rangle'}}
             }
-        hs_setting = bool(self._settings['show_hilbert_space'])
-        if self._settings['show_hilbert_space'] == 'subscript':
+        hs_setting = bool(self._settings['show_hs_label'])
+        if self._settings['show_hs_label'] == 'subscript':
             hs_setting = 'subscript'
-        return mapping[self._settings['braket']][expr_type][hs_setting]
+        return mapping[self._settings['tex_use_braket']][expr_type][hs_setting]
 
     def _render_op(
             self, identifier, hs=None, dagger=False, args=None, superop=False):
@@ -158,7 +158,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             superop (bool): Whether the operator is a super-operator
         """
         hs_label = None
-        if hs is not None and self._settings['show_hilbert_space']:
+        if hs is not None and self._settings['show_hs_label']:
             hs_label = self._render_hs_label(hs)
         name, total_subscript, total_superscript, args_str \
             = self._split_op(identifier, hs_label, dagger, args)
@@ -166,14 +166,14 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             name = name[6:-1]
         if len(name) == 1 or name in _tex_single_letter_symbols:
             if superop:
-                name_fmt = self._settings['super_operator_macro']
+                name_fmt = self._settings['tex_sop_macro']
             else:
-                name_fmt = self._settings['operator_macro']
+                name_fmt = self._settings['tex_op_macro']
         else:
             if superop:
-                name_fmt = self._settings['long_super_operator_macro']
+                name_fmt = self._settings['tex_textsop_macro']
             else:
-                name_fmt = self._settings['long_operator_macro']
+                name_fmt = self._settings['tex_textop_macro']
         res = name_fmt.format(name=name)
         res = render_latex_sub_super(
             res, [total_subscript], [total_superscript],
@@ -234,7 +234,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             label=self._render_hs_label(expr))
 
     def _print_IdentityOperator(self, expr):
-        return self._settings['identity_sym']
+        return self._settings['tex_identity_sym']
 
     def _print_ZeroOperator(self, expr):
         return r'\mathbb{0}'
@@ -243,16 +243,16 @@ class QnetLatexPrinter(QnetAsciiPrinter):
         return r'\mathbb{0}'
 
     def _print_IdentitySuperOperator(self, expr):
-        return self._settings['identity_sym']
+        return self._settings['tex_identity_sym']
 
     def _print_SPre(self, expr, superop=True):
-        name = self._settings['long_super_operator_macro'].format(name='SPre')
+        name = self._settings['tex_textsop_macro'].format(name='SPre')
         return (
             name + self._parenth_left + self.doprint(expr.operands[0]) +
             self._parenth_right)
 
     def _print_SPost(self, expr, superop=True):
-        name = self._settings['long_super_operator_macro'].format(name='SPost')
+        name = self._settings['tex_textsop_macro'].format(name='SPost')
         return (
             name + self._parenth_left + self.doprint(expr.operands[0]) +
             self._parenth_right)

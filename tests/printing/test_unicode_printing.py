@@ -153,9 +153,12 @@ def test_unicode_operator_elements():
     hs2 = LocalSpace('q2', dimension=2)
     assert unicode(OperatorSymbol("A", hs=hs1)) == 'A\u0302^(q\u2081)'
     #                                               Â^(q₁)
+    assert(
+        unicode(OperatorSymbol('A', hs=1), show_hs_label='subscript') ==
+        'A\u0302\u208d\u2081\u208e')  # Â₍₁₎
     assert unicode(
         OperatorSymbol("A", hs=hs1),
-        operator_hats=False, unicode_sub_super=False) == 'A^(q_1)'
+        unicode_op_hats=False, unicode_sub_super=False) == 'A^(q_1)'
     assert (unicode(OperatorSymbol("A_1", hs=hs1*hs2)) ==
             'A\u0302_1^(q\u2081\u2297q\u2082)')  # Â_1^(q₁⊗q₂)
     assert (unicode(OperatorSymbol("Xi_2", hs=('q1', 'q2'))) ==
@@ -167,10 +170,10 @@ def test_unicode_operator_elements():
     assert (
         unicode(Destroy(hs=1), unicode_sub_super=False) == 'a\u0302^(1)')
     assert (
-        unicode(Destroy(hs=1), operator_hats=False) == 'a\u207d\xb9\u207e')
+        unicode(Destroy(hs=1), unicode_op_hats=False) == 'a\u207d\xb9\u207e')
     assert (
         unicode(
-            Destroy(hs=1), operator_hats=False, unicode_sub_super=False) ==
+            Destroy(hs=1), unicode_op_hats=False, unicode_sub_super=False) ==
         'a^(1)')
     assert (unicode(Squeeze(Rational(1, 2), hs=1)) ==
             'Squeeze\u207d\xb9\u207e(1/2)')
@@ -179,14 +182,14 @@ def test_unicode_operator_elements():
     sig_e_g = LocalSigma('e', 'g', hs=hs_tls)
     assert unicode(sig_e_g) == '|e⟩⟨g|⁽¹⁾'
     assert unicode(sig_e_g, unicode_sub_super=False) == '|e⟩⟨g|^(1)'
-    assert unicode(sig_e_g, show_hilbert_space=False) == '|e⟩⟨g|'
+    assert unicode(sig_e_g, show_hs_label=False) == '|e⟩⟨g|'
     assert (
-        unicode(sig_e_g, local_sigma_as_ketbra=False) ==
+        unicode(sig_e_g, sig_as_ketbra=False) ==
         '\u03c3\u0302_e,g^(1)')  # σ̂_e,g^(1)
     sig_e_e = LocalSigma('e', 'e', hs=hs_tls)
     assert unicode(sig_e_e) == '|e⟩⟨e|⁽¹⁾'
     assert (
-        unicode(sig_e_e, local_sigma_as_ketbra=False) ==
+        unicode(sig_e_e, sig_as_ketbra=False) ==
         '\u03a0\u0302\u2091\u207d\xb9\u207e')  # Π̂ₑ⁽¹⁾
 
 
@@ -310,7 +313,7 @@ def test_unicode_ket_operations():
     assert (unicode(KetBra.create(bell1, bell2)) ==
             r'1/2 * (|e,g⟩^(q₁⊗q₂) - ⅈ * |g,e⟩^(q₁⊗q₂))(⟨e,e|^(q₁⊗q₂) - '
             r'⟨g,g|^(q₁⊗q₂))')
-    assert (unicode(KetBra.create(bell1, bell2), show_hilbert_space=False) ==
+    assert (unicode(KetBra.create(bell1, bell2), show_hs_label=False) ==
             r'1/2 * (|e,g⟩ - ⅈ * |g,e⟩)(⟨e,e| - ⟨g,g|)')
 
 

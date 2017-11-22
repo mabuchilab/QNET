@@ -38,6 +38,11 @@ class QnetAsciiPrinter(QnetBasePrinter):
     sympy_printer_cls = SympyStrPrinter
     printmethod = '_ascii'
 
+    _default_settings = {
+        'show_hs_label': True,  # alternatively: False, 'subscript'
+        'sig_as_ketbra': True,
+    }
+
     _parenth_left = '('
     _parenth_right = ')'
     _dagger_sym = 'H'
@@ -88,7 +93,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         name, total_subscript = self._split_identifier(identifier)
         total_superscript = ''
         if (hs_label not in [None, '']):
-            if self._settings['show_hilbert_space'] == 'subscript':
+            if self._settings['show_hs_label'] == 'subscript':
                 if len(total_subscript) == 0:
                     total_subscript = '(' + hs_label + ')'
                 else:
@@ -133,8 +138,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 'subscript': '<{label_i}|{label_j}>_({space})',
                 False:  '<{label_i}|{label_j}>'},
         }
-        hs_setting = bool(self._settings['show_hilbert_space'])
-        if self._settings['show_hilbert_space'] == 'subscript':
+        hs_setting = bool(self._settings['show_hs_label'])
+        if self._settings['show_hs_label'] == 'subscript':
             hs_setting = 'subscript'
         return mapping[expr_type][hs_setting]
 
@@ -153,7 +158,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
             superop (bool): Whether the operator is a super-operator
         """
         hs_label = None
-        if hs is not None and self._settings['show_hilbert_space']:
+        if hs is not None and self._settings['show_hs_label']:
             hs_label = self._render_hs_label(hs)
         name, total_subscript, total_superscript, args_str \
             = self._split_op(identifier, hs_label, dagger, args)
@@ -265,7 +270,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
             expr._identifier, expr._hs, dagger=dagger, args=expr.args)
 
     def _print_LocalSigma(self, expr, adjoint=False):
-        if self._settings['local_sigma_as_ketbra']:
+        if self._settings['sig_as_ketbra']:
             fmt = self._braket_fmt('ketbra')
             if adjoint:
                 return fmt.format(
@@ -630,5 +635,5 @@ class QnetAsciiDefaultPrinter(QnetAsciiPrinter):
     def __init__(self):
         super().__init__(cache=None, settings=None)
         self._settings = {
-            'show_hilbert_space': True,
-            'local_sigma_as_ketbra': True}
+            'show_hs_label': True,
+            'sig_as_ketbra': True}

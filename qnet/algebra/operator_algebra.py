@@ -237,7 +237,7 @@ class Operator(metaclass=ABCMeta):
 
             >>> hs = LocalSpace(1, basis=('g', 'e'))
             >>> op = LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs)
-            >>> print(ascii(op, local_sigma_as_ketbra=False))
+            >>> print(ascii(op, sig_as_ketbra=False))
             sigma_e,g^(1) + sigma_g,e^(1)
             >>> print(ascii(op.expand_in_basis()))
             |e><g|^(1) + |g><e|^(1)

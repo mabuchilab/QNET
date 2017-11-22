@@ -201,6 +201,7 @@ def test_tex_operator_elements():
     assert (latex(OperatorSymbol("Xi_full", hs=1)) ==
             r'\hat{\Xi}_{\text{full}}^{(1)}')
     assert latex(IdentityOperator) == r'\mathbb{1}'
+    assert latex(IdentityOperator, tex_identity_sym='I') == 'I'
     assert latex(ZeroOperator) == r'\mathbb{0}'
     assert latex(Create(hs=1)) == r'\hat{a}^{(1)\dagger}'
     assert latex(Create(hs=1, identifier=r'b')) == r'\hat{b}^{(1)\dagger}'
@@ -225,7 +226,7 @@ def test_tex_operator_elements():
     hs_tls = LocalSpace('1', basis=('g', 'e'))
     sig_e_g = LocalSigma('e', 'g', hs=hs_tls)
     assert (
-        latex(sig_e_g, local_sigma_as_ketbra=False) ==
+        latex(sig_e_g, sig_as_ketbra=False) ==
         r'\hat{\sigma}_{e,g}^{(1)}')
     assert (
         latex(sig_e_g) ==
@@ -233,7 +234,7 @@ def test_tex_operator_elements():
     hs_tls = LocalSpace('1', basis=('excited', 'ground'))
     sig_excited_ground = LocalSigma('excited', 'ground', hs=hs_tls)
     assert (
-        latex(sig_excited_ground, local_sigma_as_ketbra=False) ==
+        latex(sig_excited_ground, sig_as_ketbra=False) ==
         r'\hat{\sigma}_{\text{excited},\text{ground}}^{(1)}')
     assert (
         latex(sig_excited_ground) ==
@@ -248,12 +249,12 @@ def test_tex_operator_elements():
     hs_tls = LocalSpace('1', basis=('excited', 'ground'))
     sig_excited_excited = LocalSigma('excited', 'excited', hs=hs_tls)
     assert (
-        latex(sig_excited_excited, local_sigma_as_ketbra=False) ==
+        latex(sig_excited_excited, sig_as_ketbra=False) ==
         r'\hat{\Pi}_{\text{excited}}^{(1)}')
     hs_tls = LocalSpace('1', basis=('g', 'e'))
     sig_e_e = LocalSigma('e', 'e', hs=hs_tls)
     assert (
-        latex(sig_e_e, local_sigma_as_ketbra=False) == r'\hat{\Pi}_{e}^{(1)}')
+        latex(sig_e_e, sig_as_ketbra=False) == r'\hat{\Pi}_{e}^{(1)}')
 
 
 def test_tex_operator_operations():
@@ -311,11 +312,11 @@ def test_tex_ket_elements():
     hs2 = LocalSpace('q2', basis=('g', 'e'))
     psi = KetSymbol('Psi', hs=hs1)
     assert (latex(psi) == r'\left\lvert \Psi \right\rangle^{(q_{1})}')
-    assert (latex(psi, braket=True) == r'\Ket{\Psi}^{(q_{1})}')
+    assert (latex(psi, tex_use_braket=True) == r'\Ket{\Psi}^{(q_{1})}')
     assert (
-        latex(psi, braket=True, show_hilbert_space='subscript') ==
+        latex(psi, tex_use_braket=True, show_hs_label='subscript') ==
         r'\Ket{\Psi}_{(q_{1})}')
-    assert (latex(psi, braket=True, show_hilbert_space=False) == r'\Ket{\Psi}')
+    assert (latex(psi, tex_use_braket=True, show_hs_label=False) == r'\Ket{\Psi}')
     assert (latex(KetSymbol('Psi', hs=1)) ==
             r'\left\lvert \Psi \right\rangle^{(1)}')
     assert (latex(KetSymbol('Psi', hs=(1, 2))) ==
@@ -343,11 +344,11 @@ def test_tex_bra_elements():
     hs2 = LocalSpace('q2', basis=('g', 'e'))
     bra = Bra(KetSymbol('Psi', hs=hs1))
     assert (latex(bra) == r'\left\langle \Psi \right\rvert^{(q_{1})}')
-    assert (latex(bra, braket=True) == r'\Bra{\Psi}^{(q_{1})}')
+    assert (latex(bra, tex_use_braket=True) == r'\Bra{\Psi}^{(q_{1})}')
     assert (
-        latex(bra, braket=True, show_hilbert_space='subscript') ==
+        latex(bra, tex_use_braket=True, show_hs_label='subscript') ==
         r'\Bra{\Psi}_{(q_{1})}')
-    assert (latex(bra, braket=True, show_hilbert_space=False) == r'\Bra{\Psi}')
+    assert (latex(bra, tex_use_braket=True, show_hs_label=False) == r'\Bra{\Psi}')
     assert (latex(Bra(KetSymbol('Psi', hs=1))) ==
             r'\left\langle \Psi \right\rvert^{(1)}')
     assert (latex(Bra(KetSymbol('Psi', hs=(1, 2)))) ==
@@ -408,10 +409,10 @@ def test_tex_ket_operations():
         r'\hat{A}_{0}^{(q_{1})} \left\lvert \Psi_{1} \right\rangle^{(q_{1})}')
     braket = BraKet(psi1, psi2)
     assert (
-        latex(braket, show_hilbert_space='subscript') ==
+        latex(braket, show_hs_label='subscript') ==
         r'\left\langle \Psi_{1} \middle\vert \Psi_{2} \right\rangle_{(q_{1})}')
     assert (
-        latex(braket, show_hilbert_space=False) ==
+        latex(braket, show_hs_label=False) ==
         r'\left\langle \Psi_{1} \middle\vert \Psi_{2} \right\rangle')
     assert latex(ket_e1.dag * ket_e1) == r'1'
     assert latex(ket_g1.dag * ket_e1) == r'0'
@@ -421,11 +422,11 @@ def test_tex_ket_operations():
         r'\left\lvert \Psi_{1} \middle\rangle\!'
         r'\middle\langle \Psi_{2} \right\rvert^{(q_{1})}')
     assert (
-        latex(ketbra, show_hilbert_space='subscript') ==
+        latex(ketbra, show_hs_label='subscript') ==
         r'\left\lvert \Psi_{1} \middle\rangle\!'
         r'\middle\langle \Psi_{2} \right\rvert_{(q_{1})}')
     assert (
-        latex(ketbra, show_hilbert_space=False) ==
+        latex(ketbra, show_hs_label=False) ==
         r'\left\lvert \Psi_{1} \middle\rangle\!'
         r'\middle\langle \Psi_{2} \right\rvert')
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
@@ -441,7 +442,7 @@ def test_tex_ket_operations():
         r'\otimes q_{2})} - \left\lvert g,g \right\rangle'
         r'^{(q_{1} \otimes q_{2})}\right)')
     assert (
-        latex(bell2, show_hilbert_space=False) ==
+        latex(bell2, show_hs_label=False) ==
         r'\frac{1}{\sqrt{2}} \left(\left\lvert e,e \right\rangle - '
         r'\left\lvert g,g \right\rangle\right)')
     assert BraKet.create(bell1, bell2).expand() == 0
@@ -483,7 +484,7 @@ def test_tex_bra_operations():
         r'\left\langle \Psi_{1} \right\rvert^{(q_{1})} + '
         r'\left\langle \Psi_{2} \right\rvert^{(q_{1})}')
     assert (
-        latex((psi1 + psi2).dag, braket=True) ==
+        latex((psi1 + psi2).dag, tex_use_braket=True) ==
         r'\Bra{\Psi_{1}}^{(q_{1})} + \Bra{\Psi_{2}}^{(q_{1})}')
     assert (
         latex(bra_psi1 + bra_psi2) ==
@@ -499,7 +500,7 @@ def test_tex_bra_operations():
         r'\left\langle \Psi_{1} \right\rvert^{(q_{1})} \otimes '
         r'\left\langle \Phi \right\rvert^{(q_{2})}')
     assert (
-        latex(bra_psi1 * bra_phi, braket=True) ==
+        latex(bra_psi1 * bra_phi, tex_use_braket=True) ==
         r'\Bra{\Psi_{1}}^{(q_{1})} \otimes \Bra{\Phi}^{(q_{2})}')
     assert (
         latex(bra_psi1_l * bra_phi_l) ==

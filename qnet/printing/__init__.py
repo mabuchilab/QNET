@@ -39,7 +39,7 @@ import qnet.printing.tree
 import qnet.printing.dot
 
 __all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'latex',
-           'srepr']
+           'tex', 'srepr']
 
 
 def _printer_cls(label, class_address, require_base=QnetBasePrinter):
@@ -64,7 +64,7 @@ def init_printing(reset=False, **kwargs):
 
     This determines the behavior of the :func:`ascii`, :func:`unicode`,
     and :func:`latex` functions, as well as the ``__str__`` and ``__repr__`` of
-    any QNET Expression.
+    any :class:`~qnet.algebra.abstract_algebra.Expression`.
 
     The routine may be called in one of two forms. First,
 
@@ -82,13 +82,37 @@ def init_printing(reset=False, **kwargs):
     provides a simplified, "manual" setup with the parameters below.
 
     Args:
-        str_format (str): Format for ``_str_``
-        repr_format (str): Format for ``__repr``
-        caching (bool): Whether to allow caching
-        settings: Any setting understood
+        str_format (str): Format for ``__str__`` representation of an
+            :class:`~qnet.algebra.abstract_algebra.Expression`. One of 'ascii',
+            'unicode', 'latex', 'srepr', 'tree'. The string
+            representation will be affected by the settings for the
+            corresponding print routine, e.g. :func:`unicode` for
+            ``str_format='unicode'``
+        repr_format (str): Like `str_format`, but for ``__repr__``. This is
+            what gets displayed in an interactive (I)Python session.
+        caching (bool): By default, the printing functions  (:func:`ascii`,
+            :func:`unicode`, :func:`latex`) cache their result for any
+            expression and sub-expression. This is both for efficiency and to
+            give the ability to to supply custom strings for subexpression by
+            passing a `cache` parameter to the printing functions. Initializing
+            the printing system with ``caching=False`` disables this
+            possibility.
+        settings: Any setting understood by any of the printing routines.
 
-    Generally, this function should be called only once at the beginning of a
-    script or notebook.
+    If `str_format` or `repr_format` are not given, they will be set of
+    'unicode' if the current terminal is known to support an UTF8 (accordig to
+    ``sys.stdout.encoding``), and 'ascii' otherwise.
+
+    Generally, :func:`init_printing` should be called only once at the
+    beginning of a script or notebook. If it is called multiple times, any
+    settings accumulate. To avoid this and to reset the printing system to the
+    defaults, you may pass ``reset=True``.  In a Jupyter notebook, expressions
+    are rendered in LaTeX, using the settings as they affect the :func:`latex`
+    printer.
+
+    See also:
+        :func:`configure_printing` allows to temporarily change the printing
+        system from what was configured in :func:`init_printing`.
     """
     if reset:
         SympyPrinter._global_settings = {}
@@ -111,6 +135,8 @@ def _init_printing(
         latex_printer='qnet.printing._latex.QnetLatexPrinter',
         latex_sympy_printer='qnet.printing.sympy.SympyLatexPrinter',
         _freeze=False, **settings):
+    # Note: the *_printer args are undocumented, it's preferable to use them
+    # through an INI file only
     logger = logging.getLogger(__name__)
     freeze = defaultdict(dict)
     freeze[SympyPrinter]['_global_settings'] \
@@ -192,8 +218,9 @@ def _init_printing(
 
 @contextmanager
 def configure_printing(**kwargs):
-    """context manager for temporarily changing the printing paremters. This
-    takes the same values as `init_printing`"""
+    """Context manager for temporarily changing the printing system.
+
+    This takes the same parameters as :func:`init_printing`"""
     freeze = init_printing(_freeze=True, **kwargs)
     yield
     for obj, attr_map in freeze.items():
@@ -202,8 +229,39 @@ def configure_printing(**kwargs):
 
 
 def ascii(expr, cache=None, **settings):
-    """Return an ascii textual representation of the given object /
-    expression"""
+    """Return an ASCII representation of the given object / expression
+
+    Args:
+        expr: Expression to print
+        cache (dict or None): dictionary to use for caching
+        show_hs_label (bool or str): Whether to a label for the Hilbert space
+            of `expr`. By default (``show_hs_label=True``), the label is shown
+            as a superscript. It can be shown as a subscript with
+            ``show_hs_label='subscript'`` or suppressed entirely
+            (``show_hs_label=False``)
+        sig_as_ketbra (bool): Whether to render instances of
+            :class:`~qnet.algebra.operator_algebra.LocalSigma` as a ket-bra
+            (default), or as an operator symbol
+
+    Examples:
+        >>> from qnet.algebra import OperatorSymbol, LocalSigma
+        >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
+        >>> ascii(A + B)
+        'A^(1) + B^(1)'
+        >>> ascii(A + B, cache={A: 'A', B: 'B'})
+        'A + B'
+        >>> ascii(A + B, show_hs_label='subscript')
+        'A_(1) + B_(1)'
+        >>> ascii(A + B, show_hs_label=False)
+        'A + B'
+        >>> ascii(LocalSigma(0, 1, hs=1))
+        '|0><1|^(1)'
+        >>> ascii(LocalSigma(0, 1, hs=1), sig_as_ketbra=False)
+        'sigma_0,1^(1)'
+
+    Note that the accepted parameters and their default values may be changed
+    through :func:`init_printing` or :func:`configure_printing`
+    """
     try:
         if cache is None and len(settings) == 0:
             return ascii.printer.doprint(expr)
@@ -218,8 +276,47 @@ def ascii(expr, cache=None, **settings):
 
 
 def unicode(expr, cache=None, **settings):
-    """Return a unicode textual representation of the given object /
-    expression"""
+    """Return a unicode representation of the given object / expression
+
+    Args:
+        expr: Expression to print
+        cache (dict or None): dictionary to use for caching
+        show_hs_label (bool or str): Whether to a label for the Hilbert space
+            of `expr`. By default (``show_hs_label=True``), the label is shown
+            as a superscript. It can be shown as a subscript with
+            ``show_hs_label='subscript'`` or suppressed entirely
+            (``show_hs_label=False``)
+        sig_as_ketbra (bool): Whether to render instances of
+            :class:`~qnet.algebra.operator_algebra.LocalSigma` as a ket-bra
+            (default), or as an operator symbol
+        unicode_sub_super (bool): Whether to try to use unicode symbols for
+            sub- or superscripts if possible
+        unicode_op_hats (bool): Whether to draw unicode hats on single-letter
+            operator symbols
+
+    Examples:
+        >>> from qnet.algebra import OperatorSymbol, LocalSigma
+        >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
+        >>> unicode(A + B)
+        'Â⁽¹⁾ + B̂⁽¹⁾'
+        >>> unicode(A + B, cache={A: 'A', B: 'B'})
+        'A + B'
+        >>> unicode(A + B, show_hs_label='subscript')
+        'Â₍₁₎ + B̂₍₁₎'
+        >>> unicode(A + B, show_hs_label=False)
+        'Â + B̂'
+        >>> unicode(LocalSigma(0, 1, hs=1))
+        '|0⟩⟨1|⁽¹⁾'
+        >>> unicode(LocalSigma(0, 1, hs=1), sig_as_ketbra=False)
+        'σ̂_0,1^(1)'
+        >>> unicode(A + B, unicode_sub_super=False)
+        'Â^(1) + B̂^(1)'
+        >>> unicode(A + B, unicode_op_hats=False)
+        'A⁽¹⁾ + B⁽¹⁾'
+
+    Note that the accepted parameters and their default values may be changed
+    through :func:`init_printing` or :func:`configure_printing`
+    """
     try:
         if cache is None and len(settings) == 0:
             return unicode.printer.doprint(expr)
@@ -234,8 +331,77 @@ def unicode(expr, cache=None, **settings):
 
 
 def latex(expr, cache=None, **settings):
-    """Return a LaTeX textual representation of the given object /
-    expression"""
+    r"""Return a LaTeX representation of the given object / expression
+
+    Args:
+        expr: Expression to print
+        cache (dict or None): dictionary to use for caching
+        show_hs_label (bool or str): Whether to a label for the Hilbert space
+            of `expr`. By default (``show_hs_label=True``), the label is shown
+            as a superscript. It can be shown as a subscript with
+            ``show_hs_label='subscript'`` or suppressed entirely
+            (``show_hs_label=False``)
+        tex_op_macro (str): macro to use for formatting operator symbols.
+            Must accept 'name' as a format key.
+        tex_textop_macro (str): macro to use for formatting multi-letter
+            operator names.
+        tex_sop_macro (str): macro to use for formattign super-operator symbols
+        tex_textsop_macro (str): macro to use for formatting multi-letter
+            super-operator names
+        tex_identity_sym (str): macro for the identity symbol
+        tex_use_braket (bool): If True, use macros from the
+            `braket package
+            <https://ctan.org/tex-archive/macros/latex/contrib/braket>`_. Note
+            that this will not automatically render in IPython Notebooks, but
+            it is recommended when generating latex for a document.
+
+
+    Examples:
+        >>> from qnet.algebra import OperatorSymbol, LocalSigma
+        >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
+        >>> latex(A + B)
+        '\\hat{A}^{(1)} + \\hat{B}^{(1)}'
+        >>> latex(A + B, cache={A: 'A', B: 'B'})
+        'A + B'
+        >>> latex(A + B, show_hs_label='subscript')
+        '\\hat{A}_{(1)} + \\hat{B}_{(1)}'
+        >>> latex(A + B, show_hs_label=False)
+        '\\hat{A} + \\hat{B}'
+        >>> latex(LocalSigma(0, 1, hs=1))
+        '\\left\\lvert 0 \\middle\\rangle\\!\\middle\\langle 1 \\right\\rvert^{(1)}'
+        >>> latex(LocalSigma(0, 1, hs=1), sig_as_ketbra=False)
+        '\\hat{\\sigma}_{0,1}^{(1)}'
+        >>> latex(A + B, tex_op_macro=r'\Op{{{name}}}')
+        '\\Op{A}^{(1)} + \\Op{B}^{(1)}'
+        >>> CNOT = OperatorSymbol('CNOT', hs=1)
+        >>> latex(CNOT)
+        '\\text{CNOT}^{(1)}'
+        >>> latex(CNOT, tex_textop_macro=r'\Op{{{name}}}')
+        '\\Op{CNOT}^{(1)}'
+
+        >>> from qnet.algebra import SuperOperatorSymbol
+        >>> A = SuperOperatorSymbol('A', hs=1)
+        >>> latex(A)
+        '\\mathrm{A}^{(1)}'
+        >>> latex(A, tex_sop_macro=r'\SOp{{{name}}}')
+        '\\SOp{A}^{(1)}'
+        >>> Lindbladian = SuperOperatorSymbol('Lindbladian', hs=1)
+        >>> latex(Lindbladian)
+        '\\mathrm{Lindbladian}^{(1)}'
+        >>> latex(Lindbladian, tex_textsop_macro=r'\SOp{{{name}}}')
+        '\\SOp{Lindbladian}^{(1)}'
+
+        >>> from qnet.algebra import IdentityOperator
+        >>> latex(IdentityOperator)
+        '\\mathbb{1}'
+        >>> latex(IdentityOperator, tex_identity_sym=r'\identity')
+        '\\identity'
+        >>> latex(LocalSigma(0, 1, hs=1), tex_use_braket=True)
+        '\\Ket{0}\\!\\Bra{1}^{(1)}'
+
+    Note that the accepted parameters and their default values may be changed
+    through :func:`init_printing` or :func:`configure_printing`
+    """
     try:
         if cache is None and len(settings) == 0:
             return latex.printer.doprint(expr)
@@ -249,19 +415,52 @@ def latex(expr, cache=None, **settings):
         return latex(expr, cache, **settings)
 
 
+def tex(expr, cache=None, **settings):
+    """Alias for :func:`latex`"""
+    return latex(expr, cache, **settings)
+
+
 def srepr(expr, indented=False, cache=None):
     """Render the given expression into a string that can be evaluated in an
     appropriate context to re-instantiate an identical expression. If
     `indented` is False (default), the resulting string is a single line.
     Otherwise, the result is a multiline string, and each positional and
     keyword argument of each `Expression` is on a separate line, recursively
-    indented to produce a tree-like output.
+    indented to produce a tree-like output. The `cache` may be used to generate
+    more readable expressions.
+
+    Example:
+        >>> from qnet.algebra import OperatorSymbol, OperatorPlus, LocalSpace
+        >>> hs = LocalSpace('1')
+        >>> A = OperatorSymbol('A', hs=hs); B = OperatorSymbol('B', hs=hs)
+        >>> expr = A + B
+        >>> srepr(expr)
+        "OperatorPlus(OperatorSymbol('A', hs=LocalSpace('1')), OperatorSymbol('B', hs=LocalSpace('1')))"
+        >>> eval(srepr(expr)) == expr
+        True
+        >>> srepr(expr, cache={hs:'hs'})
+        "OperatorPlus(OperatorSymbol('A', hs=hs), OperatorSymbol('B', hs=hs))"
+        >>> eval(srepr(expr, cache={hs:'hs'})) == expr
+        True
+        >>> print(srepr(expr, indented=True))
+        OperatorPlus(
+            OperatorSymbol(
+                'A',
+                hs=LocalSpace(
+                    '1')),
+            OperatorSymbol(
+                'B',
+                hs=LocalSpace(
+                    '1')))
+        >>> eval(srepr(expr, indented=True)) == expr
+        True
 
     See also:
-        `qnet.printing.tree_str` produces an output similar to `srepr` with
-        ``indented=True``. Unlike `srepr`, however, `tree_str` uses line
-        drawings for the tree, shows arguments directly on the same line as the
-        expression they belong to, and cannot be evaluated.
+        :func:`qnet.printing.tree.tree_str` produces an output similar to
+        `srepr` with ``indented=True``. Unlike `srepr`, however, `tree_str`
+        uses line drawings for the tree, shows arguments directly on the same
+        line as the expression they belong to (rendered as strings), and cannot
+        be evaluated.
     """
     if indented:
         printer = IndentedSReprPrinter(cache=cache)
