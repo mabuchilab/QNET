@@ -26,9 +26,9 @@ from sympy.printing.conventions import split_super_sub
 from numpy import complex128
 
 from ..algebra.singleton import Singleton
-from .asciimod import QnetAsciiPrinter
+from ._ascii import QnetAsciiPrinter
+from ._precedence import precedence
 from .sympy import SympyLatexPrinter
-from .precedence import precedence
 
 
 class QnetLatexPrinter(QnetAsciiPrinter):
@@ -285,22 +285,6 @@ class QnetLatexPrinter(QnetAsciiPrinter):
         return (
             matrix_left_sym + matrix_row_sep_sym.join(row_strs) +
             matrix_right_sym)
-
-
-def latex(expr, cache=None, **settings):
-    """Return a LaTeX textual representation of the given object /
-    expression"""
-    try:
-        if cache is None and len(settings) == 0:
-            return latex.printer.doprint(expr)
-        else:
-            printer = latex._printer_cls(cache, settings)
-            return printer.doprint(expr)
-    except AttributeError:
-        # init_printing was not called. Setting up defaults
-        latex._printer_cls = QnetLatexPrinter
-        latex.printer = latex._printer_cls()
-        return latex(expr, cache, **settings)
 
 
 _tex_greek_dictionary = {

@@ -28,16 +28,18 @@ from pydoc import locate
 from sympy.printing.printer import Printer as SympyPrinter
 
 from .base import QnetBasePrinter
-from .asciimod import ascii
-from .unicodemod import unicode
-from .latexmod import latex
-from .sreprmod import srepr
-from .treemod import tree, tree_str as _tree_str
-from .dotmod import dotprint
+from ._ascii import QnetAsciiPrinter
+from ._unicode import QnetUnicodePrinter
+from ._latex import QnetLatexPrinter
+from ._srepr import QnetSReprPrinter, IndentedSReprPrinter
+from .tree import tree_str as _tree_str
 
+# import submodules for quick interactive access
+import qnet.printing.tree
+import qnet.printing.dot
 
 __all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'latex',
-           'srepr', 'tree', 'dotprint']
+           'srepr']
 
 
 def _printer_cls(label, class_address, require_base=QnetBasePrinter):
@@ -57,20 +59,37 @@ def _printer_cls(label, class_address, require_base=QnetBasePrinter):
         return cls
 
 
-# Map acceptable values for `str_format` and `repr`_format in
-# `init_printing` to a print function
-PRINT_FUNC = {
-    'ascii': ascii,
-    'unicode': unicode,
-    'latex': latex,
-    'tex': latex,
-    'srepr': srepr,
-    'tree': _tree_str,   # init_printing will modify this for unicode support
-}
-
-
 def init_printing(reset=False, **kwargs):
-    """Initialize printing"""
+    """Initialize the printing system.
+
+    This determines the behavior of the :func:`ascii`, :func:`unicode`,
+    and :func:`latex` functions, as well as the ``__str__`` and ``__repr__`` of
+    any QNET Expression.
+
+    The routine may be called in one of two forms. First,
+
+    ::
+
+        init_printing(inifile=<path_to_file>)
+
+    Second,
+
+    ::
+
+        init_printing(str_format=<str_fmt>, repr_format=<repr_fmt>,
+                      caching=<use_caching>, **settings)
+
+    provides a simplified, "manual" setup with the parameters below.
+
+    Args:
+        str_format (str): Format for ``_str_``
+        repr_format (str): Format for ``__repr``
+        caching (bool): Whether to allow caching
+        settings: Any setting understood
+
+    Generally, this function should be called only once at the beginning of a
+    script or notebook.
+    """
     if reset:
         SympyPrinter._global_settings = {}
     if 'inifile' in kwargs:
@@ -85,11 +104,11 @@ def init_printing(reset=False, **kwargs):
 
 def _init_printing(
         str_format=None, repr_format=None, caching=True,
-        ascii_printer='qnet.printing.asciimod.QnetAsciiPrinter',
+        ascii_printer='qnet.printing._ascii.QnetAsciiPrinter',
         ascii_sympy_printer='qnet.printing.sympy.SympyStrPrinter',
-        unicode_printer='qnet.printing.unicodemod.QnetUnicodePrinter',
+        unicode_printer='qnet.printing._unicode.QnetUnicodePrinter',
         unicode_sympy_printer='qnet.printing.sympy.SympyUnicodePrinter',
-        latex_printer='qnet.printing.latexmod.QnetLatexPrinter',
+        latex_printer='qnet.printing._latex.QnetLatexPrinter',
         latex_sympy_printer='qnet.printing.sympy.SympyLatexPrinter',
         _freeze=False, **settings):
     logger = logging.getLogger(__name__)
@@ -117,7 +136,7 @@ def _init_printing(
 
     for name in print_cls_map.keys():
 
-        print_func = PRINT_FUNC[name]
+        print_func = _PRINT_FUNC[name]
         qnet_printer_address, sympy_printer_address = print_cls_map[name]
 
         if hasattr(print_func, '_printer_cls'):
@@ -143,23 +162,23 @@ def _init_printing(
         has_unicode = False
     logger.debug(
         "Terminal supports unicode: %s (autodetect)", has_unicode)
-    PRINT_FUNC['tree'] = partial(_tree_str, unicode=has_unicode)
+    _PRINT_FUNC['tree'] = partial(_tree_str, unicode=has_unicode)
     if str_format is None:
         str_format = 'unicode' if has_unicode else 'ascii'
         logger.debug("Setting __str__ format to %s", str_format)
     try:
-        str_func = PRINT_FUNC[str_format]
+        str_func = _PRINT_FUNC[str_format]
     except KeyError:
         raise ValueError(
-            "str_format must be one of %s" % ", ".join(PRINT_FUNC.keys()))
+            "str_format must be one of %s" % ", ".join(_PRINT_FUNC.keys()))
     if repr_format is None:
         repr_format = 'unicode' if has_unicode else 'ascii'
         logger.debug("Setting __repr__ format to %s" % repr_format)
     try:
-        repr_func = PRINT_FUNC[repr_format]
+        repr_func = _PRINT_FUNC[repr_format]
     except KeyError:
         raise ValueError(
-            "repr_format must be one of %s" % ", ".join(PRINT_FUNC.keys()))
+            "repr_format must be one of %s" % ", ".join(_PRINT_FUNC.keys()))
     from qnet.algebra.abstract_algebra import Expression
     freeze[Expression]['__str__'] = Expression.__str__
     freeze[Expression]['__repr__'] = Expression.__repr__
@@ -180,3 +199,84 @@ def configure_printing(**kwargs):
     for obj, attr_map in freeze.items():
         for attr, val in attr_map.items():
             setattr(obj, attr, val)
+
+
+def ascii(expr, cache=None, **settings):
+    """Return an ascii textual representation of the given object /
+    expression"""
+    try:
+        if cache is None and len(settings) == 0:
+            return ascii.printer.doprint(expr)
+        else:
+            printer = ascii._printer_cls(cache, settings)
+            return printer.doprint(expr)
+    except AttributeError:
+        # init_printing was not called. Setting up defaults
+        ascii._printer_cls = QnetAsciiPrinter
+        ascii.printer = ascii._printer_cls()
+        return ascii(expr, cache, **settings)
+
+
+def unicode(expr, cache=None, **settings):
+    """Return a unicode textual representation of the given object /
+    expression"""
+    try:
+        if cache is None and len(settings) == 0:
+            return unicode.printer.doprint(expr)
+        else:
+            printer = unicode._printer_cls(cache, settings)
+            return printer.doprint(expr)
+    except AttributeError:
+        # init_printing was not called. Setting up defaults
+        unicode._printer_cls = QnetUnicodePrinter
+        unicode.printer = unicode._printer_cls()
+        return unicode(expr, cache, **settings)
+
+
+def latex(expr, cache=None, **settings):
+    """Return a LaTeX textual representation of the given object /
+    expression"""
+    try:
+        if cache is None and len(settings) == 0:
+            return latex.printer.doprint(expr)
+        else:
+            printer = latex._printer_cls(cache, settings)
+            return printer.doprint(expr)
+    except AttributeError:
+        # init_printing was not called. Setting up defaults
+        latex._printer_cls = QnetLatexPrinter
+        latex.printer = latex._printer_cls()
+        return latex(expr, cache, **settings)
+
+
+def srepr(expr, indented=False, cache=None):
+    """Render the given expression into a string that can be evaluated in an
+    appropriate context to re-instantiate an identical expression. If
+    `indented` is False (default), the resulting string is a single line.
+    Otherwise, the result is a multiline string, and each positional and
+    keyword argument of each `Expression` is on a separate line, recursively
+    indented to produce a tree-like output.
+
+    See also:
+        `qnet.printing.tree_str` produces an output similar to `srepr` with
+        ``indented=True``. Unlike `srepr`, however, `tree_str` uses line
+        drawings for the tree, shows arguments directly on the same line as the
+        expression they belong to, and cannot be evaluated.
+    """
+    if indented:
+        printer = IndentedSReprPrinter(cache=cache)
+    else:
+        printer = QnetSReprPrinter(cache=cache)
+    return printer.doprint(expr)
+
+
+# Map acceptable values for `str_format` and `repr`_format in
+# `init_printing` to a print function
+_PRINT_FUNC = {
+    'ascii': ascii,
+    'unicode': unicode,
+    'latex': latex,
+    'tex': latex,
+    'srepr': srepr,
+    'tree': _tree_str,   # init_printing will modify this for unicode support
+}

@@ -38,9 +38,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.printing.treemod import tree_str
-
-import pytest
+from qnet.printing.tree import tree_str
 
 
 def test_circuit_tree():

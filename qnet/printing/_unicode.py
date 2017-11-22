@@ -19,7 +19,7 @@
 from sympy.printing.pretty.pretty_symbology import modifier_dict
 from sympy.printing.conventions import split_super_sub
 
-from .asciimod import QnetAsciiPrinter
+from ._ascii import QnetAsciiPrinter
 from .sympy import SympyUnicodePrinter
 from ._unicode_mappings import render_unicode_sub_super
 
@@ -183,19 +183,3 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
 
     def _print_IdentitySuperOperator(self, expr):
         return "𝟙"
-
-
-def unicode(expr, cache=None, **settings):
-    """Return a unicode textual representation of the given object /
-    expression"""
-    try:
-        if cache is None and len(settings) == 0:
-            return unicode.printer.doprint(expr)
-        else:
-            printer = unicode._printer_cls(cache, settings)
-            return printer.doprint(expr)
-    except AttributeError:
-        # init_printing was not called. Setting up defaults
-        unicode._printer_cls = QnetUnicodePrinter
-        unicode.printer = unicode._printer_cls()
-        return unicode(expr, cache, **settings)

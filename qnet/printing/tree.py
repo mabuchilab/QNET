@@ -18,9 +18,6 @@
 ###########################################################################
 """Tree printer for Expressions"""
 from ._render_head_repr import render_head_repr
-from .unicodemod import unicode as unicode_printer
-from .asciimod import ascii as ascii_printer
-from .sreprmod import srepr
 
 all = ['tree', 'tree_str']
 
@@ -40,10 +37,12 @@ def _shorten_render(renderer, max_len):
 
 
 def _shorten_render_unicode():
+    from qnet.printing import unicode as unicode_printer
     return _shorten_render(unicode_printer, 15)
 
 
 def _shorten_render_ascii():
+    from qnet.printing import ascii as ascii_printer
     return _shorten_render(ascii_printer, 15)
 
 
@@ -68,7 +67,7 @@ def tree(expr, attr='operands', padding='',
     See also:
         :func:`tree_str` return the result as a string, instead of printing it
     """
-    global _SUB_RENDER
+    from qnet.printing import srepr
     lines = []
     if unicode:
         draw = {'leaf': '└─ ', 'branch': '├─ ', 'line': '│'}

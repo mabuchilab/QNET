@@ -20,7 +20,7 @@
 from ..algebra.singleton import Singleton
 from .base import QnetBasePrinter
 from .sympy import SympyStrPrinter
-from .precedence import precedence, PRECEDENCE
+from ._precedence import precedence, PRECEDENCE
 
 
 class QnetAsciiPrinter(QnetBasePrinter):
@@ -632,19 +632,3 @@ class QnetAsciiDefaultPrinter(QnetAsciiPrinter):
         self._settings = {
             'show_hilbert_space': True,
             'local_sigma_as_ketbra': True}
-
-
-def ascii(expr, cache=None, **settings):
-    """Return an ascii textual representation of the given object /
-    expression"""
-    try:
-        if cache is None and len(settings) == 0:
-            return ascii.printer.doprint(expr)
-        else:
-            printer = ascii._printer_cls(cache, settings)
-            return printer.doprint(expr)
-    except AttributeError:
-        # init_printing was not called. Setting up defaults
-        ascii._printer_cls = QnetAsciiPrinter
-        ascii.printer = ascii._printer_cls()
-        return ascii(expr, cache, **settings)

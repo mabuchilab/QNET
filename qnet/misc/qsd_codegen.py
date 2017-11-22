@@ -21,7 +21,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.operator_algebra import (
     scalar_free_symbols, IdentityOperator, Create, Destroy, LocalOperator,
     LocalSigma, ScalarTimesOperator, OperatorPlus, OperatorTimes)
-from qnet.printing.asciimod import QnetAsciiDefaultPrinter
+from qnet.printing._ascii import QnetAsciiDefaultPrinter
 from qnet.misc.trajectory_data import TrajectoryData
 from sympy.printing.ccode import C89CodePrinter as CCodePrinter
 

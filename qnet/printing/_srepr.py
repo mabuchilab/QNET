@@ -134,24 +134,3 @@ class IndentedSReprPrinter(QnetBasePrinter):
             return "\n".join(lines)
         else:
             raise ValueError("Cannot render %s" % expr)
-
-
-def srepr(expr, indented=False, cache=None):
-    """Render the given expression into a string that can be evaluated in an
-    appropriate context to re-instantiate an identical expression. If
-    `indented` is False (default), the resulting string is a single line.
-    Otherwise, the result is a multiline string, and each positional and
-    keyword argument of each `Expression` is on a separate line, recursively
-    indented to produce a tree-like output.
-
-    See also:
-        `qnet.printing.tree_str` produces an output similar to `srepr` with
-        ``indented=True``. Unlike `srepr`, however, `tree_str` uses line
-        drawings for the tree, shows arguments directly on the same line as the
-        expression they belong to, and cannot be evaluated.
-    """
-    if indented:
-        printer = IndentedSReprPrinter(cache=cache)
-    else:
-        printer = QnetSReprPrinter(cache=cache)
-    return printer.doprint(expr)

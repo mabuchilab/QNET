@@ -25,8 +25,8 @@ import pytest
 from qnet.algebra.scalar_types import SCALAR_TYPES
 from qnet.algebra.abstract_algebra import Expression, Operation
 from qnet.algebra.operator_algebra import OperatorSymbol, Adjoint
-from qnet.printing.dotmod import expr_labelfunc
-from qnet.printing import dotprint, ascii, srepr, configure_printing
+from qnet.printing import ascii, srepr, configure_printing
+from qnet.printing.dot import dotprint, expr_labelfunc
 
 
 def compare_line(line1, line2, rx=None, match_keys=None):

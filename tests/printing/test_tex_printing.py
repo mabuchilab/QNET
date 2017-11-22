@@ -39,7 +39,8 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.printing.latexmod import latex, QnetLatexPrinter
+from qnet.printing import latex
+from qnet.printing._latex import QnetLatexPrinter
 
 
 def test_tex_render_string():
