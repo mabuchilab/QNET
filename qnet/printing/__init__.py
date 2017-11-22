@@ -33,13 +33,13 @@ from ._unicode import QnetUnicodePrinter
 from ._latex import QnetLatexPrinter
 from ._srepr import QnetSReprPrinter, IndentedSReprPrinter
 from .tree import tree_str as _tree_str
+from .dot import dotprint
 
 # import submodules for quick interactive access
 import qnet.printing.tree
-import qnet.printing.dot
 
 __all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'latex',
-           'tex', 'srepr']
+           'tex', 'dotprint', 'srepr']
 
 
 def _printer_cls(label, class_address, require_base=QnetBasePrinter):

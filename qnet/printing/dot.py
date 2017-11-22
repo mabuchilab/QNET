@@ -18,7 +18,7 @@
 ###########################################################################
 """`DOT`_ printer for Expressions.
 
-This module provides the :func:`dot` function that generates a `DOT`_
+This module provides the :func:`dotprint` function that generates a `DOT`_
 diagram for a given expression. For example::
 
     >>> from qnet.algebra.operator_algebra import OperatorSymbol, Adjoint
@@ -60,7 +60,7 @@ The ``dot`` commandline program renders the code into an image:
 
 .. figure:: ../_static/dotprint.svg
 
-The various options of :func:`dot` allow for arbitrary customization of
+The various options of :func:`dotprint` allow for arbitrary customization of
 the graph's structural and visual properties.
 
 .. _DOT: http://www.graphviz.org
@@ -114,15 +114,16 @@ def _node_id(expr, location, idfunc, repeat=True):
 
 
 def expr_labelfunc(leaf_renderer=str, fallback=str):
-    """Factory for function ``labelfunc(expr, is_leaf)`` with the following
-    behavior:
+    """Factory for function ``labelfunc(expr, is_leaf)``
+
+    It has the following behavior:
 
     * If ``is_leaf`` is True, return ``leaf_renderer(expr)``.
 
     * Otherwise,
 
       - if `expr` is an Expression, return a custom string similar to
-        :func:`~qnet.printing.srepr.srepr`, but with an ellipsis for ``args``
+        :func:`~qnet.printing.srepr`, but with an ellipsis for ``args``
       - otherwise, return ``fallback(expr)``
     """
 
@@ -152,10 +153,11 @@ def _op_children(expr):
         return []
 
 
-def dotprint(expr, styles=None, maxdepth=None, repeat=True,
+def dotprint(
+        expr, styles=None, maxdepth=None, repeat=True,
         labelfunc=expr_labelfunc(str, str),
         idfunc=None, get_children=_op_children, **kwargs):
-    """`DOT`_ (graph) description of an Expression tree
+    """Return the `DOT`_ (graph) description of an Expression tree as a string
 
     Args:
         expr (object): The expression to render into a graph. Typically an
@@ -212,6 +214,9 @@ def dotprint(expr, styles=None, maxdepth=None, repeat=True,
         example, in order to produce a horizontal instead of vertical graph,
         use ``dotprint(..., rankdir='LR')``.
 
+    See also:
+        :func:`sympy.printing.dot.dotprint` provides an equivalent function for
+        SymPy expressions.
     """
     # the routine is called 'dotprint' to match sympy (even though most of the
     # similar routines for the other printers are called e.g. 'latex', not
