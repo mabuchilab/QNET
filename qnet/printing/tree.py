@@ -19,7 +19,7 @@
 """Tree printer for Expressions"""
 from ._render_head_repr import render_head_repr
 
-all = ['tree', 'tree_str']
+__all__ = ['tree', 'print_tree']
 
 
 def _shorten_render(renderer, max_len):
@@ -46,9 +46,10 @@ def _shorten_render_ascii():
     return _shorten_render(ascii_printer, 15)
 
 
-def tree(expr, attr='operands', padding='',
-         exclude_type=None, depth=None, unicode=True,
-         srepr_leaves=False, _last=False, _root=True, _level=0, _print=True):
+def print_tree(
+        expr, attr='operands', padding='', exclude_type=None, depth=None,
+        unicode=True, srepr_leaves=False, _last=False, _root=True, _level=0,
+        _print=True):
     """Print a tree representation of the structure of `expr`
 
     Args:
@@ -98,13 +99,13 @@ def tree(expr, attr='operands', padding='',
     for count, child in enumerate(children):
         if hasattr(child, attr):
             if count == len(children)-1:
-                lines += tree(
+                lines += print_tree(
                     child, attr, padding + ' ',
                     exclude_type=exclude_type, depth=depth, unicode=unicode,
                     srepr_leaves=srepr_leaves, _last=True, _root=False,
                     _level=_level+1)
             else:
-                lines += tree(
+                lines += print_tree(
                     child, attr, padding + draw['line'],
                     exclude_type=exclude_type, depth=depth, unicode=unicode,
                     srepr_leaves=srepr_leaves, _last=False, _root=False,
@@ -129,7 +130,7 @@ def tree(expr, attr='operands', padding='',
         return lines
 
 
-def tree_str(expr, **kwargs):
+def tree(expr, **kwargs):
     """Give the output of `tree` as a multiline string, using line drawings to
     visualize the hierarchy of expressions (similar to the ``tree`` unix
     command line program for showing directory trees)
@@ -139,4 +140,4 @@ def tree_str(expr, **kwargs):
         tree-like rendering of the given expression that can be re-evaluated to
         the original expression.
     """
-    return "\n".join(tree(expr, _print=False, **kwargs))
+    return "\n".join(print_tree(expr, _print=False, **kwargs))

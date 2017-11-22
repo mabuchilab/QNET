@@ -32,14 +32,11 @@ from ._ascii import QnetAsciiPrinter
 from ._unicode import QnetUnicodePrinter
 from ._latex import QnetLatexPrinter
 from ._srepr import QnetSReprPrinter, IndentedSReprPrinter
-from .tree import tree_str as _tree_str
+from .tree import print_tree, tree as _tree_str
 from .dot import dotprint
 
-# import submodules for quick interactive access
-import qnet.printing.tree
-
 __all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'latex',
-           'tex', 'dotprint', 'srepr']
+           'tex', 'srepr', 'dotprint', 'print_tree']
 
 
 def _printer_cls(label, class_address, require_base=QnetBasePrinter):
@@ -456,11 +453,14 @@ def srepr(expr, indented=False, cache=None):
         True
 
     See also:
-        :func:`qnet.printing.tree.tree_str` produces an output similar to
-        `srepr` with ``indented=True``. Unlike `srepr`, however, `tree_str`
-        uses line drawings for the tree, shows arguments directly on the same
-        line as the expression they belong to (rendered as strings), and cannot
-        be evaluated.
+        :func:`~qnet.printing.tree.print_tree`, respectively
+        :func:`qnet.printing.tree.tree`, produces an output similar to
+        the indented :func:`srepr`, for interactive use. Their result
+        cannot be evaluated and the exact output depends on
+        :func:`init_printing`.
+
+        :func:`~qnet.printing.dot.dotprint` provides a way to graphically
+        explore the tree structure of an expression.
     """
     if indented:
         printer = IndentedSReprPrinter(cache=cache)
