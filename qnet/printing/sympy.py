@@ -269,8 +269,7 @@ class SympyUnicodePrinter(StrPrinter):
             return '%s**%s' % (b, e)
 
     def _print_Symbol(self, e):
-        symb = pretty_symbol(e.name)
-        return prettyForm(symb)
+        return pretty_symbol(e.name)
     _print_RandomSymbol = _print_Symbol
 
     def _print_Identity(self, expr):

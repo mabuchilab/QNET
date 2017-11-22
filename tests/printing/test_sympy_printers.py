@@ -78,6 +78,13 @@ def test_sympy_unicode(expr, expected_str):
     assert out_str == expected_str
 
 
+def test_unicode_parenthization():
+    """Test that parenthesize does not return a prettyForm"""
+    alpha = symbols('alpha')
+    printer = SympyUnicodePrinter()
+    printer.parenthesize(alpha, 0) == 'α'
+
+
 @pytest.mark.parametrize("expr,expected_str", [
     (symbols('alpha'),
         'alpha'),
