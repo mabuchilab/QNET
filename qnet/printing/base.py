@@ -36,10 +36,7 @@ class QnetBasePrinter(SympyPrinter):
             be given during istantiation to use pre-defined strings for
             specific expressions. The cache will be updated as the printer is
             used.
-        settings (dict or None): A dict of settings. All settings that start
-            with the prefix ``sympy_`` are used for the
-            :attr:`sympy_printer_cls` (without the prefix). The remaining
-            settings must have keys that are in :attr:`_default_settings`.
+        settings (dict or None): A dict of settings.
 
     Class Attributes:
         sympy_printer_cls (type): The class that will be instantiated to print
@@ -75,7 +72,7 @@ class QnetBasePrinter(SympyPrinter):
         'local_sigma_as_ketbra': True,
     }
 
-    _allow_caching = True  # DEBUG
+    _allow_caching = True
 
     printmethod = None
 
@@ -87,16 +84,12 @@ class QnetBasePrinter(SympyPrinter):
         if cache is not None:
             self.cache = cache
         sympy_settings = {}
-        qnet_settings = {}
-        # TODO: just pass settings to sympy if they're acceptable
         if settings is not None:
-            for key, val in settings.items():
-                if key.startswith('sympy_'):
-                    sympy_settings[key[6:]] = val
-                else:
-                    qnet_settings[key] = val
+            for key in settings:
+                if key in self.sympy_printer_cls._default_settings:
+                    sympy_settings[key] = settings[key]
         self._sympy_printer = self.sympy_printer_cls(settings=sympy_settings)
-        super().__init__(settings=qnet_settings)
+        super().__init__(settings=settings)
 
     def _render_str(self, string):
         return str(string)
