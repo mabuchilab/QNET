@@ -621,6 +621,19 @@ class QnetAsciiPrinter(QnetBasePrinter):
             matrix_right_sym)
 
 
+class QnetAsciiDefaultPrinter(QnetAsciiPrinter):
+    """Printer for an ASCII representation that accepts no settings. This can
+    be used internally when a well-defined, static representation is needed
+    (e.g. as a sort key)"""
+    _default_settings = {}
+
+    def __init__(self):
+        super().__init__(cache=None, settings=None)
+        self._settings = {
+            'show_hilbert_space': True,
+            'local_sigma_as_ketbra': True}
+
+
 def ascii(expr, cache=None, **settings):
     """Return an ascii textual representation of the given object /
     expression"""

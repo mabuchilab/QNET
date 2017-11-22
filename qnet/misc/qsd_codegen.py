@@ -18,17 +18,12 @@ from qnet.algebra.state_algebra import (
     Ket, LocalKet, BasisKet, CoherentStateKet, TensorKet,
     ScalarTimesKet, KetPlus
 )
-from qnet.algebra.operator_algebra import (scalar_free_symbols,
-        IdentityOperator, Create, Destroy, LocalOperator, Operator, LocalSigma,
-        ScalarTimesOperator, OperatorPlus, OperatorTimes)
+from qnet.algebra.operator_algebra import (
+    scalar_free_symbols, IdentityOperator, Create, Destroy, LocalOperator,
+    LocalSigma, ScalarTimesOperator, OperatorPlus, OperatorTimes)
+from qnet.printing.asciimod import QnetAsciiDefaultPrinter
 from qnet.misc.trajectory_data import TrajectoryData
-import sympy
-from sympy.printing.ccode import CCodePrinter
-try:
-    issubclass(FileNotFoundError, OSError)
-except NameError: # indicates Python 2
-    class FileNotFoundError(OSError):
-        pass
+from sympy.printing.ccode import C89CodePrinter as CCodePrinter
 
 # max unsigned int in C/C++ when compiled the same way as python
 UNSIGNED_MAXINT = 2 ** (struct.Struct('I').size * 8 - 1) - 1
@@ -37,15 +32,17 @@ UNSIGNED_MAXINT = 2 ** (struct.Struct('I').size * 8 - 1) - 1
 class QSDCCodePrinter(CCodePrinter):
     """A printer for converting SymPy expressions to C++ code, while taking
     into account pre-defined variable names for symbols"""
+
     def __init__(self, settings={}):
         self._default_settings['user_symbols'] = {}
         super(QSDCCodePrinter, self).__init__(settings=settings)
         self.known_symbols = dict(settings.get('user_symbols'))
+
     def _print_Symbol(self, expr):
         if expr in self.known_symbols:
             return self.known_symbols[expr]
         else:
-            return super(QSDCCodePrinter,self)._print_Symbol(expr)
+            return super()._print_Symbol(expr)
 
 
 def local_ops(expr):
@@ -99,8 +96,9 @@ class QSDOperator(object):
 
     """
 
-    known_types = ['AnnihilationOperator', 'FieldTransitionOperator',
-                    'IdentityOperator', 'Operator']
+    known_types = [
+        'AnnihilationOperator', 'FieldTransitionOperator', 'IdentityOperator',
+        'Operator']
 
     def __init__(self, qsd_type, name, instantiator):
         self._type = None
@@ -132,9 +130,9 @@ class QSDOperator(object):
 
     @qsd_type.setter
     def qsd_type(self, value):
-        if not value in self.known_types:
-            raise ValueError("Type '%s' must be one of %s"
-                              % (value, self.known_types))
+        if value not in self.known_types:
+            raise ValueError(
+                "Type '%s' must be one of %s" % (value, self.known_types))
         self._type = value
 
     @property
@@ -158,7 +156,8 @@ class QSDOperator(object):
         or a C++ expression (starting with an equal sign) that initializes the
         object
         """
-        return self._instantiator.strip() # strip out leading space for ' = ..'
+        # strip out leading space for ' = ..'
+        return self._instantiator.strip()
 
     @instantiator.setter
     def instantiator(self, value):
@@ -302,8 +301,10 @@ class QSDCodeGen(object):
     }}''').strip()
 
     _max_op_name_length = 16
-    _lib_qsd = 'libqsd.a' # expected name of qsd library
-    _link_qsd = '-lqsd' # compiler option to link qsd
+    _lib_qsd = 'libqsd.a'  # expected name of qsd library
+    _link_qsd = '-lqsd'  # compiler option to link qsd
+
+    _sort_str = QnetAsciiDefaultPrinter().doprint
 
     def __init__(self, circuit, num_vals=None, time_symbol=None):
         self.circuit = circuit.toSLH()
@@ -335,9 +336,8 @@ class QSDCodeGen(object):
 
         self._full_space = self.circuit.space
         self._local_spaces = self._full_space.local_factors
-        self._hilbert_space_index = {space: index
-                                    for (index, space)
-                                    in enumerate(self._local_spaces)}
+        self._hilbert_space_index = {
+            space: index for (index, space) in enumerate(self._local_spaces)}
 
         # Dict name => tuple(qnet.algebra.operator_algebra.Operator, outfile)
         self._observables = OrderedDict()
@@ -361,10 +361,10 @@ class QSDCodeGen(object):
         # remote) compilation. These are stored in "unexpanded" form, i.e.
         # possibly including environment variables. These will only be expanded
         # by the compilation_worker, possibly on a remote system
-        self._executable  = None # name of the executable
-        self._path        = None # folder for executable (unexpanded)
-        self._compile_cmd = None # list of command arguments (unexpanded)
-        self._keep_cc     = None # delete C++ file after compilation?
+        self._executable = None   # name of the executable
+        self._path = None         # folder for executable (unexpanded)
+        self._compile_cmd = None  # list of command arguments (unexpanded)
+        self._keep_cc = None      # delete C++ file after compilation?
         # _executable will remain None until the compile method has finished
         # without error. Thus, only _executable should be used to check whether
         # the compile method has been called.
@@ -436,17 +436,17 @@ class QSDCodeGen(object):
         self._qsd_ops[IdentityOperator] = QSDOperator(
                 qsd_type='Operator',
                 name="Id",
-                instantiator='= '+'*'.join(
-                            ["Id{k}".format(k=k)
-                            for k in range(len(self._hilbert_space_index))]))
+                instantiator='= '+'*'.join([
+                    "Id{k}".format(k=k)
+                    for k in range(len(self._hilbert_space_index))]))
         # In order to achieve stable output, we go through the operators in an
         # arbitrary, but well-defined order (sorting them according to their
         # string representation)
-        for op in sorted(operators, key=str):
+        for op in sorted(operators, key=self._sort_str):
             if not op.space.is_tensor_factor_of(self._full_space):
                 raise ValueError(("Operator '%s' is not in the circuit's "
                                   "Hilbert space") % str(op))
-            if not op.space is TrivialSpace:
+            if op.space is not TrivialSpace:
                 if not op.space.has_basis:
                     raise BasisNotSetError(
                         "The Hilbert space of the operator %s has no defined "
@@ -459,7 +459,7 @@ class QSDCodeGen(object):
                 self._qsd_ops[a] = QSDOperator(
                     qsd_type='AnnihilationOperator',
                     name="A{k}".format(k=k),
-                    instantiator=('(%d)'%k))
+                    instantiator=('(%d)' % k))
                 ad = a.dag()
                 self._qsd_ops[ad] = QSDOperator(
                     qsd_type='Operator',
@@ -471,7 +471,7 @@ class QSDCodeGen(object):
                 j = op.index_k
                 self._qsd_ops[op] = QSDOperator(
                     qsd_type='FieldTransitionOperator',
-                    name="S{k}_{i}_{j}".format(k=k,i=i,j=j),
+                    name="S{k}_{i}_{j}".format(k=k, i=i, j=j),
                     instantiator='({ijk})'.format(
                                  ijk=','.join([str(n) for n in (i, j, k)])))
             else:
@@ -481,7 +481,7 @@ class QSDCodeGen(object):
         """Ensure that for every symbol, there is a var name in the cache"""
         used_vars = set(self._var_names.values())
         for sym in self.syms:
-            if not sym in self._var_names:
+            if sym not in self._var_names:
                 var = sanitize_varname(str(sym))
                 if var in used_vars:
                     raise ValueError("Cannot generate a unique variable name "
@@ -569,10 +569,11 @@ class QSDCodeGen(object):
                     k = self._hilbert_space_index[op.space]
                     if k < move_dofs:
                         # '<', not '<=', because k counts from 0
-                        raise QSDCodeGenError(("A moving basis cannot be used "
-                        "for a degree of freedom that has local transition "
-                        "operators. Conflicting operator %s acts on Hilbert "
-                        "space %d<%d") % (op, k, move_dofs))
+                        raise QSDCodeGenError((
+                            "A moving basis cannot be used for a degree of "
+                            "freedom that has local transition operators. "
+                            "Conflicting operator %s acts on Hilbert "
+                            "space %d<%d") % (op, k, move_dofs))
         self._moving_params['move_dofs'] = move_dofs
         self._moving_params['delta'] = delta
         if move_dofs <= 0:
@@ -580,8 +581,9 @@ class QSDCodeGen(object):
         self._moving_params['width'] = width
         self._moving_params['move_eps'] = move_eps
 
-    def set_trajectories(self, psi_initial, stepper, dt, nt_plot_step,
-            n_plot_steps, n_trajectories, traj_save=10):
+    def set_trajectories(
+            self, psi_initial, stepper, dt, nt_plot_step, n_plot_steps,
+            n_trajectories, traj_save=10):
         """Set the parameters that control the trajectories from which a plot
         of expectation values for the registered observables will be generated.
 
@@ -620,9 +622,10 @@ class QSDCodeGen(object):
             self.syms.update(psi_initial.all_symbols())
             self.syms.discard(self.time_symbol)
             self._update_var_names()
-        if not stepper in self.known_steppers:
-            raise ValueError("stepper '%s' must be one of %s"
-                              % (stepper, self.known_steppers))
+        if stepper not in self.known_steppers:
+            raise ValueError(
+                "stepper '%s' must be one of %s"
+                % (stepper, self.known_steppers))
         self._traj_params['stepper'] = stepper
         self._traj_params['dt'] = dt
         self._traj_params['nt_plot_step'] = nt_plot_step
@@ -662,7 +665,7 @@ class QSDCodeGen(object):
             ('phiL', find_kets(state, cls=LocalKet)),
             ('phiT', find_kets(state, cls=TensorKet))
         ]:
-            for k, ket in enumerate(sorted(kets, key=str)):
+            for k, ket in enumerate(sorted(kets, key=self._sort_str)):
                 # We go through the states in an arbitrary, but well-defined
                 # order by sorting them according to str
                 name = prfx + str(k)
@@ -681,9 +684,9 @@ class QSDCodeGen(object):
                         try:
                             alpha = complex(ket.ampl)
                         except TypeError:
-                            raise TypeError(("CoherentStateKet amplitude %s "
-                            "is neither a known symbol nor a complex number")
-                            % alpha)
+                            raise TypeError((
+                                "CoherentStateKet amplitude %s is neither a "
+                                "known symbol nor a complex number") % alpha)
                         alpha_name = name + '_alpha'
                         lines.append('Complex {alpha}({re:g},{im:g});'.format(
                                     alpha=alpha_name, re=alpha.real,
@@ -695,21 +698,22 @@ class QSDCodeGen(object):
                 elif isinstance(ket, TensorKet):
                     operands = [self._ket_str(operand) for operand
                                 in self._ordered_tensor_operands(ket)]
-                    lines.append("State {name}List[{n}] = {{{ketlist}}};"
-                                 .format(name=name, n=len(operands),
-                                         ketlist = ", ".join(operands))
-                                )
+                    lines.append(
+                        "State {name}List[{n}] = {{{ketlist}}};"
+                        .format(
+                            name=name, n=len(operands),
+                            ketlist=", ".join(operands)))
                     instantiation = '({n}, {name}List)'.format(
-                                     n=len(operands), name=name)
-                    comment = ' // ' + " * ".join(
-                                ["HS %d"%self._hilbert_space_index[o.space]
-                                for o in self._ordered_tensor_operands(ket)])
+                        n=len(operands), name=name)
+                    comment = ' // ' + " * ".join([
+                        "HS %d" % self._hilbert_space_index[o.space]
+                        for o in self._ordered_tensor_operands(ket)])
                 else:
-                    raise TypeError("Cannot instantiate QSD state for type %s"
-                                    %str(type(ket)))
+                    raise TypeError(
+                        "Cannot instantiate QSD state for type %s"
+                        % str(type(ket)))
                 lines.append('State '+name+instantiation+';'+comment)
         return lines
-
 
     def _initial_state_lines(self, indent=2):
         if not isinstance(self._psi_initial, Ket):
@@ -722,25 +726,24 @@ class QSDCodeGen(object):
 
     def _trajectory_lines(self, indent=2):
         try:
-            __ = self._traj_params['stepper']
+            self._traj_params['stepper']
         except KeyError:
             raise QSDCodeGenError("No trajectories set up. Ensure that "
                                   "'set_trajectories' method has been called")
         lines = [
-        'ACG gen(rndSeed); // random number generator',
-        'ComplexNormal rndm(&gen); // Complex Gaussian random numbers',
-        '',
-        'double dt = {dt};',
-        'int dtsperStep = {nt_plot_step};',
-        'int nOfSteps = {n_plot_steps};',
-        'int nTrajSave = {traj_save};',
-        'int nTrajectory = {n_trajectories};',
-        'int ReadFile = 0;',
-        '',
-        '{stepper} stepper(psiIni, H, nL, L);',
-        'Trajectory traj(psiIni, dt, stepper, &rndm);',
-        '',
-        ]
+            'ACG gen(rndSeed); // random number generator',
+            'ComplexNormal rndm(&gen); // Complex Gaussian random numbers',
+            '',
+            'double dt = {dt};',
+            'int dtsperStep = {nt_plot_step};',
+            'int nOfSteps = {n_plot_steps};',
+            'int nTrajSave = {traj_save};',
+            'int nTrajectory = {n_trajectories};',
+            'int ReadFile = 0;',
+            '',
+            '{stepper} stepper(psiIni, H, nL, L);',
+            'Trajectory traj(psiIni, dt, stepper, &rndm);',
+            '']
         if len(self._moving_params) > 0:
             lines.extend([
                 'int move = {move_dofs};',
@@ -762,21 +765,19 @@ class QSDCodeGen(object):
         rendered_lines = [line.format(**fmt_mapping) for line in lines]
         return "\n".join(_indent(rendered_lines, indent))
 
-
     def generate_code(self):
         """Return C++ program that corresponds to the circuit as a multiline
         string"""
         return self._template.format(
-                OPERATORBASIS=self._operator_basis_lines(),
-                PARAMETERS=self._parameters_lines(indent=0),
-                FUNCTIONS=self._function_lines(ops=[self.circuit.H, ],
-                                               indent=0),
-                HAMILTONIAN=self._hamiltonian_lines(),
-                LINDBLADS=self._lindblads_lines(),
-                OBSERVABLES=self._observables_lines(),
-                INITIAL_STATE=self._initial_state_lines(),
-                TRAJECTORY=self._trajectory_lines(),
-                )
+            OPERATORBASIS=self._operator_basis_lines(),
+            PARAMETERS=self._parameters_lines(indent=0),
+            FUNCTIONS=self._function_lines(
+                ops=[self.circuit.H, ], indent=0),
+            HAMILTONIAN=self._hamiltonian_lines(),
+            LINDBLADS=self._lindblads_lines(),
+            OBSERVABLES=self._observables_lines(),
+            INITIAL_STATE=self._initial_state_lines(),
+            TRAJECTORY=self._trajectory_lines())
 
     def write(self, outfile):
         """Write C++ program that corresponds to the circuit"""
@@ -784,7 +785,8 @@ class QSDCodeGen(object):
             out_fh.write(self.generate_code())
             out_fh.write("\n")
 
-    def compile(self, qsd_lib, qsd_headers, executable='qsd_run',
+    def compile(
+            self, qsd_lib, qsd_headers, executable='qsd_run',
             path='.', compiler='g++', compile_options='-O2', delay=False,
             keep_cc=False, remote_apply=None):
         """Compile into an executable
@@ -833,11 +835,13 @@ class QSDCodeGen(object):
                 raise ValueError("Executable name too long")
             else:
                 raise ValueError("Invalid executable name '%s'" % executable)
-        self._compile_cmd = self._build_compile_cmd(qsd_lib, qsd_headers,
-                executable, self._path, compiler, compile_options)
-        kwargs = {'executable': executable, 'path': self._path,
-                    'cc_code': self.generate_code(),
-                    'keep_cc': self._keep_cc, 'cmd': self._compile_cmd}
+        self._compile_cmd = self._build_compile_cmd(
+                qsd_lib, qsd_headers, executable, self._path, compiler,
+                compile_options)
+        kwargs = {
+            'executable': executable, 'path': self._path,
+            'cc_code': self.generate_code(), 'keep_cc': self._keep_cc,
+            'cmd': self._compile_cmd}
         if remote_apply is None:
             if not os.path.isdir(_full_expand(qsd_headers)):
                 logger.warn("Header directory "+qsd_headers+" does not exist")
@@ -846,9 +850,10 @@ class QSDCodeGen(object):
             try:
                 compilation_worker(kwargs)
             except sp.CalledProcessError as exc_info:
-                logger.error("command '{cmd:s}' failed with code {code:d}"
-                                .format(cmd=self._compile_cmd,
-                                        code=int(exc_info.returncode)))
+                logger.error(
+                    "command '{cmd:s}' failed with code {code:d}"
+                    .format(
+                        cmd=self._compile_cmd, code=int(exc_info.returncode)))
                 raise
         else:
             remote_apply(compilation_worker, kwargs)
@@ -856,8 +861,9 @@ class QSDCodeGen(object):
         # an indicator whether the compile method is complete
         self._executable = executable
 
-    def _build_compile_cmd(self, qsd_lib, qsd_headers, executable, path,
-            compiler, compile_options):
+    def _build_compile_cmd(
+            self, qsd_lib, qsd_headers, executable, path, compiler,
+            compile_options):
         # For debugging purposes, it can be useful to call
         # _cmd_list_to_str(_build_compile_cmd(...))
         # instead of the compile method
@@ -866,9 +872,10 @@ class QSDCodeGen(object):
         if not libqsd_a == self._lib_qsd:
             raise ValueError("qsd_lib "+qsd_lib+" does not point to a "
                              "file of the name "+self._lib_qsd)
-        return ([compiler, ] + shlex.split(compile_options)
-                + ['-I%s'%qsd_headers, '-o', executable, cc_file]
-                + ['-L%s'%link_dir, self._link_qsd])
+        return (
+            [compiler, ] + shlex.split(compile_options) +
+            ['-I%s' % qsd_headers, '-o', executable, cc_file] +
+            ['-L%s' % link_dir, self._link_qsd])
 
     def run(self, seed=None, workdir=None, keep=False, delay=False):
         """Run the QSD program. The :meth:`compile` method must have been
@@ -913,18 +920,22 @@ class QSDCodeGen(object):
         if self._executable is None:
             raise QSDCodeGenError("Call compile method first")
         if self.traj_data is not None:
-            if ( (seed in self.traj_data.record_seeds)
-            or   (seed in self._delayed_seeds) ):
-                raise ValueError("Seed %d already in record or in delayed run"
-                                 % seed)
+            seed_in_record = (
+                (seed in self.traj_data.record_seeds) or
+                (seed in self._delayed_seeds))
+            if seed_in_record:
+                raise ValueError(
+                    "Seed %d already in record or in delayed run" % seed)
         if seed is None:
             seed = random.randint(0, UNSIGNED_MAXINT)
             # ensure we don't reuse an existing or schedules seed
-            while ( (seed in self.traj_data.record_seeds)
-            or      (seed in self._delayed_seeds) ):
+            seed_in_record = (
+                (seed in self.traj_data.record_seeds) or
+                (seed in self._delayed_seeds))
+            while seed_in_record:
                 seed = random.randint(0, UNSIGNED_MAXINT)
             if delay:
-                while seed in delayed_seed:
+                while seed in self._delayed_seed:
                     seed = random.randint(0, UNSIGNED_MAXINT)
         kwargs = {
                 'executable': self._executable, 'keep': keep,
@@ -1015,8 +1026,8 @@ class QSDCodeGen(object):
     def _parameters_lines(self, indent=2):
         """Return a multiline string of C++ code that defines all numerical
         constants"""
-        self._update_var_names() # should be superfluous, but just to be safe
-        lines = set() # sorting will happen at the very end
+        self._update_var_names()  # should be superfluous, but just to be safe
+        lines = set()  # sorting will happen at the very end
         lines.add("Complex I(0.0,1.0);")
         for s in list(self.syms):
             var = self._var_names[s]
@@ -1036,7 +1047,6 @@ class QSDCodeGen(object):
                           .format(var, val.real, val.imag))
         return "\n".join(_indent(sorted(lines), indent))
 
-
     def _observables_lines(self, indent=2):
         """Return a multiline string of C++ code that defines all
         observables"""
@@ -1050,8 +1060,9 @@ class QSDCodeGen(object):
         for (observable, outfile) in self._observables.values():
             outlist_lines.append(self._operator_str(observable))
             outfiles.append(outfile)
-        lines.extend(("Operator outlist[nOfOut] = {\n  "
-                      + ",\n  ".join(outlist_lines)).split("\n"))
+        lines.extend(
+            ("Operator outlist[nOfOut] = {\n  " + ",\n  ".join(outlist_lines))
+            .split("\n"))
         lines.append("};")
         lines.append('char *flist[nOfOut] = {{{filenames}}};'
                      .format(filenames=", ".join(
@@ -1059,7 +1070,6 @@ class QSDCodeGen(object):
                      )))
         lines.append(r'int pipe[4] = {1,2,3,4};')
         return "\n".join(_indent(lines, indent))
-
 
     def _operator_str(self, op):
         """For a given instance of ``qnet.algebra.operator_algebra.Operator``,
@@ -1095,17 +1105,16 @@ class QSDCodeGen(object):
         if isinstance(ket, (LocalKet, TensorKet)):
             return str(self._qsd_states[ket])
         elif isinstance(ket, ScalarTimesKet):
-            return "({}) * ({})".format(self._scalar_str(ket.coeff),
-                    self._ket_str(ket.term))
+            return "({}) * ({})".format(
+                self._scalar_str(ket.coeff), self._ket_str(ket.term))
         elif isinstance(ket, KetPlus):
-            return "({})".format(" + ".join([self._ket_str(o)
-                for o in ket.operands]))
+            return "({})".format(
+                " + ".join([self._ket_str(o) for o in ket.operands]))
         else:
             raise TypeError(str(ket))
 
-
     def _scalar_str(self, sc, assign_to=None):
-        ccode = QSDCCodePrinter(settings={'user_symbols':self._var_names})
+        ccode = QSDCCodePrinter(settings={'user_symbols': self._var_names})
         return ccode.doprint(sc, assign_to=assign_to)
 
     def _hamiltonian_lines(self, indent=2):
@@ -1151,8 +1160,8 @@ class QSDCodeGen(object):
                 func_lines.append("%s %s(double t)" % (func_type, func_name))
                 func_lines.append("{")
                 func_lines.append("  "+func_type+" "+func_placeholder+";")
-                func_lines.append("  "+self._scalar_str(coeff,
-                                       assign_to=func_placeholder))
+                func_lines.append("  "+self._scalar_str(
+                    coeff, assign_to=func_placeholder))
                 func_lines.append("  return "+func_placeholder+";")
                 func_lines.append("}")
                 func_lines.append("")
@@ -1170,7 +1179,6 @@ class QSDCodeGen(object):
         else:
             lines = []
         return "\n".join(_indent(lines, indent))
-
 
 
 def _find_time_dependent_coeffs(op, time_symbol):
@@ -1408,13 +1416,13 @@ def _cmd_list_to_str(cmd_list):
             result += ' %s' % part
     return result.strip()
 
-sanitize_filename = partial(sanitize_name,
-        allowed_letters=re.compile(r'[.a-zA-Z0-9_-]'),
-        replacements={'^':'_', '+':'_', '*':'_', ' ':'_'})
+sanitize_filename = partial(
+    sanitize_name, allowed_letters=re.compile(r'[.a-zA-Z0-9_-]'),
+    replacements={'^': '_', '+': '_', '*': '_', ' ': '_'})
 sanitize_filename.__doc__ = "Sanitize name to be used as a filename"
 
 
-sanitize_varname = partial(sanitize_name,
-        allowed_letters=re.compile(r'[a-zA-Z0-9_]'),
-        replacements={'^':'_', '+':'_', '*':'_', ' ':'_', '-':'_', '.':'_'})
+sanitize_varname = partial(
+    sanitize_name, allowed_letters=re.compile(r'[a-zA-Z0-9_]'),
+    replacements={'^': '_', '+': '_', '*': '_', ' ': '_', '-': '_', '.': '_'})
 sanitize_filename.__doc__ = "Sanitize name to be used as a C++ variable name"
