@@ -545,22 +545,28 @@ class QnetAsciiPrinter(QnetBasePrinter):
         return self._render_op(
             expr.label, expr._hs, dagger=adjoint, superop=True)
 
-    def _print_IdentitySuperOperator(self, expr):
+    def _print_IdentitySuperOperator(self, expr, superop=True):
         return "1"
 
-    def _print_ZeroSuperOperator(self, expr):
+    def _print_ZeroSuperOperator(self, expr, superop=True):
         return "0"
 
     def _print_SuperOperatorPlus(self, expr, adjoint=False, superop=True):
         return self._print_OperatorPlus(expr, adjoint=adjoint, superop=True)
 
     def _print_SuperOperatorTimes(self, expr, adjoint=False, superop=True):
-        return self._print_OperatorTimes(expr, adjoint=adjoint, superop=True)
+        kwargs = {}
+        if adjoint:
+            kwargs['adjoint'] = True
+        return self._print_OperatorTimes(expr, superop=True, **kwargs)
 
     def _print_ScalarTimesSuperOperator(
             self, expr, adjoint=False, superop=True):
+        kwargs = {}
+        if adjoint:
+            kwargs['adjoint'] = True
         return self._print_ScalarTimesOperator(
-            expr, adjoint=adjoint, superop=True)
+            expr, superop=True, **kwargs)
 
     def _print_SuperAdjoint(self, expr, adjoint=False, superop=True):
         o = expr.operand
