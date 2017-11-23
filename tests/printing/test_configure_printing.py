@@ -145,3 +145,16 @@ def test_custom_options():
         latex(sig) ==
         r'\left\lvert 0 \middle\rangle\!\middle\langle 1 \right\rvert^{(1)}')
     assert latex(ket) == r'\left\lvert \alpha=\alpha \right\rangle^{(1)}'
+
+
+def test_custom_repr():
+    A = OperatorSymbol('A', hs=1)
+    assert repr(A) in ['Â⁽¹⁾', 'A^(1)']
+    init_printing(repr_format='srepr', reset=True)
+    assert repr(A) == "OperatorSymbol('A', hs=LocalSpace('1'))"
+    init_printing(reset=True)
+    assert repr(A) in ['Â⁽¹⁾', 'A^(1)']
+    with configure_printing(repr_format='srepr'):
+        assert repr(A) == "OperatorSymbol('A', hs=LocalSpace('1'))"
+    assert repr(A) in ['Â⁽¹⁾', 'A^(1)']
+

@@ -81,9 +81,9 @@ def init_printing(reset=False, **kwargs):
     Args:
         str_format (str): Format for ``__str__`` representation of an
             :class:`~qnet.algebra.abstract_algebra.Expression`. One of 'ascii',
-            'unicode', 'latex', 'srepr', 'tree'. The string
-            representation will be affected by the settings for the
-            corresponding print routine, e.g. :func:`unicode` for
+            'unicode', 'latex', 'srepr', 'indsrepr' ("indented `srepr`"), or
+            'tree'. The string representation will be affected by the settings
+            for the corresponding print routine, e.g. :func:`unicode` for
             ``str_format='unicode'``
         repr_format (str): Like `str_format`, but for ``__repr__``. This is
             what gets displayed in an interactive (I)Python session.
@@ -217,7 +217,17 @@ def _init_printing(
 def configure_printing(**kwargs):
     """Context manager for temporarily changing the printing system.
 
-    This takes the same parameters as :func:`init_printing`"""
+    This takes the same parameters as :func:`init_printing`
+
+    Example:
+        >>> from qnet.algebra import OperatorSymbol
+        >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
+        >>> with configure_printing(show_hs_label=False):
+        ...     ascii(A + B)
+        'A + B'
+        >>> ascii(A + B)
+        'A^(1) + B^(1)'
+    """
     freeze = init_printing(_freeze=True, **kwargs)
     yield
     for obj, attr_map in freeze.items():
@@ -477,5 +487,6 @@ _PRINT_FUNC = {
     'latex': latex,
     'tex': latex,
     'srepr': srepr,
+    'indsrepr': partial(srepr, indented=True),
     'tree': _tree_str,   # init_printing will modify this for unicode support
 }
