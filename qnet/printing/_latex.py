@@ -164,7 +164,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             = self._split_op(identifier, hs_label, dagger, args)
         if name.startswith(r'\text{'):
             name = name[6:-1]
-        if len(name) == 1 or name in _tex_single_letter_symbols:
+        if len(name) == 1 or name in _TEX_SINGLE_LETTER_SYMBOLS:
             if superop:
                 name_fmt = self._settings['tex_sop_macro']
             else:
@@ -287,7 +287,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             matrix_right_sym)
 
 
-_tex_greek_dictionary = {
+_TEX_GREEK_DICTIONARY = {
     'Alpha': 'A', 'Beta': 'B', 'Gamma': r'\Gamma', 'Delta': r'\Delta',
     'Epsilon': 'E', 'Zeta': 'Z', 'Eta': 'H', 'Theta': r'\Theta', 'Iota': 'I',
     'Kappa': 'K', 'Lambda': r'\Lambda', 'Mu': 'M', 'Nu': 'N', 'Xi': r'\Xi',
@@ -302,7 +302,7 @@ _tex_greek_dictionary = {
 }
 
 
-_tex_single_letter_symbols = [
+_TEX_SINGLE_LETTER_SYMBOLS = [
     r'\Delta', r'\Gamma', r'\Lambda', r'\Omega', r'\Phi', r'\Pi', r'\Psi',
     r'\Sigma', r'\Theta', r'\Upsilon', r'\Xi', r'\alpha', r'\beta', r'\chi',
     r'\delta', r'\epsilon', r'\eta', r'\gamma', r'\iota', r'\kappa',
@@ -316,7 +316,7 @@ def _translate_symbols(string):
     return the appropriate latex."""
     res = []
     for s in re.split(r'([,.:\s=]+)', string):
-        tex_str = _tex_greek_dictionary.get(s)
+        tex_str = _TEX_GREEK_DICTIONARY.get(s)
         if tex_str:
             res.append(tex_str)
         elif s.lower() in greek_letters_set:
