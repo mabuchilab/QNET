@@ -19,7 +19,7 @@
 
 import pytest
 
-from sympy import symbols, sqrt, exp, I
+from sympy import symbols, sqrt, exp, I, atan
 
 from qnet.algebra.circuit_algebra import CircuitSymbol, Feedback
 from qnet.algebra.hilbert_space_algebra import LocalSpace
@@ -71,8 +71,33 @@ def test_no_cached_rendering():
     assert CircuitSymbol("Xi_2", 2) in ascii.printer.cache
 
 
+def test_sympy_tex_cached():
+    """Test that we can use the cache to change how sub-expressions of sympy
+    are printed in tex"""
+    a = symbols('a')
+    A = OperatorSymbol("A", hs=1)
+    expr = (a**2 / 2) * A
+
+    assert latex(expr) == r'\frac{a^{2}}{2} \hat{A}^{(1)}'
+
+    cache = {a: r'\alpha'}
+    assert latex(expr, cache=cache) == r'\frac{\alpha^{2}}{2} \hat{A}^{(1)}'
+
+
+def test_sympy_setting():
+    """Test that we can pass settings to the sympy sub-printer"""
+    x = symbols('a')
+    A = OperatorSymbol("A", hs=1)
+    expr = atan(x) * A
+    assert (
+        latex(expr) == r'\operatorname{atan}{\left (a \right )} \hat{A}^{(1)}')
+    assert (
+        latex(expr, inv_trig_style='full') ==
+        r'\arctan{\left (a \right )} \hat{A}^{(1)}')
+
+
 def test_custom_options():
-    """Test the implicit_tensor printing options"""
+    """Test giving options to print routines or using configure_printing"""
     A = OperatorSymbol('A', hs=1)
     CNOT = OperatorSymbol('CNOT', hs=1)
     sig = LocalSigma(0, 1, hs=1)
@@ -82,7 +107,7 @@ def test_custom_options():
     assert ascii(A, show_hs_label=False) == 'A'
     with pytest.raises(TypeError) as exc_info:
         ascii(A, some_bogus_option=False)
-    assert "Unknown setting" in str(exc_info.value)
+    assert "not a valid setting" in str(exc_info.value)
     assert ascii(sig) == r'|0><1|^(1)'
     assert ascii(ket) == r'|alpha=alpha>^(1)'
     assert unicode(A) == r'Â⁽¹⁾'

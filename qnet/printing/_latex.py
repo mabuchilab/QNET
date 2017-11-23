@@ -56,6 +56,14 @@ class QnetLatexPrinter(QnetAsciiPrinter):
     _circuit_concat_sym = r'\boxplus'
     _cid = r'{\rm cid}(%d)'
 
+    def __init__(self, cache=None, settings=None):
+        super().__init__(cache=cache, settings=settings)
+        # enable the cache to provide strings for symbols *inside* SymPy
+        # Expressions
+        if cache is not None:
+            if 'symbol_names' in self._sympy_printer._default_settings:
+                self._sympy_printer._settings['symbol_names'] = cache
+
     def _print_SCALAR_TYPES(self, expr, *args, **kwargs):
         res = super()._print_SCALAR_TYPES(expr, *args, **kwargs)
         if isinstance(expr, (complex, complex128)):

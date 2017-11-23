@@ -82,12 +82,23 @@ class QnetBasePrinter(SympyPrinter):
         if cache is not None:
             self.cache = cache
         sympy_settings = {}
+        qnet_settings = {}
         if settings is not None:
             for key in settings:
+                key_ok = False
                 if key in self.sympy_printer_cls._default_settings:
+                    key_ok = True
                     sympy_settings[key] = settings[key]
+                if key in self._default_settings:
+                    key_ok = True
+                    qnet_settings[key] = settings[key]
+                if not key_ok:
+                    raise TypeError(
+                        "%s is not a valid setting for either %s or %s" % (
+                            key, self.__class__.__name__,
+                            self.sympy_printer_cls.__name__))
         self._sympy_printer = self.sympy_printer_cls(settings=sympy_settings)
-        super().__init__(settings=settings)
+        super().__init__(settings=qnet_settings)
 
     def _render_str(self, string):
         return str(string)

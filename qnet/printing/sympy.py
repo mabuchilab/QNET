@@ -76,6 +76,13 @@ def derationalize_denom(expr):
 class SympyStrPrinter(StrPrinter):
     """Variation of sympy StrPrinter that derationalizes denominators"""
 
+    printmethod = "_sympystr"
+    _default_settings = {
+        "order": None,
+        "full_prec": "auto",
+        "sympy_integers": False,
+    }
+
     def _print_Mul(self, expr):
 
         prec = precedence(expr)
@@ -98,6 +105,23 @@ class SympyStrPrinter(StrPrinter):
 
 class SympyLatexPrinter(LatexPrinter):
     """Variation of sympy LatexPrinter that derationalizes denominators"""
+
+    printmethod = "_latex"
+
+    _default_settings = {
+        "order": None,
+        "mode": "plain",
+        "itex": False,
+        "fold_frac_powers": False,
+        "fold_func_brackets": False,
+        "fold_short_frac": None,
+        "long_frac_ratio": 2,
+        "mul_symbol": None,
+        "inv_trig_style": "abbreviated",
+        "mat_str": None,
+        "mat_delim": "[",
+        "symbol_names": {},
+    }
 
     def _print_Mul(self, expr):
 
@@ -124,6 +148,14 @@ class SympyUnicodePrinter(StrPrinter):
     strings. This is a mixture of the default Sympy StrPrinter and the SymPy
     PrettyPrinter
     """
+
+    printmethod = "_sympystr"
+    _default_settings = {
+        "order": None,
+        "full_prec": "auto",
+        "sympy_integers": False,
+    }
+
     def _print_Add(self, expr, order=None):
         if self.order == 'none':
             terms = list(expr.args)
