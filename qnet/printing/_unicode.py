@@ -80,6 +80,7 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
     }
     _dagger_sym = '†'
     _tensor_sym = '⊗'
+    _product_sym = ' '
     _circuit_series_sym = '◁'
     _circuit_concat_sym = '⊞'
 
@@ -179,5 +180,5 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
     def _print_IdentityOperator(self, expr):
         return "𝟙"
 
-    def _print_IdentitySuperOperator(self, expr):
+    def _print_IdentitySuperOperator(self, expr, superop=True):
         return "𝟙"

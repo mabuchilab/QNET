@@ -203,22 +203,22 @@ def test_unicode_operator_operations():
     gamma = symbols('gamma', positive=True)
     assert unicode(A + B) == 'A\u0302^(q\u2081) + B\u0302^(q\u2081)'
     #                         Â^(q₁) + B̂^(q₁)
-    assert unicode(A * B) == 'A\u0302^(q\u2081) * B\u0302^(q\u2081)'
+    assert unicode(A * B) == 'A\u0302^(q\u2081) B\u0302^(q\u2081)'
     #                         Â^(q₁) B̂^(q₁)
-    assert unicode(A * C) == 'A\u0302^(q\u2081) * C\u0302^(q\u2082)'
-    #                         Â^(q₁) * Ĉ^(q₂)
-    assert unicode(2 * A) == '2 * A\u0302^(q\u2081)'  # 2 * Â^(q₁)
-    assert unicode(2j * A) == '2j * A\u0302^(q\u2081)'
-    #                          2j * Â^(q₁)
-    assert unicode((1+2j) * A) == '(1+2j) * A\u0302^(q\u2081)'
-    #                              (1+2j) * Â^(q₁)
-    assert unicode(gamma**2 * A) == '\u03b3\xb2 * A\u0302^(q\u2081)'
-    #                                γ² * Â^(q₁)
-    assert unicode(-gamma**2/2 * A) == '-\u03b3\xb2/2 * A\u0302^(q\u2081)'
-    #                                   -γ²/2 * Â^(q₁)
+    assert unicode(A * C) == 'A\u0302^(q\u2081) C\u0302^(q\u2082)'
+    #                         Â^(q₁) Ĉ^(q₂)
+    assert unicode(2 * A) == '2 A\u0302^(q\u2081)'  # 2 Â^(q₁)
+    assert unicode(2j * A) == '2j A\u0302^(q\u2081)'
+    #                          2j Â^(q₁)
+    assert unicode((1+2j) * A) == '(1+2j) A\u0302^(q\u2081)'
+    #                              (1+2j) Â^(q₁)
+    assert unicode(gamma**2 * A) == '\u03b3\xb2 A\u0302^(q\u2081)'
+    #                                γ² Â^(q₁)
+    assert unicode(-gamma**2/2 * A) == '-\u03b3\xb2/2 A\u0302^(q\u2081)'
+    #                                   -γ²/2 Â^(q₁)
     assert (unicode(tr(A * C, over_space=hs2)) ==
-            'tr_(q\u2082)[C\u0302^(q\u2082)] * A\u0302^(q\u2081)')
-    #       tr_(q₂)[Ĉ^(q₂)] * Â^(q₁)
+            'tr_(q\u2082)[C\u0302^(q\u2082)] A\u0302^(q\u2081)')
+    #       tr_(q₂)[Ĉ^(q₂)] Â^(q₁)
     assert unicode(Adjoint(A)) == 'A\u0302^(q\u2081)\u2020'
     #                             Â^(q₁)†
     assert unicode(Adjoint(Create(hs=1))) == 'a\u0302\u207d\xb9\u207e'
@@ -230,11 +230,11 @@ def test_unicode_operator_operations():
     assert unicode(A - B) == 'A\u0302^(q\u2081) - B\u0302^(q\u2081)'
     #                         Â^(q₁) - B̂^(q₁)
     assert (unicode(2 * A - sqrt(gamma) * (B + C)) in [
-            '2 * A\u0302^(q\u2081) - \u221a\u03b3 * (B\u0302^(q\u2081) '
+            '2 A\u0302^(q\u2081) - \u221a\u03b3 (B\u0302^(q\u2081) '
             '+ C\u0302^(q\u2082))',
-            '2 * A\u0302^(q\u2081) - sqrt(\u03b3) * (B\u0302^(q\u2081) '
+            '2 A\u0302^(q\u2081) - sqrt(\u03b3) (B\u0302^(q\u2081) '
             '+ C\u0302^(q\u2082))'])
-    #       2 * Â^(q₁) - √γ * (B̂^(q₁) + Ĉ^(q₂))
+    #       2 Â^(q₁) - √γ (B̂^(q₁) + Ĉ^(q₂))
     assert (unicode(Commutator(A, B)) ==
             '[A\u0302^(q\u2081), B\u0302^(q\u2081)]')
     #       [Â^(q₁), B̂^(q₁)]
@@ -295,7 +295,7 @@ def test_unicode_ket_operations():
     assert unicode(psi1 + psi2) == '|Ψ₁⟩^(q₁) + |Ψ₂⟩^(q₁)'
     assert unicode(psi1 * phi) == '|Ψ₁⟩^(q₁) ⊗ |Φ⟩^(q₂)'
     assert unicode(psi1_l * phi_l) == '|Ψ₁,Φ⟩^(q₁⊗q₂)'
-    assert unicode(phase * psi1) == 'exp(-ⅈ γ) * |Ψ₁⟩^(q₁)'
+    assert unicode(phase * psi1) == 'exp(-ⅈ γ) |Ψ₁⟩^(q₁)'
     assert (unicode(A * psi1) ==
             'A\u0302_0^(q\u2081) |\u03a8\u2081\u27e9^(q\u2081)')
     #        Â_0^(q₁) |Ψ₁⟩^(q₁)
@@ -306,15 +306,15 @@ def test_unicode_ket_operations():
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (unicode(bell1) ==
-            '1/√2 * (|e,g⟩^(q₁⊗q₂) - ⅈ * |g,e⟩^(q₁⊗q₂))')
+            '1/√2 (|e,g⟩^(q₁⊗q₂) - ⅈ |g,e⟩^(q₁⊗q₂))')
     assert (unicode(BraKet.create(bell1, bell2)) ==
-            r'1/2 * (⟨e,g|^(q₁⊗q₂) + ⅈ * ⟨g,e|^(q₁⊗q₂)) * (|e,e⟩^(q₁⊗q₂) - '
+            r'1/2 (⟨e,g|^(q₁⊗q₂) + ⅈ ⟨g,e|^(q₁⊗q₂)) (|e,e⟩^(q₁⊗q₂) - '
             r'|g,g⟩^(q₁⊗q₂))')
     assert (unicode(KetBra.create(bell1, bell2)) ==
-            r'1/2 * (|e,g⟩^(q₁⊗q₂) - ⅈ * |g,e⟩^(q₁⊗q₂))(⟨e,e|^(q₁⊗q₂) - '
+            r'1/2 (|e,g⟩^(q₁⊗q₂) - ⅈ |g,e⟩^(q₁⊗q₂))(⟨e,e|^(q₁⊗q₂) - '
             r'⟨g,g|^(q₁⊗q₂))')
     assert (unicode(KetBra.create(bell1, bell2), show_hs_label=False) ==
-            r'1/2 * (|e,g⟩ - ⅈ * |g,e⟩)(⟨e,e| - ⟨g,g|)')
+            r'1/2 (|e,g⟩ - ⅈ |g,e⟩)(⟨e,e| - ⟨g,g|)')
 
 
 def test_unicode_bra_operations():
@@ -332,7 +332,7 @@ def test_unicode_bra_operations():
     assert unicode((psi1 + psi2).dag) == '⟨Ψ₁|^(q₁) + ⟨Ψ₂|^(q₁)'
     assert unicode((psi1 * phi).dag) == '⟨Ψ₁|^(q₁) ⊗ ⟨Φ|^(q₂)'
     assert unicode(bra_psi1_l * bra_phi_l) == '⟨Ψ₁,Φ|^(q₁⊗q₂)'
-    assert unicode(Bra(phase * psi1)) == 'exp(ⅈ γ) * ⟨Ψ₁|^(q₁)'
+    assert unicode(Bra(phase * psi1)) == 'exp(ⅈ γ) ⟨Ψ₁|^(q₁)'
 
 
 def test_unicode_sop_elements():
@@ -357,15 +357,15 @@ def test_unicode_sop_operations():
     A_op = OperatorSymbol("A", hs=1)
     gamma = symbols('gamma', positive=True)
     assert unicode(A + B) == 'A^(q₁) + B^(q₁)'
-    assert unicode(A * B) == 'A^(q₁) * B^(q₁)'
-    assert unicode(A * C) == 'A^(q₁) * C^(q₂)'
-    assert unicode(2j * A) == '2j * A^(q₁)'
-    assert unicode(gamma**2 * A) == 'γ² * A^(q₁)'
+    assert unicode(A * B) == 'A^(q₁) B^(q₁)'
+    assert unicode(A * C) == 'A^(q₁) C^(q₂)'
+    assert unicode(2j * A) == '2j A^(q₁)'
+    assert unicode(gamma**2 * A) == 'γ² A^(q₁)'
     assert unicode(SuperAdjoint(A)) == 'A^(q₁)†'
     assert unicode(A - B + C) == 'A^(q₁) - B^(q₁) + C^(q₂)'
     assert (unicode(2 * A - sqrt(gamma) * (B + C)) in
-            ['2 * A^(q₁) - sqrt(γ) * (B^(q₁) + C^(q₂))',
-             '2 * A^(q₁) - √γ * (B^(q₁) + C^(q₂))'])
+            ['2 A^(q₁) - sqrt(γ) (B^(q₁) + C^(q₂))',
+             '2 A^(q₁) - √γ (B^(q₁) + C^(q₂))'])
     assert unicode(SPre(A_op)) == 'SPre(A\u0302\u207d\xb9\u207e)'
     #                              SPre(Â⁽¹⁾)
     assert unicode(SPost(A_op)) == 'SPost(A\u0302\u207d\xb9\u207e)'
@@ -374,10 +374,10 @@ def test_unicode_sop_operations():
             'L\u207d\xb9\u207e[A\u0302\u207d\xb9\u207e]')
     #        L⁽¹⁾[Â⁽¹⁾]
     assert (unicode(SuperOperatorTimesOperator(L, sqrt(gamma) * A_op)) in
-            ['L\u207d\xb9\u207e[\u221a\u03b3 * A\u0302\u207d\xb9\u207e]',
-             'L\u207d\xb9\u207e[sqrt(\u03b3) * A\u0302\u207d\xb9\u207e]'])
-     #        L⁽¹⁾[√γ * Â⁽¹⁾]
+            ['L\u207d\xb9\u207e[\u221a\u03b3 A\u0302\u207d\xb9\u207e]',
+             'L\u207d\xb9\u207e[sqrt(\u03b3) A\u0302\u207d\xb9\u207e]'])
+     #        L⁽¹⁾[√γ Â⁽¹⁾]
     assert (unicode(SuperOperatorTimesOperator((L + 2*M), A_op)) ==
-            '(L\u207d\xb9\u207e + 2 * M\u207d\xb9\u207e)'
+            '(L\u207d\xb9\u207e + 2 M\u207d\xb9\u207e)'
             '[A\u0302\u207d\xb9\u207e]')
-    #       (L⁽¹⁾ + 2 * M⁽¹⁾)[Â⁽¹⁾]
+    #       (L⁽¹⁾ + 2 M⁽¹⁾)[Â⁽¹⁾]

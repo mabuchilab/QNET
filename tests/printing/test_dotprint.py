@@ -153,7 +153,7 @@ def test_dot_maxdepth2(expr):
     "node_(1, 1)" ["label"="OperatorPlus"];
     "node_(2, 0)" ["label"="Â⁽¹⁾"];
     "node_(2, 1)" ["label"="D̂⁽¹⁾"];
-    "node_(2, 2)" ["label"="(Ĉ⁽¹⁾ + 2 * (Â⁽¹⁾ + B̂⁽¹⁾))^†"];
+    "node_(2, 2)" ["label"="(Ĉ⁽¹⁾ + 2 (Â⁽¹⁾ + B̂⁽¹⁾))^†"];
 
     #########
     # Edges #

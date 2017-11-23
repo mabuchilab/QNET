@@ -155,7 +155,7 @@ def test_sop_operations():
     tree = tree_str(2 * A - sqrt(gamma) * (B + C))
     assert (
         tree == dedent(r'''
-        . SuperOperatorPlus(2 * A^(q₁), ...)
+        . SuperOperatorPlus(2 A^(q₁), ...)
           ├─ ScalarTimesSuperOperator(2, A^(q₁))
           │  ├─ 2
           │  └─ SuperOperatorSymbol(A, hs=ℌ_q₁)
