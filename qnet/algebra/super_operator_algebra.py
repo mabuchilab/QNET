@@ -40,15 +40,13 @@ from .abstract_algebra import (
     check_rules_dict)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
-from .hilbert_space_algebra import (
-    TrivialSpace, LocalSpace, ProductSpace)
+from .hilbert_space_algebra import TrivialSpace, LocalSpace, ProductSpace
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
     IdentityOperator, simplify_scalar, Create, Destroy)
 from .ordering import (
     KeyTuple, FullCommutativeHSOrder, DisjunctCommutativeHSOrder)
 from .matrix_algebra import Matrix
-from ..printing import ascii
 
 
 __all__ = [
@@ -237,11 +235,6 @@ class SuperOperatorSymbol(SuperOperator, Expression):
     def kwargs(self):
         return {'hs': self._hs}
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_op(self.label, self._hs, dagger=adjoint,
-                                 superop=True)
-
     @property
     def space(self):
         return self._hs
@@ -275,10 +268,6 @@ class IdentitySuperOperator(SuperOperator, Expression, metaclass=Singleton):
     def _expand(self):
         return self
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.identity_sym
-
     def __eq__(self, other):
         return self is other or other == 1
 
@@ -307,10 +296,6 @@ class ZeroSuperOperator(SuperOperator, Expression, metaclass=Singleton):
 
     def _expand(self):
         return self
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.zero_sym
 
     def __eq__(self, other):
         return self is other or other == 0
@@ -343,27 +328,6 @@ class SuperOperatorPlus(SuperOperatorOperation):
         return sum((o.expand() for o in self.operands), ZeroSuperOperator)
         # Note that `SuperOperatorPlus(*[o.expand() for o in self.operands])`
         # does not give a sufficiently simplified result in this case
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        positive_summands = []
-        negative_summands = []
-        for o in self.operands:
-            is_negative = False
-            op_str = printer.render(o, adjoint=adjoint)
-            if op_str.startswith('-'):
-                is_negative = True
-                op_str = op_str[1:].strip()
-            if isinstance(o, SuperOperatorPlus):
-                op_str = printer.par_left + op_str + printer.par_right
-            if is_negative:
-                negative_summands.append(op_str)
-            else:
-                positive_summands.append(op_str)
-        negative_str = " - ".join(negative_summands)
-        if len(negative_str) > 0:
-            negative_str = " - " + negative_str
-        return (" + ".join(positive_summands) + negative_str).strip()
 
 
 class SuperCommutativeHSOrder(DisjunctCommutativeHSOrder):
@@ -410,20 +374,6 @@ class SuperOperatorTimes(SuperOperatorOperation):
                     for combo in cartesian_product(*eopssummands)),
                    ZeroSuperOperator)
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-
-        def dynamic_prod_sym(a, b):
-            if a.space == b.space:
-                return printer.op_product_sym
-            else:
-                return printer.tensor_sym
-
-        return printer.render_product(
-                self.operands, prod_sym=printer.tensor_sym,
-                sum_classes=(SuperOperatorPlus, ),
-                dynamic_prod_sym=dynamic_prod_sym)
-
 
 class ScalarTimesSuperOperator(SuperOperator, Operation):
     """Multiply an operator by a scalar coefficient::
@@ -444,6 +394,7 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
 
     @property
     def _order_key(self):
+        from qnet.printing import ascii
         t = self.term._order_key
         try:
             c = abs(float(self.coeff))  # smallest coefficients first
@@ -460,29 +411,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
     def term(self):
         """The super-operator term."""
         return self.operands[1]
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        coeff, term = self.coeff, self.term
-        term_str = printer.render(term, adjoint=adjoint)
-        if isinstance(term, Operation):
-            term_str = printer.par_left + term_str + printer.par_right
-
-        if coeff == -1:
-            if term_str.startswith(printer.par_left):
-                return "- " + term_str
-            else:
-                return "-" + term_str
-        coeff_str = printer.render_scalar(coeff, adjoint=adjoint)
-
-        if term is IdentityOperator:
-            return coeff_str
-        else:
-            if len(printer.scalar_product_sym) > 0:
-                product_sym = " " + printer.scalar_product_sym + " "
-            else:
-                product_sym = " "
-            return coeff_str.strip() + product_sym + term_str.strip()
 
     def _expand(self):
         c, t = self.coeff, self.term
@@ -556,19 +484,6 @@ class SuperAdjoint(SuperOperatorOperation):
             return sum((eoo.superadjoint() for eoo in eo.operands),
                        ZeroSuperOperator)
         return eo._superadjoint()
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        o = self.operand
-        if isinstance(o, SuperOperatorSymbol):
-            return printer.render_op(o.label, hs=o.space,
-                                     dagger=(not adjoint), superop=True)
-        else:
-            if adjoint:
-                return printer.render(o)
-            else:
-                return (printer.par_left + printer.render(o) +
-                        printer.par_right + printer.daggered_sym)
 
 
 class SPre(SuperOperator, Operation):
@@ -658,17 +573,6 @@ class SuperOperatorTimesOperator(Operator, Operation):
     @property
     def op(self):
         return self.operands[1]
-
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        sop, op = self.sop, self.op
-        if isinstance(sop, SuperOperatorPlus):
-            cs = printer.par_left + printer.render(sop) + printer.par_right
-        else:
-            cs = printer.render(sop)
-        ct = printer.render(op)
-        return cs + printer.brak_left + ct + printer.brak_right
 
     def _expand(self):
         sop, op = self.operands

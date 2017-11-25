@@ -35,13 +35,11 @@ from collections import OrderedDict
 import logging
 
 from sympy import Basic as SympyBasic
+from sympy.core.sympify import SympifyError
 
 from .pattern_matching import (
     ProtoExpr, match_pattern, wc, pattern_head, Pattern, pattern)
 from .singleton import Singleton
-from .scalar_types import SCALAR_TYPES
-from ..printing import AsciiPrinter, LaTeXPrinter, UnicodePrinter
-from ..printing import srepr
 
 __all__ = [
     'AlgebraException', 'AlgebraError', 'CannotSimplify',
@@ -103,38 +101,6 @@ class WrongSignatureError(AlgebraError):
     pass
 
 
-def cache_attr(attr):
-    """A method decorator that caches the result of a method in an attribute,
-    intended for e.g. __str__
-
-    >>> class MyClass():
-    ...     def __init__(self):
-    ...         self._str = None
-    ...
-    ...     @cache_attr('_str')
-    ...     def __str__(self):
-    ...          return "MyClass"
-    >>> a = MyClass()
-    >>> a._str  # None
-    >>> str(a)
-    'MyClass'
-    >>> a._str
-    'MyClass'
-    """
-
-    def tie_to_attr_decorator(meth):
-        """Decorator that ties `meth` to the fixed `attr`"""
-
-        def tied_method(self):
-            if getattr(self, attr) is None:
-                setattr(self, attr, meth(self))
-            return getattr(self, attr)
-
-        return tied_method
-
-    return tie_to_attr_decorator
-
-
 class Expression(metaclass=ABCMeta):
     """Abstract class for QNET Expressions. All algebraic objects are either
     scalars (numbers or Sympy expressions) or instances of Expression.
@@ -164,18 +130,6 @@ class Expression(metaclass=ABCMeta):
     # *must* call the corresponding superclass method *at the end*. Otherwise,
     # caching will not work correctly
 
-    # Printer instances handling __str__, __repr__, etc.
-    _str_printer = UnicodePrinter  # for __str__()
-    _repr_printer = UnicodePrinter  # for __repr__()
-    _tex_printer = LaTeXPrinter  # for _tex_()
-    _ascii_printer = AsciiPrinter  # for _ascii_()
-    _unicode_printer = UnicodePrinter  # for _unicode_()
-
-    # should _ascii_, _unicode_, _tex_ be returned from cache?
-    _cached_rendering = True
-    # should we force re-rendering of the cached representation?
-    _force_cache = False
-
     _simplifications = []
 
     # we cache all instances of Expressions for fast construction
@@ -192,9 +146,6 @@ class Expression(metaclass=ABCMeta):
         # hash, tex, and repr str, generated on demand (lazily) -- see also
         # _cached_rendering class attribute
         self._hash = None
-        self._tex = None
-        self._ascii = None
-        self._unicode = None
         self._instance_key = self._get_instance_key(args, kwargs)
 
     @classmethod
@@ -314,10 +265,16 @@ class Expression(metaclass=ABCMeta):
         return self._hash
 
     def __repr__(self):
-        return self._repr_printer.render(self)
+        # This method will be replaced by init_printing()
+        from qnet.printing import init_printing
+        init_printing()
+        return repr(self)
 
     def __str__(self):
-        return self._str_printer.render(self)
+        # This method will be replaced by init_printing()
+        from qnet.printing import init_printing
+        init_printing()
+        return str(self)
 
     def substitute(self, var_map):
         """Substitute all_symbols for other expressions.
@@ -368,41 +325,22 @@ class Expression(metaclass=ABCMeta):
                     pass
         return simplified
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_" + fmt + "_printer")
-        if adjoint:
-            raise NotImplementedError("_render is defined for adjoint=True")
-            # Any _render that falls back to head_repr should never be called
-            # in a context that would require the adjoint
-        return printer.render_head_repr(self)
-
-    def _cached_render(self, fmt, adjoint=False):
-        if adjoint:
-            return self._render(fmt, adjoint=True)
-        if self._cached_rendering:
-            attr = '_' + fmt
-            if self._force_cache:
-                setattr(self, attr, None)
-            if getattr(self, attr) is None:
-                setattr(self, attr, self._render(fmt))
-            return getattr(self, attr)
-        else:
-            return self._render(fmt)
-
-    def _tex_(self, adjoint=False):
-        return self._cached_render('tex', adjoint=adjoint)
-
-    def _ascii_(self, adjoint=False):
-        return self._cached_render('ascii', adjoint=adjoint)
-
-    def _unicode_(self, adjoint=False):
-        return self._cached_render('unicode', adjoint=adjoint)
-
     def _repr_latex_(self):
         """For compatibility with the IPython notebook, generate TeX expression
         and surround it with $'s.
         """
-        return "$" + self._tex_() + "$"
+        # This method will be replaced by init_printing()
+        from qnet.printing import init_printing
+        init_printing()
+        return self._repr_latex_(self)
+
+    def _sympy_(self):
+        # By default, when a QNET expression occurring in a SymPy context (e.g.
+        # when converting a QNET Matrix to a Sympy Matrix), sympify will try to
+        # parse the string representation of the Expression. This will usually
+        # fail, but when it doesn't, it always produces nonsense. Thus, we make
+        # it fail explicitly
+        raise SympifyError("QNET expressions cannot be converted to SymPy")
 
     def all_symbols(self):
         """Set of all_symbols contained within the expression."""
@@ -720,6 +658,7 @@ def match_replace(cls, ops, kwargs):
 
     Check rule application::
 
+        >>> from qnet.printing import srepr
         >>> print(srepr(Invert.create("hallo")))  # matches no rule
         Invert('hallo')
         >>> Invert.create(Invert("hallo"))        # matches first rule

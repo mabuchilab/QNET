@@ -66,6 +66,7 @@ Internally, the flat API (or star imports) must never be used.
 """
 
 import qnet.algebra
+import qnet.circuit_components
 import qnet.circuit_components as cc
 import qnet.convert
 import qnet.misc

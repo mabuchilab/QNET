@@ -42,10 +42,8 @@ from .hilbert_space_algebra import (
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
-    Jminus, Jz, OperatorSymbol, LocalOperator, Jpjmcoeff, Jzjmcoeff,
-    Jmjmcoeff, Displace, Phase)
+    Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace, Phase)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
-from ..printing import ascii
 
 __all__ = [
     'OverlappingSpaces', 'SpaceTooLargeError', 'UnequalSpaces', 'BasisKet',
@@ -212,15 +210,6 @@ class KetSymbol(Ket, Expression):
     def label(self):
         return self._label
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        printer_fmt = printer.ket_fmt
-        if adjoint:
-            printer_fmt = printer.bra_fmt
-        return printer_fmt.format(
-                label=printer.render_string(str(self.label)),
-                space=printer.render_hs_label(self.space))
-
     def _expand(self):
         return self
 
@@ -269,9 +258,6 @@ class ZeroKet(Ket, Expression, metaclass=Singleton):
     def _series_expand(self, param, about, order):
         return (self,) + (0,)*(order - 1)
 
-    def _render(self, fmt, adjoint=False):
-        return "0"
-
     def __eq__(self, other):
         return self is other or other == 0
 
@@ -305,9 +291,6 @@ class TrivialKet(Ket, Expression, metaclass=Singleton):
 
     def _series_expand(self, param, about, order):
         return (self,) + (0,)*(order - 1)
-
-    def _render(self, fmt, adjoint=False):
-        return "1"
 
     def __eq__(self, other):
         return self is other or other == 1
@@ -343,7 +326,7 @@ class BasisKet(LocalKet):
             >>> BasisKet('g', hs=hs) == BasisKet(0, hs=hs)
             True
             >>> print(ascii(BasisKet(0, hs=hs)))
-            |g>_(tls)
+            |g>^(tls)
     """
     def __init__(self, label_or_index, *, hs):
         if isinstance(hs, (str, int)):
@@ -363,7 +346,7 @@ class BasisKet(LocalKet):
                 if ind >= hs.dimension:
                     raise ValueError(
                         "Index %s must be < the dimension %d of Hilbert "
-                        "space %s" % (ind, hs.dimension, ascii(hs)))
+                        "space %s" % (ind, hs.dimension, hs))
         else:
             raise TypeError("label_or_index must be an int or str, not %s"
                             % type(label_or_index))
@@ -397,15 +380,15 @@ class BasisKet(LocalKet):
 
             >>> hs =  LocalSpace('tls', basis=('g', 'e'))
             >>> ascii(BasisKet('g', hs=hs).next())
-            '|e>_(tls)'
+            '|e>^(tls)'
             >>> ascii(BasisKet(0, hs=hs).next())
-            '|e>_(tls)'
+            '|e>^(tls)'
 
         We can also go multiple steps:
 
             >>> hs =  LocalSpace('ten', dimension=10)
             >>> ascii(BasisKet(0, hs=hs).next(2))
-            '|2>_(ten)'
+            '|2>^(ten)'
 
         An increment that leads out of the Hilbert space returns zero::
 
@@ -424,7 +407,7 @@ class BasisKet(LocalKet):
 
         >>> hs =  LocalSpace('3l', basis=('g', 'e', 'r'))
         >>> ascii(BasisKet('r', hs=hs).prev(2))
-        '|g>_(3l)'
+        '|g>^(3l)'
         >>> BasisKet('r', hs=hs).prev(3)
         ZeroKet
         """
@@ -441,7 +424,10 @@ class CoherentStateKet(LocalKet):
 
     def __init__(self, ampl, *, hs):
         self._ampl = ampl
-        label = 'alpha=%s' % str(ampl)
+        label = 'alpha=' + str(hash(ampl))
+        # The "label" here is something that is solely used to set the
+        # _instance_key / uniquely identify the instance. Using the hash gets
+        # around variations in str(ampl) due to printer settings
         super().__init__(label, hs=hs)
 
     @property
@@ -451,6 +437,10 @@ class CoherentStateKet(LocalKet):
     @property
     def args(self):
         return (self._ampl, )
+
+    @property
+    def label(self):
+        return 'alpha'
 
     @property
     def kwargs(self):
@@ -469,16 +459,6 @@ class CoherentStateKet(LocalKet):
             ampc = substitute(amp, var_map)
 
         return CoherentStateKet(ampc, hs=hs)
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        printer_fmt = printer.ket_fmt
-        if adjoint:
-            printer_fmt = printer.bra_fmt
-        return printer_fmt.format(
-                label=(printer.render_string('alpha') + '=' +
-                       printer.render_scalar(self._ampl)),
-                space=printer.render_hs_label(self.space))
 
     def all_symbols(self):
         if isinstance(self.ampl, SympyBasic):
@@ -526,11 +506,6 @@ class KetPlus(Ket, Operation):
     def _series_expand(self, param, about, order):
         return KetPlus.create(*[o.series_expand(param, about, order)
                                 for o in self.operands])
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_sum(
-                self.operands, plus_sym='+', minus_sym='-', adjoint=adjoint)
 
 
 class TensorKet(Ket, Operation):
@@ -614,21 +589,6 @@ class TensorKet(Ket, Operation):
         else:
             return self._label
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        if self._label is None:
-            return printer.render_product(
-                    self.operands, prod_sym=printer.tensor_sym,
-                    sum_classes=(KetPlus, ), adjoint=adjoint)
-        else:  # "trivial" product of LocalKets
-            printer_fmt = printer.ket_fmt
-            if adjoint:
-                printer_fmt = printer.bra_fmt
-            label = ",".join([printer.render_string(str(o.label))
-                              for o in self.operands])
-            space = printer.render_hs_label(self.space)
-            return printer_fmt.format(label=label, space=space)
-
 
 class ScalarTimesKet(Ket, Operation):
     """Multiply a Ket by a scalar coefficient.
@@ -646,6 +606,7 @@ class ScalarTimesKet(Ket, Operation):
 
     @property
     def _order_key(self):
+        from qnet.printing import ascii
         t = self.term._order_key
         try:
             c = abs(float(self.coeff))  # smallest coefficients first
@@ -664,27 +625,6 @@ class ScalarTimesKet(Ket, Operation):
     @property
     def term(self):
         return self.operands[1]
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        coeff, term = self.coeff, self.term
-        assert isinstance(term, Ket)
-        term_str = printer.render(term, adjoint=adjoint)
-        if isinstance(term, KetPlus):
-            term_str = printer.par_left + term_str + printer.par_right
-
-        if coeff == -1:
-            if term_str.startswith(printer.par_left):
-                return "- " + term_str
-            else:
-                return "-" + term_str
-        coeff_str = printer.render(coeff, adjoint=adjoint)
-
-        if len(printer.scalar_product_sym) > 0:
-            product_sym = " " + printer.scalar_product_sym + " "
-        else:
-            product_sym = " "
-        return (coeff_str.strip() + product_sym + term_str.strip())
 
     def _expand(self):
         c, t = self.coeff, self.term
@@ -742,20 +682,6 @@ class OperatorTimesKet(Ket, Operation):
     @property
     def ket(self):
         return self.operands[1]
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        op, ket = self.operator, self.ket
-        rendered_op = printer.render(op, adjoint=adjoint)
-        if not isinstance(op, (OperatorSymbol, LocalOperator)):
-            rendered_op = printer.par_left + rendered_op + printer.par_right
-        rendered_ket = printer.render(ket, adjoint=adjoint)
-        if not isinstance(ket, KetSymbol):
-            rendered_ket = printer.par_left + rendered_ket + printer.par_right
-        if adjoint:
-            return rendered_ket + " " + rendered_op
-        else:
-            return rendered_op + " " + rendered_ket
 
     def _expand(self):
         c, t = self.operands
@@ -819,10 +745,6 @@ class Bra(Operation):
     @property
     def label(self):
         return self.ket.label
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render(self.ket, adjoint=(not adjoint))
 
     def __mul__(self, other):
         if isinstance(other, SCALAR_TYPES):
@@ -906,42 +828,6 @@ class BraKet(Operator, Operation):
         return sum(BraKet.create(bes, kes)
                    for bes in besummands for kes in kesummands)
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        trivial = True
-        try:
-            bra_label = str(self.bra.label)
-        except AttributeError:
-            trivial = False
-        try:
-            ket_label = str(self.ket.label)
-        except AttributeError:
-            trivial = False
-        if trivial:
-            if adjoint:
-                return printer.braket_fmt.format(
-                    label_i=printer.render_string(ket_label),
-                    label_j=printer.render_string(bra_label),
-                    space=printer.render_hs_label(self.ket.space))
-            else:
-                return printer.braket_fmt.format(
-                    label_i=printer.render_string(bra_label),
-                    label_j=printer.render_string(ket_label),
-                    space=printer.render_hs_label(self.ket.space))
-        else:
-            rendered_bra = printer.render(self.bra, adjoint=adjoint)
-            if isinstance(self.bra.ket, KetPlus):
-                rendered_bra = (printer.par_left + rendered_bra +
-                                printer.par_right)
-            rendered_ket = printer.render(self.ket, adjoint=adjoint)
-            if isinstance(self.ket, KetPlus):
-                rendered_ket = (printer.par_left + rendered_ket +
-                                printer.par_right)
-            if adjoint:
-                return rendered_ket + printer.scalar_product_sym + rendered_bra
-            else:
-                return rendered_bra + printer.scalar_product_sym + rendered_ket
-
     def _series_expand(self, param, about, order):
         be = self.bra.series_expand(param, about, order)
         ke = self.ket.series_expand(param, about, order)
@@ -987,42 +873,6 @@ class KetBra(Operator, Operation):
         for (k, b) in cartesian_product(kesummands, besummands):
             res_summands.append(KetBra.create(k, b))
         return OperatorPlus.create(*res_summands)
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        trivial = True
-        try:
-            bra_label = str(self.bra.label)
-        except AttributeError:
-            trivial = False
-        try:
-            ket_label = str(self.ket.label)
-        except AttributeError:
-            trivial = False
-        if trivial:
-            if adjoint:
-                return printer.ketbra_fmt.format(
-                    label_i=printer.render_string(bra_label),
-                    label_j=printer.render_string(ket_label),
-                    space=printer.render_hs_label(self.ket.space))
-            else:
-                return printer.ketbra_fmt.format(
-                    label_i=printer.render_string(ket_label),
-                    label_j=printer.render_string(bra_label),
-                    space=printer.render_hs_label(self.ket.space))
-        else:
-            rendered_bra = printer.render(self.bra, adjoint=adjoint)
-            if isinstance(self.bra.ket, KetPlus):
-                rendered_bra = (printer.par_left + rendered_bra +
-                                printer.par_right)
-            rendered_ket = printer.render(self.ket, adjoint=adjoint)
-            if isinstance(self.ket, KetPlus):
-                rendered_ket = (printer.par_left + rendered_ket +
-                                printer.par_right)
-            if adjoint:
-                return rendered_bra + rendered_ket
-            else:
-                return rendered_ket + rendered_bra
 
     def _series_expand(self, param, about, order):
         ke = self.ket.series_expand(param, about, order)

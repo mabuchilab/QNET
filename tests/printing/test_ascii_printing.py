@@ -23,22 +23,37 @@ from sympy import symbols, sqrt, exp, I
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-        Feedback, SeriesInverse)
+        Feedback, SeriesInverse, cid)
+from qnet.circuit_components.beamsplitter_cc import Beamsplitter
+from qnet.circuit_components.three_port_kerr_cavity_cc import (
+        ThreePortKerrCavity)
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector, Commutator)
+        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
+        tr, Adjoint, PseudoInverse, NullSpaceProjector, Commutator,
+        OperatorTimes, OperatorPlusMinusCC)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace)
 from qnet.algebra.matrix_algebra import Matrix
 from qnet.algebra.state_algebra import (
         KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet, CoherentStateKet,
-        UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
-        OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra)
+        UnequalSpaces, Bra, OverlappingSpaces, SpaceTooLargeError, BraKet,
+        KetBra)
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
 from qnet.printing import ascii
+
+
+def test_ascii_scalar():
+    """Test rendering of scalar values"""
+    assert ascii(2) == '2'
+    ascii.printer.cache = {}
+    # we always want 2.0 to be printed as '2'. Without this normalization, the
+    # state of the cache might introduce non-reproducible behavior, as 2==2.0
+    assert ascii(2.0) == '2'
+    assert ascii(1j) == '1j'
+    assert ascii('foo') == 'foo'
 
 
 def test_ascii_circuit_elements():
@@ -49,8 +64,19 @@ def test_ascii_circuit_elements():
     assert ascii(CircuitSymbol("Xi_full", 2)) == 'Xi_full'
     with pytest.raises(ValueError):
         CircuitSymbol(r'\Xi^2', 2)
-    assert ascii(CIdentity) == 'cid(1)'
-    assert ascii(CircuitZero) == 'cid(0)'
+    assert ascii(CIdentity) == 'CIdentity'
+    assert ascii(cid(4)) == 'cid(4)'
+    assert ascii(CircuitZero) == 'CircuitZero'
+
+
+def test_ascii_circuit_components():
+    """Test ascii-printing of some of the circuit components"""
+    B11 = Beamsplitter('Latch.B11')
+    assert ascii(B11) == 'Latch.B11(theta=pi/4)'
+    C1 = ThreePortKerrCavity('Latch.C1')
+    assert (
+        ascii(C1) == 'Latch.C1(Delta=Delta, chi=chi, kappa_1=kappa_1, '
+        'kappa_2=kappa_2, kappa_3=kappa_3, FOCK_DIM=75)')
 
 
 def test_ascii_circuit_operations():
@@ -65,7 +91,7 @@ def test_ascii_circuit_operations():
     assert ascii(A << B << C) == "A_test << B_test << C_test"
     assert ascii(A + B + C) == "A_test + B_test + C_test"
     assert ascii(A << (beta + gamma)) == "A_test << (beta + gamma)"
-    assert ascii(A + (B << C)) == "A_test + B_test << C_test"
+    assert ascii(A + (B << C)) == "A_test + (B_test << C_test)"
     assert ascii(perm) == "Perm(2, 1, 0, 3)"
     assert (ascii(SeriesProduct(perm, (A+B))) ==
             "Perm(2, 1, 0, 3) << (A_test + B_test)")
@@ -117,6 +143,9 @@ def test_ascii_operator_elements():
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
     assert ascii(OperatorSymbol("A", hs=hs1)) == 'A^(q1)'
+    A_1 = OperatorSymbol("A_1", hs=1)
+    assert ascii(A_1, show_hs_label='subscript') == 'A_1,(1)'
+    assert ascii(OperatorSymbol("A", hs=hs1), show_hs_label=False) == 'A'
     assert ascii(OperatorSymbol("A_1", hs=hs1*hs2)) == 'A_1^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_2", hs=('q1', 'q2'))) == 'Xi_2^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_full", hs=1)) == 'Xi_full^(1)'
@@ -125,6 +154,8 @@ def test_ascii_operator_elements():
     assert ascii(IdentityOperator) == "1"
     assert ascii(ZeroOperator) == "0"
     assert ascii(Create(hs=1)) == "a^(1)H"
+    assert ascii(Create(hs=1), show_hs_label=False) == "a^H"
+    assert ascii(Create(hs=1), show_hs_label='subscript') == "a_(1)^H"
     assert ascii(Create(hs=1, identifier='b')) == "b^(1)H"
     assert ascii(Destroy(hs=1)) == "a^(1)"
     assert ascii(Destroy(hs=1, identifier='b')) == "b^(1)"
@@ -137,8 +168,11 @@ def test_ascii_operator_elements():
     assert ascii(Displace(0.5, hs=1)) == 'D^(1)(0.5)'
     assert ascii(Squeeze(0.5, hs=1)) == 'Squeeze^(1)(0.5)'
     hs_tls = LocalSpace('1', basis=('g', 'e'))
-    assert ascii(LocalSigma('e', 'g', hs=hs_tls)) == 'sigma_e,g^(1)'
-    assert ascii(LocalSigma('e', 'e', hs=hs_tls)) == 'Pi_e^(1)'
+    sig_e_g = LocalSigma('e', 'g', hs=hs_tls)
+    assert ascii(sig_e_g) == '|e><g|^(1)'
+    assert ascii(sig_e_g, sig_as_ketbra=False) == 'sigma_e,g^(1)'
+    sig_e_e = LocalProjector('e', hs=hs_tls)
+    assert ascii(sig_e_e, sig_as_ketbra=False) == 'Pi_e^(1)'
 
 
 def test_ascii_operator_operations():
@@ -148,16 +182,30 @@ def test_ascii_operator_operations():
     A = OperatorSymbol("A", hs=hs1)
     B = OperatorSymbol("B", hs=hs1)
     C = OperatorSymbol("C", hs=hs2)
+    D = OperatorSymbol("D", hs=hs1)
     gamma = symbols('gamma', positive=True)
     assert ascii(A + B) == 'A^(q_1) + B^(q_1)'
     assert ascii(A * B) == 'A^(q_1) * B^(q_1)'
     assert ascii(A * C) == 'A^(q_1) * C^(q_2)'
+    assert ascii(A * (B + D)) == 'A^(q_1) * (B^(q_1) + D^(q_1))'
+    assert ascii(A * (B - D)) == 'A^(q_1) * (B^(q_1) - D^(q_1))'
+    assert (
+        ascii((A + B) * (-2 * B - D)) ==
+        '(A^(q_1) + B^(q_1)) * (-2 * B^(q_1) - D^(q_1))')
+    assert ascii(OperatorTimes(A, -B)) == 'A^(q_1) * (-B^(q_1))'
+    assert ascii(OperatorTimes(A, -B), show_hs_label=False) == 'A * (-B)'
     assert ascii(2 * A) == '2 * A^(q_1)'
     assert ascii(2j * A) == '2j * A^(q_1)'
     assert ascii((1+2j) * A) == '(1+2j) * A^(q_1)'
     assert ascii(gamma**2 * A) == 'gamma**2 * A^(q_1)'
     assert ascii(-gamma**2/2 * A) == '-gamma**2/2 * A^(q_1)'
     assert ascii(tr(A * C, over_space=hs2)) == 'tr_(q_2)[C^(q_2)] * A^(q_1)'
+    expr = A + OperatorPlusMinusCC(B * D)
+    assert ascii(expr, show_hs_label=False) == 'A + (B * D + c.c.)'
+    expr = A + OperatorPlusMinusCC(B + D)
+    assert ascii(expr, show_hs_label=False) == 'A + (B + D + c.c.)'
+    expr = A * OperatorPlusMinusCC(B * D)
+    assert ascii(expr, show_hs_label=False) == 'A * (B * D + c.c.)'
     assert ascii(Adjoint(A)) == 'A^(q_1)H'
     assert ascii(Adjoint(Create(hs=1))) == 'a^(1)'
     assert ascii(Adjoint(A + B)) == '(A^(q_1) + B^(q_1))^H'
@@ -165,8 +213,8 @@ def test_ascii_operator_operations():
     assert ascii(NullSpaceProjector(A)) == 'P_Ker(A^(q_1))'
     assert ascii(A - B) == 'A^(q_1) - B^(q_1)'
     assert ascii(A - B + C) == 'A^(q_1) - B^(q_1) + C^(q_2)'
-    assert (ascii(2 * A - sqrt(gamma) * (B + C)) ==
-            '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))')
+    expr = 2 * A - sqrt(gamma) * (B + C)
+    assert ascii(expr) == '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))'
     assert ascii(Commutator(A, B)) == r'[A^(q_1), B^(q_1)]'
 
 
@@ -174,39 +222,48 @@ def test_ascii_ket_elements():
     """Test the ascii representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
-    assert ascii(KetSymbol('Psi', hs=hs1)) == '|Psi>_(q1)'
-    assert ascii(KetSymbol('Psi', hs=1)) == '|Psi>_(1)'
-    assert ascii(KetSymbol('Psi', hs=(1, 2))) == '|Psi>_(1*2)'
-    assert ascii(KetSymbol('Psi', hs=hs1*hs2)) == '|Psi>_(q1*q2)'
+    assert ascii(KetSymbol('Psi', hs=hs1)) == '|Psi>^(q1)'
+    psi = KetSymbol('Psi', hs=1)
+    assert ascii(psi) == '|Psi>^(1)'
+    assert ascii(psi, show_hs_label='subscript') == '|Psi>_(1)'
+    assert ascii(psi, show_hs_label=False) == '|Psi>'
+    assert ascii(KetSymbol('Psi', hs=(1, 2))) == '|Psi>^(1*2)'
+    assert ascii(KetSymbol('Psi', hs=hs1*hs2)) == '|Psi>^(q1*q2)'
     with pytest.raises(ValueError):
         KetSymbol(r'\Psi', hs=hs1)
-    assert ascii(LocalKet('Psi', hs=1)) == '|Psi>_(1)'
+    assert ascii(LocalKet('Psi', hs=1)) == '|Psi>^(1)'
     with pytest.raises(ValueError):
         LocalKet('Psi', hs=hs1*hs2)
     assert ascii(ZeroKet) == '0'
     assert ascii(TrivialKet) == '1'
-    assert ascii(BasisKet('e', hs=hs1)) == '|e>_(q1)'
-    assert ascii(BasisKet(1, hs=1)) == '|1>_(1)'
-    assert ascii(BasisKet(1, hs=hs1)) == '|e>_(q1)'
+    assert ascii(BasisKet('e', hs=hs1)) == '|e>^(q1)'
+    assert ascii(BasisKet(1, hs=1)) == '|1>^(1)'
+    assert ascii(BasisKet(1, hs=hs1)) == '|e>^(q1)'
     with pytest.raises(ValueError):
         BasisKet('1', hs=hs1)
-    assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2.0>_(1)'
+    assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2>^(1)'
+    assert ascii(CoherentStateKet(2.1, hs=1)) == '|alpha=2.1>^(1)'
 
 
 def test_ascii_bra_elements():
     """Test the ascii representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
-    assert ascii(Bra(KetSymbol('Psi', hs=hs1))) == '<Psi|_(q1)'
-    assert ascii(Bra(KetSymbol('Psi', hs=1))) == '<Psi|_(1)'
-    assert ascii(Bra(KetSymbol('Psi', hs=(1, 2)))) == '<Psi|_(1*2)'
-    assert ascii(Bra(KetSymbol('Psi', hs=hs1*hs2))) == '<Psi|_(q1*q2)'
-    assert ascii(LocalKet('Psi', hs=1).dag) == '<Psi|_(1)'
+    bra = Bra(KetSymbol('Psi', hs=1))
+    assert ascii(Bra(KetSymbol('Psi', hs=hs1))) == '<Psi|^(q1)'
+    assert ascii(bra) == '<Psi|^(1)'
+    assert ascii(bra, show_hs_label=False) == '<Psi|'
+    assert ascii(bra, show_hs_label='subscript') == '<Psi|_(1)'
+    assert ascii(Bra(KetSymbol('Psi', hs=(1, 2)))) == '<Psi|^(1*2)'
+    assert ascii(Bra(KetSymbol('Psi', hs=hs1*hs2))) == '<Psi|^(q1*q2)'
+    assert ascii(LocalKet('Psi', hs=1).dag) == '<Psi|^(1)'
     assert ascii(Bra(ZeroKet)) == '0'
     assert ascii(Bra(TrivialKet)) == '1'
-    assert ascii(BasisKet('e', hs=hs1).adjoint()) == '<e|_(q1)'
-    assert ascii(BasisKet(1, hs=1).adjoint()) == '<1|_(1)'
-    assert ascii(CoherentStateKet(2.0, hs=1).dag) == '<alpha=2.0|_(1)'
+    assert ascii(BasisKet('e', hs=hs1).adjoint()) == '<e|^(q1)'
+    assert ascii(BasisKet(1, hs=1).adjoint()) == '<1|^(1)'
+    assert ascii(CoherentStateKet(2.0, hs=1).dag) == '<alpha=2|^(1)'
+    assert ascii(CoherentStateKet(2.1, hs=1).dag) == '<alpha=2.1|^(1)'
+    assert ascii(CoherentStateKet(0.5j, hs=1).dag) == '<alpha=0.5j|^(1)'
 
 
 def test_ascii_ket_operations():
@@ -227,39 +284,41 @@ def test_ascii_ket_operations():
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
     phase = exp(-I * gamma)
-    assert ascii(psi1 + psi2) == '|Psi_1>_(q_1) + |Psi_2>_(q_1)'
+    assert ascii(psi1 + psi2) == '|Psi_1>^(q_1) + |Psi_2>^(q_1)'
     assert (ascii(psi1 - psi2 + psi3) ==
-            '|Psi_1>_(q_1) - |Psi_2>_(q_1) + |Psi_3>_(q_1)')
+            '|Psi_1>^(q_1) - |Psi_2>^(q_1) + |Psi_3>^(q_1)')
     with pytest.raises(UnequalSpaces):
         psi1 + phi
     with pytest.raises(AttributeError):
         (psi1 * phi).label
-    assert ascii(psi1 * phi) == '|Psi_1>_(q_1) * |Phi>_(q_2)'
+    assert ascii(psi1 * phi) == '|Psi_1>^(q_1) * |Phi>^(q_2)'
     assert (psi1_l * phi_l).label == 'Psi_1,Phi'
-    assert ascii(psi1_l * phi_l) == '|Psi_1,Phi>_(q_1*q_2)'
+    assert ascii(psi1_l * phi_l) == '|Psi_1,Phi>^(q_1*q_2)'
     with pytest.raises(OverlappingSpaces):
         psi1 * psi2
-    assert ascii(phase * psi1) == 'exp(-I*gamma) * |Psi_1>_(q_1)'
-    assert ascii(A * psi1) == 'A_0^(q_1) |Psi_1>_(q_1)'
+    assert ascii(phase * psi1) == 'exp(-I*gamma) * |Psi_1>^(q_1)'
+    assert ascii(A * psi1) == 'A_0^(q_1) |Psi_1>^(q_1)'
     with pytest.raises(SpaceTooLargeError):
         A * phi
-    assert ascii(BraKet(psi1, psi2)) == '<Psi_1|Psi_2>_(q_1)'
-    assert ascii(psi1.dag * psi2) == '<Psi_1|Psi_2>_(q_1)'
+    assert ascii(BraKet(psi1, psi2)) == '<Psi_1|Psi_2>^(q_1)'
+    assert ascii(psi1.dag * psi2) == '<Psi_1|Psi_2>^(q_1)'
     assert ascii(ket_e1.dag * ket_e1) == '1'
     assert ascii(ket_g1.dag * ket_e1) == '0'
-    assert ascii(KetBra(psi1, psi2)) == '|Psi_1><Psi_2|_(q_1)'
+    assert ascii(KetBra(psi1, psi2)) == '|Psi_1><Psi_2|^(q_1)'
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (ascii(bell1) ==
-            'sqrt(2)/2 * (|e,g>_(q_1*q_2) - I * |g,e>_(q_1*q_2))')
+            '1/sqrt(2) * (|e,g>^(q_1*q_2) - I * |g,e>^(q_1*q_2))')
     assert (ascii(bell2) ==
-            'sqrt(2)/2 * (|e,e>_(q_1*q_2) - |g,g>_(q_1*q_2))')
-    assert (ascii(BraKet.create(bell1, bell2)) ==
-            r'1/2 * (<e,g|_(q_1*q_2) + I * <g,e|_(q_1*q_2))*(|e,e>_(q_1*q_2) '
-            r'- |g,g>_(q_1*q_2))')
+            '1/sqrt(2) * (|e,e>^(q_1*q_2) - |g,g>^(q_1*q_2))')
+    expr = BraKet.create(bell1, bell2)
+    expected = (
+        r'1/2 * (<e,g|^(q_1*q_2) + I * <g,e|^(q_1*q_2)) * (|e,e>^(q_1*q_2) '
+        r'- |g,g>^(q_1*q_2))')
+    assert ascii(expr) == expected
     assert (ascii(KetBra.create(bell1, bell2)) ==
-            '1/2 * (|e,g>_(q_1*q_2) - I * |g,e>_(q_1*q_2))(<e,e|_(q_1*q_2) '
-            '- <g,g|_(q_1*q_2))')
+            '1/2 * (|e,g>^(q_1*q_2) - I * |g,e>^(q_1*q_2))(<e,e|^(q_1*q_2) '
+            '- <g,g|^(q_1*q_2))')
 
 
 def test_ascii_bra_operations():
@@ -281,18 +340,18 @@ def test_ascii_bra_operations():
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
     phase = exp(-I * gamma)
-    assert ascii((psi1 + psi2).dag) == '<Psi_1|_(q_1) + <Psi_2|_(q_1)'
-    assert ascii(bra_psi1 + bra_psi2) == '<Psi_1|_(q_1) + <Psi_2|_(q_1)'
+    assert ascii((psi1 + psi2).dag) == '<Psi_1|^(q_1) + <Psi_2|^(q_1)'
+    assert ascii(bra_psi1 + bra_psi2) == '<Psi_1|^(q_1) + <Psi_2|^(q_1)'
     assert (ascii((psi1 - psi2 + psi3).dag) ==
-            '<Psi_1|_(q_1) - <Psi_2|_(q_1) + <Psi_3|_(q_1)')
+            '<Psi_1|^(q_1) - <Psi_2|^(q_1) + <Psi_3|^(q_1)')
     assert (ascii(bra_psi1 - bra_psi2 + bra_psi3) ==
-            '<Psi_1|_(q_1) - <Psi_2|_(q_1) + <Psi_3|_(q_1)')
-    assert ascii((psi1 * phi).dag) == '<Psi_1|_(q_1) * <Phi|_(q_2)'
-    assert ascii(bra_psi1 * bra_phi) == '<Psi_1|_(q_1) * <Phi|_(q_2)'
+            '<Psi_1|^(q_1) - <Psi_2|^(q_1) + <Psi_3|^(q_1)')
+    assert ascii((psi1 * phi).dag) == '<Psi_1|^(q_1) * <Phi|^(q_2)'
+    assert ascii(bra_psi1 * bra_phi) == '<Psi_1|^(q_1) * <Phi|^(q_2)'
     assert (bra_psi1_l * bra_phi_l).label == 'Psi_1,Phi'
-    assert ascii(bra_psi1_l * bra_phi_l) == '<Psi_1,Phi|_(q_1*q_2)'
-    assert ascii(Bra(phase * psi1)) == 'exp(I*gamma) * <Psi_1|_(q_1)'
-    assert ascii((A * psi1).dag) == '<Psi_1|_(q_1) A_0^(q_1)H'
+    assert ascii(bra_psi1_l * bra_phi_l) == '<Psi_1,Phi|^(q_1*q_2)'
+    assert ascii(Bra(phase * psi1)) == 'exp(I*gamma) * <Psi_1|^(q_1)'
+    assert ascii((A * psi1).dag) == '<Psi_1|^(q_1) A_0^(q_1)H'
 
 
 def test_ascii_sop_elements():
@@ -332,7 +391,7 @@ def test_ascii_sop_operations():
     assert ascii(SuperAdjoint(A)) == 'A^(q_1)H'
     assert ascii(SuperAdjoint(A + B)) == '(A^(q_1) + B^(q_1))^H'
     assert ascii(A - B) == 'A^(q_1) - B^(q_1)'
-    assert ascii(A - B + C) == 'A^(q_1) + C^(q_2) - B^(q_1)'
+    assert ascii(A - B + C) == 'A^(q_1) - B^(q_1) + C^(q_2)'
     assert (ascii(2 * A - sqrt(gamma) * (B + C)) ==
             '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))')
     assert ascii(SPre(A_op)) == 'SPre(A^(1))'

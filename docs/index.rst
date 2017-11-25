@@ -41,6 +41,7 @@ Contents:
 
    install
    symbolic_algebra
+   printing
    circuit_rules
    circuit_component
    schematic_capture

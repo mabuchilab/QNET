@@ -32,8 +32,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
 
 from .abstract_algebra import (
-        Expression, Operation, AlgebraError, assoc, idem, filter_neutral,
-        cache_attr)
+        Expression, Operation, AlgebraError, assoc, idem, filter_neutral)
 from .ordering import KeyTuple
 from .singleton import Singleton, singleton_object
 
@@ -189,12 +188,6 @@ class HilbertSpace(metaclass=ABCMeta):
         """Test whether a Hilbert space occures as a strict sub-factor in
         a (larger) Hilbert space"""
         raise NotImplementedError(self.__class__.__name__)
-
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.hilbert_space_fmt.format(
-                label=printer.render_hs_label(self))
 
     def __len__(self):
         """The number of LocalSpace factors / degrees of freedom."""
@@ -526,11 +519,6 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
     def label(self):
         return "null"
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.hilbert_space_fmt.format(
-                label=printer.render_string(self.label))
-
 
 @singleton_object
 class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
@@ -582,11 +570,6 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
     @property
     def label(self):
         return "total"
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.hilbert_space_fmt.format(
-                label=printer.render_string(self.label))
 
 
 ###############################################################################
@@ -763,8 +746,3 @@ class ProductSpace(HilbertSpace, Operation):
             return True
         return False
 
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_product(
-                self.operands, prod_sym=printer.tensor_sym, sum_classes=())

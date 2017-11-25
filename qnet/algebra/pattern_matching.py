@@ -31,7 +31,7 @@ that the corresponding wildcard Pattern matches.
 '''
 import re
 import unittest.mock
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict
 from collections.abc import Sequence
 
 

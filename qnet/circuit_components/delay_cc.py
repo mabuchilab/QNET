@@ -79,9 +79,3 @@ class Delay(Component):
         slhm = [SLH(S, Matrix([[sqrt(kj) * Destroy(hs=hj)]]), -Dj * Create(hs=hj) * Destroy(hs=hj)) for (kj, Dj, hj) in zip(kappas, Deltas, hm)]
 
         return freduce(lambda a, b: a << b, slhp + slhm, slh0).toSLH()
-
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        return (printer.render_string(self.name) + printer.par_left +
-                printer.render(self.tau) + printer.par_right)

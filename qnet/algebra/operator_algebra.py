@@ -43,7 +43,7 @@ from .hilbert_space_algebra import (
 from .pattern_matching import wc, pattern_head, pattern
 from .ordering import (
     KeyTuple, DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
-from ..printing import ascii, srepr
+from ..printing import ascii
 
 sympyOne = sympify(1)
 
@@ -237,12 +237,12 @@ class Operator(metaclass=ABCMeta):
 
             >>> hs = LocalSpace(1, basis=('g', 'e'))
             >>> op = LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs)
-            >>> print(ascii(op))
+            >>> print(ascii(op, sig_as_ketbra=False))
             sigma_e,g^(1) + sigma_g,e^(1)
             >>> print(ascii(op.expand_in_basis()))
-            |e><g|_(1) + |g><e|_(1)
+            |e><g|^(1) + |g><e|^(1)
             >>> print(ascii(op.expand_in_basis(hermitian=True)))
-            |g><e|_(1) + c.c.
+            |g><e|^(1) + c.c.
         """
         from qnet.algebra.state_algebra import KetBra  # avoid circ. import
         if basis_states is None:
@@ -366,6 +366,7 @@ class Operator(metaclass=ABCMeta):
         else:
             return NotImplemented
 
+
 class LocalOperator(Operator, Expression, metaclass=ABCMeta):
     """Base class for all kinds of operators that act *locally*,
     i.e. only on a single degree of freedom."""
@@ -419,15 +420,6 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
             return {'hs': self._hs}
         else:
             return self.kwargs
-
-    def _render(self, fmt, adjoint=False):
-        if adjoint:
-            dagger = not self._dagger
-        else:
-            dagger = self._dagger
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_op(self._identifier, self._hs,
-                                 dagger=dagger, args=self.args)
 
     @property
     def identifier(self):
@@ -527,10 +519,6 @@ class OperatorSymbol(Operator, Expression):
     def kwargs(self):
         return {'hs': self._hs}
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_op(self.identifier, self._hs, dagger=adjoint)
-
     @property
     def space(self):
         return self._hs
@@ -574,10 +562,6 @@ class IdentityOperator(Operator, Expression, metaclass=Singleton):
     def _pseudo_inverse(self):
         return self
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.identity_sym
-
     def __eq__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return other == 1
@@ -618,10 +602,6 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
 
     def _pseudo_inverse(self):
         return self
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.zero_sym
 
     def __eq__(self, other):
         if isinstance(other, SCALAR_TYPES):
@@ -923,17 +903,6 @@ class LocalSigma(LocalOperator):
             self._identifier = 'Pi'
         super().__init__(j, k, hs=hs, identifier=identifier)
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        if self._is_projector:
-            identifier = "%s_%s" % (self._identifier, self.j)
-        else:
-            if adjoint:
-                identifier = "%s_%s,%s" % (self._identifier, self.k, self.j)
-            else:
-                identifier = "%s_%s,%s" % (self._identifier, self.j, self.k)
-        return printer.render_op(identifier, self._hs, dagger=adjoint)
-
     @property
     def args(self):
         """The two eigenstate labels `j` and `k` that the operator connects"""
@@ -1022,12 +991,6 @@ class OperatorPlus(OperatorOperation):
     def _diff(self, sym):
         return sum([o._diff(sym) for o in self.operands], ZeroOperator)
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_sum(
-                self.operands, plus_sym='+', minus_sym='-', adjoint=adjoint,
-                lower_classes=(OperatorPlusMinusCC, ))
-
 
 class OperatorTimes(OperatorOperation):
     """A product of Operators that serves both as a product within a Hilbert
@@ -1091,20 +1054,6 @@ class OperatorTimes(OperatorOperation):
         rest = OperatorTimes.create(*self.operands[1:])
         return first._diff(sym) * rest + first * rest._diff(sym)
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-
-        def dynamic_prod_sym(a, b):
-            if a.space == b.space:
-                return printer.op_product_sym
-            else:
-                return printer.tensor_sym
-
-        return printer.render_product(
-                self.operands, prod_sym=printer.tensor_sym,
-                sum_classes=(OperatorPlus, OperatorPlusMinusCC),
-                dynamic_prod_sym=dynamic_prod_sym)
-
 
 class ScalarTimesOperator(Operator, Operation):
     """Multiply an operator by a scalar coefficient.
@@ -1145,32 +1094,6 @@ class ScalarTimesOperator(Operator, Operation):
     @property
     def term(self):
         return self.operands[1]
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        coeff, term = self.coeff, self.term
-        term_str = printer.render(term, adjoint=adjoint)
-        if isinstance(term, (OperatorPlus, OperatorPlusMinusCC)):
-            term_str = printer.par_left + term_str + printer.par_right
-
-        if coeff == -1:
-            if term_str.startswith(printer.par_left):
-                return "- " + term_str
-            else:
-                return "-" + term_str
-        coeff_str = printer.render_scalar(coeff, adjoint=adjoint)
-
-        if term is IdentityOperator:
-            return coeff_str
-        else:
-            if len(printer.scalar_product_sym) > 0:
-                product_sym = " " + printer.scalar_product_sym + " "
-            else:
-                product_sym = " "
-            coeff_str = coeff_str.strip()
-            if isinstance(coeff, SympyAdd):
-                coeff_str = printer.par_left + coeff_str + printer.par_right
-            return coeff_str + product_sym + term_str.strip()
 
     def _expand(self):
         c, t = self.operands
@@ -1308,10 +1231,6 @@ class Commutator(OperatorOperation):
         return (self.__class__(self.A.diff(sym), self.B) +
                 self.__class__(self.A, self.B.diff(sym)))
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_commutator(A=self.A, B=self.B, adjoint=adjoint)
-
 
 class OperatorTrace(SingleOperatorOperation):
     r'''Take the (partial) trace of an operator `op` ($\Op{O}) over the degrees
@@ -1364,12 +1283,6 @@ class OperatorTrace(SingleOperatorOperation):
         return tuple(OperatorTrace.create(opet, over_space=self._over_space)
                      for opet in ope)
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        s = printer.render_hs_label(self._over_space)
-        o = printer.render(self.operand, adjoint=adjoint)
-        return printer.op_trace_fmt.format(space=s, operand=o)
-
     def all_symbols(self):
         return self.operand.all_symbols()
 
@@ -1397,26 +1310,6 @@ class Adjoint(SingleOperatorOperation):
 
     def _pseudo_inverse(self):
         return self.operand.pseudo_inverse().adjoint()
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        o = self.operand
-        if isinstance(o, LocalOperator):
-            if adjoint:
-                dagger = o._dagger
-            else:
-                dagger = not o._dagger
-            return printer.render_op(o.identifier, hs=o.space,
-                                     dagger=dagger, args=o.args[1:])
-        elif isinstance(o, OperatorSymbol):
-            return printer.render_op(o.identifier, hs=o.space,
-                                     dagger=(not adjoint))
-        else:
-            if adjoint:
-                return printer.render(o)
-            else:
-                return (printer.par_left + printer.render(o) +
-                        printer.par_right + printer.daggered_sym)
 
     def _diff(self, sym):
         return Adjoint.create(self.operands[0]._diff(sym))
@@ -1449,14 +1342,6 @@ class OperatorPlusMinusCC(SingleOperatorOperation):
     def _pseudo_inverse(self):
         return OperatorPlusMinusCC(self.operand.pseudo_inverse(), self._sign)
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        o = self.operand
-        sign_str = ' + '
-        if self._sign < 0:
-            sign_str = ' - '
-        return printer.render(o) + sign_str + printer.cc_string
-
     def _diff(self, sym):
         return OperatorPlusMinusCC(self.operands._diff(sym), self._sign)
 
@@ -1486,12 +1371,6 @@ class PseudoInverse(SingleOperatorOperation):
     def _pseudo_inverse(self):
         return self.operand
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        o = printer.render(self.operand, adjoint=adjoint)
-        return (printer.par_left + o + printer.par_right +
-                printer.pseudo_daggered_sym)
-
 
 class NullSpaceProjector(SingleOperatorOperation):
     r"""Returns a projection operator :math:`\mathcal{P}_{{\rm Ker} X}` that
@@ -1511,11 +1390,6 @@ class NullSpaceProjector(SingleOperatorOperation):
 
     def _expand(self):
         return self
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_op(printer.null_space_proj_sym, hs=None,
-                                 args=self.operands, dagger=adjoint)
 
 
 ###############################################################################

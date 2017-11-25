@@ -46,7 +46,6 @@ their replacements to all the desired algebraic classes.
 from collections import OrderedDict
 
 from .scalar_types import SCALAR_TYPES
-from ..printing import srepr
 
 __all__ = []
 
@@ -125,7 +124,8 @@ class DisjunctCommutativeHSOrder():
             self.trivial = True
 
     def __repr__(self):
-        return "%s(%s, space_order=%r, op_order=%r)" %  (
+        from qnet.printing import srepr
+        return "%s(%s, space_order=%r, op_order=%r)" % (
                 self.__class__.__name__, srepr(self.op), self._space_order,
                 self._op_order)
 
@@ -157,7 +157,8 @@ class FullCommutativeHSOrder():
             self._op_order = op_order
 
     def __repr__(self):
-        return "%s(%s, space_order=%r, op_order=%r)" %  (
+        from qnet.printing import srepr
+        return "%s(%s, space_order=%r, op_order=%r)" % (
                 self.__class__.__name__, srepr(self.op), self._space_order,
                 self._op_order)
 

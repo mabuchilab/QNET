@@ -22,10 +22,12 @@ This module provides the :func:`dotprint` function that generates a `DOT`_
 diagram for a given expression. For example::
 
     >>> from qnet.algebra.operator_algebra import OperatorSymbol, Adjoint
+    >>> from qnet.printing import configure_printing
     >>> A = OperatorSymbol("A", hs=1)
     >>> B = OperatorSymbol("B", hs=1)
     >>> expr = 2 * (A + B)
-    >>> dot = dotprint(expr)
+    >>> with configure_printing(str_format='unicode'):
+    ...     dot = dotprint(expr)
     >>> dot.strip() == r'''
     ... digraph{
     ...
@@ -112,15 +114,16 @@ def _node_id(expr, location, idfunc, repeat=True):
 
 
 def expr_labelfunc(leaf_renderer=str, fallback=str):
-    """Factory for function ``labelfunc(expr, is_leaf)`` with the following
-    behavior:
+    """Factory for function ``labelfunc(expr, is_leaf)``
+
+    It has the following behavior:
 
     * If ``is_leaf`` is True, return ``leaf_renderer(expr)``.
 
     * Otherwise,
 
       - if `expr` is an Expression, return a custom string similar to
-        :func:`~qnet.printing.srepr.srepr`, but with an ellipsis for ``args``
+        :func:`~qnet.printing.srepr`, but with an ellipsis for ``args``
       - otherwise, return ``fallback(expr)``
     """
 
@@ -154,7 +157,7 @@ def dotprint(
         expr, styles=None, maxdepth=None, repeat=True,
         labelfunc=expr_labelfunc(str, str),
         idfunc=None, get_children=_op_children, **kwargs):
-    """`DOT`_ (graph) description of an Expression tree
+    """Return the `DOT`_ (graph) description of an Expression tree as a string
 
     Args:
         expr (object): The expression to render into a graph. Typically an
@@ -211,7 +214,13 @@ def dotprint(
         example, in order to produce a horizontal instead of vertical graph,
         use ``dotprint(..., rankdir='LR')``.
 
+    See also:
+        :func:`sympy.printing.dot.dotprint` provides an equivalent function for
+        SymPy expressions.
     """
+    # the routine is called 'dotprint' to match sympy (even though most of the
+    # similar routines for the other printers are called e.g. 'latex', not
+    # 'latexprint'
     if idfunc is None:
         if repeat:
             idfunc = lambda expr: 'node'

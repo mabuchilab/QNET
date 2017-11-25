@@ -22,7 +22,7 @@ from collections import OrderedDict
 from sympy import Symbol
 import pytest
 
-from qnet.algebra.abstract_algebra import SCALAR_TYPES
+from qnet.algebra.scalar_types import SCALAR_TYPES
 from qnet.algebra.operator_algebra import (
         OperatorSymbol, ScalarTimesOperator, OperatorTimes, Operator,
         LocalOperator, Create)

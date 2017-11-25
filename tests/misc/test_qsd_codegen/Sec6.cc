@@ -40,9 +40,9 @@ int main(int argc, char* argv[])
   IdentityOperator Id2(2);
   AnnihilationOperator A0(0);
   AnnihilationOperator A1(1);
-  FieldTransitionOperator S2_1_1(1,1,2);
   FieldTransitionOperator S2_0_1(0,1,2);
   FieldTransitionOperator S2_1_0(1,0,2);
+  FieldTransitionOperator S2_1_1(1,1,2);
   Operator Id = Id0*Id1*Id2;
   Operator Ad0 = A0.hc();
   Operator Ad1 = A1.hc();

@@ -57,28 +57,111 @@ def test_srepr_circuit_elements():
             r'CircuitZero')
 
 
-def test_foreign_srepr():
-    """Test that srepr also works on sympy/numpy components"""
+def test_indented_srepr():
+    hs1 = LocalSpace('q_1', basis=('g', 'e'))
+    A = OperatorSymbol("A", hs=1)
+    res = srepr(hs1, indented=True)
+    expected = dedent(r'''
+        LocalSpace(
+            'q_1',
+            basis=('g', 'e'))''').strip()
+    assert res == expected
+
+    # test that caching doesn't mess up indentation
+    expr = OperatorPlus(A, A)
+    res = srepr(expr, indented=True)
+    expected = dedent(r'''
+    OperatorPlus(
+        OperatorSymbol(
+            'A',
+            hs=LocalSpace(
+                '1')),
+        OperatorSymbol(
+            'A',
+            hs=LocalSpace(
+                '1')))''').strip()
+    assert res == expected
+
+
+@pytest.fixture
+def matrix_expr():
     A = OperatorSymbol("A", hs=1)
     B = OperatorSymbol("B", hs=1)
     C = OperatorSymbol("C", hs=1)
     D = OperatorSymbol("D", hs=1)
+    gamma = symbols('gamma')
+    phase = exp(-I * gamma / 2)
+    return Matrix([[phase*A, B], [C, phase.conjugate()*D]])
+
+
+@pytest.fixture
+def bell1_expr():
     hs1 = LocalSpace('q_1', basis=('g', 'e'))
     hs2 = LocalSpace('q_2', basis=('g', 'e'))
     ket_g1 = BasisKet('g', hs=hs1)
     ket_e1 = BasisKet('e', hs=hs1)
     ket_g2 = BasisKet('g', hs=hs2)
     ket_e2 = BasisKet('e', hs=hs2)
-    gamma = symbols('gamma')
-    phase = exp(-I * gamma / 2)
-    bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
-    expr = Matrix([[phase*A, B], [C, phase.conjugate()*D]])
-    res = srepr(expr)
-    expected = "Matrix(array([[ScalarTimesOperator(exp(Mul(Integer(-1), Rational(1, 2), I, Symbol('gamma'))), OperatorSymbol('A', hs=LocalSpace('1'))), OperatorSymbol('B', hs=LocalSpace('1'))], [OperatorSymbol('C', hs=LocalSpace('1')), ScalarTimesOperator(exp(Mul(Rational(1, 2), I, conjugate(Symbol('gamma')))), OperatorSymbol('D', hs=LocalSpace('1')))]], dtype=object))"
+    return (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
+
+
+def test_foreign_srepr(matrix_expr, bell1_expr):
+    """Test that srepr also works on sympy/numpy components"""
+
+    res = srepr(matrix_expr)
+    expected = (
+        "Matrix(array([[ScalarTimesOperator(exp(Mul(Integer(-1), "
+        "Rational(1, 2), I, Symbol('gamma'))), "
+        "OperatorSymbol('A', hs=LocalSpace('1'))), "
+        "OperatorSymbol('B', hs=LocalSpace('1'))], "
+        "[OperatorSymbol('C', hs=LocalSpace('1')), "
+        "ScalarTimesOperator(exp(Mul(Rational(1, 2), I, "
+        "conjugate(Symbol('gamma')))), "
+        "OperatorSymbol('D', hs=LocalSpace('1')))]], dtype=object))")
     assert res == expected
-    expected = "ScalarTimesKet(Mul(Rational(1, 2), Pow(Integer(2), Rational(1, 2))), KetPlus(TensorKet(BasisKet('e', hs=LocalSpace('q_1', basis=('g', 'e'))), BasisKet('g', hs=LocalSpace('q_2', basis=('g', 'e')))), ScalarTimesKet(Mul(Integer(-1), I), TensorKet(BasisKet('g', hs=LocalSpace('q_1', basis=('g', 'e'))), BasisKet('e', hs=LocalSpace('q_2', basis=('g', 'e')))))))"
-    assert srepr(bell1) == expected
-    assert srepr(bell1, indented=True) == dedent(r'''
+
+    res = srepr(matrix_expr, indented=True)
+    expected = dedent(r'''
+    Matrix(
+        array([
+            [
+                ScalarTimesOperator(
+                    exp(Mul(Integer(-1), Rational(1, 2), I, Symbol('gamma'))),
+                    OperatorSymbol(
+                        'A',
+                        hs=LocalSpace(
+                            '1'))),
+                OperatorSymbol(
+                    'B',
+                    hs=LocalSpace(
+                        '1'))
+            ],
+            [
+                OperatorSymbol(
+                    'C',
+                    hs=LocalSpace(
+                        '1')),
+                ScalarTimesOperator(
+                    exp(Mul(Rational(1, 2), I, conjugate(Symbol('gamma')))),
+                    OperatorSymbol(
+                        'D',
+                        hs=LocalSpace(
+                            '1')))
+            ]], dtype=object))''').strip()
+    assert res == expected
+
+    expected = (
+        "ScalarTimesKet(Mul(Rational(1, 2), Pow(Integer(2), "
+        "Rational(1, 2))), KetPlus(TensorKet(BasisKet('e', "
+        "hs=LocalSpace('q_1', basis=('g', 'e'))), "
+        "BasisKet('g', hs=LocalSpace('q_2', basis=('g', 'e')))), "
+        "ScalarTimesKet(Mul(Integer(-1), I), TensorKet(BasisKet('g', "
+        "hs=LocalSpace('q_1', basis=('g', 'e'))), "
+        "BasisKet('e', hs=LocalSpace('q_2', basis=('g', 'e')))))))")
+    assert srepr(bell1_expr) == expected
+
+    res = srepr(bell1_expr, indented=True)
+    expected = dedent(r'''
     ScalarTimesKet(
         Mul(Rational(1, 2), Pow(Integer(2), Rational(1, 2))),
         KetPlus(
@@ -87,17 +170,12 @@ def test_foreign_srepr():
                     'e',
                     hs=LocalSpace(
                         'q_1',
-                        basis=('g', 'e'),
-                    ),
-                ),
+                        basis=('g', 'e'))),
                 BasisKet(
                     'g',
                     hs=LocalSpace(
                         'q_2',
-                        basis=('g', 'e'),
-                    ),
-                ),
-            ),
+                        basis=('g', 'e')))),
             ScalarTimesKet(
                 Mul(Integer(-1), I),
                 TensorKet(
@@ -105,20 +183,60 @@ def test_foreign_srepr():
                         'g',
                         hs=LocalSpace(
                             'q_1',
-                            basis=('g', 'e'),
-                        ),
-                    ),
+                            basis=('g', 'e'))),
                     BasisKet(
                         'e',
                         hs=LocalSpace(
                             'q_2',
-                            basis=('g', 'e'),
-                        ),
-                    ),
-                ),
-            ),
-        ),
-    )''').strip()
+                            basis=('g', 'e')))))))''').strip()
+    assert res == expected
+
+
+def test_cached_srepr(bell1_expr):
+    """Test that we can get simplified expressions by passing a cache, and that
+    the cache is updated appropriately while printing"""
+    hs1 = LocalSpace('q_1', basis=('g', 'e'))
+    hs2 = LocalSpace('q_2', basis=('g', 'e'))
+    ket_g1 = BasisKet('g', hs=hs1)
+
+    cache = {hs1: 'hs1', hs2: 'hs2', 1/sqrt(2): '1/sqrt(2)', -I: '-I'}
+    res = srepr(bell1_expr, cache=cache)
+    expected = (
+        "ScalarTimesKet(1/sqrt(2), KetPlus(TensorKet(BasisKet('e', hs=hs1), "
+        "BasisKet('g', hs=hs2)), ScalarTimesKet(-I, "
+        "TensorKet(BasisKet('g', hs=hs1), BasisKet('e', hs=hs2)))))")
+    assert res == expected
+
+    assert ket_g1 in cache
+    assert cache[ket_g1] == "BasisKet('g', hs=hs1)"
+
+    cache = {hs1: 'hs1', hs2: 'hs2', 1/sqrt(2): '1/sqrt(2)', -I: '-I'}
+    # note that we *must* use a different cache
+    res = srepr(bell1_expr, cache=cache, indented=True)
+    expected = dedent(r'''
+    ScalarTimesKet(
+        1/sqrt(2),
+        KetPlus(
+            TensorKet(
+                BasisKet(
+                    'e',
+                    hs=hs1),
+                BasisKet(
+                    'g',
+                    hs=hs2)),
+            ScalarTimesKet(
+                -I,
+                TensorKet(
+                    BasisKet(
+                        'g',
+                        hs=hs1),
+                    BasisKet(
+                        'e',
+                        hs=hs2)))))''').strip()
+    assert res == expected
+
+    assert ket_g1 in cache
+    assert cache[ket_g1] == "BasisKet(\n    'g',\n    hs=hs1)"
 
 
 def circuit_exprs():

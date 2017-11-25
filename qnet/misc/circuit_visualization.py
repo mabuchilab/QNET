@@ -35,7 +35,7 @@ except ImportError as e:
 
 import qnet.misc.parse_circuit_strings as parse_circuit_strings
 import qnet.algebra.circuit_algebra as ca
-from qnet.printing import tex
+from qnet.printing import latex as tex  # TODO tex -> latex
 from qnet.circuit_components.component import Component, SubComponent
 
 __all__ = ['draw_circuit_canvas', 'draw_circuit']

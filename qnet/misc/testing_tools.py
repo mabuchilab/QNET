@@ -9,6 +9,15 @@ from glob import glob
 from collections import OrderedDict
 from distutils import dir_util
 from qnet.misc.trajectory_data import TrajectoryData
+from qnet.printing._ascii import QnetAsciiPrinter
+
+
+class QnetAsciiTestPrinter(QnetAsciiPrinter):
+    """A Printer subclass for testing"""
+    _default_settings = {
+        'show_hs_label': True,  # alternatively: False, 'subscript'
+        'sig_as_ketbra': True,
+    }
 
 
 def datadir(tmpdir, request):
@@ -49,12 +58,11 @@ def qsd_traj(datadir, folder, seed):
     def proto_fixture(datadir):
         operators = OrderedDict()
         datafiles = sorted(glob(os.path.join(datadir, folder, '*.out')))
-        assert len(datafiles) >0, "No files *.out in %s"%folder
+        assert len(datafiles) > 0, "No files *.out in %s" % folder
         for file in datafiles:
             op_name = os.path.splitext(os.path.split(file)[1])[0]
             operators[op_name] = file
         return TrajectoryData.from_qsd_data(operators, seed=seed)
-    import pytest # local import, so that qnet can be installed w/o pytest
     return proto_fixture
 
 
@@ -74,4 +82,3 @@ def fake_traj(traj_template, ID, seed):
     del traj._record[orig_id]
     assert (traj + traj_template).ID != traj_template.ID
     return traj
-

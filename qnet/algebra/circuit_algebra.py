@@ -60,7 +60,6 @@ from .permutations import (
 from .hilbert_space_algebra import (
         TrivialSpace, ProductSpace, FullSpace, LocalSpace, BasisNotSetError)
 from .pattern_matching import wc, pattern_head, pattern
-from ..printing import ascii, unicode, tex
 
 
 __all__ = [
@@ -541,7 +540,7 @@ class SLH(Circuit, Expression):
         if one_minus_Snn_inv in [Infinity, ComplexInfinity]:
             raise AlgebraError(
                 "Ill-posed network: singularity in feedback [%s]%d->%d"
-                % (ascii(self), out_port, in_port))
+                % (str(self), out_port, in_port))
 
         new_S = S[:n, :n] + S[:n, n:] * one_minus_Snn_inv * S[n:, :n]
         new_L = L[:n] + S[:n, n] * one_minus_Snn_inv * L[n]
@@ -776,11 +775,6 @@ class CircuitSymbol(Circuit, Expression):
     def all_symbols(self):
         return {}
 
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_string(self._name)
-
     @property
     def cdim(self):
         """Dimension of circuit"""
@@ -884,19 +878,6 @@ class CPermutation(Circuit, Expression):
 
     def _creduce(self):
         return self
-
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        if fmt == 'tex':
-            return r'%s\begin{pmatrix} %s \\ %s \end{pmatrix}' % (
-                    printer.permutation_sym,
-                    " & ".join(map(str, range(self.cdim))),
-                    " & ".join(map(str, self.permutation)))
-        else:
-            return r'%s(%s)' % (
-                    printer.permutation_sym,
-                    ", ".join(map(str, self.permutation)))
 
     def series_with_permutation(self, other):
         """Compute the series product with another channel permutation circuit.
@@ -1112,11 +1093,6 @@ class CIdentity(Circuit, Expression, metaclass=Singleton):
         """Dimension of circuit"""
         return self._cdim
 
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.circuit_identity_fmt.format(
-                cdim=self._cdim)
-
     @property
     def args(self):
         return tuple()
@@ -1161,11 +1137,6 @@ class CircuitZero(Circuit, Expression, metaclass=Singleton):
     """The zero circuit system, the neutral element of Concatenation. No ports,
     no internal dynamics."""
     _cdim = 0
-
-    def _render(self, fmt, adjoint=False):
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.circuit_identity_fmt.format(
-                cdim=self._cdim)
 
     @property
     def cdim(self):
@@ -1254,13 +1225,6 @@ class SeriesProduct(Circuit, Operation):
         factors = [o.series_inverse() for o in reversed(self.operands)]
         return SeriesProduct.create(*factors)
 
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.render_product(
-                self.operands, prod_sym=printer.circuit_series_sym,
-                sum_classes=(Concatenation, ), adjoint=adjoint)
-
     def _toABCD(self, linearize):
         raise NotImplementedError()
 
@@ -1293,24 +1257,6 @@ class Concatenation(Circuit, Operation):
         self._space = None
         self._cdim = None
         super().__init__(*operands)
-
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        reduced_operands = []  # reduce consecutive identities to a str
-        id_count = 0
-        for o in self.operands:
-            if o == CIdentity:
-                id_count += 1
-            else:
-                if id_count > 0:
-                    reduced_operands.append(
-                            printer.circuit_identity_fmt.format(cdim=id_count))
-                    id_count = 0
-                reduced_operands.append(o)
-        return printer.render_sum(
-                reduced_operands, plus_sym=printer.circuit_concat_sym,
-                adjoint=adjoint)
 
     @property
     def cdim(self):
@@ -1479,13 +1425,6 @@ class Feedback(Circuit, Operation):
         return self.operand.creduce().feedback(
                 out_port=self.out_port, in_port=self.in_port)
 
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        o, i = self.out_in_pair
-        return printer.circuit_fb_fmt.format(
-                operand=printer.render(self.operand), output=o, input=i)
-
     def _series_inverse(self):
         return Feedback.create(self.operand.series_inverse(),
                                in_port=self.out_port, out_port=self.in_port)
@@ -1554,12 +1493,6 @@ class SeriesInverse(Circuit, Operation):
         """Hilbert space of the series inversion circuit (same Hilbert space as
         the series product being inverted)"""
         return self.operand.space
-
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        return printer.circuit_inverse_fmt.format(
-                operand=printer.render(self.operand))
 
 
 ###############################################################################

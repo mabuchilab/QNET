@@ -23,11 +23,11 @@ Parse strings into Circuit expressions. See documentation for :py:func:`parse_ci
 
 import qnet.algebra.circuit_algebra as ca
 from qnet.misc.parser import Parser, ParsingError
-from qnet.printing import srepr
+
 
 def parse_circuit_strings(circuit_string):
-    """
-    Parse strings for symbolic Circuit expressions into actual expression objects.
+    """Parse strings for symbolic Circuit expressions into actual expression
+    objects.
 
     :param circuit_string: A string containing one or more circuit expressions in the special syntax described below.
     :return: A list of all parsed expressions if there are more than one, otherwise just the single result.
@@ -36,6 +36,7 @@ def parse_circuit_strings(circuit_string):
     Examples:
         1) A circuit symbol can be instantiated via:
 
+            >>> from qnet.printing import srepr
             >>> print(srepr(parse_circuit_strings('name(3)')))
             CircuitSymbol('name', 3)
 
@@ -72,11 +73,11 @@ def parse_circuit_strings(circuit_string):
     return ret
 
 
-
-
 class ParseCircuitStringError(ParsingError):
-    """Raised when an error is encountered while parsing a circuit expression string."""
+    """Raised when an error is encountered while parsing a circuit expression
+    string."""
     pass
+
 
 class _CircuitExpressionParser(Parser):
 
@@ -84,8 +85,6 @@ class _CircuitExpressionParser(Parser):
         self.entities = {}
         self.architectures = {}
         return Parser.parse(self, inputstring)
-
-
 
     reserved = {
         'cid': 'CID',

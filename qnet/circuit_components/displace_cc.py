@@ -39,7 +39,7 @@ class Displace(Component):
 
     CDIM = 1
 
-    alpha = symbols('alpha') # complex valued laser amplitude
+    alpha = symbols('alpha')  # complex valued laser amplitude
     _parameters = ['alpha']
 
     PORTSIN = ["VacIn"]
@@ -52,9 +52,3 @@ class Displace(Component):
         H = 0
 
         return SLH(S, L, H)
-
-    def _render(self, fmt, adjoint=False):
-        assert not adjoint, "adjoint not defined"
-        printer = getattr(self, "_"+fmt+"_printer")
-        return (printer.render_string(self.name) + printer.par_left +
-                printer.render(self.alpha) + printer.par_right)
