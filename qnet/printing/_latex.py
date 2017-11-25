@@ -30,6 +30,8 @@ from ._ascii import QnetAsciiPrinter
 from ._precedence import precedence
 from .sympy import SympyLatexPrinter
 
+__all__ = ['QnetLatexPrinter']
+
 
 class QnetLatexPrinter(QnetAsciiPrinter):
     """Printer for a LaTeX representation."""

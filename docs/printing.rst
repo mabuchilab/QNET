@@ -77,7 +77,9 @@ Basic Customization
 At the beginning of an interactive session or notebook, the
 :func:`init_printing` routine should be called. This routine associates specific
 printing functions, e.g. :func:`unicode`, with the ``__str__`` and ``__repr__``
-representation of an expression. It also specifies the default settings for each
+representation of an expression. This is what is returned by ``str(expr)``, and
+by ``repr(expr)`` or as the output in an interactive (I)Python session.
+The initialization also specifies the default settings for each
 printing function. For example, you could suppress the display of Hilbert space
 labels::
 
@@ -112,10 +114,8 @@ Printer classes
 
 The printing functions :func:`ascii`, :func:`unicode`, and :func:`latex` each
 delegate to an internal printer object that subclasses
-:class:`qnet.printing.base.QnetBasePrinter`. For example, the :func:`ascii`
-function delegates to an instance of
-:class:`qnet.printing._ascii.QnetAsciiPrinter` (after :func:`init_printing` was
-called, that printer is located at :attr:`ascii.printer`)
+:class:`qnet.printing.base.QnetBasePrinter`. After initialization,
+the printer class is referenced at e.g. :attr:`ascii.printer`.
 
 For the ultimate control in customizing the printing system, you can implement your
 own subclasses of :class:`~qnet.printing.base.QnetBasePrinter`, which is in
@@ -125,9 +125,9 @@ overview of `SymPy's printing system`_ applies.
 The QNET printers conceptually extend SymPy printers in the following ways:
 
 * QNET printers have support for caching. One reason for this is efficiency.
-  The more important reason is that one can use a pre-initialized cache to
+  More importantly, it allows to pass a pre-initialized cache to
   force certain expressions to be represented by fixed strings, which can make
-  things considerably more reasonable, and aids in generating code from
+  expressions considerably more readable, and aids in generating code from
   expressions, see the example for :func:`srepr` .
 * Every printer contains a sub-printer in the `_sympy_printer` attribute,
   instantiated from the  `sympy_printer_cls` class attribute. Actual SymPy
@@ -138,8 +138,89 @@ The QNET printers conceptually extend SymPy printers in the following ways:
   implement some custom printing more in line with the conventions of quantum
   physics.
 
+When :func:`init_printing` is called with direct settings as in the previous
+section, these will be used as
+*global* settings, and will affect any printers (including SymPy sub-printers)
+that are instantiated afterwards.
+
+The settings that are given to any printing function will be used for that
+specific call of the printing function only. If you define custom classes with
+different or additional settings and set them up for use with the printing
+function (see below), the accepted arguments to the printing functions change
+accordingly.
+
 .. _SymPy's printing system: http://docs.sympy.org/latest/modules/printing.html#module-sympy.printing.printer
 
 
+.. _ini_file_printing:
+
 Customization through an INI file
 ----------------------------------
+
+While :func:`init_printing` can simply be called with explicit settings to configure the
+printing system globally (see above), for a more advanced set up an INI-file
+can be used. In this case, the path to the file must be the only argument::
+
+    init_printing(inifile=<path to file>)
+
+This allows to associate custom printer classes with the printing functions,
+and also define the settings settings for those particular printers (as opposed
+to just global settings).
+
+The INI file may have sections 'global', 'ascii', 'unicode', and 'latex'.
+Parameters in the 'global' section are equivalent to those could be passed to
+:func:`init_printing` as direct settings. That is, they set up the printing
+function to be used for ``__str__`` and ``__repr__``, and set the global
+options for all printer classes.
+
+The 'ascii', 'unicode', and 'latex' sections configure the respective printing
+functions. To link them to custom Printer classes, you may specify ``printer``
+and ``sympy_printer`` as the full path to the Printer class that should be used
+for the main printer and the sub-printer for SymPy expressions. All other
+settings in the sections override the settings from 'global' for that
+particular printer.
+
+Consider the following annotated example for an INI file::
+
+    [global]
+    # The settings in the 'global' section are for all Printer classes (both
+    # SymPy and QNET). They are equivalent to passing them to init_printing
+    # directly
+
+    # the printing function to use for str(expr)
+    str_format = ascii
+    # the printing function to use for expr(expr)
+    repr_format = unicode
+    # direct global settings
+    show_hs_label = False
+    sig_as_ketbra = False
+    # note that boolean values must be specified as "True", or "False"
+
+    # The three sections below associate the printing functions with particular
+    # Printer classes, and override the global settings for those particular
+    # printers
+
+    [ascii]
+    printer = qnet.printing._ascii.QnetAsciiPrinter
+    # we use the SymPy StrPrinter here, instead of the default
+    # qnet.printing._ascii.SympyStrPrinter that is customized to not
+    # rationalize denominators
+    sympy_printer = sympy.printing.str.StrPrinter
+    # we override the the settings from the 'global' section
+    show_hs_label = True
+    sig_as_ketbra = True
+
+    [unicode]
+    printer = qnet.printing._unicode.QnetUnicodePrinter
+    sympy_printer = qnet.printing.sympy.SympyUnicodePrinter
+    show_hs_label = subscript
+    unicode_op_hats = False
+
+    [latex]
+    printer = qnet.printing._latex.QnetLatexPrinter
+    sympy_printer = qnet.printing.sympy.SympyLatexPrinter
+    # string values can be written un-escaped
+    tex_op_macro = \Op{{{name}}}
+    tex_use_braket = True
+    # You can also include options for the sympy_printer
+    inv_trig_style = full

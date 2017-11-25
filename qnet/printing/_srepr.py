@@ -29,6 +29,8 @@ from ._render_head_repr import render_head_repr
 from ..algebra.abstract_algebra import Expression
 from ..algebra.singleton import Singleton
 
+__all__ = ['QnetSReprPrinter', 'IndentedSReprPrinter']
+
 
 class QnetSReprPrinter(QnetBasePrinter):
     """Printer for a string (ASCII) representation."""

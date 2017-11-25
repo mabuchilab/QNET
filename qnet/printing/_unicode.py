@@ -23,6 +23,8 @@ from ._ascii import QnetAsciiPrinter
 from .sympy import SympyUnicodePrinter
 from ._unicode_mappings import render_unicode_sub_super
 
+__all__ = ['QnetUnicodePrinter']
+
 
 class SubSupFmt():
     """A format string that divides into a name, subscript, and superscript
@@ -108,7 +110,7 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
                 False:  sub_sup_fmt('⟨{label}|')},
             'ket': {
                 True: sub_sup_fmt('|{label}⟩', sup='({space})'),
-                'subscript': sub_sup_fmt('|{label}', sub='({space})'),
+                'subscript': sub_sup_fmt('|{label}⟩', sub='({space})'),
                 False:  sub_sup_fmt('|{label}⟩')},
             'ketbra': {
                 True: sub_sup_fmt('|{label_i}⟩⟨{label_j}|', sup='({space})'),

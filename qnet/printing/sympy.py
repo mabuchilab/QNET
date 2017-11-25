@@ -15,7 +15,27 @@
 #
 # Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #############################################################################
-"""Custom Printers for Sympy expressions"""
+r'''Custom Printers for Sympy expressions
+
+These classes are used by default by the QNET printing systems as sub-printers
+for SymPy objects (e.g. for symbolic coefficients). They fix some issues with
+SymPy's builtin printers:
+
+* factors like $\frac{1}{\sqrt{2}}$ occur very commonly in quantum mechanics,
+  and it is standard notation to write them as such. SymPy insists on
+  rationalizing denominators, using $\frac{\sqrt{2}}{2}$ instead. Our custom
+  printers restore the canonical form. Note that internally, Sympy still uses
+  the rationalized structure; in any case, Sympy makes no guarantees between
+  the algebraic structure of an expression and how it is printed.
+* Symbols (especially greek letters) are extremely common, and it's much more
+  readable if the string representation of an expression uses unicode for
+  these. SymPy supports unicode "pretty-printing"
+  (:func:`sympy.printing.pretty.pretty.pretty_print`) only in "2D", where
+  expressions are rendered as multiline unicode strings. While this is fine for
+  interactive display, it does not work so well for a simple ``str``. The
+  :class:`SympyUnicodePrinter` solves this by producing simple strings with
+  unicode symbols.
+'''
 from sympy import sqrt
 from sympy.core import S, Rational, Mul, Pow
 from sympy.core.mul import _keep_coeff
@@ -25,6 +45,8 @@ from sympy.printing.latex import LatexPrinter
 from sympy.printing.pretty.pretty_symbology import pretty_symbol
 
 from ._unicode_mappings import _SUPERSCRIPT_MAPPING
+
+__all__ = ['SympyLatexPrinter', 'SympyStrPrinter', 'SympyUnicodePrinter']
 
 
 def derationalize_denom(expr):
@@ -40,7 +62,7 @@ def derationalize_denom(expr):
     and returns a tuple ``(numerator, denom_sq, post_factor)``, where
     ``numerator`` and ``denom_sq`` are ``n`` and ``d`` in the above pattern (of
     type `int`), respectively, and ``post_factor`` is the product of the
-    remaining factors (``...``) in `expr`. The result will fulfill the
+    remaining factors (``...`` in `expr`). The result will fulfill the
     following identity::
 
         (numerator / sqrt(denom_sq)) * post_factor == expr

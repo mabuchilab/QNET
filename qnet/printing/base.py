@@ -50,7 +50,7 @@ class QnetBasePrinter(SympyPrinter):
     Attributes:
         cache (dict): Dictionary where the results of any call to
             :meth:`doprint` is stored. When :meth:`doprint` is called for an
-            expression that is already in :attr:`cache`, the result from the
+            expression that is already in `cache`, the result from the
             cache is returned.
         _sympy_printer (sympy.printing.printer.Printer): The printer instance
             that will be used to print any Sympy expression.
@@ -61,8 +61,8 @@ class QnetBasePrinter(SympyPrinter):
 
     Raises:
         TypeError: If any key in `settings` is not defined in the
-            :attr:`_default_settings` of the printer, respectively the
-            :attr:`sympy_printer_cls`.
+            `_default_settings` of the printer, respectively the
+            `sympy_printer_cls`.
     """
 
     sympy_printer_cls = SympyStrPrinter
@@ -182,7 +182,7 @@ class QnetBasePrinter(SympyPrinter):
 
         1. from the :attr:`cache`
         2. If `expr` is a Sympy object, delegate to the
-           :meth:`~sympy.printing.printe.Printer.doprint` method of
+           :meth:`~sympy.printing.printer.Printer.doprint` method of
            :attr:`_sympy_printer`
         3. Let the `expr` print itself if has the :attr:`printmethod`
         4. Take the best fitting ``_print_*`` method of the printer

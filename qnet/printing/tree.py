@@ -16,7 +16,10 @@
 # Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
-"""Tree printer for Expressions"""
+"""Tree printer for Expressions
+
+This is mainly for interactive use.
+"""
 from ._render_head_repr import render_head_repr
 
 __all__ = ['tree', 'print_tree']
@@ -66,7 +69,7 @@ def print_tree(
             instead of `ascii`/`unicode`
 
     See also:
-        :func:`tree_str` return the result as a string, instead of printing it
+        :func:`tree` return the result as a string, instead of printing it
     """
     from qnet.printing import srepr
     lines = []

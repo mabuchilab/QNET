@@ -22,6 +22,8 @@ from .base import QnetBasePrinter
 from .sympy import SympyStrPrinter
 from ._precedence import precedence, PRECEDENCE
 
+__all__ = ['QnetAsciiPrinter']
+
 
 class QnetAsciiPrinter(QnetBasePrinter):
     """Printer for a string (ASCII) representation.

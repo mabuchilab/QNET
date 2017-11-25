@@ -20,10 +20,11 @@
 
 import sys
 import logging
+import configparser
+import importlib
 from contextlib import contextmanager
 from collections import defaultdict
 from functools import partial
-from pydoc import locate
 
 from sympy.printing.printer import Printer as SympyPrinter
 
@@ -32,16 +33,19 @@ from ._ascii import QnetAsciiPrinter
 from ._unicode import QnetUnicodePrinter
 from ._latex import QnetLatexPrinter
 from ._srepr import QnetSReprPrinter, IndentedSReprPrinter
-from .tree import print_tree, tree as _tree_str
+from .tree import print_tree, tree
 from .dot import dotprint
 
 __all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'latex',
-           'tex', 'srepr', 'dotprint', 'print_tree']
+           'tex', 'srepr', 'dotprint', 'tree', 'print_tree']
 
 
 def _printer_cls(label, class_address, require_base=QnetBasePrinter):
-    cls = locate(class_address)
-    if cls is None:
+    module_name, class_name = class_address.rsplit(".", 1)
+    try:
+        mod = importlib.import_module(module_name)
+        cls = getattr(mod, class_name)
+    except (ImportError, AttributeError):
         raise ValueError("%s '%s' does not exist" % (label, class_address))
     try:
         if require_base is not None:
@@ -56,7 +60,7 @@ def _printer_cls(label, class_address, require_base=QnetBasePrinter):
         return cls
 
 
-def init_printing(reset=False, **kwargs):
+def init_printing(*, reset=False, **kwargs):
     """Initialize the printing system.
 
     This determines the behavior of the :func:`ascii`, :func:`unicode`,
@@ -67,16 +71,11 @@ def init_printing(reset=False, **kwargs):
 
     ::
 
-        init_printing(inifile=<path_to_file>)
+        init_printing(
+            str_format=<str_fmt>, repr_format=<repr_fmt>,
+            caching=<use_caching>, **settings)
 
-    Second,
-
-    ::
-
-        init_printing(str_format=<str_fmt>, repr_format=<repr_fmt>,
-                      caching=<use_caching>, **settings)
-
-    provides a simplified, "manual" setup with the parameters below.
+    provides a simplified, "manual" setup with the following parameters.
 
     Args:
         str_format (str): Format for ``__str__`` representation of an
@@ -96,6 +95,17 @@ def init_printing(reset=False, **kwargs):
             possibility.
         settings: Any setting understood by any of the printing routines.
 
+    Second,
+
+    ::
+
+        init_printing(inifile=<path_to_file>)
+
+
+    allows for more detailed settings through a config file, see the
+    :ref:`notes on using an INI file <ini_file_printing>`.
+
+
     If `str_format` or `repr_format` are not given, they will be set of
     'unicode' if the current terminal is known to support an UTF8 (accordig to
     ``sys.stdout.encoding``), and 'ascii' otherwise.
@@ -104,22 +114,39 @@ def init_printing(reset=False, **kwargs):
     beginning of a script or notebook. If it is called multiple times, any
     settings accumulate. To avoid this and to reset the printing system to the
     defaults, you may pass ``reset=True``.  In a Jupyter notebook, expressions
-    are rendered in LaTeX, using the settings as they affect the :func:`latex`
-    printer.
+    are rendered graphically via LaTeX, using the settings as they affect the
+    :func:`latex` printer.
 
     See also:
         :func:`configure_printing` allows to temporarily change the printing
         system from what was configured in :func:`init_printing`.
     """
+    # return either None (default) or a dict of frozen attributes if
+    # ``_freeze=True`` is given as a keyword argument (internal use in
+    # `configure_printing` only)
+    logger = logging.getLogger(__name__)
     if reset:
         SympyPrinter._global_settings = {}
     if 'inifile' in kwargs:
-        assert len(kwargs) == 1
-        raise NotImplementedError("INI file initalization not implemented yet")
+        invalid_kwargs = False
+        if '_freeze' in kwargs:
+            _freeze = kwargs['_freeze']
+            if len(kwargs) != 2:
+                invalid_kwargs = True
+        else:
+            _freeze = False
+            if len(kwargs) != 1:
+                invalid_kwargs = True
+        if invalid_kwargs:
+            raise TypeError(
+                "The `inifile` argument cannot be combined with any "
+                "other keyword arguments")
+        logger.debug(
+            "Initializating printing from INI file %s", kwargs['inifile'])
+        return _init_printing_from_file(kwargs['inifile'], _freeze=_freeze)
     else:
-        # return either None (default) or a dict of frozen attributes if
-        # ``_freeze=True`` is given as a keyword argument (internal use in
-        # `configure_printing` only)
+        logger.debug(
+            "Initializating printing with direct settings: %s", repr(kwargs))
         return _init_printing(**kwargs)
 
 
@@ -127,11 +154,13 @@ def _init_printing(
         str_format=None, repr_format=None, caching=True,
         ascii_printer='qnet.printing._ascii.QnetAsciiPrinter',
         ascii_sympy_printer='qnet.printing.sympy.SympyStrPrinter',
+        ascii_settings=None,
         unicode_printer='qnet.printing._unicode.QnetUnicodePrinter',
         unicode_sympy_printer='qnet.printing.sympy.SympyUnicodePrinter',
+        unicode_settings=None,
         latex_printer='qnet.printing._latex.QnetLatexPrinter',
         latex_sympy_printer='qnet.printing.sympy.SympyLatexPrinter',
-        _freeze=False, **settings):
+        latex_settings=None, _freeze=False, **settings):
     # Note: the *_printer args are undocumented, it's preferable to use them
     # through an INI file only
     logger = logging.getLogger(__name__)
@@ -150,17 +179,19 @@ def _init_printing(
     freeze[QnetBasePrinter]['_allow_caching'] = QnetBasePrinter._allow_caching
     QnetBasePrinter._allow_caching = caching
 
-    print_cls_map = {
-        # print fct     printer cls     sympy printer class
-        'ascii':   (ascii_printer,   ascii_sympy_printer),
-        'unicode': (unicode_printer, unicode_sympy_printer),
-        'latex':   (latex_printer,   latex_sympy_printer),
+    print_map = {
+        # print fct     printer cls     sympy printer class           settings
+        'ascii':   (ascii_printer,   ascii_sympy_printer,   ascii_settings),
+        'unicode': (unicode_printer, unicode_sympy_printer, unicode_settings),
+        'latex':   (latex_printer,   latex_sympy_printer,   latex_settings),
     }
 
-    for name in print_cls_map.keys():
+    for name in print_map.keys():
 
         print_func = _PRINT_FUNC[name]
-        qnet_printer_address, sympy_printer_address = print_cls_map[name]
+        qnet_printer_address, sympy_printer_address, settings = print_map[name]
+        if settings is None:
+            settings = {}
 
         if hasattr(print_func, '_printer_cls'):
             freeze[print_func]['_printer_cls'] = print_func._printer_cls
@@ -176,7 +207,7 @@ def _init_printing(
             require_base=SympyPrinter)
         # instantiation of sympy_printer happens in init-routine (which is why
         # the sympy_printer_cls must be set first!)
-        print_func.printer = print_func._printer_cls()
+        print_func.printer = print_func._printer_cls(settings=settings)
 
     # set up the __str__ and __repr__ printers
     try:
@@ -185,7 +216,9 @@ def _init_printing(
         has_unicode = False
     logger.debug(
         "Terminal supports unicode: %s (autodetect)", has_unicode)
-    _PRINT_FUNC['tree'] = partial(_tree_str, unicode=has_unicode)
+    if repr_format == 'unicode':
+        has_unicode = True
+    _PRINT_FUNC['tree'] = partial(tree, unicode=has_unicode)
     if str_format is None:
         str_format = 'unicode' if has_unicode else 'ascii'
         logger.debug("Setting __str__ format to %s", str_format)
@@ -211,6 +244,35 @@ def _init_printing(
     Expression._repr_latex = lambda self: "$" + latex(self) + "$"
     if _freeze:
         return freeze
+
+
+def _init_printing_from_file(inifile, _freeze=False):
+    config = configparser.ConfigParser(interpolation=None)
+    config.BOOLEAN_STATES = {
+        'true': True, 'True': True, 'false': False, 'False': False}
+    config.read(inifile)
+    kwargs = defaultdict(dict)
+    for section in config.sections():
+        if section == 'DEFAULT':
+            continue
+        allowed_sections = ['global', 'ascii', 'unicode', 'latex']
+        if section not in allowed_sections:
+            raise ValueError(
+                "Invalid section %s in %s. Allowed sections are %s"
+                % (section, inifile, ", ".join(allowed_sections)))
+        for key, val in config[section].items():
+            if val in config.BOOLEAN_STATES:
+                val = config.BOOLEAN_STATES[val]
+            if section == 'global':
+                kwargs[key] = val
+            else:
+                if key == 'printer':
+                    kwargs["%s_printer" % section] = val
+                elif key == 'sympy_printer':
+                    kwargs["%s_sympy_printer" % section] = val
+                else:
+                    kwargs["%s_settings" % section][key] = val
+    return _init_printing(_freeze=_freeze, **dict(kwargs))
 
 
 @contextmanager
@@ -488,5 +550,5 @@ _PRINT_FUNC = {
     'tex': latex,
     'srepr': srepr,
     'indsrepr': partial(srepr, indented=True),
-    'tree': _tree_str,   # init_printing will modify this for unicode support
+    'tree': tree,   # init_printing will modify this for unicode support
 }
