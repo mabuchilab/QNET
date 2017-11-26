@@ -569,3 +569,11 @@ def test_tex_sop_operations():
     assert (latex(SuperOperatorTimesOperator((L + 2*M), A_op)) ==
             r'\left(\mathrm{L}^{(1)} + 2 \mathrm{M}^{(1)}\right)'
             r'\left[\hat{A}^{(1)}\right]')
+
+
+def test_repr_latex():
+    """Test the automatic representation in the notebook"""
+    A = OperatorSymbol("A", hs=1)
+    B = OperatorSymbol("B", hs=1)
+    assert A._repr_latex_() == "$%s$" % latex(A)
+    assert (A + B)._repr_latex_() == "$%s$" % latex(A + B)

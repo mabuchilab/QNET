@@ -241,7 +241,7 @@ def _init_printing(
     freeze[Expression]['_repr_latex_'] = Expression._repr_latex_
     Expression.__str__ = lambda self: str_func(self)
     Expression.__repr__ = lambda self: repr_func(self)
-    Expression._repr_latex = lambda self: "$" + latex(self) + "$"
+    Expression._repr_latex_ = lambda self: "$" + latex(self) + "$"
     if _freeze:
         return freeze
 

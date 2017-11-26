@@ -332,7 +332,7 @@ class Expression(metaclass=ABCMeta):
         # This method will be replaced by init_printing()
         from qnet.printing import init_printing
         init_printing()
-        return self._repr_latex_(self)
+        return self._repr_latex_()
 
     def _sympy_(self):
         # By default, when a QNET expression occurring in a SymPy context (e.g.
