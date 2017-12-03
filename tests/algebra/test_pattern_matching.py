@@ -387,7 +387,8 @@ def test_findall():
     a = OperatorSymbol("a", hs=h1)
     b = OperatorSymbol("b", hs=h1)
     c = OperatorSymbol("c", hs=h1)
-    c_local = Create(hs=h1, identifier='c')
+    h1_custom = LocalSpace("h1", local_identifiers={'Create': 'c'})
+    c_local = Create(hs=h1_custom)
 
     expr = 2 * (a * b * c - b * c * a + a * b)
     op_symbols = pattern(OperatorSymbol).findall(expr)

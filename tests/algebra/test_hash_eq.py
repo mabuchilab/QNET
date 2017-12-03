@@ -19,6 +19,7 @@
 """Test hash and equality implementation of Expressions"""
 
 from qnet.algebra.operator_algebra import Destroy
+from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.circuit_algebra import SLH
 
 
@@ -50,3 +51,14 @@ def test_heis_eom():
     assert a-a == 0 != a-2*a
     heis_eom = SLH([[1]], [sp.sqrt(2)*a], 0).symbolic_heisenberg_eom(a)
     assert heis_eom == -a != -2*a
+
+
+def test_custom_localspace_identifier_hash():
+    """Test hashes for expressions with different local_identifiers for their
+    Hilbert spaces have different hashes"""
+    hs1 = LocalSpace(1)
+    hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
+    assert hash(hs1) != hash(hs1_custom)
+    a = Destroy(hs=hs1)
+    b = Destroy(hs=hs1_custom)
+    assert hash(a) != hash(b)

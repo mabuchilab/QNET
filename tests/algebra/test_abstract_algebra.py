@@ -28,7 +28,7 @@ from qnet.algebra.abstract_algebra import (
 from qnet.algebra.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
 from qnet.algebra.operator_algebra import (
-        LocalSigma, OperatorTimes, Displace, II)
+        LocalSigma, LocalProjector, OperatorTimes, Displace, II)
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 
@@ -39,11 +39,9 @@ class TestOperationSimplifcations(unittest.TestCase):
         class Flat(Operation):
             _simplifications = [assoc, ]
 
-
         class Orderless(Operation):
             order_key = expr_order_key
             _simplifications = [orderby, ]
-
 
         class FilterNeutral(Operation):
             neutral_element = object()
@@ -119,9 +117,9 @@ def test_match_replace_binary_complete():
     """Test that replace_binary works correctly for a non-trivial case"""
     x, y, z, alpha = symbols('x y z alpha')
     hs = LocalSpace('f')
-    ops = [LocalSigma(0, 0, hs=hs),
+    ops = [LocalProjector(0, hs=hs),
            Displace(-alpha, hs=hs),
            Displace(alpha, hs=hs),
-           LocalSigma(0, 0, hs=hs)]
+           LocalProjector(0, hs=hs)]
     res = OperatorTimes.create(*ops)
-    assert res == LocalSigma(0, 0, hs=hs)
+    assert res == LocalProjector(0, hs=hs)

@@ -156,7 +156,19 @@ of finite dimensional or countably infinite dimensional Hilbert spaces.
 
 Local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity
 mode) are described by a :class:`LocalSpace`; it requires a label, and may
-define a basis through the `basis` or `dimension` arguments.
+define a basis through the `basis` or `dimension` arguments. The :class:`LocalSpace`
+may also define custom identifiers for operators acting on that space
+(subclasses of :class:`~qnet.algebra.oprator_algebra.LocalOperator`)::
+
+    >>> from qnet.printing import ascii
+    >>> from qnet.algebra.operator_algebra import Destroy
+    >>> a = Destroy(hs=1)
+    >>> ascii(a)
+    'a^(1)'
+    >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
+    >>> b = Destroy(hs=hs1_custom)
+    >>> ascii(b)
+    'b^(1)'
 
 Instances of :class:`LocalSpace` combine via a product into
 composite tensor product spaces are given by instances of the :class:`ProductSpace`

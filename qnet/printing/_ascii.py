@@ -268,8 +268,10 @@ class QnetAsciiPrinter(QnetBasePrinter):
             dagger = not expr._dagger
         else:
             dagger = expr._dagger
+        identifier = expr.space._local_identifiers.get(
+            expr.__class__.__name__, expr._identifier)
         return self._render_op(
-            expr._identifier, expr._hs, dagger=dagger, args=expr.args)
+            identifier, expr._hs, dagger=dagger, args=expr.args)
 
     def _print_LocalSigma(self, expr, adjoint=False):
         if self._settings['sig_as_ketbra']:
@@ -285,16 +287,22 @@ class QnetAsciiPrinter(QnetBasePrinter):
                     label_j=self._render_str(expr.k),
                     space=self._render_hs_label(expr.space))
         else:
-            if expr._is_projector:
-                identifier = "%s_%s" % (expr._identifier, expr.j)
+            identifier = expr.space._local_identifiers.get(
+                expr.__class__.__name__, expr._identifier)
+            if adjoint:
+                identifier = "%s_%s,%s" % (identifier, expr.k, expr.j)
             else:
-                if adjoint:
-                    identifier = "%s_%s,%s" % (
-                        expr._identifier, expr.k, expr.j)
-                else:
-                    identifier = "%s_%s,%s" % (
-                        expr._identifier, expr.j, expr.k)
+                identifier = "%s_%s,%s" % (identifier, expr.j, expr.k)
             return self._render_op(identifier, expr._hs, dagger=adjoint)
+
+    def _print_LocalProjector(self, expr, adjoint=False):
+        if self._settings['sig_as_ketbra']:
+            return self._print_LocalSigma(expr, adjoint=False)
+        else:
+            identifier = expr.space._local_identifiers.get(
+                expr.__class__.__name__, expr._identifier)
+            identifier = "%s_%s" % (identifier, expr.j)
+            return self._render_op(identifier, expr._hs, dagger=False)
 
     def _print_IdentityOperator(self, expr):
         return "1"
@@ -372,12 +380,14 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _print_Adjoint(self, expr, adjoint=False):
         o = expr.operand
         if self._isinstance(o, 'LocalOperator'):
+            o_identifier = o.space._local_identifiers.get(
+                o.__class__.__name__, o._identifier)
             if adjoint:
                 dagger = o._dagger
             else:
                 dagger = not o._dagger
             return self._render_op(
-                o.identifier, hs=o.space, dagger=dagger, args=o.args[1:])
+                o_identifier, hs=o.space, dagger=dagger, args=o.args[1:])
         elif self._isinstance(o, 'OperatorSymbol'):
             return self._render_op(
                 o.identifier, hs=o.space, dagger=(not adjoint))

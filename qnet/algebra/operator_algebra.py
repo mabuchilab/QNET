@@ -29,8 +29,7 @@ from collections import defaultdict, OrderedDict
 from itertools import product as cartesian_product
 
 from sympy import (
-    exp, sqrt, I, sympify, Basic as SympyBasic, series as sympy_series, Add as
-    SympyAdd)
+    exp, sqrt, I, sympify, Basic as SympyBasic, series as sympy_series)
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
@@ -43,7 +42,6 @@ from .hilbert_space_algebra import (
 from .pattern_matching import wc, pattern_head, pattern
 from .ordering import (
     KeyTuple, DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
-from ..printing import ascii
 
 sympyOne = sympify(1)
 
@@ -237,6 +235,7 @@ class Operator(metaclass=ABCMeta):
 
             >>> hs = LocalSpace(1, basis=('g', 'e'))
             >>> op = LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs)
+            >>> from qnet.printing import ascii
             >>> print(ascii(op, sig_as_ketbra=False))
             sigma_e,g^(1) + sigma_g,e^(1)
             >>> print(ascii(op.expand_in_basis()))
@@ -369,62 +368,73 @@ class Operator(metaclass=ABCMeta):
 
 class LocalOperator(Operator, Expression, metaclass=ABCMeta):
     """Base class for all kinds of operators that act *locally*,
-    i.e. only on a single degree of freedom."""
+    i.e. only on a single degree of freedom.
+
+    All :class:`LocalOperator` instances have a fixed associated identifier
+    (symbol) that is used when printing that operator. A custom identifier can
+    be useed through the associated
+    :class:`~qnet.algebra.hilbert_space_algebra.LocalSpace`'s
+    `local_identifiers` parameter. For example::
+
+        >>> from qnet.printing import ascii
+        >>> from qnet.algebra.operator_algebra import Destroy
+        >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
+        >>> b = Destroy(hs=hs1_custom)
+        >>> ascii(b)
+        'b^(1)'
+    """
 
     _simplifications = [implied_local_space(keys=['hs', ]), ]
 
-    _identifier = 'LocalOperator'  # must be overridden by subclasses!
+    _identifier = None  # must be overridden by subclasses!
+    # The _identifier is the default identifier/symbol to be used when
+    # printing. It can be overrriden through # the local_identifers argument of
+    # a LocalSpace
     _dagger = False  # do representations include a dagger?
     _nargs = 0  # number of arguments
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
-    def __init__(self, *args, hs, identifier=None):
+    def __init__(self, *args, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         assert isinstance(hs, LocalSpace)
         self._hs = hs
-        if identifier is not None:
-            if not self._rx_identifier.match(identifier):
-                raise ValueError("identifier '%s' does not match pattern '%s'"
-                                 % (identifier, self._rx_identifier.pattern))
-            self._identifier = identifier
+        if self._identifier is None:
+            raise TypeError(
+                r"Can't instantiate abstract class %s with undefined "
+                r"_identifier" % self.__class__.__name__)
+        if not self._rx_identifier.match(self._identifier):
+            raise ValueError(
+                "identifier '%s' does not match pattern '%s'"
+                % (self._identifier, self._rx_identifier.pattern))
         if len(args) != self._nargs:
             raise ValueError("expected %d arguments, gotten %d"
                              % (self._nargs, len(args)))
         args_vals = []
-        for arg in self.args:
+        for arg in args:
             try:
                 args_vals.append(float(arg))
             except (TypeError, ValueError):
                 args_vals.append("~%s" % str(arg))
         self._order_key = KeyTuple(
-            [self.__class__.__name__, self._identifier, 1.0] + args_vals)
-        super().__init__(*args, hs=hs, identifier=self._identifier)
+            [self.__class__.__name__, 1.0] + args_vals)
+        super().__init__(*args, hs=hs)
 
     @property
     def space(self):
-        """Hilbert space of the operator"""
+        """Hilbert space of the operator
+        (:class:`~qdyn.algebra.hilbert_space_algebra.LocalSpace` instance)"""
         return self._hs
 
     @property
     def args(self):
+        """The positional arguments used for instantiating the operator"""
         return tuple()
 
     @property
     def kwargs(self):
-        return OrderedDict([('hs', self._hs), ('identifier', self.identifier)])
-
-    @property
-    def minimal_kwargs(self):
-        if self._identifier == self.__class__._identifier:
-            return {'hs': self._hs}
-        else:
-            return self.kwargs
-
-    @property
-    def identifier(self):
-        """The name / identifying symbol of the operator"""
-        return self._identifier
+        """The keyword arguments used for instantiating the operator"""
+        return OrderedDict([('hs', self._hs)])
 
     def _expand(self):
         return self
@@ -433,6 +443,7 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
         return (self,) + ((0,) * order)
 
     def all_symbols(self):
+        """Set of symbols used in the operator"""
         return set()
 
 
@@ -452,6 +463,7 @@ class OperatorOperation(Operator, Operation, metaclass=ABCMeta):
 
     @property
     def space(self):
+        """Hilbert space of the operation result"""
         return self._space
 
     def _simplify_scalar(self):
@@ -467,10 +479,12 @@ class SingleOperatorOperation(Operator, Operation, metaclass=ABCMeta):
 
     @property
     def space(self):
+        """Hilbert space for the operation result"""
         return self._space
 
     @property
     def operand(self):
+        """The operator that the operation acts on"""
         return self.operands[0]
 
     def _series_expand(self, param, about, order):
@@ -487,10 +501,10 @@ class OperatorSymbol(Operator, Expression):
     """Symbolic operator, parametrized by an identifier string and an
     associated Hilbert space.
 
-    :param identifier: Symbol identifier
-    :type identifier: str
-    :param hs: Associated Hilbert space (can be a ProductSpace)
-    :type hs: HilbertSpace
+    Args:
+        identifier (str): Symbol identifier
+        hs (HilbertSpace): associated Hilbert space (can be a
+            :class:`~qnet.algebra.hilbert_space_algebra.ProductSpace`)
     """
     # Not a LocalOperator subclass because an OperatorSymbol may be defined for
     # a ProductSpace
@@ -498,9 +512,9 @@ class OperatorSymbol(Operator, Expression):
     def __init__(self, identifier, *, hs):
         identifier = str(identifier)
         if not LocalOperator._rx_identifier.match(identifier):
-            raise ValueError("identifier '%s' does not match pattern '%s'"
-                             % (identifier,
-                                LocalOperator._rx_identifier.pattern))
+            raise ValueError(
+                "identifier '%s' does not match pattern '%s'" % (
+                    identifier, LocalOperator._rx_identifier.pattern))
         self.identifier = identifier
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
@@ -513,14 +527,17 @@ class OperatorSymbol(Operator, Expression):
 
     @property
     def args(self):
+        """The positional arguments used for instantiating the operator"""
         return (self.identifier, )
 
     @property
     def kwargs(self):
+        """The keyword arguments used for instantiating the operator"""
         return {'hs': self._hs}
 
     @property
     def space(self):
+        """Hilbert space of the operator"""
         return self._hs
 
     def _expand(self):
@@ -614,37 +631,39 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
 
 class Create(LocalOperator):
     """Bosonic creation operator acting on a particular :class:`LocalSpace`
-    `hs`.
+    `hs`. It is the adjoint of :class:`Destroy`.
+    """
+    _identifier = 'a'
+    _dagger = True
 
-    Its adjoint is::
+    def __init__(self, *, hs):
+        super().__init__(hs=hs)
 
-        >>> print(ascii(Create(hs=1).adjoint()))
-        a^(1)
 
-    and it obeys the bosonic commutation relation::
+class Destroy(LocalOperator):
+    """Bosonic annihilation operator acting on a particular
+    :class:`LocalSpace` `hs`.
+
+    It obeys the bosonic commutation relation::
 
         >>> Destroy(hs=1) * Create(hs=1) - Create(hs=1) * Destroy(hs=1)
         IdentityOperator
         >>> Destroy(hs=1) * Create(hs=2) - Create(hs=2) * Destroy(hs=1)
         ZeroOperator
-    """
-    _identifier = 'a'
-    _dagger = True
 
+    Printers should represent this operator with the default identifier::
 
-class Destroy(LocalOperator):
-    """B osonic annihilation operator acting on a particular
-    :class:`LocalSpace` `hs`.
+        >>> Destroy._identifier
+        'a'
 
-    Its adjoint is::
-
-        >>> print(ascii(Destroy(hs=1).adjoint()))
-        a^(1)H
-
-    and it obeys the bosonic commutation relation, see :class:`Create`.
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
     """
     _identifier = 'a'
     _dagger = False
+
+    def __init__(self, *, hs):
+        super().__init__(hs=hs)
 
 
 class Jz(LocalOperator):
@@ -669,8 +688,19 @@ class Jz(LocalOperator):
         >>> print(ascii((Jplus(hs=1) * Jminus(hs=1)
         ...              - Jminus(hs=1)*Jplus(hs=1)).expand()))
         2 * J_z^(1)
+
+    Printers should represent this operator with the default identifier::
+
+        >>> Jz._identifier
+        'J_z'
+
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
     """
     _identifier = 'J_z'
+
+    def __init__(self, *, hs):
+        super().__init__(hs=hs)
 
 
 class Jplus(LocalOperator):
@@ -684,8 +714,19 @@ class Jplus(LocalOperator):
 
     :class:`Jz`, :class:`Jplus` and :class:`Jminus` satisfy that angular
     momentum commutator algebra, see :class:`Jz`
+
+    Printers should represent this operator with the default identifier::
+
+        >>> Jplus._identifier
+        'J_+'
+
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
     """
     _identifier = 'J_+'
+
+    def __init__(self, *, hs):
+        super().__init__(hs=hs)
 
 
 class Jminus(LocalOperator):
@@ -699,8 +740,19 @@ class Jminus(LocalOperator):
 
     :class:`Jz`, :class:`Jplus` and :class:`Jminus` satisfy that angular
     momentum commutator algebra, see :class:`Jz`.
+
+    Printers should represent this operator with the default identifier::
+
+        >>> Jminus._identifier
+        'J_-'
+
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
     """
     _identifier = 'J_-'
+
+    def __init__(self, *, hs):
+        super().__init__(hs=hs)
 
 
 class Phase(LocalOperator):
@@ -713,15 +765,23 @@ class Phase(LocalOperator):
 
     where :math:`a_{\rm hs}` is the annihilation operator acting on the
     :class:`LocalSpace` `hs`.
+
+    Printers should represent this operator with the default identifier::
+
+        >>> Phase._identifier
+        'Phase'
+
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
     """
     _identifier = 'Phase'
     _nargs = 1
     _rules = OrderedDict()  # see end of module
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
-    def __init__(self, phi, *, hs, identifier=None):
+    def __init__(self, phi, *, hs):
         self.phi = phi  #: Phase $\phi$
-        super().__init__(phi, hs=hs, identifier=identifier)
+        super().__init__(phi, hs=hs)
 
     @property
     def args(self):
@@ -733,16 +793,13 @@ class Phase(LocalOperator):
         raise NotImplementedError()
 
     def _adjoint(self):
-        return Phase.create(-self.phi.conjugate(), hs=self.space,
-                            identifier=self.identifier)
+        return Phase.create(-self.phi.conjugate(), hs=self.space)
 
     def _pseudo_inverse(self):
-        return Phase.create(-self.phi, hs=self.space,
-                            identifier=self.identfier)
+        return Phase.create(-self.phi, hs=self.space)
 
     def _simplify_scalar(self):
-        return Phase.create(simplify_scalar(self.phi), hs=self.space,
-                            identifier=self.identifier)
+        return Phase.create(simplify_scalar(self.phi), hs=self.space)
 
     def all_symbols(self):
         return scalar_free_symbols(self.space)
@@ -759,15 +816,23 @@ class Displace(LocalOperator):
 
     where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
     :class:`LocalSpace` `hs`.
+
+    Printers should represent this operator with the default identifier::
+
+        >>> Displace._identifier
+        'D'
+
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
     """
     _identifier = 'D'
     _nargs = 1
     _rules = OrderedDict()  # see end of module
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
-    def __init__(self, alpha, *, hs, identifier=None):
+    def __init__(self, alpha, *, hs):
         self.alpha = alpha  #: Displacement amplitude $\alpha$
-        super().__init__(alpha, hs=hs, identifier=identifier)
+        super().__init__(alpha, hs=hs)
 
     @property
     def args(self):
@@ -779,14 +844,12 @@ class Displace(LocalOperator):
         raise NotImplementedError()
 
     def _adjoint(self):
-        return Displace.create(-self.alpha, hs=self.space,
-                               identifier=self.identifier)
+        return Displace.create(-self.alpha, hs=self.space)
 
     _pseudo_inverse = _adjoint
 
     def _simplify_scalar(self):
-        return Displace.create(simplify_scalar(self.alpha), hs=self.space,
-                               identifier=self.identifier)
+        return Displace.create(simplify_scalar(self.alpha), hs=self.space)
 
     def all_symbols(self):
         return scalar_free_symbols(self.space)
@@ -803,15 +866,23 @@ class Squeeze(LocalOperator):
 
     where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
     :class:`LocalSpace` `hs`.
+
+    Printers should represent this operator with the default identifier::
+
+        >>> Squeeze._identifier
+        'Squeeze'
+
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
     """
     _identifier = "Squeeze"
     _nargs = 1
     _rules = OrderedDict()  # see end of module
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
-    def __init__(self, eta, *, hs, identifier=None):
+    def __init__(self, eta, *, hs):
         self.eta = eta  #: sqeezing parameter $\eta$
-        super().__init__(eta, hs=hs, identifier=identifier)
+        super().__init__(eta, hs=hs)
 
     @property
     def args(self):
@@ -821,13 +892,12 @@ class Squeeze(LocalOperator):
         raise NotImplementedError()
 
     def _adjoint(self):
-        return Squeeze(-self.eta, hs=self.space, identifier=self.identifier)
+        return Squeeze(-self.eta, hs=self.space)
 
     _pseudo_inverse = _adjoint
 
     def _simplify_scalar(self):
-        return Squeeze(simplify_scalar(self.eta), hs=self.space,
-                       identifier=self.identifier)
+        return Squeeze(simplify_scalar(self.eta), hs=self.space)
 
     def all_symbols(self):
         r'''List of arguments of the operator, containing the squeezing
@@ -845,14 +915,12 @@ class LocalSigma(LocalOperator):
         \left| j\right\rangle_{\rm hs} \left \langle k \right |_{\rm hs}
 
     For $j=k$ this becomes a projector $\Op{P}_k$ onto the eigenstate
-    $\ket{k}$; this projector may also be created via :func:`LocalProjector`.
+    $\ket{k}$; see :class:`LocalProjector`.
 
     Args:
         j (int or str): The label or index identifying $\ket{j}$
         k (int or str):  The label or index identifying $\ket{k}$
         hs (HilbertSpace): The Hilbert space on which the operator acts
-        identifier (str or None): The symbolic name of the operator. If None,
-            'sigma' will be used for $j \neq k$ and 'Pi' for $j = k$
 
     Note:
         The parameters `j` or `k` may be an integer or a string. A string
@@ -862,12 +930,23 @@ class LocalSigma(LocalOperator):
 
     Raises:
         ValueError: If `j` or `k` are invalid value for the given `hs`
+
+    Printers should represent either in braket notation, or using the default
+    identifier
+
+        >>> LocalSigma._identifier
+        'sigma'
+
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
     '''
     _identifier = "sigma"
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
     _nargs = 2
+    _rules = OrderedDict()  # see end of module
+    _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
-    def __init__(self, j, k, *, hs, identifier=None):
+    def __init__(self, j, k, *, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         for ind_jk in range(2):
@@ -894,14 +973,7 @@ class LocalSigma(LocalOperator):
                                 % type(jk))
         self.j = j  #: label/index of eigenstate  $\ket{j}$
         self.k = k  #: label/index of eigenstate  $\ket{k}$
-        self._is_projector = False
-        self._custom_identifier = None
-        if identifier is not None:
-            self._custom_identifier = identifier
-        if (j == k) and identifier is None:
-            self._is_projector = True
-            self._identifier = 'Pi'
-        super().__init__(j, k, hs=hs, identifier=identifier)
+        super().__init__(j, k, hs=hs)
 
     @property
     def args(self):
@@ -952,13 +1024,39 @@ class LocalSigma(LocalOperator):
                 new_k = self.k + k_incr
             else:  # str
                 new_k = self.space.next_basis_label_or_index(self.k, k_incr)
-            identifier = None
-            if self._custom_identifier is not None:
-                identifier = self._custom_identifier
-            return LocalSigma(new_j, new_k, hs=self.space,
-                              identifier=identifier)
+            return LocalSigma.create(new_j, new_k, hs=self.space)
         except (IndexError, ValueError):
             return ZeroOperator
+
+
+class LocalProjector(LocalSigma):
+    """A projector onto a specific level.
+
+    Printers should represent either in braket notation, or using the default
+    identifier
+
+        >>> LocalProjector._identifier
+        'Pi'
+
+    A custom identifier may be define using `hs`'s `local_identifiers`
+    argument.
+
+    Args:
+        j (int or str): The label or index identifying the state onto which
+            is projected
+        hs (HilbertSpace): The Hilbert space on which the operator acts
+    """
+    _identifier = "Pi"
+    _nargs = 2  # must be 2 because that's how we call super().__init__
+
+    def __init__(self, j, *, hs):
+        super().__init__(j=j, k=j, hs=hs)
+
+    @property
+    def args(self):
+        """One-element tuple containing eigenstate label `j` that the projector
+        projects onto"""
+        return (self.j, )
 
 
 ###############################################################################
@@ -1058,13 +1156,15 @@ class OperatorTimes(OperatorOperation):
 class ScalarTimesOperator(Operator, Operation):
     """Multiply an operator by a scalar coefficient.
 
-    :param coefficient: Scalar coefficient.
-    :type coefficient: Any of `SCALAR_TYPES`
-    :param term: The operator that is multiplied.
-    :type term: Operator
+    Args:
+        coeff (SCALAR_TYPES): coefficient
+        term (Operator): operator
     """
     _rules = OrderedDict()
     _simplifications = [match_replace, ]
+
+    def __init__(self, coeff, term):
+        super().__init__(coeff, term)
 
     @staticmethod
     def has_minus_prefactor(c):
@@ -1400,13 +1500,6 @@ class NullSpaceProjector(SingleOperatorOperation):
 tr = OperatorTrace.create
 
 
-def LocalProjector(state, *, hs):
-    """Create a :class:`LocalSigma` instance with $k=l$ where the label $k$ is
-    given by `state`.
-    """
-    return LocalSigma.create(state, state, hs=hs)
-
-
 def X(local_space, states=("h", "g")):
     r"""Pauli-type X-operator
 
@@ -1418,7 +1511,9 @@ def X(local_space, states=("h", "g")):
     :rtype: Operator
     """
     h, g = states
-    return LocalSigma(h, g, hs=local_space) + LocalSigma(g, h, hs=local_space)
+    return (
+        LocalSigma.create(h, g, hs=local_space) +
+        LocalSigma.create(g, h, hs=local_space))
 
 
 def Y(local_space, states=("h", "g")):
@@ -1432,8 +1527,8 @@ def Y(local_space, states=("h", "g")):
     :rtype: Operator
     """
     h, g = states
-    return I * (-LocalSigma(h, g, hs=local_space) +
-                LocalSigma(g, h, hs=local_space))
+    return I * (-LocalSigma.create(h, g, hs=local_space) +
+                LocalSigma.create(g, h, hs=local_space))
 
 
 def Z(local_space, states=("h", "g")):
@@ -1500,7 +1595,7 @@ def factor_for_trace(ls, op):
                     break
             if found_ls:
                 m = r.j
-                rest = rest[j:] + rest[:j] + [LocalSigma(m, m, hs=ls), ]
+                rest = rest[j:] + rest[:j] + [LocalSigma.create(m, m, hs=ls), ]
         if not rest:
             rest = [IdentityOperator]
         if len(pull_out):
@@ -1819,11 +1914,11 @@ def _algebraic_rules():
     A_times = wc("A", head=OperatorTimes)
 
     ls = wc("ls", head=LocalSpace)
-    id = wc('id', head=str)
     h1 = wc("h1", head=HilbertSpace)
     H_ProductSpace = wc("H", head=ProductSpace)
 
-    localsigma = wc('localsigma', head=LocalSigma, kwargs={'hs': ls})
+    localsigma = wc(
+        'localsigma', head=(LocalSigma, LocalProjector), kwargs={'hs': ls})
 
     ra = wc("ra", head=(int, str))
     rb = wc("rb", head=(int, str))
@@ -1885,8 +1980,30 @@ def _algebraic_rules():
             pattern_head(
                 pattern(LocalSigma, ra, rb, hs=ls),
                 pattern(LocalSigma, rc, rd, hs=ls)),
-            lambda ls, ra, rb, rc, rd:
-                LocalSigma(ra, rd, hs=ls) if rb == rc else ZeroOperator)),
+            lambda ls, ra, rb, rc, rd: (
+                LocalSigma.create(ra, rd, hs=ls)
+                if rb == rc else ZeroOperator))),
+        ('sigproj', (
+            pattern_head(
+                pattern(LocalSigma, ra, rb, hs=ls),
+                pattern(LocalProjector, rc, hs=ls)),
+            lambda ls, ra, rb, rc: (
+                LocalSigma.create(ra, rc, hs=ls)
+                if rb == rc else ZeroOperator))),
+        ('projsig', (
+            pattern_head(
+                pattern(LocalProjector, ra, hs=ls),
+                pattern(LocalSigma, rc, rd, hs=ls)),
+            lambda ls, ra, rc, rd: (
+                LocalSigma.create(ra, rd, hs=ls)
+                if ra == rc else ZeroOperator))),
+        ('projproj', (
+            pattern_head(
+                pattern(LocalProjector, ra, hs=ls),
+                pattern(LocalProjector, rc,hs=ls)),
+            lambda ls, ra, rc: (
+                LocalProjector(ra, hs=ls)
+                if ra == rc else ZeroOperator))),
 
         # Harmonic oscillator rules
         ('hamos1', (
@@ -1983,7 +2100,7 @@ def _algebraic_rules():
                 Jpjmcoeff(ls, localsigma.index_k, shift=True) *
                 localsigma.raise_jk(k_incr=+1))),
 
-        ('sphin6', (
+        ('spin6', (
             pattern_head(localsigma, pattern(Jz, hs=ls)),
             lambda ls, localsigma:
                 Jzjmcoeff(ls, localsigma.index_k, shift=True) * localsigma)),
@@ -2019,11 +2136,11 @@ def _algebraic_rules():
             pattern_head(pattern(Adjoint, A)),
             lambda A: A)),
         ('create', (
-            pattern_head(pattern(Create, hs=ls, identifier=id)),
-            lambda ls, id: Destroy(hs=ls, identifier=id))),
+            pattern_head(pattern(Create, hs=ls)),
+            lambda ls: Destroy(hs=ls))),
         ('destroy', (
-            pattern_head(pattern(Destroy, hs=ls, identifier=id)),
-            lambda ls, id: Create(hs=ls, identifier=id))),
+            pattern_head(pattern(Destroy, hs=ls)),
+            lambda ls: Create(hs=ls))),
         ('jplus', (
             pattern_head(pattern(Jplus, hs=ls)),
             lambda ls: Jminus(hs=ls))),
@@ -2031,11 +2148,14 @@ def _algebraic_rules():
             pattern_head(pattern(Jminus, hs=ls)),
             lambda ls: Jplus(hs=ls))),
         ('jz', (
-            pattern_head(pattern(Jz, hs=ls, identifier=id)),
-            lambda ls, id: Jz(hs=ls, identifier=id))),
+            pattern_head(pattern(Jz, hs=ls)),
+            lambda ls: Jz(hs=ls))),
         ('sig', (
-            pattern_head(pattern(LocalSigma, ra, rb, hs=ls, identifier=id)),
-            lambda ls, ra, rb, id: LocalSigma(rb, ra, hs=ls, identifier=id))),
+            pattern_head(pattern(LocalSigma, ra, rb, hs=ls)),
+            lambda ls, ra, rb: LocalSigma(rb, ra, hs=ls))),
+        ('proj', (
+            pattern_head(pattern(LocalProjector, ra, hs=ls)),
+            lambda ls, ra: LocalProjector(ra, hs=ls))),
     ]))
 
     Displace._rules.update(check_rules_dict([
@@ -2049,6 +2169,10 @@ def _algebraic_rules():
     Squeeze._rules.update(check_rules_dict([
         ('zero', (
             pattern_head(0, hs=ls), lambda ls: IdentityOperator))
+    ]))
+    LocalSigma._rules.update(check_rules_dict([
+        ('projector', (
+            pattern_head(n, n, hs=ls), lambda n, ls: LocalProjector(n, hs=ls)))
     ]))
 
     OperatorTrace._rules.update(check_rules_dict([
@@ -2085,6 +2209,9 @@ def _algebraic_rules():
         ('sigma', (
             pattern_head(pattern(LocalSigma, n, m, hs=ls), over_space=ls),
             lambda ls, n, m: IdentityOperator if n == m else ZeroOperator)),
+        ('proj', (
+            pattern_head(pattern(LocalProjector, n, hs=ls), over_space=ls),
+            lambda ls, n: IdentityOperator)),
         ('factor', (
             pattern_head(A, over_space=ls),
             lambda ls, A: factor_for_trace(ls, A))),
@@ -2094,6 +2221,9 @@ def _algebraic_rules():
         ('sig', (
             pattern_head(pattern(LocalSigma, m, n, hs=ls)),
             lambda ls, m, n: LocalSigma(n, m, hs=ls))),
+        ('proj', (
+            pattern_head(pattern(LocalProjector, m, hs=ls)),
+            lambda ls, m: LocalSigma(m, hs=ls))),
     ]))
 
     Commutator._rules.update(check_rules_dict([
@@ -2119,13 +2249,17 @@ def _algebraic_rules():
         # out the commutator will generate something simple
         ('expand1', (
             pattern_head(
-                wc('A', head=(Create, Destroy, LocalSigma, Phase, Displace)),
-                wc('B', head=(Create, Destroy, LocalSigma, Phase, Displace))),
+                wc('A', head=(
+                    Create, Destroy, LocalSigma, LocalProjector, Phase,
+                    Displace)),
+                wc('B', head=(
+                    Create, Destroy, LocalSigma, LocalProjector, Phase,
+                    Displace))),
             lambda A, B: A * B - B * A)),
         ('expand2', (
             pattern_head(
-                wc('A', head=(LocalSigma, Jplus, Jminus, Jz)),
-                wc('B', head=(LocalSigma, Jplus, Jminus, Jz))),
+                wc('A', head=(LocalSigma, LocalProjector, Jplus, Jminus, Jz)),
+                wc('B', head=(LocalSigma, LocalProjector, Jplus, Jminus, Jz))),
             lambda A, B: A * B - B * A)),
     ]))
 

@@ -22,7 +22,7 @@ from sympy import symbols, sqrt
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.operator_algebra import (
     OperatorSymbol, Commutator, ZeroOperator, Create, Destroy, LocalSigma,
-    IdentityOperator, Jplus, Jz)
+    LocalProjector, IdentityOperator, Jplus, Jz)
 from qnet.algebra.toolbox import (
     expand_commutators_leibniz, evaluate_commutators)
 
@@ -145,12 +145,12 @@ def test_known_commutators():
 
     assert (
         Commutator.create(LocalSigma(1, 0, hs=hs), LocalSigma(0, 1, hs=hs)) ==
-        LocalSigma(1, 1, hs=hs) - LocalSigma(0, 0, hs=hs))
+        LocalProjector(1, hs=hs) - LocalProjector(0, hs=hs))
     assert (
-        Commutator.create(LocalSigma(1, 0, hs=hs), LocalSigma(1, 1, hs=hs)) ==
+        Commutator.create(LocalSigma(1, 0, hs=hs), LocalProjector(1, hs=hs)) ==
         (-1 * LocalSigma(1, 0, hs=hs)))
     assert (
-        Commutator.create(LocalSigma(1, 0, hs=hs), LocalSigma(0, 0, hs=hs)) ==
+        Commutator.create(LocalSigma(1, 0, hs=hs), LocalProjector(0, hs=hs)) ==
         LocalSigma(1, 0, hs=hs))
     assert (
         Commutator.create(LocalSigma(1, 0, hs=hs), Create(hs=hs)) ==

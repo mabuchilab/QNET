@@ -28,8 +28,8 @@ from qnet.circuit_components.three_port_kerr_cavity_cc import (
         ThreePortKerrCavity)
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector, Commutator)
+        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
+        tr, Adjoint, PseudoInverse, NullSpaceProjector, Commutator)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace)
 from qnet.algebra.matrix_algebra import Matrix
@@ -186,7 +186,7 @@ def test_unicode_operator_elements():
     assert (
         unicode(sig_e_g, sig_as_ketbra=False) ==
         '\u03c3\u0302_e,g^(1)')  # σ̂_e,g^(1)
-    sig_e_e = LocalSigma('e', 'e', hs=hs_tls)
+    sig_e_e = LocalProjector('e', hs=hs_tls)
     assert unicode(sig_e_e) == '|e⟩⟨e|⁽¹⁾'
     assert (
         unicode(sig_e_e, sig_as_ketbra=False) ==

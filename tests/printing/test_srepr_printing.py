@@ -47,6 +47,25 @@ from qnet.algebra.super_operator_algebra import (
 from qnet.printing import srepr
 
 
+def test_srepr_local_space():
+    """Test that the srepr of a LocalSpace is "nice" (as Hilbert spaces a
+    have a lot of keyword arguments, which we only want to show if necessary"""
+    assert srepr(LocalSpace(1)) == r"LocalSpace('1')"
+    assert srepr(LocalSpace(1, dimension=2)) == r"LocalSpace('1', dimension=2)"
+    assert (
+        srepr(LocalSpace(1, dimension=2, basis=('g', 'e'))) ==
+        r"LocalSpace('1', basis=('g', 'e'), dimension=2)")
+    assert (
+        srepr(LocalSpace(1, basis=('g', 'e'))) ==
+        r"LocalSpace('1', basis=('g', 'e'))")
+    assert (
+        srepr(LocalSpace(1, basis=('g', 'e'), order_index=1)) ==
+        r"LocalSpace('1', basis=('g', 'e'), order_index=1)")
+    assert (
+        srepr(LocalSpace(1, local_identifiers={'Destroy': 'b'})) ==
+        r"LocalSpace('1', local_identifiers=(('Destroy', 'b'),))")
+
+
 def test_srepr_circuit_elements():
     """Test the tex representation of "atomic" circuit algebra elements"""
     assert (srepr(CircuitSymbol("C_1", cdim=2)) ==
@@ -310,15 +329,15 @@ def operator_exprs():
         IdentityOperator,
         ZeroOperator,
         Create(hs=1),
-        Create(hs=1, identifier=r'b'),
+        Create(hs=LocalSpace(1, local_identifiers={'Create': 'b'})),
         Destroy(hs=1),
-        Destroy(hs=1, identifier=r'b'),
+        Destroy(hs=LocalSpace(1, local_identifiers={'Destroy': 'b'})),
         Jz(hs=1),
-        Jz(hs=1, identifier='Z'),
-        Jplus(hs=1, identifier='Jp'),
-        Jminus(hs=1, identifier='Jm'),
+        Jz(hs=LocalSpace(1, local_identifiers = {'Jz': 'Z'})),
+        Jplus(hs=LocalSpace(1, local_identifiers={'Jplus': 'Jp'})),
+        Jminus(hs=LocalSpace(1, local_identifiers={'Jminus': 'Jm'})),
         Phase(0.5, hs=1),
-        Phase(0.5, hs=1, identifier=r'Ph'),
+        Phase(0.5, hs=LocalSpace(1, local_identifiers={'Phase': 'Ph'})),
         Displace(0.5, hs=1),
         Squeeze(0.5, hs=1),
         LocalSigma('e', 'g', hs=LocalSpace(1, basis=('g', 'e'))),

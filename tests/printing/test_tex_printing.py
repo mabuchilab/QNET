@@ -27,8 +27,8 @@ from qnet.circuit_components.three_port_kerr_cavity_cc import (
         ThreePortKerrCavity)
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector, Commutator)
+        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
+        tr, Adjoint, PseudoInverse, NullSpaceProjector, Commutator)
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, FullSpace)
 from qnet.algebra.matrix_algebra import Matrix
@@ -193,6 +193,9 @@ def test_tex_operator_elements():
     """Test the tex representation of "atomic" operator algebra elements"""
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
+    hs_custom = LocalSpace(1, local_identifiers={
+        'Create': 'b', 'Destroy': 'b', 'Jz': 'Z', 'Jplus': 'Jp',
+        'Jminus': 'Jm', 'Phase': 'Phi'})
     assert latex(OperatorSymbol("A", hs=hs1)) == r'\hat{A}^{(q_{1})}'
     assert (latex(OperatorSymbol("A_1", hs=hs1*hs2)) ==
             r'\hat{A}_{1}^{(q_{1} \otimes q_{2})}')
@@ -204,20 +207,20 @@ def test_tex_operator_elements():
     assert latex(IdentityOperator, tex_identity_sym='I') == 'I'
     assert latex(ZeroOperator) == r'\mathbb{0}'
     assert latex(Create(hs=1)) == r'\hat{a}^{(1)\dagger}'
-    assert latex(Create(hs=1, identifier=r'b')) == r'\hat{b}^{(1)\dagger}'
+    assert latex(Create(hs=hs_custom)) == r'\hat{b}^{(1)\dagger}'
     assert latex(Destroy(hs=1)) == r'\hat{a}^{(1)}'
-    assert latex(Destroy(hs=1, identifier=r'b')) == r'\hat{b}^{(1)}'
+    assert latex(Destroy(hs=hs_custom)) == r'\hat{b}^{(1)}'
     assert latex(Jz(hs=1)) == r'\hat{J}_{z}^{(1)}'
-    assert latex(Jz(hs=1, identifier='Z')) == r'\hat{Z}^{(1)}'
+    assert latex(Jz(hs=hs_custom)) == r'\hat{Z}^{(1)}'
     assert latex(Jplus(hs=1)) == r'\hat{J}_{+}^{(1)}'
-    assert latex(Jplus(hs=1, identifier='Jp')) == r'\text{Jp}^{(1)}'
+    assert latex(Jplus(hs=hs_custom)) == r'\text{Jp}^{(1)}'
     assert latex(Jminus(hs=1)) == r'\hat{J}_{-}^{(1)}'
-    assert latex(Jminus(hs=1, identifier='Jm')) == r'\text{Jm}^{(1)}'
+    assert latex(Jminus(hs=hs_custom)) == r'\text{Jm}^{(1)}'
     assert (latex(Phase(Rational(1, 2), hs=1)) ==
             r'\text{Phase}^{(1)}\left(\frac{1}{2}\right)')
     assert (latex(Phase(0.5, hs=1)) ==
             r'\text{Phase}^{(1)}\left(0.5\right)')
-    assert (latex(Phase(0.5, hs=1, identifier=r'Phi')) ==
+    assert (latex(Phase(0.5, hs=hs_custom)) ==
             r'\hat{\Phi}^{(1)}\left(0.5\right)')
     assert (latex(Displace(0.5, hs=1)) ==
             r'\hat{D}^{(1)}\left(0.5\right)')
@@ -247,12 +250,12 @@ def test_tex_operator_elements():
         r'\left\lvert \mu \middle\rangle\!'
         r'\middle\langle \nu \right\rvert^{(1)}')
     hs_tls = LocalSpace('1', basis=('excited', 'ground'))
-    sig_excited_excited = LocalSigma('excited', 'excited', hs=hs_tls)
+    sig_excited_excited = LocalProjector('excited', hs=hs_tls)
     assert (
         latex(sig_excited_excited, sig_as_ketbra=False) ==
         r'\hat{\Pi}_{\text{excited}}^{(1)}')
     hs_tls = LocalSpace('1', basis=('g', 'e'))
-    sig_e_e = LocalSigma('e', 'e', hs=hs_tls)
+    sig_e_e = LocalProjector('e', hs=hs_tls)
     assert (
         latex(sig_e_e, sig_as_ketbra=False) == r'\hat{\Pi}_{e}^{(1)}')
 

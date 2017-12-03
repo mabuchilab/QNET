@@ -150,21 +150,25 @@ def test_ascii_operator_elements():
     assert ascii(OperatorSymbol("Xi_2", hs=('q1', 'q2'))) == 'Xi_2^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_full", hs=1)) == 'Xi_full^(1)'
     with pytest.raises(ValueError):
-        OperatorSymbol(r'\Xi^2', hs='a')
+       OperatorSymbol(r'\Xi^2', hs='a')
     assert ascii(IdentityOperator) == "1"
     assert ascii(ZeroOperator) == "0"
     assert ascii(Create(hs=1)) == "a^(1)H"
     assert ascii(Create(hs=1), show_hs_label=False) == "a^H"
     assert ascii(Create(hs=1), show_hs_label='subscript') == "a_(1)^H"
-    assert ascii(Create(hs=1, identifier='b')) == "b^(1)H"
     assert ascii(Destroy(hs=1)) == "a^(1)"
-    assert ascii(Destroy(hs=1, identifier='b')) == "b^(1)"
+    hs1_custom = LocalSpace(
+       1, local_identifiers={
+           'Create': 'b', 'Destroy': 'b', 'Jz': 'Z', 'Jplus': 'Jp',
+           'Jminus': 'Jm', 'Phase': 'Ph'})
+    assert ascii(Create(hs=hs1_custom)) == "b^(1)H"
+    assert ascii(Destroy(hs=hs1_custom)) == "b^(1)"
     assert ascii(Jz(hs=1)) == "J_z^(1)"
-    assert ascii(Jz(hs=1, identifier='Z')) == "Z^(1)"
-    assert ascii(Jplus(hs=1, identifier='Jp')) == "Jp^(1)"
-    assert ascii(Jminus(hs=1, identifier='Jm')) == "Jm^(1)"
+    assert ascii(Jz(hs=hs1_custom)) == "Z^(1)"
+    assert ascii(Jplus(hs=hs1_custom)) == "Jp^(1)"
+    assert ascii(Jminus(hs=hs1_custom)) == "Jm^(1)"
     assert ascii(Phase(0.5, hs=1)) == 'Phase^(1)(0.5)'
-    assert ascii(Phase(0.5, hs=1, identifier='Ph')) == 'Ph^(1)(0.5)'
+    assert ascii(Phase(0.5, hs=hs1_custom)) == 'Ph^(1)(0.5)'
     assert ascii(Displace(0.5, hs=1)) == 'D^(1)(0.5)'
     assert ascii(Squeeze(0.5, hs=1)) == 'Squeeze^(1)(0.5)'
     hs_tls = LocalSpace('1', basis=('g', 'e'))
@@ -190,8 +194,8 @@ def test_ascii_operator_operations():
     assert ascii(A * (B + D)) == 'A^(q_1) * (B^(q_1) + D^(q_1))'
     assert ascii(A * (B - D)) == 'A^(q_1) * (B^(q_1) - D^(q_1))'
     assert (
-        ascii((A + B) * (-2 * B - D)) ==
-        '(A^(q_1) + B^(q_1)) * (-2 * B^(q_1) - D^(q_1))')
+       ascii((A + B) * (-2 * B - D)) ==
+       '(A^(q_1) + B^(q_1)) * (-2 * B^(q_1) - D^(q_1))')
     assert ascii(OperatorTimes(A, -B)) == 'A^(q_1) * (-B^(q_1))'
     assert ascii(OperatorTimes(A, -B), show_hs_label=False) == 'A * (-B)'
     assert ascii(2 * A) == '2 * A^(q_1)'

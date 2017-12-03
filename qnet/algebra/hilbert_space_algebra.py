@@ -231,6 +231,11 @@ class LocalSpace(HilbertSpace, Expression):
             (tuple of labels for the basis states)
         dimension (int or None): Specify the dimension $n$ of the Hilbert
             space.  This implies a basis numbered from 0  to $n-1$.
+        local_identifiers (dict): Mapping of class names of
+            :class:`~qnet.algebra.operator_algebra.LocalOperator` subclasses
+            to identifier names. Used e.g. 'b' instead of the default 'a' for
+            the anihilation operator. This can be a dict or a dict-compatible
+            structure, e.g. a list/tuple of key-value tuples.
         order_index (int or None): An optional key that determines the
             preferred order of Hilbert spaces. This also changes the order of
             e.g. sums or products of Operators. Hilbert spaces will be ordered
@@ -239,7 +244,9 @@ class LocalSpace(HilbertSpace, Expression):
     """
     _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
 
-    def __init__(self, label, *, basis=None, dimension=None, order_index=None):
+    def __init__(
+            self, label, *, basis=None, dimension=None, local_identifiers=None,
+            order_index=None):
 
         default_args = []
         if basis is None:
@@ -255,6 +262,21 @@ class LocalSpace(HilbertSpace, Expression):
             order_index = float('inf')  # ensure sort as last
         else:
             order_index = int(order_index)
+        if local_identifiers is None:
+            default_args.append('local_identifiers')
+            local_identifiers = {}
+        else:
+            local_identifiers = dict(local_identifiers)
+        try:
+            # we want to normalize the local_identifiers to an arbitrary stable
+            # order
+            sorted_local_identifiers = tuple(
+                sorted(tuple(local_identifiers.items())))
+        except TypeError:
+            # this will happen e.g. if the keys in local_identifier are types
+            # instead of class names
+            raise TypeError(
+                "local_identifier must map class names to identifier strings")
 
         label = str(label)
         if not self._rx_label.match(label):
@@ -271,19 +293,25 @@ class LocalSpace(HilbertSpace, Expression):
                     raise ValueError("basis and dimension are incompatible")
 
         self._label = label
-        self._order_key = KeyTuple((order_index, label, str(dimension), basis))
+        self._order_key = KeyTuple((
+            order_index, label, str(dimension), basis,
+            sorted_local_identifiers))
         self._basis = basis
         self._dimension = dimension
+        self._local_identifiers = local_identifiers
         self._order_index = order_index
-        self._kwargs = OrderedDict([('basis', self._basis),
-                                    ('dimension', self._dimension),
-                                    ('order_index', self._order_index)])
+        self._kwargs = OrderedDict([
+            ('basis', self._basis), ('dimension', self._dimension),
+            ('local_identifiers', sorted_local_identifiers),
+            ('order_index', self._order_index)])
         self._minimal_kwargs = self._kwargs.copy()
         for key in default_args:
             del self._minimal_kwargs[key]
 
-        super().__init__(label, basis=basis, dimension=dimension,
-                         order_index=order_index)
+        super().__init__(
+            label, basis=basis, dimension=dimension,
+            local_identifiers=sorted_local_identifiers,
+            order_index=order_index)
 
     @property
     def args(self):
