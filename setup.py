@@ -46,10 +46,9 @@ setup(
         'numpy',
     ],
     extras_require={
-        'dev': ['click', 'pytest', 'sphinx', 'sphinx-autobuild',
+        'dev': ['click', 'pytest>=3.3.0', 'sphinx', 'sphinx-autobuild',
                 'sphinx_rtd_theme', 'better-apidoc', 'nose', 'cython',
-                'coverage', 'pytest-cov', 'pytest-catchlog',
-                'pytest-xdist'],
+                'coverage', 'pytest-cov', 'pytest-xdist'],
         'simulation': ['cython', 'qutip>=3.0.1'],
         'circuit_visualization': 'pyx>0.14',
     },

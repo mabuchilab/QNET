@@ -342,7 +342,7 @@ def test_qsd_codegen_observables(caplog, slh_Sec6, slh_Sec6_vals):
     filename = codegen._observables[name][1]
     assert filename == 'a_1_sigma_10_2.out'
     codegen.add_observable(Sp*A2*Sm*Sp, name=name)
-    assert 'Overwriting existing operator' in caplog.text()
+    assert 'Overwriting existing operator' in caplog.text
 
     with pytest.raises(ValueError) as exc_info:
         codegen.add_observable(Sp*A2*A2*Sm*Sp, name="xxxx"*20)
