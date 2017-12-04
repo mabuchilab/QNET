@@ -18,4 +18,4 @@ install:
 
 script:
   - which sphinx-build
-  - py.test --doctest-modules --cov=qnet qnet tests
+  - py.test --doctest-modules --cov=qnet qnet tests docs/*.rst
