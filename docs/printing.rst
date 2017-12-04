@@ -1,5 +1,11 @@
 .. _printing:
 
+.. testsetup::
+
+    >>> # This just make sure that the srepr in pytest uses unicode, which it
+    >>> # doesn't always to otherwise (depending on -s)
+    >>> from qnet.printing import init_printing; init_printing(repr_format='unicode')
+
 ===================
 The Printing System
 ===================
@@ -38,7 +44,7 @@ the standard notation in quantum mechanics::
     >>> from qnet.algebra import BasisKet
     >>> from sympy import sqrt
     >>> (BasisKet(0, hs=1) + BasisKet(1, hs=1)) / sqrt(2)
-    1/√2 * (|0⟩⁽¹⁾ + |1⟩⁽¹⁾)
+    1/√2 (|0⟩⁽¹⁾ + |1⟩⁽¹⁾)
 
 Compare this to the default in SymPy::
 
@@ -84,9 +90,9 @@ printing function. For example, you could suppress the display of Hilbert space
 labels::
 
     >>> from qnet.printing import init_printing
-    >>> init_printing(show_hs_label=False)
+    >>> init_printing(show_hs_label=False, repr_format='unicode')
     >>> (BasisKet(0, hs=1) + BasisKet(1, hs=1)) / sqrt(2)
-    1/√2 * (|0⟩ + |1⟩)
+    1/√2 (|0⟩ + |1⟩)
 
 Or, in a debugging session, you could switch the default representation to use
 the indented :func:`srepr`::
