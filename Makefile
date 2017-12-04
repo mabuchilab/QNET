@@ -5,7 +5,7 @@ TESTPYPI = https://testpypi.python.org/pypi
 TESTENV = MATPLOTLIBRC=tests
 #TESTOPTIONS = --doctest-modules --cov=qnet
 TESTOPTIONS = --doctest-modules --cov=qnet
-TESTS = qnet tests
+TESTS = qnet tests docs/*.rst
 # You may redefine TESTS to run a specific test. E.g.
 #     make test TESTS="tests/algebra"
 
