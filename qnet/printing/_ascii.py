@@ -268,10 +268,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
             dagger = not expr._dagger
         else:
             dagger = expr._dagger
-        identifier = expr.space._local_identifiers.get(
-            expr.__class__.__name__, expr._identifier)
         return self._render_op(
-            identifier, expr._hs, dagger=dagger, args=expr.args)
+            expr.identifier, expr._hs, dagger=dagger, args=expr.args)
 
     def _print_LocalSigma(self, expr, adjoint=False):
         if self._settings['sig_as_ketbra']:
@@ -287,21 +285,17 @@ class QnetAsciiPrinter(QnetBasePrinter):
                     label_j=self._render_str(expr.k),
                     space=self._render_hs_label(expr.space))
         else:
-            identifier = expr.space._local_identifiers.get(
-                expr.__class__.__name__, expr._identifier)
             if adjoint:
-                identifier = "%s_%s,%s" % (identifier, expr.k, expr.j)
+                identifier = "%s_%s,%s" % (expr.identifier, expr.k, expr.j)
             else:
-                identifier = "%s_%s,%s" % (identifier, expr.j, expr.k)
+                identifier = "%s_%s,%s" % (expr.identifier, expr.j, expr.k)
             return self._render_op(identifier, expr._hs, dagger=adjoint)
 
     def _print_LocalProjector(self, expr, adjoint=False):
         if self._settings['sig_as_ketbra']:
             return self._print_LocalSigma(expr, adjoint=False)
         else:
-            identifier = expr.space._local_identifiers.get(
-                expr.__class__.__name__, expr._identifier)
-            identifier = "%s_%s" % (identifier, expr.j)
+            identifier = "%s_%s" % (expr.identifier, expr.j)
             return self._render_op(identifier, expr._hs, dagger=False)
 
     def _print_IdentityOperator(self, expr):
@@ -329,8 +323,11 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 l.extend([sign, self._parenth_left + t + self._parenth_right])
             else:
                 l.extend([sign, t])
-        sign = l.pop(0)
-        if sign == '+':
+        try:
+            sign = l.pop(0)
+            if sign == '+':
+                sign = ""
+        except IndexError:
             sign = ""
         return sign + ' '.join(l)
 
@@ -380,14 +377,12 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _print_Adjoint(self, expr, adjoint=False):
         o = expr.operand
         if self._isinstance(o, 'LocalOperator'):
-            o_identifier = o.space._local_identifiers.get(
-                o.__class__.__name__, o._identifier)
             if adjoint:
                 dagger = o._dagger
             else:
                 dagger = not o._dagger
             return self._render_op(
-                o_identifier, hs=o.space, dagger=dagger, args=o.args[1:])
+                o.identifier, hs=o.space, dagger=dagger, args=o.args[1:])
         elif self._isinstance(o, 'OperatorSymbol'):
             return self._render_op(
                 o.identifier, hs=o.space, dagger=(not adjoint))

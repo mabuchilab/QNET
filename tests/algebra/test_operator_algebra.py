@@ -672,10 +672,15 @@ def test_local_operator_init():
 
 
 def test_custom_identifier():
-    """Test that rule application preserves custom local identifiers"""
-    hs = LocalSpace(0, local_identifiers={'Create': 'b', 'Destroy': 'b'})
-    b = Destroy(hs=hs)
-    expr = b * b.dag()
-    assert ascii(expr) == '1 + b^(0)H * b^(0)'
-    expr = expr.substitute({hs: LocalSpace(0)})
-    assert ascii(expr) == '1 + a^(0)H * a^(0)'
+    """Test that rule application preserves custom local identifiers, and that
+    'Create' and 'Destroy' share the same identifier"""
+    hilbert_spaces = [
+        LocalSpace(0, local_identifiers={'Create': 'b', 'Destroy': 'b'}),
+        LocalSpace(0, local_identifiers={'Create': 'b'}),
+        LocalSpace(0, local_identifiers={'Destroy': 'b'})]
+    for hs in hilbert_spaces:
+        b = Destroy(hs=hs)
+        expr = b * b.dag()
+        assert ascii(expr) == '1 + b^(0)H * b^(0)'
+        expr = expr.substitute({hs: LocalSpace(0)})
+        assert ascii(expr) == '1 + a^(0)H * a^(0)'

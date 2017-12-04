@@ -387,9 +387,6 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
     _simplifications = [implied_local_space(keys=['hs', ]), ]
 
     _identifier = None  # must be overridden by subclasses!
-    # The _identifier is the default identifier/symbol to be used when
-    # printing. It can be overrriden through # the local_identifers argument of
-    # a LocalSpace
     _dagger = False  # do representations include a dagger?
     _nargs = 0  # number of arguments
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
@@ -403,10 +400,6 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
             raise TypeError(
                 r"Can't instantiate abstract class %s with undefined "
                 r"_identifier" % self.__class__.__name__)
-        if not self._rx_identifier.match(self._identifier):
-            raise ValueError(
-                "identifier '%s' does not match pattern '%s'"
-                % (self._identifier, self._rx_identifier.pattern))
         if len(args) != self._nargs:
             raise ValueError("expected %d arguments, gotten %d"
                              % (self._nargs, len(args)))
@@ -435,6 +428,35 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
     def kwargs(self):
         """The keyword arguments used for instantiating the operator"""
         return OrderedDict([('hs', self._hs)])
+
+    @property
+    def identifier(self):
+        """The identifier (symbol) that is used when printing the operator.
+
+        A custom identifier can
+        be used through the associated
+        :class:`~qnet.algebra.hilbert_space_algebra.LocalSpace`'s
+        `local_identifiers` parameter. For example::
+
+            >>> from qnet.algebra.operator_algebra import Destroy
+            >>> a = Destroy(hs=1)
+            >>> a.identifier
+            'a'
+            >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
+            >>> b = Destroy(hs=hs1_custom)
+            >>> b.identifier
+            'b'
+            >>> from qnet.printing import ascii; ascii(b)
+            'b^(1)'
+        """
+
+        identifier = self._hs._local_identifiers.get(
+            self.__class__.__name__, self._identifier)
+        if not self._rx_identifier.match(identifier):
+            raise ValueError(
+                "identifier '%s' does not match pattern '%s'"
+                % (identifier, self._rx_identifier.pattern))
+        return identifier
 
     def _expand(self):
         return self
@@ -629,17 +651,6 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
         return set(())
 
 
-class Create(LocalOperator):
-    """Bosonic creation operator acting on a particular :class:`LocalSpace`
-    `hs`. It is the adjoint of :class:`Destroy`.
-    """
-    _identifier = 'a'
-    _dagger = True
-
-    def __init__(self, *, hs):
-        super().__init__(hs=hs)
-
-
 class Destroy(LocalOperator):
     """Bosonic annihilation operator acting on a particular
     :class:`LocalSpace` `hs`.
@@ -650,20 +661,62 @@ class Destroy(LocalOperator):
         IdentityOperator
         >>> Destroy(hs=1) * Create(hs=2) - Create(hs=2) * Destroy(hs=1)
         ZeroOperator
-
-    Printers should represent this operator with the default identifier::
-
-        >>> Destroy._identifier
-        'a'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
     """
     _identifier = 'a'
     _dagger = False
+    _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
 
     def __init__(self, *, hs):
         super().__init__(hs=hs)
+
+    @property
+    def identifier(self):
+        """The identifier (symbols) that is used when printing the annihilation
+        operator. This is identical to the identifier of :class:`Create`. A
+        custom identifier for both :class:`Destroy` and :class:`Create` can be
+        set through the `local_identifiers` parameter of the associated Hilbert
+        space::
+
+            >>> from qnet.algebra.operator_algebra import Create, Destroy
+            >>> hs_custom = LocalSpace(0, local_identifiers={'Destroy': 'b'})
+            >>> Create(hs=hs_custom).identifier
+            'b'
+            >>> Destroy(hs=hs_custom).identifier
+            'b'
+        """
+        identifier = self._hs._local_identifiers.get(
+            self.__class__.__name__, self._hs._local_identifiers.get(
+                'Create', self._identifier))
+        if not self._rx_identifier.match(identifier):
+            raise ValueError(
+                "identifier '%s' does not match pattern '%s'"
+                % (identifier, self._rx_identifier.pattern))
+        return identifier
+
+
+class Create(LocalOperator):
+    """Bosonic creation operator acting on a particular :class:`LocalSpace`
+    `hs`. It is the adjoint of :class:`Destroy`.
+    """
+    _identifier = 'a'
+    _dagger = True
+    _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
+
+    def __init__(self, *, hs):
+        super().__init__(hs=hs)
+
+    @property
+    def identifier(self):
+        """The identifier (symbols) that is used when printing the creation
+        operator. This is identical to the identifier of :class:`Destroy`"""
+        identifier = self._hs._local_identifiers.get(
+            self.__class__.__name__, self._hs._local_identifiers.get(
+                'Destroy', self._identifier))
+        if not self._rx_identifier.match(identifier):
+            raise ValueError(
+                "identifier '%s' does not match pattern '%s'"
+                % (identifier, self._rx_identifier.pattern))
+        return identifier
 
 
 class Jz(LocalOperator):
@@ -931,14 +984,11 @@ class LocalSigma(LocalOperator):
     Raises:
         ValueError: If `j` or `k` are invalid value for the given `hs`
 
-    Printers should represent either in braket notation, or using the default
-    identifier
+    Printers should represent this operator either in braket notation, or using
+    the operator identifier
 
-        >>> LocalSigma._identifier
+        >>> LocalSigma(0, 0, hs=0).identifier
         'sigma'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
     '''
     _identifier = "sigma"
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
@@ -1031,15 +1081,6 @@ class LocalSigma(LocalOperator):
 
 class LocalProjector(LocalSigma):
     """A projector onto a specific level.
-
-    Printers should represent either in braket notation, or using the default
-    identifier
-
-        >>> LocalProjector._identifier
-        'Pi'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
 
     Args:
         j (int or str): The label or index identifying the state onto which

@@ -22,7 +22,6 @@ from sympy import I
 from numpy import array as np_array
 import pytest
 
-
 from qnet.algebra.circuit_algebra import (
         SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
         SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
