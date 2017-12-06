@@ -18,7 +18,7 @@
 ###########################################################################
 
 import sympy
-from sympy import symbols, sqrt, exp, I, Rational
+from sympy import symbols, sqrt, exp, I, Rational, Idx, IndexedBase
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -57,6 +57,11 @@ def test_unicode_scalar():
     assert unicode(0.5j) == '0.5j'
     assert unicode(sympy.pi) == 'π'
     assert unicode(sympy.pi/4) == 'π/4'
+
+    i = Idx('i')
+    alpha = IndexedBase('alpha')
+    assert unicode(alpha[i]) == 'α_i'
+    assert unicode(alpha[1]) == 'α₁'
 
 
 def test_unicode_circuit_elements():

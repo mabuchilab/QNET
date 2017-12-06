@@ -39,6 +39,7 @@ PRECEDENCE_VALUES = {
     "Concatenation": PRECEDENCE["Add"],
     "SeriesInverse": PRECEDENCE["Atom"],
     "KetPlus": PRECEDENCE["Add"],
+    "KetIndexedSum": PRECEDENCE["Add"],
     "TensorKet": PRECEDENCE["Mul"],
     "BraKet": PRECEDENCE["Mul"],
     "KetBra": PRECEDENCE["Mul"],

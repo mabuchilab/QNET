@@ -531,10 +531,16 @@ def set_union(*sets):
 
 def all_symbols(expr):
     """Return all all_symbols featured within an expression."""
-    try:
-        return expr.all_symbols()
-    except AttributeError:
-        return set(())
+    methods = [
+        lambda expr: expr.all_symbols(),
+        lambda expr: expr.free_symbols,
+        lambda expr: set(())]
+
+    for method in methods:
+        try:
+            return method(expr)
+        except AttributeError:
+            pass  # try next method
 
 
 class Operation(Expression, metaclass=ABCMeta):

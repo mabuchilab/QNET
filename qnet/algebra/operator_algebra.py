@@ -42,6 +42,7 @@ from .hilbert_space_algebra import (
 from .pattern_matching import wc, pattern_head, pattern
 from .ordering import (
     KeyTuple, DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
+from .indices import SymbolicLabelBase
 
 sympyOne = sympify(1)
 
@@ -394,7 +395,8 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
     def __init__(self, *args, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
-        assert isinstance(hs, LocalSpace)
+        if not isinstance(hs, LocalSpace):
+            raise TypeError("hs must be a LocalSpace")
         self._hs = hs
         if self._identifier is None:
             raise TypeError(
@@ -999,8 +1001,11 @@ class LocalSigma(LocalOperator):
     def __init__(self, j, k, *, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
+        if not isinstance(hs, LocalSpace):
+            raise TypeError("hs must be a LocalSpace")
         for ind_jk in range(2):
             jk = j if ind_jk == 0 else k
+            hs._check_basis_label_type(jk)
             if isinstance(jk, str):
                 if not hs.has_basis:
                     raise ValueError(
@@ -1018,9 +1023,11 @@ class LocalSigma(LocalOperator):
                         j = hs.basis_labels[jk]
                     else:
                         k = hs.basis_labels[jk]
+            elif isinstance(jk, SymbolicLabelBase):
+                pass  # use j, k as-is
             else:
-                raise TypeError("Index j/k must be an int or str, not %s"
-                                % type(jk))
+                # Interal error: mismatch with hs._basis_label_types
+                raise NotImplementedError()
         self.j = j  #: label/index of eigenstate  $\ket{j}$
         self.k = k  #: label/index of eigenstate  $\ket{k}$
         super().__init__(j, k, hs=hs)
@@ -1033,7 +1040,7 @@ class LocalSigma(LocalOperator):
     @property
     def index_j(self):
         """Index `j` or (zero-based) index of the label `j` in the basis"""
-        if isinstance(self.j, int):
+        if isinstance(self.j, (int, SymbolicLabelBase)):
             return self.j
         else:
             return self.space.basis_labels.index(self.j)
@@ -1041,7 +1048,7 @@ class LocalSigma(LocalOperator):
     @property
     def index_k(self):
         """Index `k` or (zero-based) index of the label `k` in the basis"""
-        if isinstance(self.k, int):
+        if isinstance(self.k, (int, SymbolicLabelBase)):
             return self.k
         else:
             return self.space.basis_labels.index(self.k)
@@ -1072,7 +1079,7 @@ class LocalSigma(LocalOperator):
                 new_j = self.space.next_basis_label_or_index(self.j, j_incr)
             if isinstance(self.k, int):
                 new_k = self.k + k_incr
-            else:  # str
+            else:  # str or SymbolicLabelBase
                 new_k = self.space.next_basis_label_or_index(self.k, k_incr)
             return LocalSigma.create(new_j, new_k, hs=self.space)
         except (IndexError, ValueError):
@@ -2041,7 +2048,7 @@ def _algebraic_rules():
         ('projproj', (
             pattern_head(
                 pattern(LocalProjector, ra, hs=ls),
-                pattern(LocalProjector, rc,hs=ls)),
+                pattern(LocalProjector, rc, hs=ls)),
             lambda ls, ra, rc: (
                 LocalProjector(ra, hs=ls)
                 if ra == rc else ZeroOperator))),

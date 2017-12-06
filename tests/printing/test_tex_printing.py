@@ -17,7 +17,7 @@
 #
 ###########################################################################
 
-from sympy import symbols, sqrt, exp, I, Rational
+from sympy import symbols, sqrt, exp, I, Rational, Idx, IndexedBase
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -41,6 +41,22 @@ from qnet.algebra.super_operator_algebra import (
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
 from qnet.printing import latex
 from qnet.printing._latex import QnetLatexPrinter
+
+
+def test_ascii_scalar():
+    """Test rendering of scalar values"""
+    assert latex(2) == '2'
+    latex.printer.cache = {}
+    # we always want 2.0 to be printed as '2'. Without this normalization, the
+    # state of the cache might introduce non-reproducible behavior, as 2==2.0
+    assert latex(2.0) == '2'
+    assert latex(1j) == '1i'
+    assert latex('foo') == 'foo'
+
+    i = Idx('i')
+    alpha = IndexedBase('alpha')
+    assert latex(i) == 'i'
+    assert latex(alpha[i]) == r'\alpha_{i}'
 
 
 def test_tex_render_string():

@@ -35,6 +35,7 @@ from .abstract_algebra import (
         Expression, Operation, AlgebraError, assoc, idem, filter_neutral)
 from .ordering import KeyTuple
 from .singleton import Singleton, singleton_object
+from .indices import SymbolicLabelBase, FockIndex
 
 __all__ = [
     'BasisNotSetError', 'HilbertSpace', 'LocalSpace', 'ProductSpace',
@@ -244,6 +245,8 @@ class LocalSpace(HilbertSpace, Expression):
     """
     _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
 
+    _basis_label_types = (int, str, FockIndex)  # acceptable types for labels
+
     def __init__(
             self, label, *, basis=None, dimension=None, local_identifiers=None,
             order_index=None):
@@ -312,6 +315,17 @@ class LocalSpace(HilbertSpace, Expression):
             label, basis=basis, dimension=dimension,
             local_identifiers=sorted_local_identifiers,
             order_index=order_index)
+
+    @classmethod
+    def _check_basis_label_type(cls, label_or_index):
+        """Every object (BasisKet, LocalSigma) that contains a label or index
+        for an eigenstate of some LocalSpace should call this routine to check
+        the type of that label or index"""
+        if not isinstance(label_or_index, cls._basis_label_types):
+            raise TypeError(
+                "label_or_index must be an instance of one of %s; not %s" % (
+                    ", ".join([t.__name__ for t in cls._basis_label_types]),
+                    label_or_index.__class__.__name__))
 
     @property
     def args(self):
@@ -427,8 +441,8 @@ class LocalSpace(HilbertSpace, Expression):
         The return type is the same as the type of `label_or_index`.
 
         Args:
-            label_or_index (int or str): If `int`, the index of a basis state;
-                if `str`, the label of a basis state
+            label_or_index (int or str or SymbolicLabelBase): If `int`, the
+                index of a basis state; if `str`, the label of a basis state
             n (int): The increment
 
         Raises:
@@ -454,6 +468,8 @@ class LocalSpace(HilbertSpace, Expression):
                 raise IndexError("index %d out of range for basis %s"
                                  % (new_index, self._basis))
             return self._basis[new_index]
+        elif isinstance(label_or_index, SymbolicLabelBase):
+            return label_or_index.__class__(expr=label_or_index.expr + n)
 
 
 @singleton_object

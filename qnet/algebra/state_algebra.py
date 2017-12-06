@@ -44,17 +44,17 @@ from .operator_algebra import (
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
     Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace, Phase)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
+from .indices import SymbolicLabelBase, yield_from_ranges
 
 __all__ = [
     'OverlappingSpaces', 'SpaceTooLargeError', 'UnequalSpaces', 'BasisKet',
     'Bra', 'BraKet', 'CoherentStateKet', 'Ket', 'KetBra', 'KetPlus',
     'KetSymbol', 'LocalKet', 'OperatorTimesKet', 'ScalarTimesKet',
-    'TensorKet', 'TrivialKet', 'ZeroKet']
+    'TensorKet', 'TrivialKet', 'ZeroKet', 'KetIndexedSum']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'act_locally', 'act_locally_times_tensor', 'tensor_decompose_kets',
     'check_kets_same_space', 'check_op_ket_space']
-
 
 
 ###############################################################################
@@ -169,23 +169,28 @@ class Ket(metaclass=ABCMeta):
 
 
 class KetSymbol(Ket, Expression):
-    """Ket symbol class, parametrized by an identifier string and an associated
-    Hilbert space.
+    """Symbolic state
 
-    :param label: Symbol identifier
-    :type label: str
-    :param hs: Associated Hilbert space.
-    :type hs: HilbertSpace
+    Args:
+        label (str or SymbolicLabelBase): Symbol Identifier
+        hs (HilbertSpace): associated Hilbert space (may be a
+            :class:`~qnet.algebra.hilbert_space_algebra.ProductSpace`)
     """
     _rx_label = re.compile('^[A-Za-z0-9+-]+(_[A-Za-z0-9().+-]+)?$')
 
     def __init__(self, label, *, hs):
         self._label = label
-        if not isinstance(label, str):
-            raise TypeError("type of label must be str, not %s" % type(label))
-        if not self._rx_label.match(label):
-            raise ValueError("label '%s' does not match pattern '%s'"
-                             % (label, self._rx_label.pattern))
+        if isinstance(label, str):
+            if not self._rx_label.match(label):
+                raise ValueError(
+                    "label '%s' does not match pattern '%s'"
+                    % (label, self._rx_label.pattern))
+        elif isinstance(label, SymbolicLabelBase):
+            self._label = label
+        else:
+            raise TypeError(
+                "type of label must be str or SymbolicLabelBase, not %s"
+                % type(label))
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         elif isinstance(hs, tuple):
@@ -229,7 +234,7 @@ class LocalKet(KetSymbol):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         if not isinstance(hs, LocalSpace):
-            raise ValueError("hs must be a LocalSpace")
+            raise TypeError("hs must be a LocalSpace")
         super().__init__(label, hs=hs)
 
     def all_symbols(self):
@@ -306,15 +311,17 @@ class BasisKet(LocalKet):
     can be used to move between basis states.
 
     Args:
-        label_or_index (str or int): If `str`, the label of the basis state.
-            Must be an element of `hs.basis_labels`. If `int`, the (zero-based)
+        label_or_index: If `str`, the label of the basis state (must be an
+            element of `hs.basis_labels`). If `int`, the (zero-based)
             index of the basis state. This works if `hs` has an unknown
-            dimension
+            dimension. For a symbolic index, `label_or_index` can be an
+            instance of an appropriate subclass of
+            :class:`~qnet.algebra.indices.SymbolicLabelBase`
         hs (LocalSpace): The Hilbert space in which the basis is defined
 
     Raises:
         ValueError: if `label_or_index` is not in the Hilbert space
-        TypeError: if `label_or_index` is not an `int` or `str`.
+        TypeError: if `label_or_index` is not of an appropriate type
         ~qnet.algebra.hilbert_space_algebra.BasisNotSetError: if
             `label_or_index` is a `str` but no basis is defined for `hs`
 
@@ -331,6 +338,9 @@ class BasisKet(LocalKet):
     def __init__(self, label_or_index, *, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
+        if not isinstance(hs, LocalSpace):
+            raise TypeError("hs must be a LocalSpace")
+        hs._check_basis_label_type(label_or_index)
         if isinstance(label_or_index, str):
             label = label_or_index
             ind = hs.basis_labels.index(label)  # raises BasisNotSetError
@@ -347,9 +357,13 @@ class BasisKet(LocalKet):
                     raise ValueError(
                         "Index %s must be < the dimension %d of Hilbert "
                         "space %s" % (ind, hs.dimension, hs))
+        elif isinstance(label_or_index, SymbolicLabelBase):
+            label = label_or_index
+            ind = label_or_index
         else:
-            raise TypeError("label_or_index must be an int or str, not %s"
-                            % type(label_or_index))
+            raise TypeError(
+                "label_or_index must be an int or str, not %s"
+                % type(label_or_index))
         self._index = ind
         super().__init__(label, hs=hs)
 
@@ -593,16 +607,15 @@ class TensorKet(Ket, Operation):
 class ScalarTimesKet(Ket, Operation):
     """Multiply a Ket by a scalar coefficient.
 
-    Instantiate as::
-        ScalarTimesKet(coefficient, term)
-
-    :param coefficient: Scalar coefficient.
-    :type coefficient: SCALAR_TYPES
-    :param term: The ket that is multiplied.
-    :type term: Ket
+    Args:
+        coeff (SCALAR_TYPES): coefficient
+        term (Ket): the ket that is multiplied
     """
     _rules = OrderedDict()  # see end of module
     _simplifications = [match_replace, ]
+
+    def __init__(self, coeff, term):
+        super().__init__(coeff, term)
 
     @property
     def _order_key(self):
@@ -879,6 +892,57 @@ class KetBra(Operator, Operation):
         be = self.bra.series_expand(param, about, order)
         return tuple(ke[k] * be[n - k]
                      for n in range(order + 1) for k in range(n + 1))
+
+
+class KetIndexedSum(Ket, Operation):
+    # TODO: documentation
+
+    def __init__(self, term, *ranges):
+        self._term = term
+        self.ranges = tuple(ranges)
+        super().__init__(term, ranges=ranges)
+
+    @property
+    def space(self):
+        return self._term.space
+
+    @property
+    def term(self):
+        return self._term
+
+    @property
+    def operands(self):
+        return (self._term, )
+
+    @property
+    def args(self):
+        return tuple([self._term, *self.ranges])
+
+    @property
+    def kwargs(self):
+        return {}
+
+    def _expand(self):
+        return KetIndexedSum.create(self.term.expand(), *self.ranges)
+
+    def _series_expand(self, param, about, order):
+        raise NotImplementedError()
+
+    @property
+    def terms(self):
+        for mapping in yield_from_ranges(self.ranges):
+            yield self.term.substitute(mapping).simplify(rules=[(
+                wc('label', head=SymbolicLabelBase),
+                lambda label: label.evaluate(mapping))])
+
+    def expand_sum(self, max_terms=None):
+        terms = []
+        for i, term in enumerate(self.terms):
+            if max_terms is not None:
+                if i >= max_terms:
+                    break
+            terms.append(term)
+        return KetPlus.create(*terms)
 
 
 ###############################################################################

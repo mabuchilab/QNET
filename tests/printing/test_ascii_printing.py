@@ -19,7 +19,7 @@
 
 import pytest
 
-from sympy import symbols, sqrt, exp, I
+from sympy import symbols, sqrt, exp, I, Idx, IndexedBase
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -54,6 +54,11 @@ def test_ascii_scalar():
     assert ascii(2.0) == '2'
     assert ascii(1j) == '1j'
     assert ascii('foo') == 'foo'
+
+    i = Idx('i')
+    alpha = IndexedBase('alpha')
+    assert ascii(i) == 'i'
+    assert ascii(alpha[i]) == 'alpha_i'
 
 
 def test_ascii_circuit_elements():
@@ -236,7 +241,7 @@ def test_ascii_ket_elements():
     with pytest.raises(ValueError):
         KetSymbol(r'\Psi', hs=hs1)
     assert ascii(LocalKet('Psi', hs=1)) == '|Psi>^(1)'
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         LocalKet('Psi', hs=hs1*hs2)
     assert ascii(ZeroKet) == '0'
     assert ascii(TrivialKet) == '1'

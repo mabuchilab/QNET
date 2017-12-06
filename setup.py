@@ -39,11 +39,7 @@ setup(
     packages=find_packages(exclude=["tests"]),
     # ext_modules=ext_modules,
     install_requires=[
-        'matplotlib',
-        'sympy',
-        'ply',
-        'six',
-        'numpy',
+        'matplotlib', 'sympy', 'ply', 'six', 'numpy', 'attrs',
     ],
     extras_require={
         'dev': ['click', 'pytest>=3.3.0', 'sphinx', 'sphinx-autobuild',

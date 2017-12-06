@@ -36,6 +36,7 @@ SymPy's builtin printers:
   :class:`SympyUnicodePrinter` solves this by producing simple strings with
   unicode symbols.
 '''
+import sympy
 from sympy import sqrt
 from sympy.core import S, Rational, Mul, Pow
 from sympy.core.mul import _keep_coeff
@@ -44,9 +45,12 @@ from sympy.printing.str import StrPrinter
 from sympy.printing.latex import LatexPrinter
 from sympy.printing.pretty.pretty_symbology import pretty_symbol
 
-from ._unicode_mappings import _SUPERSCRIPT_MAPPING
+from ._unicode_mappings import _SUPERSCRIPT_MAPPING, _SUBSCRIPT_MAPPING
 
 __all__ = ['SympyLatexPrinter', 'SympyStrPrinter', 'SympyUnicodePrinter']
+
+
+delattr(sympy.Indexed, '_sympystr')
 
 
 def derationalize_denom(expr):
@@ -124,6 +128,10 @@ class SympyStrPrinter(StrPrinter):
         except ValueError:
             return super()._print_Mul(expr)
 
+    def _print_Indexed(self, expr):
+        return self._print(expr.base)+'_%s' % ','.join(
+            map(self._print, expr.indices))
+
 
 class SympyLatexPrinter(LatexPrinter):
     """Variation of sympy LatexPrinter that derationalizes denominators"""
@@ -165,7 +173,7 @@ class SympyLatexPrinter(LatexPrinter):
             return super()._print_Mul(expr)
 
 
-class SympyUnicodePrinter(StrPrinter):
+class SympyUnicodePrinter(SympyStrPrinter):
     """Printer that represents SymPy expressions as (single-line) unicode
     strings. This is a mixture of the default Sympy StrPrinter and the SymPy
     PrettyPrinter
@@ -330,3 +338,11 @@ class SympyUnicodePrinter(StrPrinter):
 
     def _print_ZeroMatrix(self, expr):
         return "𝟘"
+
+    def _print_Indexed(self, expr):
+        subscript = ','.join(map(self._print, expr.indices))
+        try:
+            subscript = ''.join([_SUBSCRIPT_MAPPING[l] for l in subscript])
+            return self._print(expr.base) + subscript
+        except KeyError:
+            return self._print(expr.base) + '_%s' % subscript

@@ -57,6 +57,11 @@ class QnetLatexPrinter(QnetAsciiPrinter):
     _circuit_series_sym = r'\lhd'
     _circuit_concat_sym = r'\boxplus'
     _cid = r'{\rm cid}(%d)'
+    _sum_sym = r'\sum'
+    _element_sym = r'\in'
+    _ellipsis = r'\dots'
+    _set_delim_left = r'\{'
+    _set_delim_right = r'\}'
 
     def __init__(self, cache=None, settings=None):
         super().__init__(cache=cache, settings=settings)
