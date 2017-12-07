@@ -93,3 +93,37 @@ def test_qubit_state():
             alpha_i * BasisKet(i, hs=hs_tls),
             IndexOverFockSpace(i, hs=hs_tls))
     assert "label_or_index must be an instance of" in str(exc_info.value)
+
+
+def test_qubit_state_bra():
+    """Test  sum_i alpha_i <i| for TLS"""
+    i = Idx('i')
+    alpha = IndexedBase('alpha')
+    alpha_i = alpha[i]
+    hs_tls = LocalSpace('tls', basis=('g', 'e'))
+
+    term = alpha_i * BasisKet(FockIndex(i), hs=hs_tls).dag
+
+    expr = KetIndexedSum.create(
+        term, IndexOverFockSpace(i, hs=hs_tls))
+
+    assert IndexOverFockSpace(i, hs=hs_tls) in expr.args
+
+    assert ascii(expr) == "Sum_{i in H_tls} alpha_i * <i|^(tls)"
+
+    syms = list(expr.term.all_symbols())
+    assert symbols('alpha') in syms
+    assert i in syms
+    assert expr.space == hs_tls
+    assert len(expr.args) == 2
+    assert len(expr.operands) == 1
+    assert expr.args[0] == term
+    assert expr.term == term
+    assert len(expr.kwargs) == 0
+    expr_expand = expr.expand_sum().substitute(
+        {alpha[0]: alpha['g'], alpha[1]: alpha['e']})
+    assert expr_expand == (
+        alpha['g'] * BasisKet('g', hs=hs_tls).dag +
+        alpha['e'] * BasisKet('e', hs=hs_tls).dag)
+    assert (
+        ascii(expr_expand) == 'alpha_e * <e|^(tls) + alpha_g * <g|^(tls)')

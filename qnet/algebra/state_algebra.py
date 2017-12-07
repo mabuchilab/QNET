@@ -97,6 +97,18 @@ def check_op_ket_space(cls, ops, kwargs):
     return ops, kwargs
 
 
+def accept_bras(cls, ops, kwargs):
+    """Accept operands that are all bras, and turn that into to bra of the
+    operation applied to all corresponding kets"""
+    kets = []
+    for bra in ops:
+        if isinstance(bra, Bra):
+            kets.append(bra.ket)
+        else:
+            return ops, kwargs
+    return Bra.create(cls.create(*kets, **kwargs))
+
+
 ###############################################################################
 # Abstract base classes
 ###############################################################################
@@ -499,8 +511,9 @@ class KetPlus(Ket, Operation):
     """
     neutral_element = ZeroKet
     _binary_rules = OrderedDict()  # see end of module
-    _simplifications = [assoc, orderby, filter_neutral, check_kets_same_space,
-                        match_replace_binary]
+    _simplifications = [
+        accept_bras, assoc, orderby, filter_neutral, check_kets_same_space,
+        match_replace_binary]
 
     order_key = FullCommutativeHSOrder
 
@@ -534,7 +547,8 @@ class TensorKet(Ket, Operation):
     """
     _binary_rules = OrderedDict()  # see end of module
     neutral_element = TrivialKet
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+    _simplifications = [
+        accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = FullCommutativeHSOrder
 
