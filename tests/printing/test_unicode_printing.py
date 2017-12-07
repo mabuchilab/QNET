@@ -40,6 +40,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
+from qnet.algebra.indices import FockIndex, StrLabel
 from qnet.printing import unicode
 
 
@@ -264,6 +265,26 @@ def test_unicode_ket_elements():
     unicode.printer.cache = {}
     assert unicode(CoherentStateKet(2.0, hs=1)) == '|α=2⟩⁽¹⁾'
     assert unicode(CoherentStateKet(2.1, hs=1)) == '|α=2.1⟩⁽¹⁾'
+
+
+def test_unicode_ket_symbolic_labels():
+    """Test unicode representation of Kets with symbolic labels"""
+    i = Idx('i')
+    i_sym = symbols('i')
+    j = Idx('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+    assert unicode(BasisKet(FockIndex(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
+    assert unicode(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2 i⟩⁽⁰⁾'
+    assert unicode(LocalKet(StrLabel(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
+    assert (
+        unicode(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Ψ_i,j⟩^(0⊗1)')
+    expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
+    assert unicode(expr) == '|i,j⟩^(0⊗1)'
+    assert unicode(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) == '⟨2 i|⁽⁰⁾'
+    assert (
+        unicode(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) == '|i⟩⟨j|⁽⁰⁾')
 
 
 def test_unicode_bra_elements():

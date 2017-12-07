@@ -42,9 +42,10 @@ from .hilbert_space_algebra import (
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
-    Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace, Phase)
+    Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
+    Phase)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
-from .indices import SymbolicLabelBase, yield_from_ranges
+from .indices import SymbolicLabelBase, yield_from_ranges, KroneckerDelta
 
 __all__ = [
     'OverlappingSpaces', 'SpaceTooLargeError', 'UnequalSpaces', 'BasisKet',
@@ -176,7 +177,7 @@ class KetSymbol(Ket, Expression):
         hs (HilbertSpace): associated Hilbert space (may be a
             :class:`~qnet.algebra.hilbert_space_algebra.ProductSpace`)
     """
-    _rx_label = re.compile('^[A-Za-z0-9+-]+(_[A-Za-z0-9().+-]+)?$')
+    _rx_label = re.compile('^[A-Za-z0-9+-]+(_[A-Za-z0-9().,+-]+)?$')
 
     def __init__(self, label, *, hs):
         self._label = label
@@ -998,9 +999,9 @@ def _algebraic_rules():
     u = wc("u", head=SCALAR_TYPES)
     v = wc("v", head=SCALAR_TYPES)
 
-    n = wc("n", head=(int, str))
-    m = wc("m", head=(int, str))
-    k = wc("k", head=(int, str))
+    n = wc("n", head=(int, str, SymbolicLabelBase))
+    m = wc("m", head=(int, str, SymbolicLabelBase))
+    k = wc("k", head=(int, str, SymbolicLabelBase))
 
     A = wc("A", head=Operator)
     A__ = wc("A__", head=Operator)
@@ -1060,7 +1061,7 @@ def _algebraic_rules():
             pattern_head(
                 pattern(LocalSigma, n, m, hs=ls),
                 pattern(BasisKet, k, hs=ls)),
-            lambda ls, n, m, k: BasisKet(n, hs=ls) if m == k else ZeroKet)),
+            lambda ls, n, m, k: KroneckerDelta(m, k) * BasisKet(n, hs=ls))),
 
         # harmonic oscillator
         ('create', (
@@ -1171,7 +1172,7 @@ def _algebraic_rules():
         ('dirac', (
             pattern_head(
                 pattern(BasisKet, m, hs=ls), pattern(BasisKet, n, hs=ls)),
-            lambda ls, m, n: 1 if m == n else 0)),
+            lambda ls, m, n: KroneckerDelta(m, n))),
         ('norm', (
             pattern_head(
                 pattern(BasisKet, nsym, hs=ls),

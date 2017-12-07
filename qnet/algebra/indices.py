@@ -4,17 +4,40 @@ from itertools import product
 import attr
 import sympy
 
-from ..printing import srepr
+from ..printing import srepr, ascii
 
 __all__ = [
     'IntIndex', 'FockIndex', 'StrLabel', 'IndexOverList', 'IndexOverRange',
-    'IndexOverFockSpace']
+    'IndexOverFockSpace', 'KroneckerDelta']
 
 __private__ = [
     'yield_from_ranges', 'SymbolicLabelBase', 'IndexRangeBase']
 
 
 # support routines
+
+
+def KroneckerDelta(i, j):
+    """Kronecker delta function.
+
+    If ``i == j``, return 1. Otherwise,
+    If ``i != j``, if `i` and `j` are Sympy or SymbolicLabelBase objects,
+    return an instance of :class:`sympy.KroneckerDelta`, return 0 otherwise.
+
+    Unlike in :class:`sympy.KroneckerDelta`, `i` and `j` will not be sympyfied
+    """
+    if i == j:
+        return 1
+    else:
+        if isinstance(i, sympy.Basic) and isinstance(j, sympy.Basic):
+            return sympy.KroneckerDelta(i, j)
+        elif (
+                isinstance(i, SymbolicLabelBase) and
+                isinstance(j, SymbolicLabelBase)):
+            return sympy.KroneckerDelta(i.expr, j.expr)
+
+        else:
+            return 0
 
 
 def _immutable_attribs(cls):
@@ -65,6 +88,11 @@ class SymbolicLabelBase(metaclass=ABCMeta):
     def evaluate(self, mapping):
         pass
 
+    def _sympy_(self):
+        # sympyfication allows the symbolic label to be used in other sympy
+        # expressions (which happens in some algebraic rules)
+        return self.expr
+
 
 class IntIndex(SymbolicLabelBase):
 
@@ -79,7 +107,7 @@ class FockIndex(IntIndex):
 class StrLabel(SymbolicLabelBase):
 
     def evaluate(self, mapping):
-        return str(self.expr.subs(mapping))
+        return ascii(self.expr.subs(mapping))
 
 
 # Index Ranges

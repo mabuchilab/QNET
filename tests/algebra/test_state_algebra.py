@@ -20,16 +20,19 @@
 
 import unittest
 
-from sympy import sqrt, exp, I, pi
+from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols
 
-from qnet.algebra.abstract_algebra import no_rules
+from qnet.algebra.abstract_algebra import no_rules, simplify
 from qnet.algebra.operator_algebra import (
         OperatorSymbol, Create, Destroy, Jplus, Jminus, Jz, Phase, Displace,
         LocalSigma, IdentityOperator, OperatorPlus)
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.state_algebra import (
         KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
-        TrivialKet, UnequalSpaces, TensorKet, BasisKet, KetBra)
+        TrivialKet, UnequalSpaces, TensorKet, LocalKet, BasisKet, KetBra)
+from qnet.algebra.indices import (
+    FockIndex, IntIndex, StrLabel, SymbolicLabelBase)
+from qnet.algebra.pattern_matching import wc
 import pytest
 
 
@@ -263,3 +266,61 @@ def test_expand_ketbra():
         KetBra(BasisKet('0', hs=hs), BasisKet('1', hs=hs)),
         KetBra(BasisKet('1', hs=hs), BasisKet('0', hs=hs)),
         KetBra(BasisKet('1', hs=hs), BasisKet('1', hs=hs)))
+
+
+def eval_lb(expr, mapping):
+    """Evaluate symbolic labels with the given mapping"""
+    return simplify(expr, rules=[(
+        wc('label', head=SymbolicLabelBase),
+        lambda label: label.evaluate(mapping))])
+
+
+def test_ket_symbolic_labels():
+    """Test that we can instantiate Kets with symbolic labels"""
+    i = Idx('i')
+    i_sym = symbols('i')
+    j = Idx('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+
+    assert (
+        eval_lb(BasisKet(FockIndex(2 * i), hs=hs0), {i: 2}) ==
+        BasisKet(4, hs=hs0))
+    assert (
+        eval_lb(BasisKet(FockIndex(2 * i_sym), hs=hs0), {i_sym: 2}) ==
+        BasisKet(4, hs=hs0))
+    with pytest.raises(TypeError) as exc_info:
+        BasisKet(IntIndex(2 * i), hs=hs0)
+    assert "not IntIndex" in str(exc_info.value)
+    with pytest.raises(TypeError) as exc_info:
+        BasisKet(StrLabel(2 * i), hs=hs0)
+    assert "not StrLabel" in str(exc_info.value)
+    with pytest.raises(TypeError) as exc_info:
+        BasisKet(2 * i, hs=hs0)
+    assert "not Mul" in str(exc_info.value)
+
+    assert(
+        eval_lb(LocalKet(StrLabel(2 * i), hs=hs0), {i: 2}) ==
+        LocalKet("4", hs=hs0))
+    with pytest.raises(TypeError) as exc_info:
+        eval_lb(LocalKet(FockIndex(2 * i), hs=hs0), {i: 2})
+    assert "type of label must be str" in str(exc_info.value)
+
+    assert StrLabel(Psi[i, j]).evaluate({i: 'i', j: 'j'}) == 'Psi_i,j'
+    assert(
+        eval_lb(
+            KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1), {i: 'i', j: 'j'}) ==
+        KetSymbol("Psi_i,j", hs=hs0*hs1))
+    assert(
+        eval_lb(
+            KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1), {i: 1, j: 2}) ==
+        KetSymbol("Psi_1,2", hs=hs0*hs1))
+
+    assert (
+        eval_lb(
+            LocalSigma(FockIndex(i), FockIndex(j), hs=hs0), {i: 1, j: 2}) ==
+        LocalSigma(1, 2, hs=hs0))
+    assert (
+        BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs0).dag ==
+        LocalSigma(FockIndex(i), FockIndex(j), hs=hs0))

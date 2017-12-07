@@ -23,7 +23,7 @@ import pytest
 
 from numpy import (array as np_array, conjugate as np_conjugate,
                    int_ as np_int, float_ as np_float)
-from sympy import symbols, sqrt, I, exp, sympify
+from sympy import symbols, sqrt, I, exp, sympify, Idx
 
 from qnet.algebra.operator_algebra import (
         Displace, Create, Destroy, OperatorSymbol, IdentityOperator,
@@ -33,6 +33,8 @@ from qnet.algebra.operator_algebra import (
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, ProductSpace)
+from qnet.algebra.indices import (
+    FockIndex)
 from qnet.printing import ascii
 
 
@@ -179,6 +181,37 @@ def test_local_sigma_raise_jk():
     assert sig.raise_jk(j_incr=-1, k_incr=-1) == ZeroOperator
     assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
     assert sig.raise_jk(j_incr=-1, k_incr=1) == LocalSigma(0, 1, hs=hil_ge)
+    # symbolic labels
+    i = Idx('i')
+    sig = LocalProjector(FockIndex(i), hs='1')
+    assert sig.raise_jk() == sig
+    assert (
+        sig.raise_jk(j_incr=1) ==
+        LocalSigma(FockIndex(i+1), FockIndex(i), hs='1'))
+    assert (
+        sig.raise_jk(j_incr=-1) ==
+        LocalSigma(FockIndex(i-1), FockIndex(i), hs='1'))
+    assert (
+        sig.raise_jk(j_incr=-2) ==
+        LocalSigma(FockIndex(i-2), FockIndex(i), hs='1'))
+    assert (
+        sig.raise_jk(k_incr=1) ==
+        LocalSigma(FockIndex(i), FockIndex(i+1), hs='1'))
+    assert (
+        sig.raise_jk(k_incr=-1) ==
+        LocalSigma(FockIndex(i), FockIndex(i-1), hs='1'))
+    assert (
+        sig.raise_jk(k_incr=-2) ==
+        LocalSigma(FockIndex(i), FockIndex(i-2), hs='1'))
+    assert (
+        sig.raise_jk(j_incr=1, k_incr=1) ==
+        LocalProjector(FockIndex(i+1), hs='1'))
+    assert (
+        sig.raise_jk(j_incr=-1, k_incr=-1) ==
+        LocalProjector(FockIndex(i-1), hs='1'))
+    assert (
+        sig.raise_jk(j_incr=-1, k_incr=1) ==
+        LocalSigma(FockIndex(i-1), FockIndex(i+1), hs='1'))
 
 
 def test_proj_create_destroy_product():

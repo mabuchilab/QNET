@@ -42,7 +42,7 @@ from .hilbert_space_algebra import (
 from .pattern_matching import wc, pattern_head, pattern
 from .ordering import (
     KeyTuple, DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
-from .indices import SymbolicLabelBase
+from .indices import SymbolicLabelBase, KroneckerDelta
 
 sympyOne = sympify(1)
 
@@ -1952,8 +1952,8 @@ def _algebraic_rules():
     u = wc("u", head=SCALAR_TYPES)
     v = wc("v", head=SCALAR_TYPES)
 
-    n = wc("n", head=(int, str))
-    m = wc("m", head=(int, str))
+    n = wc("n", head=(int, str, SymbolicLabelBase))
+    m = wc("m", head=(int, str, SymbolicLabelBase))
 
     A = wc("A", head=Operator)
     B = wc("B", head=Operator)
@@ -1968,10 +1968,10 @@ def _algebraic_rules():
     localsigma = wc(
         'localsigma', head=(LocalSigma, LocalProjector), kwargs={'hs': ls})
 
-    ra = wc("ra", head=(int, str))
-    rb = wc("rb", head=(int, str))
-    rc = wc("rc", head=(int, str))
-    rd = wc("rd", head=(int, str))
+    ra = wc("ra", head=(int, str, SymbolicLabelBase))
+    rb = wc("rb", head=(int, str, SymbolicLabelBase))
+    rc = wc("rc", head=(int, str, SymbolicLabelBase))
+    rd = wc("rd", head=(int, str, SymbolicLabelBase))
 
     ScalarTimesOperator._rules.update(check_rules_dict([
         ('1A', (
@@ -2029,29 +2029,25 @@ def _algebraic_rules():
                 pattern(LocalSigma, ra, rb, hs=ls),
                 pattern(LocalSigma, rc, rd, hs=ls)),
             lambda ls, ra, rb, rc, rd: (
-                LocalSigma.create(ra, rd, hs=ls)
-                if rb == rc else ZeroOperator))),
+                KroneckerDelta(rb, rc) * LocalSigma.create(ra, rd, hs=ls)))),
         ('sigproj', (
             pattern_head(
                 pattern(LocalSigma, ra, rb, hs=ls),
                 pattern(LocalProjector, rc, hs=ls)),
             lambda ls, ra, rb, rc: (
-                LocalSigma.create(ra, rc, hs=ls)
-                if rb == rc else ZeroOperator))),
+                KroneckerDelta(rb, rc) * LocalSigma.create(ra, rc, hs=ls)))),
         ('projsig', (
             pattern_head(
                 pattern(LocalProjector, ra, hs=ls),
                 pattern(LocalSigma, rc, rd, hs=ls)),
             lambda ls, ra, rc, rd: (
-                LocalSigma.create(ra, rd, hs=ls)
-                if ra == rc else ZeroOperator))),
+                KroneckerDelta(ra, rc) * LocalSigma.create(ra, rd, hs=ls)))),
         ('projproj', (
             pattern_head(
                 pattern(LocalProjector, ra, hs=ls),
                 pattern(LocalProjector, rc, hs=ls)),
             lambda ls, ra, rc: (
-                LocalProjector(ra, hs=ls)
-                if ra == rc else ZeroOperator))),
+                KroneckerDelta(ra, rc) * LocalProjector(ra, hs=ls)))),
 
         # Harmonic oscillator rules
         ('hamos1', (
@@ -2256,7 +2252,7 @@ def _algebraic_rules():
             lambda ls: ZeroOperator)),
         ('sigma', (
             pattern_head(pattern(LocalSigma, n, m, hs=ls), over_space=ls),
-            lambda ls, n, m: IdentityOperator if n == m else ZeroOperator)),
+            lambda ls, n, m: KroneckerDelta(n, m) * IdentityOperator)),
         ('proj', (
             pattern_head(pattern(LocalProjector, n, hs=ls), over_space=ls),
             lambda ls, n: IdentityOperator)),

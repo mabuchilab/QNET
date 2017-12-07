@@ -39,7 +39,8 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.printing import latex
+from qnet.algebra.indices import FockIndex, StrLabel
+from qnet.printing import latex, configure_printing
 from qnet.printing._latex import QnetLatexPrinter
 
 
@@ -357,6 +358,37 @@ def test_tex_ket_elements():
             r'\left\lvert \alpha=2 \right\rangle^{(1)}')
 
 
+def test_tex_ket_symbolic_labels():
+    """Test tex representation of Kets with symbolic labels"""
+    i = Idx('i')
+    i_sym = symbols('i')
+    j = Idx('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+    with configure_printing(tex_use_braket=True):
+        assert (
+            latex(BasisKet(FockIndex(2 * i), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (
+            latex(BasisKet(FockIndex(2 * i_sym), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (latex(
+            LocalKet(StrLabel(2 * i), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (
+            latex(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) ==
+            r'\Ket{\Psi_{i,j}}^{(0 \otimes 1)}')
+        expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
+        assert latex(expr) == r'\Ket{i,j}^{(0 \otimes 1)}'
+        assert (
+            latex(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) ==
+            r'\Bra{2 i}^{(0)}')
+        assert (
+            latex(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) ==
+            r'\Ket{i}\!\Bra{j}^{(0)}')
+
+
 def test_tex_bra_elements():
     """Test the tex representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
@@ -367,23 +399,32 @@ def test_tex_bra_elements():
     assert (
         latex(bra, tex_use_braket=True, show_hs_label='subscript') ==
         r'\Bra{\Psi}_{(q_{1})}')
-    assert (latex(bra, tex_use_braket=True, show_hs_label=False) == r'\Bra{\Psi}')
-    assert (latex(Bra(KetSymbol('Psi', hs=1))) ==
-            r'\left\langle \Psi \right\rvert^{(1)}')
-    assert (latex(Bra(KetSymbol('Psi', hs=(1, 2)))) ==
-            r'\left\langle \Psi \right\rvert^{(1 \otimes 2)}')
-    assert (latex(Bra(KetSymbol('Psi', hs=hs1*hs2))) ==
-            r'\left\langle \Psi \right\rvert^{(q_{1} \otimes q_{2})}')
-    assert (latex(LocalKet('Psi', hs=1).dag) ==
-            r'\left\langle \Psi \right\rvert^{(1)}')
+    assert (
+        latex(bra, tex_use_braket=True, show_hs_label=False) ==
+        r'\Bra{\Psi}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=1))) ==
+        r'\left\langle \Psi \right\rvert^{(1)}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=(1, 2)))) ==
+        r'\left\langle \Psi \right\rvert^{(1 \otimes 2)}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=hs1*hs2))) ==
+        r'\left\langle \Psi \right\rvert^{(q_{1} \otimes q_{2})}')
+    assert (
+        latex(LocalKet('Psi', hs=1).dag) ==
+        r'\left\langle \Psi \right\rvert^{(1)}')
     assert latex(Bra(ZeroKet)) == '0'
     assert latex(Bra(TrivialKet)) == '1'
-    assert (latex(BasisKet('e', hs=hs1).adjoint()) ==
-            r'\left\langle e \right\rvert^{(q_{1})}')
-    assert (latex(BasisKet(1, hs=1).adjoint()) ==
-            r'\left\langle 1 \right\rvert^{(1)}')
-    assert (latex(CoherentStateKet(2.0, hs=1).dag) ==
-            r'\left\langle \alpha=2 \right\rvert^{(1)}')
+    assert (
+        latex(BasisKet('e', hs=hs1).adjoint()) ==
+        r'\left\langle e \right\rvert^{(q_{1})}')
+    assert (
+        latex(BasisKet(1, hs=1).adjoint()) ==
+        r'\left\langle 1 \right\rvert^{(1)}')
+    assert (
+        latex(CoherentStateKet(2.0, hs=1).dag) ==
+        r'\left\langle \alpha=2 \right\rvert^{(1)}')
 
 
 def test_tex_ket_operations():

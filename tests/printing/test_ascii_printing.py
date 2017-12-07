@@ -42,6 +42,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
+from qnet.algebra.indices import FockIndex, StrLabel
 from qnet.printing import ascii
 
 
@@ -252,6 +253,26 @@ def test_ascii_ket_elements():
         BasisKet('1', hs=hs1)
     assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2>^(1)'
     assert ascii(CoherentStateKet(2.1, hs=1)) == '|alpha=2.1>^(1)'
+
+
+def test_ascii_ket_symbolic_labels():
+    """Test ascii representation of Kets with symbolic labels"""
+    i = Idx('i')
+    i_sym = symbols('i')
+    j = Idx('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+    assert ascii(BasisKet(FockIndex(2 * i), hs=hs0)) == '|2*i>^(0)'
+    assert ascii(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2*i>^(0)'
+    assert ascii(LocalKet(StrLabel(2 * i), hs=hs0)) == '|2*i>^(0)'
+    assert (
+        ascii(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Psi_i,j>^(0*1)')
+    expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
+    assert ascii(expr) == '|i,j>^(0*1)'
+    assert ascii(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) == '<2*i|^(0)'
+    assert (
+        ascii(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) == '|i><j|^(0)')
 
 
 def test_ascii_bra_elements():
