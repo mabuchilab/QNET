@@ -55,7 +55,7 @@ __all__ = [
 
 __private__ = [  # anything not in __all__ must be in __private__
     'act_locally', 'act_locally_times_tensor', 'tensor_decompose_kets',
-    'check_kets_same_space', 'check_op_ket_space']
+    'check_kets_same_space', 'check_op_ket_space', 'accept_bras']
 
 
 ###############################################################################

@@ -2,15 +2,15 @@ from qnet.printing import ascii, unicode, latex, srepr, configure_printing
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.state_algebra import KetIndexedSum, BasisKet
 from qnet.algebra.indices import (
-        FockIndex, IndexOverFockSpace, IndexOverList, IndexOverRange)
-from sympy import symbols, Idx, IndexedBase
+        IdxSym, FockIndex, IndexOverFockSpace, IndexOverList, IndexOverRange)
+from sympy import symbols, IndexedBase
 
 import pytest
 
 
 def test_qubit_state():
     """Test  sum_i alpha_i |i> for TLS"""
-    i = Idx('i')
+    i = IdxSym('i')
     alpha = IndexedBase('alpha')
     alpha_i = alpha[i]
     hs_tls = LocalSpace('tls', basis=('g', 'e'))
@@ -33,10 +33,10 @@ def test_qubit_state():
     assert (
         srepr(expr1) ==
         "KetIndexedSum(ScalarTimesKet(Indexed(IndexedBase(Symbol('alpha')), "
-        "Idx(Symbol('i', integer=True))), BasisKet(FockIndex(Idx(Symbol('i', "
-        "integer=True))), hs=LocalSpace('tls', basis=('g', 'e')))), "
-        "IndexOverFockSpace(Idx(Symbol('i', integer=True)), "
-        "LocalSpace('tls', basis=('g', 'e'))))")
+        "IdxSym('i', integer=True)), BasisKet(FockIndex(IdxSym('i', "
+        "integer=True)), hs=LocalSpace('tls', basis=('g', 'e')))), "
+        "IndexOverFockSpace(IdxSym('i', integer=True), LocalSpace('tls', "
+        "basis=('g', 'e'))))")
     with configure_printing(tex_use_braket=True):
         assert (
             latex(expr1) ==
@@ -47,9 +47,9 @@ def test_qubit_state():
     assert (
         srepr(expr2) ==
         "KetIndexedSum(ScalarTimesKet(Indexed(IndexedBase(Symbol('alpha')), "
-        "Idx(Symbol('i', integer=True))), BasisKet(FockIndex(Idx(Symbol('i', "
-        "integer=True))), hs=LocalSpace('tls', basis=('g', 'e')))), "
-        "IndexOverList(Idx(Symbol('i', integer=True)), (0, 1)))")
+        "IdxSym('i', integer=True)), BasisKet(FockIndex(IdxSym('i', "
+        "integer=True)), hs=LocalSpace('tls', basis=('g', 'e')))), "
+        "IndexOverList(IdxSym('i', integer=True), (0, 1)))")
     with configure_printing(tex_use_braket=True):
         assert (
             latex(expr2) == r'\sum_{i \in \{0,1\}} \alpha_{i} \Ket{i}^{(tls)}')
@@ -59,9 +59,9 @@ def test_qubit_state():
     assert (
         srepr(expr3) ==
         "KetIndexedSum(ScalarTimesKet(Indexed(IndexedBase(Symbol('alpha')), "
-        "Idx(Symbol('i', integer=True))), BasisKet(FockIndex(Idx(Symbol('i', "
-        "integer=True))), hs=LocalSpace('tls', basis=('g', 'e')))), "
-        "IndexOverRange(Idx(Symbol('i', integer=True)), 0, 1))")
+        "IdxSym('i', integer=True)), BasisKet(FockIndex(IdxSym('i', "
+        "integer=True)), hs=LocalSpace('tls', basis=('g', 'e')))), "
+        "IndexOverRange(IdxSym('i', integer=True), 0, 1))")
     with configure_printing(tex_use_braket=True):
         assert (
             latex(expr3) == r'\sum_{i=0}^{1} \alpha_{i} \Ket{i}^{(tls)}')
@@ -97,7 +97,7 @@ def test_qubit_state():
 
 def test_qubit_state_bra():
     """Test  sum_i alpha_i <i| for TLS"""
-    i = Idx('i')
+    i = IdxSym('i')
     alpha = IndexedBase('alpha')
     alpha_i = alpha[i]
     hs_tls = LocalSpace('tls', basis=('g', 'e'))

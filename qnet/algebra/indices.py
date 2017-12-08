@@ -1,14 +1,16 @@
+import re
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import OrderedDict
 from itertools import product
 import attr
 import sympy
+from sympy.core.cache import cacheit as sympy_cacheit
 
 from ..printing import srepr, ascii
 
 __all__ = [
-    'IntIndex', 'FockIndex', 'StrLabel', 'IndexOverList', 'IndexOverRange',
-    'IndexOverFockSpace', 'KroneckerDelta']
+    'IdxSym', 'IntIndex', 'FockIndex', 'StrLabel', 'IndexOverList',
+    'IndexOverRange', 'IndexOverFockSpace', 'KroneckerDelta']
 
 __private__ = [
     'yield_from_ranges', 'SymbolicLabelBase', 'IndexRangeBase']
@@ -77,6 +79,94 @@ def yield_from_ranges(ranges):
         yield _merge_dicts(*dicts)
 
 
+# IdxSym
+
+class IdxSym(sympy.Symbol):
+    """A symbol that serves as the index in a symbolic indexed sum or
+    product.
+
+    Args:
+        name (str): The label for the symbol. It must be a simple Latin or
+            Greek letter, possibly with a subscript, e.g. ``'i'``, ``'mu'``,
+            ``'gamma_A'``
+        primed (int): Number of prime marks (') associated with the symbol
+
+    Notes:
+
+        The symbol can be used in arbitrary algebraic (sympy) expressions::
+
+            >>> sympy.sqrt(IdxSym('n') + 1)
+            sqrt(n + 1)
+
+        By default, the symbol is assumed to represent an integer. If this is
+        not the case, you can instantiate explicitly as a non-integer::
+
+            >>> IdxSym('i').is_integer
+            True
+            >>> IdxSym('i', integer=False).is_integer
+            False
+
+        You may also declare the symbol as positive::
+
+            >>> IdxSym('i').is_positive
+            >>> IdxSym('i', positive=True).is_positive
+            True
+
+        The `primed` parameter is used to automatically create distinguishable
+        indices in products of sums, or more generally if the same index occurs
+        in an expression with potentially differnt values::
+
+            >>> ascii(IdxSym('i', primed=2))
+            "i''"
+            >>> IdxSym('i') == IdxSym('i', primed=1)
+            False
+
+        It should not be used when creating indices "by hand"
+
+    Raises:
+        ValueError: if `name` is not a simple symbol label, or if primed < 0
+        TypeError: if `name` is not a string
+    """
+
+    is_finite = True
+    is_Symbol = True
+    is_symbol = True
+    is_Atom = True
+    _diff_wrt = True
+
+    _rx_name = re.compile('^[A-Za-z]+(_[A-Za-z0-9().,+-]+)?$')
+
+    def __new_stage2__(cls, name, primed=0, **kwargs):
+        # remove: start, stop, points
+        if not cls._rx_name.match(name):
+            raise ValueError(
+                "name '%s' does not match pattern '%s'"
+                % (name, cls._rx_name.pattern))
+        primed = int(primed)
+        if not primed >= 0:
+            raise ValueError("`primed` must be an integer >= 0")
+        if 'integer' not in kwargs:
+            kwargs['integer'] = True
+        obj = super().__xnew__(cls, name, **kwargs)
+        obj.params = (primed, )
+        obj._primed = primed
+        return obj
+
+    def __new__(cls, name, *, primed=0, **kwargs):
+        obj = cls.__xnew_cached_(cls, name, primed, **kwargs)
+        return obj
+
+    __xnew__ = staticmethod(__new_stage2__)
+    __xnew_cached_ = staticmethod(sympy_cacheit(__new_stage2__))
+
+    def _hashable_content(self):
+        return (sympy.Symbol._hashable_content(self), self.params)
+
+    @property
+    def primed(self):
+        return self._primed
+
+
 # Classes for symbolic labels
 
 
@@ -115,7 +205,7 @@ class StrLabel(SymbolicLabelBase):
 
 @_immutable_attribs
 class IndexRangeBase(metaclass=ABCMeta):
-    index_symbol = attr.ib(validator=attr.validators.instance_of(sympy.Basic))
+    index_symbol = attr.ib(validator=attr.validators.instance_of(IdxSym))
 
     @abstractproperty
     def iter(self):

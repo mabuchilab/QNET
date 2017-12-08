@@ -132,6 +132,9 @@ class SympyStrPrinter(StrPrinter):
         return self._print(expr.base)+'_%s' % ','.join(
             map(self._print, expr.indices))
 
+    def _print_IdxSym(self, expr):
+        return self._print_Symbol(expr) + "'" * expr.primed
+
 
 class SympyLatexPrinter(LatexPrinter):
     """Variation of sympy LatexPrinter that derationalizes denominators"""
@@ -171,6 +174,12 @@ class SympyLatexPrinter(LatexPrinter):
                         self.parenthesize(post_factor, prec))
         except ValueError:
             return super()._print_Mul(expr)
+
+    def _print_IdxSym(self, expr):
+        res = self._print_Symbol(expr)
+        if expr.primed > 0:
+            res = r'{%s^{%s}}' % (res, r'\prime' * expr.primed)
+        return res
 
 
 class SympyUnicodePrinter(SympyStrPrinter):

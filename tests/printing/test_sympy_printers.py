@@ -21,6 +21,7 @@ import pytest
 
 from sympy import symbols, sqrt, exp, I, Rational
 from sympy.core import S
+from qnet.algebra.indices import IdxSym
 
 from qnet.printing.sympy import (
     SympyUnicodePrinter, SympyLatexPrinter, SympyStrPrinter,
@@ -72,6 +73,20 @@ def test_derationalize_denom():
         'exp(-ⅈ φ)'),
     (exp(-I * symbols("phi")) / (1 - symbols('eta_0'))**2,
         'exp(-ⅈ φ)/(-η₀ + 1)²'),
+    (IdxSym('i'),
+        'i'),
+    (IdxSym('alpha'),
+        'α'),
+    (IdxSym('alpha_1'),
+        'α₁'),
+    (IdxSym('alpha', primed=2),
+        "α''"),
+    (sqrt(IdxSym('n')+1),
+        '√(n + 1)'),
+    (sqrt(IdxSym('n', primed=1)+1),
+        "√(n' + 1)"),
+    (IdxSym('n', primed=1)**2,
+        "n'²"),
 ])
 def test_sympy_unicode(expr, expected_str):
     out_str = SympyUnicodePrinter().doprint(expr)
@@ -114,6 +129,20 @@ def test_unicode_parenthization():
         'exp(-I*phi)'),
     (exp(-I * symbols("phi")) / (1 - symbols('eta_0'))**2,
         'exp(-I*phi)/(-eta_0 + 1)**2'),
+    (IdxSym('i'),
+        'i'),
+    (IdxSym('alpha'),
+        'alpha'),
+    (IdxSym('alpha_1'),
+        'alpha_1'),
+    (IdxSym('alpha', primed=2),
+        "alpha''"),
+    (sqrt(IdxSym('n')+1),
+        'sqrt(n + 1)'),
+    (sqrt(IdxSym('n', primed=1)+1),
+        "sqrt(n' + 1)"),
+    (IdxSym('n', primed=1)**2,
+        "n'**2"),
 ])
 def test_sympy_str(expr, expected_str):
     out_str = SympyStrPrinter().doprint(expr)
@@ -149,6 +178,20 @@ def test_sympy_str(expr, expected_str):
         r'e^{- i \phi}'),
     (exp(-I * symbols("phi")) / (1 - symbols('eta_0'))**2,
         r'\frac{e^{- i \phi}}{\left(- \eta_{0} + 1\right)^{2}}'),
+    (IdxSym('i'),
+        r'i'),
+    (IdxSym('alpha'),
+        r'\alpha'),
+    (IdxSym('alpha_1'),
+        r'\alpha_{1}'),
+    (IdxSym('alpha', primed=2),
+        r"{\alpha^{\prime\prime}}"),
+    (sqrt(IdxSym('n')+1),
+        r'\sqrt{n + 1}'),
+    (sqrt(IdxSym('n', primed=1)+1),
+        r'\sqrt{{n^{\prime}} + 1}'),
+    (IdxSym('n', primed=1)**2,
+        r'{n^{\prime}}^{2}'),
 ])
 def test_sympy_latex(expr, expected_str):
     out_str = SympyLatexPrinter().doprint(expr)
