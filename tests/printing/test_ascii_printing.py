@@ -273,6 +273,10 @@ def test_ascii_ket_symbolic_labels():
     assert ascii(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) == '<2*i|^(0)'
     assert (
         ascii(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) == '|i><j|^(0)')
+    expr = CoherentStateKet(symbols('alpha'), hs=1).to_fock_representation()
+    assert (
+        ascii(expr) ==
+        'exp(-alpha*alpha^*/2) * (Sum_{n in H_1} alpha**n/sqrt(n!) * |n>^(1))')
 
 
 def test_ascii_bra_elements():

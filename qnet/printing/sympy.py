@@ -25,8 +25,8 @@ SymPy's builtin printers:
   and it is standard notation to write them as such. SymPy insists on
   rationalizing denominators, using $\frac{\sqrt{2}}{2}$ instead. Our custom
   printers restore the canonical form. Note that internally, Sympy still uses
-  the rationalized structure; in any case, Sympy makes no guarantees between
-  the algebraic structure of an expression and how it is printed.
+  the rationalized structure; but in any case, Sympy makes no guarantees
+  between the algebraic structure of an expression and how it is printed.
 * Symbols (especially greek letters) are extremely common, and it's much more
   readable if the string representation of an expression uses unicode for
   these. SymPy supports unicode "pretty-printing"
@@ -35,6 +35,11 @@ SymPy's builtin printers:
   interactive display, it does not work so well for a simple ``str``. The
   :class:`SympyUnicodePrinter` solves this by producing simple strings with
   unicode symbols.
+* Some algebraic structures such as factorials, complex-conjugates and indexed
+  symbols have sub-optimal rendering in :class:`sympy.printing.str.StrPrinter`
+* QNET contains some custom subclasses of SymPy objects (e.g.
+  :class:`qnet.algebra.indices.IdxSym`) that the default printers don't know
+  how to deal with (respectively, render incorrectly!)
 '''
 import sympy
 from sympy import sqrt
@@ -100,7 +105,16 @@ def derationalize_denom(expr):
 
 
 class SympyStrPrinter(StrPrinter):
-    """Variation of sympy StrPrinter that derationalizes denominators"""
+    """Variation of sympy StrPrinter that derationalizes denominators.
+
+    Additionally, it contains the following modifications:
+
+    * Support for :class:`qnet.algebra.indices.IdxSym`
+    * Rendering of :class:`sympy.tensor.indexed.Indexed` as subscripts
+    * Rendering of :class:`sympy.functions.combinatorial.factorials.factorial`
+      as ``!``
+    * Rendering of a complex conjugate as ``^*``
+    """
 
     printmethod = "_sympystr"
     _default_settings = {
@@ -135,9 +149,32 @@ class SympyStrPrinter(StrPrinter):
     def _print_IdxSym(self, expr):
         return self._print_Symbol(expr) + "'" * expr.primed
 
+    def _print_factorial(self, expr, exp=None):
+        res = r"%s!" % self.parenthesize(expr.args[0], PRECEDENCE["Func"])
+
+        if exp is not None:
+            return r"%s^{%s}" % (res, exp)
+        else:
+            return res
+
+    def _print_conjugate(self, expr, exp=None):
+        res = r"%s^*" % self.parenthesize(
+            expr.args[0], PRECEDENCE["Func"])
+        if exp is not None:
+            return r"%s^%s" % (res, exp)
+        else:
+            return res
+
 
 class SympyLatexPrinter(LatexPrinter):
-    """Variation of sympy LatexPrinter that derationalizes denominators"""
+    """Variation of sympy LatexPrinter that derationalizes denominators
+
+    Additionally, it contains the following modifications:
+
+    * Support for :class:`qnet.algebra.indices.IdxSym`
+    * A setting `conjg_overline` that may be set to False to in order to show
+      a complex conjugate via an asterisk exponent, instead of an overline
+    """
 
     printmethod = "_latex"
 
@@ -154,6 +191,7 @@ class SympyLatexPrinter(LatexPrinter):
         "mat_str": None,
         "mat_delim": "[",
         "symbol_names": {},
+        "conjg_overline": True,
     }
 
     def _print_Mul(self, expr):
@@ -181,11 +219,25 @@ class SympyLatexPrinter(LatexPrinter):
             res = r'{%s^{%s}}' % (res, r'\prime' * expr.primed)
         return res
 
+    def _print_conjugate(self, expr, exp=None):
+        if self._settings['conjg_overline']:
+            tex = r"\overline{%s}" % self._print(expr.args[0])
+        else:
+            tex = r"{%s}^*" % self.parenthesize(
+                expr.args[0], PRECEDENCE["Func"])
+        if exp is not None:
+            return r"{%s}^{%s}" % (tex, exp)
+        else:
+            return tex
+
 
 class SympyUnicodePrinter(SympyStrPrinter):
     """Printer that represents SymPy expressions as (single-line) unicode
-    strings. This is a mixture of the default Sympy StrPrinter and the SymPy
-    PrettyPrinter
+    strings.
+
+    This is a mixture of :class:`sympy.printing.str.StrPrinter`
+    and :class:`sympy.printing.pretty.pretty.PrettyPrinter` (minus the 2D
+    printing), with the same extensions as :class:`SympyStrPrinter`
     """
 
     printmethod = "_sympystr"

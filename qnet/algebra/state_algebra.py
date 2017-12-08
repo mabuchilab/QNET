@@ -23,12 +23,13 @@ r"""This module implements the algebra of states in a Hilbert space
 For more details see :ref:`state_algebra`.
 """
 import re
+import sympy
 from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
 from collections import OrderedDict
 
 from sympy import (
-    Basic as SympyBasic, series as sympy_series, sqrt, exp, I)
+    Basic as SympyBasic, series as sympy_series, sqrt, exp, I, factorial, Idx)
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
@@ -45,7 +46,9 @@ from .operator_algebra import (
     Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
     Phase)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
-from .indices import SymbolicLabelBase, yield_from_ranges, KroneckerDelta
+from .indices import (
+    SymbolicLabelBase, yield_from_ranges, IndexOverFockSpace, IndexOverRange,
+    KroneckerDelta, IdxSym, FockIndex)
 
 __all__ = [
     'OverlappingSpaces', 'SpaceTooLargeError', 'UnequalSpaces', 'BasisKet',
@@ -492,6 +495,23 @@ class CoherentStateKet(LocalKet):
             return set([self.ampl, ])
         else:
             return set([])
+
+    def to_fock_representation(self, index_symbol='n', max_terms=None):
+        """Return the coherent state written out as an indexed sum over Fock
+        basis states"""
+        phase_factor = sympy.exp(
+            sympy.Rational(-1, 2) * self.ampl * self.ampl.conjugate())
+        if not isinstance(index_symbol, IdxSym):
+            index_symbol = IdxSym(index_symbol)
+        n = index_symbol
+        if max_terms is None:
+            index_range = IndexOverFockSpace(n, hs=self._hs)
+        else:
+            index_range = IndexOverRange(n, 0, max_terms-1)
+        term = (
+            (self.ampl**n / sympy.sqrt(sympy.factorial(n))) *
+            BasisKet(FockIndex(n), hs=self._hs))
+        return phase_factor * KetIndexedSum(term, index_range)
 
 
 ###############################################################################

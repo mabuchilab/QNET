@@ -18,7 +18,7 @@
 ###########################################################################
 
 import sympy
-from sympy import symbols, sqrt, exp, I, Rational, Idx, IndexedBase
+from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -40,7 +40,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.algebra.indices import FockIndex, StrLabel
+from qnet.algebra.indices import FockIndex, StrLabel, IdxSym
 from qnet.printing import unicode
 
 
@@ -59,7 +59,7 @@ def test_unicode_scalar():
     assert unicode(sympy.pi) == 'π'
     assert unicode(sympy.pi/4) == 'π/4'
 
-    i = Idx('i')
+    i = IdxSym('i')
     alpha = IndexedBase('alpha')
     assert unicode(alpha[i]) == 'α_i'
     assert unicode(alpha[1]) == 'α₁'
@@ -269,9 +269,9 @@ def test_unicode_ket_elements():
 
 def test_unicode_ket_symbolic_labels():
     """Test unicode representation of Kets with symbolic labels"""
-    i = Idx('i')
+    i = IdxSym('i')
     i_sym = symbols('i')
-    j = Idx('j')
+    j = IdxSym('j')
     hs0 = LocalSpace(0)
     hs1 = LocalSpace(1)
     Psi = IndexedBase('Psi')
@@ -285,6 +285,8 @@ def test_unicode_ket_symbolic_labels():
     assert unicode(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) == '⟨2 i|⁽⁰⁾'
     assert (
         unicode(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) == '|i⟩⟨j|⁽⁰⁾')
+    expr = CoherentStateKet(symbols('alpha'), hs=1).to_fock_representation()
+    assert unicode(expr) == 'exp(-α α^*/2) (∑_{n ∈ ℌ₁} αⁿ/√n! |n⟩⁽¹⁾)'
 
 
 def test_unicode_bra_elements():

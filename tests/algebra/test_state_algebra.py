@@ -20,7 +20,7 @@
 
 import unittest
 
-from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols
+from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols, factorial
 
 from qnet.algebra.abstract_algebra import no_rules, simplify
 from qnet.algebra.operator_algebra import (
@@ -31,7 +31,8 @@ from qnet.algebra.state_algebra import (
         KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
         TrivialKet, UnequalSpaces, TensorKet, LocalKet, BasisKet, KetBra)
 from qnet.algebra.indices import (
-    FockIndex, IntIndex, StrLabel, SymbolicLabelBase)
+    IdxSym, FockIndex, IntIndex, StrLabel, SymbolicLabelBase,
+    IndexOverFockSpace, IndexOverRange)
 from qnet.algebra.pattern_matching import wc
 import pytest
 
@@ -324,3 +325,38 @@ def test_ket_symbolic_labels():
     assert (
         BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs0).dag ==
         LocalSigma(FockIndex(i), FockIndex(j), hs=hs0))
+
+
+def test_coherent_state_to_fock_representation():
+    """Test the representation of a coherent state in the Fock basis"""
+    alpha = symbols('alpha')
+
+    expr1 = CoherentStateKet(alpha, hs=1).to_fock_representation()
+    expr2 = CoherentStateKet(alpha, hs=1).to_fock_representation(max_terms=10)
+    expr3 = CoherentStateKet(alpha, hs=1).to_fock_representation(
+        index_symbol='i')
+    expr4 = CoherentStateKet(alpha, hs=1).to_fock_representation(
+        index_symbol=IdxSym('m', positive=True))
+
+    assert (
+        expr1.term.ranges[0] ==
+        IndexOverFockSpace(IdxSym('n'), LocalSpace('1')))
+    assert (
+        expr2.term.ranges[0] ==
+        IndexOverRange(IdxSym('n', integer=True), 0, 9))
+    assert (
+        expr3.term.ranges[0] ==
+        IndexOverFockSpace(IdxSym('i'), LocalSpace('1')))
+    assert (
+        expr4.term.ranges[0] ==
+        IndexOverFockSpace(IdxSym('m', positive=True), LocalSpace('1')))
+
+    for expr in (expr1, expr2):
+        assert expr.coeff == exp(-alpha*alpha.conjugate()/2)
+        sum = expr.term
+        assert len(sum.ranges) == 1
+        n = sum.ranges[0].index_symbol
+        assert sum.term.coeff == alpha**n/sqrt(factorial(n))
+        assert (
+            sum.term.term ==
+            BasisKet(FockIndex(IdxSym('n')), hs=LocalSpace('1')))

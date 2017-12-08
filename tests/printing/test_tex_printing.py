@@ -387,6 +387,18 @@ def test_tex_ket_symbolic_labels():
         assert (
             latex(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) ==
             r'\Ket{i}\!\Bra{j}^{(0)}')
+        alpha = symbols('alpha')
+        expr = CoherentStateKet(alpha, hs=1).to_fock_representation()
+        assert (
+            latex(expr) ==
+            r'e^{- \frac{\alpha \overline{\alpha}}{2}} '
+            r'\left(\sum_{n \in \mathcal{H}_{1}} '
+            r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')
+        assert (
+            latex(expr, conjg_overline=False) ==
+            r'e^{- \frac{\alpha {\alpha}^*}{2}} '
+            r'\left(\sum_{n \in \mathcal{H}_{1}} '
+            r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')
 
 
 def test_tex_bra_elements():
