@@ -1,8 +1,12 @@
 from qnet.printing import ascii, unicode, latex, srepr, configure_printing
+from qnet.algebra.abstract_algebra import InfiniteSumError
 from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.state_algebra import KetIndexedSum, BasisKet
+from qnet.algebra.state_algebra import (
+    KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet)
 from qnet.algebra.indices import (
-        IdxSym, FockIndex, IndexOverFockSpace, IndexOverList, IndexOverRange)
+    IdxSym, FockIndex, IndexOverFockSpace, IndexOverList, IndexOverRange)
+from qnet.algebra.toolbox import expand_indexed_sum
+import sympy
 from sympy import symbols, IndexedBase
 
 import pytest
@@ -70,6 +74,9 @@ def test_qubit_state():
         syms = list(expr.term.all_symbols())
         assert symbols('alpha') in syms
         assert i in syms
+        assert len(expr) == len(expr.ranges[0]) == 2
+        assert 0 in expr.ranges[0]
+        assert 1 in expr.ranges[0]
         assert expr.space == hs_tls
         assert len(expr.args) == 2
         assert len(expr.operands) == 1
@@ -127,3 +134,39 @@ def test_qubit_state_bra():
         alpha['e'] * BasisKet('e', hs=hs_tls).dag)
     assert (
         ascii(expr_expand) == 'alpha_e * <e|^(tls) + alpha_g * <g|^(tls)')
+
+
+def test_coherent_state():
+    """Test fock representation of coherent state"""
+    alpha = symbols('alpha')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1, dimension=3)
+
+    psi = CoherentStateKet(alpha, hs=hs0)
+    psi_focksum_3 = psi.to_fock_representation(max_terms=3)
+    assert len(psi_focksum_3.term) == 3
+    for n in (0, 1, 2):
+        assert n in psi_focksum_3.term.ranges[0]
+    psi_focksum_inf = psi.to_fock_representation()
+    with pytest.raises(InfiniteSumError):
+        len(psi_focksum_inf.term)
+    for n in (0, 1, 2, 3):
+        assert n in psi_focksum_inf.term.ranges[0]
+
+    assert(
+        expand_indexed_sum(psi_focksum_3) ==
+        expand_indexed_sum(psi_focksum_inf, max_terms=3))
+    psi_expanded_3 = expand_indexed_sum(psi_focksum_3)
+    assert(
+        psi_expanded_3 ==
+        (sympy.exp(-alpha*alpha.conjugate()/2) *
+            KetPlus(
+                BasisKet(0, hs=LocalSpace(0)),
+                ScalarTimesKet(alpha, BasisKet(1, hs=LocalSpace(0))),
+                ScalarTimesKet(
+                    alpha**2 / sympy.sqrt(2), BasisKet(2, hs=LocalSpace(0))))))
+
+    psi = CoherentStateKet(alpha, hs=hs1)
+    assert(
+        expand_indexed_sum(psi.to_fock_representation()) ==
+        psi_expanded_3.substitute({hs0: hs1}))

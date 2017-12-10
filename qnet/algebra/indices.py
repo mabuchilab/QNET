@@ -1,7 +1,6 @@
 import re
 from abc import ABCMeta, abstractmethod, abstractproperty
 from collections import OrderedDict
-from itertools import product
 import attr
 import sympy
 from sympy.core.cache import cacheit as sympy_cacheit
@@ -13,7 +12,7 @@ __all__ = [
     'IndexOverRange', 'IndexOverFockSpace', 'KroneckerDelta']
 
 __private__ = [
-    'yield_from_ranges', 'SymbolicLabelBase', 'IndexRangeBase']
+    'yield_from_ranges', 'SymbolicLabelBase', 'IndexRangeBase', 'product']
 
 
 # support routines
@@ -71,9 +70,39 @@ def _merge_dicts(*dicts):
     return result
 
 
+def product(*generators, repeat=1):
+    """Cartesian product akin to :func:`itertools.product`, but accepting
+    generator functions.
+
+    Unlike :func:`itertools.product` this function does not convert the input
+    iterables into tuples. Thus, it can handle large or infinite inputs. As a
+    drawback, however, it only works with "restartable" iterables (something
+    that :func:`iter` can repeatably turn into an iterator, or a generator
+    function (but not the generator iterator that is returned by that
+    generator function)
+
+    Args:
+        generators: list of restartable iterators or generator functions
+        repeat: number of times `generators` should be repeated
+
+    Adapted from https://stackoverflow.com/q/12093364/
+    """
+    if len(generators) == 0:
+        yield ()
+    else:
+        generators = generators * repeat
+        it = generators[0]
+        for item in it() if callable(it) else iter(it):
+            for items in product(*generators[1:]):
+                yield (item, ) + items
+
+
 def yield_from_ranges(ranges):
     range_iters = []
     for index_range in ranges:
+        assert callable(index_range.iter)
+        # index_range.iter must be a generator (so that it's restartable),
+        # *not* an iterator, which would be index_range.iter()
         range_iters.append(index_range.iter)
     for dicts in product(*range_iters):
         yield _merge_dicts(*dicts)
@@ -207,19 +236,35 @@ class StrLabel(SymbolicLabelBase):
 class IndexRangeBase(metaclass=ABCMeta):
     index_symbol = attr.ib(validator=attr.validators.instance_of(IdxSym))
 
-    @abstractproperty
+    @abstractmethod
     def iter(self):
-        pass
+        # this should *not* be a property: for `product`, we need to pass a
+        # generator function, i.e. IndexRangeBase.iter, not
+        # IndexRangeBase.iter()
+        raise NotImplementedError()
+
+    @abstractmethod
+    def __len__(self):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def __contains__(self, val):
+        raise NotImplementedError()
 
 
 @_immutable_attribs
 class IndexOverList(IndexRangeBase):
     values = attr.ib(convert=tuple)
 
-    @property
     def iter(self):
         for val in self.values:
             yield {self.index_symbol: val}
+
+    def __len__(self):
+        return len(self.values)
+
+    def __contains__(self, val):
+        return val in self.values
 
 
 @_immutable_attribs
@@ -228,14 +273,22 @@ class IndexOverRange(IndexRangeBase):
     to = attr.ib(validator=attr.validators.instance_of(int))
     step = attr.ib(validator=attr.validators.instance_of(int), default=1)
 
-    @property
     def iter(self):
-        ind_range = range(
+        for ind in self.range:
+            yield {self.index_symbol: ind}
+
+    @property
+    def range(self):
+        return range(
             self.start_from,
             (self.to + 1) if self.step >= 0 else (self.to - 1),
             self.step)
-        for ind in ind_range:
-            yield {self.index_symbol: ind}
+
+    def __len__(self):
+        return self.to - self.start_from + 1
+
+    def __contains__(self, val):
+        return val in self.range
 
 
 @_immutable_attribs
@@ -243,7 +296,6 @@ class IndexOverFockSpace(IndexRangeBase):
     hs = attr.ib()
     # TODO: assert that hs is indeed a FockSpace
 
-    @property
     def iter(self):
         if self.hs._dimension is None:
             i = 0
@@ -253,3 +305,12 @@ class IndexOverFockSpace(IndexRangeBase):
         else:
             for ind in range(self.hs.dimension):
                 yield {self.index_symbol: ind}
+
+    def __len__(self):
+        return self.hs.dimension
+
+    def __contains__(self, val):
+        if self.hs._dimension is None:
+            return val >= 0
+        else:
+            return 0 <= val < self.hs.dimension

@@ -113,7 +113,9 @@ class SympyStrPrinter(StrPrinter):
     * Rendering of :class:`sympy.tensor.indexed.Indexed` as subscripts
     * Rendering of :class:`sympy.functions.combinatorial.factorials.factorial`
       as ``!``
-    * Rendering of a complex conjugate as ``^*``
+    * Option `conjg_style` to configure how complex conjugates are rendered:
+      ``'func' renders it as ``conjugate(...)``, and ``'star'`` uses an
+      exponentiated asterisk
     """
 
     printmethod = "_sympystr"
@@ -121,6 +123,7 @@ class SympyStrPrinter(StrPrinter):
         "order": None,
         "full_prec": "auto",
         "sympy_integers": False,
+        "conjg_style": 'func',
     }
 
     def _print_Mul(self, expr):
@@ -158,8 +161,19 @@ class SympyStrPrinter(StrPrinter):
             return res
 
     def _print_conjugate(self, expr, exp=None):
-        res = r"%s^*" % self.parenthesize(
-            expr.args[0], PRECEDENCE["Func"])
+        if self._settings['conjg_style'] == 'star':
+            res = (
+                self.parenthesize(expr.args[0], PRECEDENCE["Func"]) + '^*')
+        elif self._settings['conjg_style'] in ['func', 'overbar']:
+            # recognizing "overbar" is just for compatibility with the other
+            # printers
+            res = (
+                r'conjugate(' + self._print(expr.args[0]) + r')')
+            pass
+        else:
+            raise ValueError(
+                "The 'conjg_style' setting must be one of "
+                "'star', 'func'")
         if exp is not None:
             return r"%s^%s" % (res, exp)
         else:
@@ -172,8 +186,10 @@ class SympyLatexPrinter(LatexPrinter):
     Additionally, it contains the following modifications:
 
     * Support for :class:`qnet.algebra.indices.IdxSym`
-    * A setting `conjg_overline` that may be set to False to in order to show
-      a complex conjugate via an asterisk exponent, instead of an overline
+    * A setting `conjg_style` that allows to specify how complex conjugate are
+      rendered: ``'overline'`` (the default) draws a line over the number,
+      'star' uses an exponentiated asterisk, and 'func' renders a a
+      ``conjugate`` function
     """
 
     printmethod = "_latex"
@@ -191,7 +207,7 @@ class SympyLatexPrinter(LatexPrinter):
         "mat_str": None,
         "mat_delim": "[",
         "symbol_names": {},
-        "conjg_overline": True,
+        "conjg_style": 'overline',
     }
 
     def _print_Mul(self, expr):
@@ -220,11 +236,20 @@ class SympyLatexPrinter(LatexPrinter):
         return res
 
     def _print_conjugate(self, expr, exp=None):
-        if self._settings['conjg_overline']:
+        if self._settings['conjg_style'] == 'overline':
             tex = r"\overline{%s}" % self._print(expr.args[0])
-        else:
+        elif self._settings['conjg_style'] == 'star':
             tex = r"{%s}^*" % self.parenthesize(
                 expr.args[0], PRECEDENCE["Func"])
+        elif self._settings['conjg_style'] == 'func':
+            tex = (
+                r'\operatorname{conjugate}\left(' +
+                self._print(expr.args[0]) + r'\right)')
+        else:
+            raise ValueError(
+                "The 'conjg_style' setting must be one of "
+                "'overline', 'star', 'func'")
+
         if exp is not None:
             return r"{%s}^{%s}" % (tex, exp)
         else:
@@ -245,6 +270,8 @@ class SympyUnicodePrinter(SympyStrPrinter):
         "order": None,
         "full_prec": "auto",
         "sympy_integers": False,
+        "superscript_asterisk_sym": "\u00A0\u20F0",
+        "conjg_style": 'star',
     }
 
     def _print_Add(self, expr, order=None):
@@ -407,3 +434,23 @@ class SympyUnicodePrinter(SympyStrPrinter):
             return self._print(expr.base) + subscript
         except KeyError:
             return self._print(expr.base) + '_%s' % subscript
+
+    def _print_conjugate(self, expr, exp=None):
+        if self._settings['conjg_style'] == 'star':
+            res = (
+                self.parenthesize(expr.args[0], PRECEDENCE["Func"]) +
+                self._settings['superscript_asterisk_sym'])
+        elif self._settings['conjg_style'] in ['func', 'overbar']:
+            # recognizing "overbar" is just for compatibility with the other
+            # printers
+            res = (
+                r'conjugate(' + self._print(expr.args[0]) + r')')
+            pass
+        else:
+            raise ValueError(
+                "The 'conjg_style' setting must be one of "
+                "'star', 'func'")
+        if exp is not None:
+            return r"%s^%s" % (res, exp)
+        else:
+            return res

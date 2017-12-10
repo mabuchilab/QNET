@@ -276,7 +276,7 @@ def test_ascii_ket_symbolic_labels():
     expr = CoherentStateKet(symbols('alpha'), hs=1).to_fock_representation()
     assert (
         ascii(expr) ==
-        'exp(-alpha*alpha^*/2) * (Sum_{n in H_1} alpha**n/sqrt(n!) * |n>^(1))')
+        'exp(-alpha*conjugate(alpha)/2) * (Sum_{n in H_1} alpha**n/sqrt(n!) * |n>^(1))')
 
 
 def test_ascii_bra_elements():

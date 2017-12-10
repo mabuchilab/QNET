@@ -286,7 +286,7 @@ def test_unicode_ket_symbolic_labels():
     assert (
         unicode(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) == '|i⟩⟨j|⁽⁰⁾')
     expr = CoherentStateKet(symbols('alpha'), hs=1).to_fock_representation()
-    assert unicode(expr) == 'exp(-α α^*/2) (∑_{n ∈ ℌ₁} αⁿ/√n! |n⟩⁽¹⁾)'
+    assert unicode(expr) == 'exp(-α α ⃰/2) (∑_{n ∈ ℌ₁} αⁿ/√n! |n⟩⁽¹⁾)'
 
 
 def test_unicode_bra_elements():

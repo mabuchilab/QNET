@@ -395,7 +395,7 @@ def test_tex_ket_symbolic_labels():
             r'\left(\sum_{n \in \mathcal{H}_{1}} '
             r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')
         assert (
-            latex(expr, conjg_overline=False) ==
+            latex(expr, conjg_style='star') ==
             r'e^{- \frac{\alpha {\alpha}^*}{2}} '
             r'\left(\sum_{n \in \mathcal{H}_{1}} '
             r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')

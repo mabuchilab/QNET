@@ -35,11 +35,11 @@ from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
     Operation, Expression, substitute, AlgebraError, assoc, orderby,
     filter_neutral, match_replace, match_replace_binary,
-    CannotSimplify, check_rules_dict)
+    CannotSimplify, check_rules_dict, InfiniteSumError)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
-    FullSpace, TrivialSpace, LocalSpace, ProductSpace)
+    FullSpace, TrivialSpace, LocalSpace, ProductSpace, BasisNotSetError)
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
@@ -458,6 +458,7 @@ class CoherentStateKet(LocalKet):
         # The "label" here is something that is solely used to set the
         # _instance_key / uniquely identify the instance. Using the hash gets
         # around variations in str(ampl) due to printer settings
+        # TODO: is this safe against hash collisions?
         super().__init__(label, hs=hs)
 
     @property
@@ -932,6 +933,9 @@ class KetBra(Operator, Operation):
 class KetIndexedSum(Ket, Operation):
     # TODO: documentation
 
+    _expanded_cls = KetPlus
+    _expand_limit = 1000
+
     def __init__(self, term, *ranges):
         self._term = term
         self.ranges = tuple(ranges)
@@ -939,7 +943,7 @@ class KetIndexedSum(Ket, Operation):
 
     @property
     def space(self):
-        return self._term.space
+        return self.term.space
 
     @property
     def term(self):
@@ -958,7 +962,7 @@ class KetIndexedSum(Ket, Operation):
         return {}
 
     def _expand(self):
-        return KetIndexedSum.create(self.term.expand(), *self.ranges)
+        return self.__class__.create(self.term.expand(), *self.ranges)
 
     def _series_expand(self, param, about, order):
         raise NotImplementedError()
@@ -970,14 +974,35 @@ class KetIndexedSum(Ket, Operation):
                 wc('label', head=SymbolicLabelBase),
                 lambda label: label.evaluate(mapping))])
 
+    def __len__(self):
+        length = 1
+        try:
+            for ind_range in self.ranges:
+                length *= len(ind_range)
+        except BasisNotSetError:
+            raise InfiniteSumError(
+                "sum %s has infinite length" % self)
+        return length
+
     def expand_sum(self, max_terms=None):
         terms = []
+        if max_terms is None:
+            len(self)  # side-effect: raise InfiniteSumError
+        else:
+            if max_terms > self._expand_limit:
+                raise ValueError(
+                    "max_terms = %s must be smaller than the limit %s"
+                    % (max_terms, self._expand_limit))
         for i, term in enumerate(self.terms):
             if max_terms is not None:
                 if i >= max_terms:
                     break
             terms.append(term)
-        return KetPlus.create(*terms)
+            if i > self._expand_limit:
+                raise InfiniteSumError(
+                    "Cannot expand %s: more than %s terms"
+                    % (self, self._expand_limit))
+        return self._expanded_cls.create(*terms)
 
 
 ###############################################################################

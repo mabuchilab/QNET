@@ -37,15 +37,16 @@ import logging
 from sympy import Basic as SympyBasic
 from sympy.core.sympify import SympifyError
 
-from .pattern_matching import (
+from .pattern_matching import (  # some import for doctests
     ProtoExpr, match_pattern, wc, pattern_head, Pattern, pattern)
 from .singleton import Singleton
 
 __all__ = [
     'AlgebraException', 'AlgebraError', 'CannotSimplify',
-    'WrongSignatureError', 'Expression', 'Operation', 'all_symbols',
-    'extra_binary_rules', 'extra_rules', 'no_instance_caching', 'no_rules',
-    'set_union', 'simplify', 'substitute', 'temporary_instance_cache']
+    'WrongSignatureError', 'InfiniteSumError', 'Expression', 'Operation',
+    'all_symbols', 'extra_binary_rules', 'extra_rules', 'no_instance_caching',
+    'no_rules', 'set_union', 'simplify', 'substitute',
+    'temporary_instance_cache']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'assoc', 'idem', 'orderby', 'filter_neutral', 'match_replace',
@@ -55,8 +56,7 @@ __private__ = [  # anything not in __all__ must be in __private__
 LEVEL = 0  # for debugging create method
 
 LOG = True  # emit debug logging messages?
-# TODO: test if `LOG = False` results in significant performance increase. If
-# not, remove the flag
+# TODO: test if `LOG = False` results in significant performance increase.
 
 
 def _trace(fn):
@@ -87,6 +87,11 @@ class AlgebraException(Exception):
 class AlgebraError(AlgebraException):
     """Base class for all errors concerning the mathematical definitions and
     rules of an algebra."""
+    pass
+
+
+class InfiniteSumError(AlgebraError):
+    """Raised when expanding a sum into an infinite number of terms"""
     pass
 
 
