@@ -2,9 +2,11 @@ from qnet.printing import ascii, unicode, latex, srepr, configure_printing
 from qnet.algebra.abstract_algebra import InfiniteSumError
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.state_algebra import (
-    KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet)
+    KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet,
+    KetSymbol)
 from qnet.algebra.indices import (
-    IdxSym, FockIndex, IndexOverFockSpace, IndexOverList, IndexOverRange)
+    IdxSym, StrLabel, FockIndex, IndexOverFockSpace, IndexOverList,
+    IndexOverRange)
 from qnet.algebra.toolbox import expand_indexed_sum
 import sympy
 from sympy import symbols, IndexedBase
@@ -170,3 +172,51 @@ def test_coherent_state():
     assert(
         expand_indexed_sum(psi.to_fock_representation()) ==
         psi_expanded_3.substitute({hs0: hs1}))
+
+
+def test_two_hs_symbol_sum():
+    """Test sum_{ij} a_{ij} Psi_{ij}"""
+    i = IdxSym('i')
+    j = IdxSym('j')
+    a = IndexedBase('a')
+    hs1 = LocalSpace('1', dimension=3)
+    hs2 = LocalSpace('2', dimension=3)
+    hs = hs1 * hs2
+    Psi = IndexedBase('Psi')
+    a_ij = a[i, j]
+    Psi_ij = Psi[i, j]
+    term = a_ij * KetSymbol(StrLabel(Psi_ij), hs=hs)
+
+    expr1 = KetIndexedSum(
+        term, IndexOverFockSpace(i, hs=hs1), IndexOverFockSpace(j, hs=hs2))
+
+    expr2 = KetIndexedSum(
+        term, IndexOverRange(i, 0, 2), IndexOverRange(j, 0, 2))
+
+    assert (
+        ascii(expr1) == 'Sum_{i in H_1} Sum_{j in H_2} a_ij * |Psi_ij>^(1*2)')
+    assert (
+        unicode(expr1) == '∑_{i ∈ ℌ₁} ∑_{j ∈ ℌ₂} a_ij |Ψ_ij⟩^(1⊗2)')
+    assert (
+        latex(expr1) ==
+        r'\sum_{i \in \mathcal{H}_{1}} \sum_{j \in \mathcal{H}_{2}} '
+        r'a_{i j} \left\lvert \Psi_{i j} \right\rangle^{(1 \otimes 2)}')
+
+    assert ascii(expr2) == 'Sum_{i,j=0}^{2} a_ij * |Psi_ij>^(1*2)'
+    assert unicode(expr2) == '∑_{i,j=0}^{2} a_ij |Ψ_ij⟩^(1⊗2)'
+    assert (
+        latex(expr2) ==
+        r'\sum_{i,j=0}^{2} a_{i j} '
+        r'\left\lvert \Psi_{i j} \right\rangle^{(1 \otimes 2)}')
+
+    assert expr1.expand_sum() == expr2.expand_sum()
+    assert expr1.expand_sum() == KetPlus(
+        a[0, 0] * KetSymbol('Psi_00', hs=hs),
+        a[0, 1] * KetSymbol('Psi_01', hs=hs),
+        a[0, 2] * KetSymbol('Psi_02', hs=hs),
+        a[1, 0] * KetSymbol('Psi_10', hs=hs),
+        a[1, 1] * KetSymbol('Psi_11', hs=hs),
+        a[1, 2] * KetSymbol('Psi_12', hs=hs),
+        a[2, 0] * KetSymbol('Psi_20', hs=hs),
+        a[2, 1] * KetSymbol('Psi_21', hs=hs),
+        a[2, 2] * KetSymbol('Psi_22', hs=hs))
