@@ -267,7 +267,7 @@ def test_ascii_ket_symbolic_labels():
     assert ascii(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2*i>^(0)'
     assert ascii(LocalKet(StrLabel(2 * i), hs=hs0)) == '|2*i>^(0)'
     assert (
-        ascii(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Psi_i,j>^(0*1)')
+        ascii(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Psi_ij>^(0*1)')
     expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
     assert ascii(expr) == '|i,j>^(0*1)'
     assert ascii(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) == '<2*i|^(0)'
@@ -276,7 +276,8 @@ def test_ascii_ket_symbolic_labels():
     expr = CoherentStateKet(symbols('alpha'), hs=1).to_fock_representation()
     assert (
         ascii(expr) ==
-        'exp(-alpha*conjugate(alpha)/2) * (Sum_{n in H_1} alpha**n/sqrt(n!) * |n>^(1))')
+        'exp(-alpha*conjugate(alpha)/2) * '
+        '(Sum_{n in H_1} alpha**n/sqrt(n!) * |n>^(1))')
 
 
 def test_ascii_bra_elements():

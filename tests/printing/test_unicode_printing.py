@@ -279,7 +279,7 @@ def test_unicode_ket_symbolic_labels():
     assert unicode(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2 i⟩⁽⁰⁾'
     assert unicode(LocalKet(StrLabel(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
     assert (
-        unicode(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Ψ_i,j⟩^(0⊗1)')
+        unicode(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Ψ_ij⟩^(0⊗1)')
     expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
     assert unicode(expr) == '|i,j⟩^(0⊗1)'
     assert unicode(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) == '⟨2 i|⁽⁰⁾'

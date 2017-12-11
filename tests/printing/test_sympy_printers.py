@@ -19,7 +19,7 @@
 
 import pytest
 
-from sympy import symbols, sqrt, exp, I, Rational
+from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 from sympy.core import S
 from qnet.algebra.indices import IdxSym
 
@@ -57,6 +57,12 @@ def test_derationalize_denom():
         'α₁**(n/2 + 1/2)'),
     (I * symbols("alpha_1"),
         'ⅈ α₁'),
+    (IndexedBase('alpha')[IdxSym('i'), IdxSym('j')],
+        'α_ij'),
+    (IndexedBase('alpha')[IdxSym('mu'), IdxSym('nu')],
+        'α_μν'),
+    (IndexedBase('alpha')[1, 10],
+        'α_1,10'),
     (sqrt(2),
         '√2'),
     (3/sqrt(2),
@@ -111,6 +117,12 @@ def test_unicode_parenthization():
         'alpha_1**(n + 1)'),
     (symbols("alpha_1")**((symbols('n') + 1) / 2),
         'alpha_1**(n/2 + 1/2)'),
+    (IndexedBase('alpha')[IdxSym('i'), IdxSym('j')],
+        'alpha_ij'),
+    (IndexedBase('alpha')[IdxSym('mu'), IdxSym('nu')],
+        'alpha_mu,nu'),
+    (IndexedBase('alpha')[1, 10],
+        'alpha_1,10'),
     (I * symbols("alpha_1"),
         'I*alpha_1'),
     (sqrt(2),
@@ -162,6 +174,12 @@ def test_sympy_str(expr, expected_str):
         r'\alpha_{1}^{\frac{n}{2} + \frac{1}{2}}'),
     (I * symbols("alpha_1"),
         r'i \alpha_{1}'),
+    (IndexedBase('alpha')[IdxSym('i'), IdxSym('j')],
+        r'\alpha_{i j}'),
+    (IndexedBase('alpha')[IdxSym('mu'), IdxSym('nu')],
+        r'\alpha_{\mu \nu}'),
+    (IndexedBase('alpha')[1, 10],
+        r'\alpha_{1,10}'),
     (sqrt(2),
         r'\sqrt{2}'),
     (3/sqrt(2),

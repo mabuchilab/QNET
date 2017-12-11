@@ -378,7 +378,7 @@ def test_tex_ket_symbolic_labels():
             r'\Ket{2 i}^{(0)}')
         assert (
             latex(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) ==
-            r'\Ket{\Psi_{i,j}}^{(0 \otimes 1)}')
+            r'\Ket{\Psi_{i j}}^{(0 \otimes 1)}')
         expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
         assert latex(expr) == r'\Ket{i,j}^{(0 \otimes 1)}'
         assert (

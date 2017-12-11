@@ -504,61 +504,103 @@ class QnetAsciiPrinter(QnetBasePrinter):
         kwargs = {}
         if adjoint:
             kwargs['adjoint'] = adjoint
-        bottom = []
-        top = []
+        indices = []
+        bottom_rhs = None
+        top = None
+        res = ''
+        # ranges with the same limits are grouped into the same sum symbol
         for index_range in expr.ranges:
-            rendered_bottom = self.doprint(index_range, which='bottom')
-            if len(rendered_bottom) > 0:
-                bottom.append(rendered_bottom)
-            rendered_top = self.doprint(index_range, which='top')
-            if len(rendered_top) > 0:
-                top.append(rendered_top)
-        res = self._sum_sym
+            current_index = self.doprint(index_range, which='bottom_index')
+            current_bottom_rhs = self.doprint(index_range, which='bottom_rhs')
+            current_top = self.doprint(index_range, which='top')
+            if top is not None:  # index_ranges after the first one
+                if current_top != top or current_bottom_rhs != bottom_rhs:
+                    res += self._sum_sym
+                    bottom = ",".join(indices) + bottom_rhs
+                    if len(bottom) > 0:
+                        res += '_{%s}' % bottom
+                    if len(top) > 0:
+                        res += '^{%s}' % top
+                    res += " "
+                    indices = [current_index, ]
+                    top = current_top
+                    bottom_rhs = current_bottom_rhs
+                else:
+                    indices.append(current_index)
+            else:  # first range
+                indices.append(current_index)
+                top = current_top
+                bottom_rhs = current_bottom_rhs
+        # add the final accumulated sum symbol
+        res += self._sum_sym
+        bottom = ",".join(indices) + bottom_rhs
         if len(bottom) > 0:
-            res += '_{%s}' % ", ".join(bottom)
+            res += '_{%s}' % bottom
         if len(top) > 0:
-            res += '^{%s}' % ", ".join(top)
+            res += '^{%s}' % top
         res += " " + self.parenthesize(expr.term, prec, **kwargs)
         return res
 
     def _print_IndexRangeBase(self, expr, which='bottom'):
-        assert which in ['bottom', 'top']
-        if which == 'bottom':
+        assert which in ['bottom', 'bottom_index', 'bottom_rhs', 'top']
+        if which in ['bottom', 'bottom_index']:
             return self.doprint(expr.index_symbol)
         else:
             return ''
 
     def _print_IndexOverFockSpace(self, expr, which='bottom'):
-        assert which in ['bottom', 'top']
-        if which == 'bottom':
-            return (
-                self.doprint(expr.index_symbol) + " " + self._element_sym +
-                " " + self.doprint(expr.hs))
-        else:
+        assert which in ['bottom', 'bottom_index', 'bottom_rhs', 'top']
+        if 'bottom' in which:
+            bottom_index = self.doprint(expr.index_symbol)
+            bottom_rhs = " " + self._element_sym + " " + self.doprint(expr.hs)
+            if which == 'bottom_index':
+                return bottom_index
+            elif which == 'bottom_rhs':
+                return bottom_rhs
+            else:
+                return bottom_index + bottom_rhs
+        elif which == 'top':
             return ''
+        else:
+            raise ValueError("invalid `which`: %s" % which)
 
     def _print_IndexOverList(self, expr, which='bottom'):
-        assert which in ['bottom', 'top']
-        if which == 'bottom':
-            return (
-                self.doprint(expr.index_symbol) + " " + self._element_sym +
-                " " + self._set_delim_left +
+        assert which in ['bottom', 'bottom_index', 'bottom_rhs', 'top']
+        if 'bottom' in which:
+            bottom_index = self.doprint(expr.index_symbol)
+            bottom_rhs = (
+                " " + self._element_sym + " " + self._set_delim_left +
                 ",".join([self.doprint(val) for val in expr.values]) +
                 self._set_delim_right)
-        else:
+            if which == 'bottom_index':
+                return bottom_index
+            elif which == 'bottom_rhs':
+                return bottom_rhs
+            else:
+                return bottom_index + bottom_rhs
+        elif which == 'top':
             return ''
+        else:
+            raise ValueError("invalid `which`: %s" % which)
 
     def _print_IndexOverRange(self, expr, which='bottom'):
-        assert which in ['bottom', 'top']
-        if which == 'bottom':
-            res = (
-                self.doprint(expr.index_symbol) + "=%s" % expr.start_from)
+        assert which in ['bottom', 'bottom_index', 'bottom_rhs', 'top']
+        if 'bottom' in which:
+            bottom_index = self.doprint(expr.index_symbol)
+            bottom_rhs = "=%s" % expr.start_from
             if abs(expr.step) > 1:
-                res += ", %s" % expr.start_from + expr.step
-                res += ", " + self._ellipsis
-            return res
-        else:
+                bottom_rhs += ", %s" % expr.start_from + expr.step
+                bottom_rhs += ", " + self._ellipsis
+            if which == 'bottom_index':
+                return bottom_index
+            elif which == 'bottom_rhs':
+                return bottom_rhs
+            else:
+                return bottom_index + bottom_rhs
+        elif which == 'top':
             return str(expr.to)
+        else:
+            raise ValueError("invalid `which`: %s" % which)
 
     def _print_BaseLabel(self, expr):
         return self.doprint(expr.expr)

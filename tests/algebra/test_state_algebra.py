@@ -308,15 +308,15 @@ def test_ket_symbolic_labels():
         eval_lb(LocalKet(FockIndex(2 * i), hs=hs0), {i: 2})
     assert "type of label must be str" in str(exc_info.value)
 
-    assert StrLabel(Psi[i, j]).evaluate({i: 'i', j: 'j'}) == 'Psi_i,j'
+    assert StrLabel(Psi[i, j]).evaluate({i: 'i', j: 'j'}) == 'Psi_ij'
     assert(
         eval_lb(
             KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1), {i: 'i', j: 'j'}) ==
-        KetSymbol("Psi_i,j", hs=hs0*hs1))
+        KetSymbol("Psi_ij", hs=hs0*hs1))
     assert(
         eval_lb(
             KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1), {i: 1, j: 2}) ==
-        KetSymbol("Psi_1,2", hs=hs0*hs1))
+        KetSymbol("Psi_12", hs=hs0*hs1))
 
     assert (
         eval_lb(

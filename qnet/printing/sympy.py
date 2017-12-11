@@ -146,8 +146,11 @@ class SympyStrPrinter(StrPrinter):
             return super()._print_Mul(expr)
 
     def _print_Indexed(self, expr):
-        return self._print(expr.base)+'_%s' % ','.join(
-            map(self._print, expr.indices))
+        indices = [self._print(i) for i in expr.indices]
+        sep = ','
+        if all([len(i) == 1 for i in indices]):
+            sep = ''
+        return self._print(expr.base)+'_%s' % sep.join(indices)
 
     def _print_IdxSym(self, expr):
         return self._print_Symbol(expr) + "'" * expr.primed
@@ -254,6 +257,16 @@ class SympyLatexPrinter(LatexPrinter):
             return r"{%s}^{%s}" % (tex, exp)
         else:
             return tex
+
+    def _print_Indexed(self, expr):
+        from qnet.printing._latex import _TEX_SINGLE_LETTER_SYMBOLS
+        indices = [self._print(i) for i in expr.indices]
+        sep = ','
+        indices_are_single_letters = [
+            (len(i) == 1 or i in _TEX_SINGLE_LETTER_SYMBOLS) for i in indices]
+        if all(indices_are_single_letters):
+            sep = ' '
+        return self._print(expr.base)+'_{%s}' % sep.join(indices)
 
 
 class SympyUnicodePrinter(SympyStrPrinter):
@@ -428,7 +441,11 @@ class SympyUnicodePrinter(SympyStrPrinter):
         return "𝟘"
 
     def _print_Indexed(self, expr):
-        subscript = ','.join(map(self._print, expr.indices))
+        indices = [self._print(i) for i in expr.indices]
+        sep = ','
+        if all([len(i) == 1 for i in indices]):
+            sep = ''
+        subscript = sep.join(indices)
         try:
             subscript = ''.join([_SUBSCRIPT_MAPPING[l] for l in subscript])
             return self._print(expr.base) + subscript
