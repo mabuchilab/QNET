@@ -1,5 +1,5 @@
 from qnet.printing import ascii, unicode, latex, srepr, configure_printing
-from qnet.algebra.abstract_algebra import InfiniteSumError
+from qnet.algebra.abstract_algebra import InfiniteSumError, all_symbols
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.state_algebra import (
     KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet,
@@ -73,9 +73,9 @@ def test_qubit_state():
             latex(expr3) == r'\sum_{i=0}^{1} \alpha_{i} \Ket{i}^{(tls)}')
 
     for expr in (expr1, expr2, expr3):
-        syms = list(expr.term.all_symbols())
-        assert symbols('alpha') in syms
-        assert i in syms
+        assert all_symbols(expr.term) == set([i, symbols('alpha')])
+        assert all_symbols(expr) == set([symbols('alpha'), ])
+        assert expr.variables == [i]
         assert len(expr) == len(expr.ranges[0]) == 2
         assert 0 in expr.ranges[0]
         assert 1 in expr.ranges[0]
@@ -120,9 +120,9 @@ def test_qubit_state_bra():
 
     assert ascii(expr) == "Sum_{i in H_tls} alpha_i * <i|^(tls)"
 
-    syms = list(expr.term.all_symbols())
-    assert symbols('alpha') in syms
-    assert i in syms
+    assert all_symbols(expr.term) == set([i, symbols('alpha')])
+    assert all_symbols(expr) == set([symbols('alpha'), ])
+    assert expr.variables == [i]
     assert expr.space == hs_tls
     assert len(expr.args) == 2
     assert len(expr.operands) == 1
@@ -143,17 +143,36 @@ def test_coherent_state():
     alpha = symbols('alpha')
     hs0 = LocalSpace(0)
     hs1 = LocalSpace(1, dimension=3)
+    i = IdxSym('i')
+    n = IdxSym('n')
 
     psi = CoherentStateKet(alpha, hs=hs0)
     psi_focksum_3 = psi.to_fock_representation(max_terms=3)
     assert len(psi_focksum_3.term) == 3
-    for n in (0, 1, 2):
-        assert n in psi_focksum_3.term.ranges[0]
+    for n_val in (0, 1, 2):
+        assert n_val in psi_focksum_3.term.ranges[0]
     psi_focksum_inf = psi.to_fock_representation()
     with pytest.raises(InfiniteSumError):
         len(psi_focksum_inf.term)
-    for n in (0, 1, 2, 3):
-        assert n in psi_focksum_inf.term.ranges[0]
+    for n_val in (0, 1, 2, 3):
+        assert n_val in psi_focksum_inf.term.ranges[0]
+
+    assert (
+        all_symbols(psi_focksum_inf.term.term) == set([n, symbols('alpha')]))
+    assert all_symbols(psi_focksum_inf) == set([symbols('alpha'), ])
+    assert psi_focksum_inf.term.variables == [n]
+
+    assert psi_focksum_inf.substitute({n: i}).term.variables == [i]
+    assert (
+        psi_focksum_inf.substitute({hs0: hs1}) ==
+        CoherentStateKet(alpha, hs=hs1).to_fock_representation())
+
+    assert (
+        psi.to_fock_representation(index_symbol='i').substitute({i: n}) ==
+        psi_focksum_inf)
+    assert (
+        psi.to_fock_representation(index_symbol=i).substitute({i: n}) ==
+        psi_focksum_inf)
 
     assert(
         expand_indexed_sum(psi_focksum_3) ==
@@ -185,13 +204,18 @@ def test_two_hs_symbol_sum():
     Psi = IndexedBase('Psi')
     a_ij = a[i, j]
     Psi_ij = Psi[i, j]
-    term = a_ij * KetSymbol(StrLabel(Psi_ij), hs=hs)
+    KetPsi_ij = KetSymbol(StrLabel(Psi_ij), hs=hs)
+    term = a_ij * KetPsi_ij
 
     expr1 = KetIndexedSum(
         term, IndexOverFockSpace(i, hs=hs1), IndexOverFockSpace(j, hs=hs2))
 
     expr2 = KetIndexedSum(
         term, IndexOverRange(i, 0, 2), IndexOverRange(j, 0, 2))
+
+    assert all_symbols(expr1.term) == set([i, j, symbols('a'), symbols('Psi')])
+    assert all_symbols(expr1) == set([symbols('a'), symbols('Psi')])
+    assert expr1.variables == [i, j]
 
     assert (
         ascii(expr1) == 'Sum_{i in H_1} Sum_{j in H_2} a_ij * |Psi_ij>^(1*2)')

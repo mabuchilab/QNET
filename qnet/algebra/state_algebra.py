@@ -35,7 +35,7 @@ from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
     Operation, Expression, substitute, AlgebraError, assoc, orderby,
     filter_neutral, match_replace, match_replace_binary,
-    CannotSimplify, check_rules_dict, InfiniteSumError)
+    CannotSimplify, check_rules_dict, InfiniteSumError, all_symbols)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
@@ -238,7 +238,10 @@ class KetSymbol(Ket, Expression):
         return (self, ) + (0, ) * (order - 1)
 
     def all_symbols(self):
-        return set([self, ])
+        try:
+            return self.label.all_symbols()
+        except AttributeError:
+            return set([self, ])
 
 
 class LocalKet(KetSymbol):
@@ -254,7 +257,10 @@ class LocalKet(KetSymbol):
         super().__init__(label, hs=hs)
 
     def all_symbols(self):
-        return set([])
+        try:
+            return self.label.all_symbols()
+        except AttributeError:
+            return set([])
 
 
 @singleton_object
@@ -956,6 +962,17 @@ class KetIndexedSum(Ket, Operation):
     @property
     def args(self):
         return tuple([self._term, *self.ranges])
+
+    @property
+    def variables(self):
+        """List of the dummy (index) variable symbols"""
+        return [r.index_symbol for r in self.ranges]
+
+    def all_symbols(self):
+        """Set of all free symbols"""
+        return set(
+            [sym for sym in all_symbols(self.term)
+                if sym not in self.variables])
 
     @property
     def kwargs(self):

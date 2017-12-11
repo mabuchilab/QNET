@@ -6,6 +6,7 @@ import sympy
 from sympy.core.cache import cacheit as sympy_cacheit
 
 from ..printing import srepr, ascii
+from .abstract_algebra import substitute
 
 __all__ = [
     'IdxSym', 'IntIndex', 'FockIndex', 'StrLabel', 'IndexOverList',
@@ -212,6 +213,12 @@ class SymbolicLabelBase(metaclass=ABCMeta):
         # expressions (which happens in some algebraic rules)
         return self.expr
 
+    def substitute(self, var_map):
+        return self.__class__(expr=substitute(self.expr, var_map))
+
+    def all_symbols(self):
+        return self.expr.free_symbols
+
 
 class IntIndex(SymbolicLabelBase):
 
@@ -251,6 +258,10 @@ class IndexRangeBase(metaclass=ABCMeta):
     def __contains__(self, val):
         raise NotImplementedError()
 
+    @abstractmethod
+    def substitute(self, var_map):
+        raise NotImplementedError()
+
 
 @_immutable_attribs
 class IndexOverList(IndexRangeBase):
@@ -265,6 +276,12 @@ class IndexOverList(IndexRangeBase):
 
     def __contains__(self, val):
         return val in self.values
+
+    def substitute(self, var_map):
+        new_index_symbol = var_map.get(self.index_symbol, self.index_symbol)
+        new_values = tuple(
+            [var_map.get(element, element) for element in self.values])
+        return self.__class__(index_symbol=new_index_symbol, values=new_values)
 
 
 @_immutable_attribs
@@ -290,6 +307,12 @@ class IndexOverRange(IndexRangeBase):
     def __contains__(self, val):
         return val in self.range
 
+    def substitute(self, var_map):
+        new_index_symbol = var_map.get(self.index_symbol, self.index_symbol)
+        return self.__class__(
+            index_symbol=new_index_symbol, start_from=self.start_from,
+            to=self.to, step=self.step)
+
 
 @_immutable_attribs
 class IndexOverFockSpace(IndexRangeBase):
@@ -314,3 +337,8 @@ class IndexOverFockSpace(IndexRangeBase):
             return val >= 0
         else:
             return 0 <= val < self.hs.dimension
+
+    def substitute(self, var_map):
+        new_index_symbol = var_map.get(self.index_symbol, self.index_symbol)
+        new_hs = var_map.get(self.hs, self.hs)
+        return self.__class__(index_symbol=new_index_symbol, hs=new_hs)
