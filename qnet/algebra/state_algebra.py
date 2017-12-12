@@ -945,6 +945,9 @@ class KetIndexedSum(Ket, Operation):
     def __init__(self, term, *ranges):
         self._term = term
         self.ranges = tuple(ranges)
+        if len(set(self.variables)) != len(self.ranges):
+            raise ValueError(
+                "ranges %s must have distinct index_symbols" % repr(ranges))
         super().__init__(term, ranges=ranges)
 
     @property
@@ -1020,6 +1023,23 @@ class KetIndexedSum(Ket, Operation):
                     "Cannot expand %s: more than %s terms"
                     % (self, self._expand_limit))
         return self._expanded_cls.create(*terms)
+
+    def make_disjunct_indices(self, *others):
+        """Return a copy with modified indices to ensure disjunct indices with
+        `other`.
+
+        Each index symbol is primed until it does not match any index symbol in
+        `others`
+        """
+        new = self
+        other_index_symbols = set([
+            r.index_symbol for other in others for r in other.ranges])
+        for r in self.ranges:
+            index_symbol = r.index_symbol
+            while index_symbol in other_index_symbols:
+                index_symbol = index_symbol.incr_primed()
+            new = new.substitute({r.index_symbol: index_symbol})
+        return new
 
 
 ###############################################################################

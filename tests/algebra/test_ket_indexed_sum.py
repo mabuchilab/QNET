@@ -244,3 +244,30 @@ def test_two_hs_symbol_sum():
         a[2, 0] * KetSymbol('Psi_20', hs=hs),
         a[2, 1] * KetSymbol('Psi_21', hs=hs),
         a[2, 2] * KetSymbol('Psi_22', hs=hs))
+
+
+def test_make_disjunct_indices():
+    i = IdxSym('i')
+    j = IdxSym('j')
+    k = IdxSym('k')
+    Psi = IndexedBase('Psi')
+
+    def sum(term, *index_symbols):
+        return KetIndexedSum(
+            term, *[IndexOverRange(i, 0, 2) for i in index_symbols])
+
+    with pytest.raises(ValueError):
+        sum(Psi[i, j, j], i, j, j)
+
+    expr = sum(Psi[i, j, k], i, j, k)
+    others = [expr, ]
+    assert expr.make_disjunct_indices(*others) == expr.substitute({
+            i: i.prime, j: j.prime, k: k.prime})
+
+    others = [sum(Psi[i], i), sum(Psi[j], j)]
+    assert expr.make_disjunct_indices(*others) == expr.substitute({
+            i: i.prime, j: j.prime})
+
+    others = [sum(Psi[i], i), sum(Psi[i.prime], i.prime)]
+    assert expr.make_disjunct_indices(*others) == expr.substitute({
+            i: i.prime.prime})

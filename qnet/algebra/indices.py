@@ -196,6 +196,15 @@ class IdxSym(sympy.Symbol):
     def primed(self):
         return self._primed
 
+    def incr_primed(self, incr=1):
+        """Return a copy of the index with an incremented :attr:`primed`"""
+        return self.__class__(self.name, primed=self._primed + incr)
+
+    @property
+    def prime(self):
+        """equivalent to :meth:`inc_primed` with ``incr=1``"""
+        return self.incr_primed(incr=1)
+
 
 # Classes for symbolic labels
 
