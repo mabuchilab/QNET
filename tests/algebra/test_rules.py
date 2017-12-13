@@ -25,11 +25,13 @@ from collections import defaultdict
 import pytest
 
 import sympy
-from sympy import symbols
+from sympy import symbols, IndexedBase
 
 from qnet.algebra import (
     ScalarTimesOperator, OperatorSymbol, LocalSpace,
-    no_instance_caching, ZeroOperator, OperatorPlus)
+    no_instance_caching, ZeroOperator, OperatorPlus, KetIndexedSum,
+    IdxSym, BasisKet, KetSymbol, StrLabel, FockIndex, IndexOverRange,
+    IndexOverFockSpace, ZeroKet, KroneckerDelta)
 
 One = sympy.S.One
 Half = One/2
@@ -38,6 +40,11 @@ hs0 = LocalSpace(0)
 OpA = OperatorSymbol('A', hs=hs0)
 OpB = OperatorSymbol('B', hs=hs0)
 OpC = OperatorSymbol('C', hs=hs0)
+i = IdxSym('i')
+j = IdxSym('j')
+a = IndexedBase('a')
+ket_sym_hs01 = KetSymbol(
+    'Psi', hs=(LocalSpace(0, dimension=2) * LocalSpace(1, dimension=2)))
 
 
 # The following list defines all the automatic rules we want to test
@@ -80,6 +87,17 @@ TESTS = [
         ScalarTimesOperator(gamma, OpA)),
     # Circuit Algebra
     # ...
+    # State Algebra
+    # ...
+    (KetIndexedSum, 'R001',
+        (KetSymbol(StrLabel(i), hs=0) - KetSymbol(StrLabel(i), hs=0),
+            IndexOverFockSpace(i, hs=LocalSpace(0))), {},
+        ZeroKet),
+    (KetIndexedSum, 'R002',
+        (symbols('a') * BasisKet(FockIndex(i), hs=0),
+            IndexOverRange(i, 0, 1)), {},
+        symbols('a') * KetIndexedSum(
+            BasisKet(FockIndex(i), hs=0), IndexOverRange(i, 0, 1))),
 ]
 
 

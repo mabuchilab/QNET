@@ -11,7 +11,7 @@ import subprocess as sp
 
 from qnet.algebra.scalar_types import SCALAR_TYPES
 from qnet.algebra.abstract_algebra import (
-        Operation, Expression, set_union)
+        Operation, Expression, set_union, _scalar_free_symbols)
 from qnet.algebra.hilbert_space_algebra import TrivialSpace, BasisNotSetError
 from qnet.algebra.circuit_algebra import Circuit
 from qnet.algebra.state_algebra import (
@@ -19,7 +19,7 @@ from qnet.algebra.state_algebra import (
     ScalarTimesKet, KetPlus
 )
 from qnet.algebra.operator_algebra import (
-    scalar_free_symbols, IdentityOperator, Create, Destroy, LocalOperator,
+    IdentityOperator, Create, Destroy, LocalOperator,
     LocalSigma, ScalarTimesOperator, OperatorPlus, OperatorTimes)
 from qnet.printing._ascii import QnetAsciiDefaultPrinter
 from qnet.misc.trajectory_data import TrajectoryData
@@ -1183,7 +1183,7 @@ class QSDCodeGen(object):
 
 def _find_time_dependent_coeffs(op, time_symbol):
     if isinstance(op, ScalarTimesOperator):
-        if time_symbol in scalar_free_symbols(op.coeff):
+        if time_symbol in _scalar_free_symbols(op.coeff):
             yield op.coeff
     else:
         try:

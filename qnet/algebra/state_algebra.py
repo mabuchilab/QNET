@@ -29,17 +29,18 @@ from itertools import product as cartesian_product
 from collections import OrderedDict
 
 from sympy import (
-    Basic as SympyBasic, series as sympy_series, sqrt, exp, I, factorial, Idx)
+    Basic as SympyBasic, series as sympy_series, sqrt, exp, I)
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-    Operation, Expression, substitute, AlgebraError, assoc, orderby,
-    filter_neutral, match_replace, match_replace_binary,
-    CannotSimplify, check_rules_dict, InfiniteSumError, all_symbols)
+    Operation, Expression, substitute, AlgebraError, assoc, assoc_indexed,
+    indexed_sum_over_const, orderby, filter_neutral, match_replace,
+    match_replace_binary, CannotSimplify, check_rules_dict, InfiniteSumError,
+    all_symbols, ScalarTimesExpression, IndexedSum)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
-    FullSpace, TrivialSpace, LocalSpace, ProductSpace, BasisNotSetError)
+    FullSpace, TrivialSpace, LocalSpace, ProductSpace)
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
@@ -47,8 +48,8 @@ from .operator_algebra import (
     Phase)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
 from .indices import (
-    SymbolicLabelBase, yield_from_ranges, IndexOverFockSpace, IndexOverRange,
-    KroneckerDelta, IdxSym, FockIndex)
+    SymbolicLabelBase, IndexOverFockSpace, IndexOverRange,
+    KroneckerDelta, IdxSym, FockIndex, IndexRangeBase)
 
 __all__ = [
     'OverlappingSpaces', 'SpaceTooLargeError', 'UnequalSpaces', 'BasisKet',
@@ -646,7 +647,7 @@ class TensorKet(Ket, Operation):
             return self._label
 
 
-class ScalarTimesKet(Ket, Operation):
+class ScalarTimesKet(Ket, ScalarTimesExpression):
     """Multiply a Ket by a scalar coefficient.
 
     Args:
@@ -673,14 +674,6 @@ class ScalarTimesKet(Ket, Operation):
     def space(self):
         return self.operands[1].space
 
-    @property
-    def coeff(self):
-        return self.operands[0]
-
-    @property
-    def term(self):
-        return self.operands[1]
-
     def _expand(self):
         c, t = self.coeff, self.term
         et = t.expand()
@@ -693,18 +686,9 @@ class ScalarTimesKet(Ket, Operation):
         ce = tuple(ceo for ceo, k in zip(ceg, range(order + 1)))
         te = self.term.series_expand(param, about, order)
 
-        return tuple(ce[k] * te[n - k]
-                     for n in range(order + 1) for k in range(n + 1))
-
-    def _substitute(self, var_map):
-        st = self.term.substitute(var_map)
-        if isinstance(self.coeff, SympyBasic):
-            svar_map = {k: v for (k, v) in var_map.items()
-                        if not isinstance(k, Expression)}
-            sc = self.coeff.subs(svar_map)
-        else:
-            sc = substitute(self.coeff, var_map)
-        return sc * st
+        return tuple(
+            ce[k] * te[n - k]
+            for n in range(order + 1) for k in range(n + 1))
 
 
 class OperatorTimesKet(Ket, Operation):
@@ -936,50 +920,19 @@ class KetBra(Operator, Operation):
                      for n in range(order + 1) for k in range(n + 1))
 
 
-class KetIndexedSum(Ket, Operation):
+class KetIndexedSum(Ket, IndexedSum):
     # TODO: documentation
 
-    _expanded_cls = KetPlus
-    _expand_limit = 1000
-
-    def __init__(self, term, *ranges):
-        self._term = term
-        self.ranges = tuple(ranges)
-        if len(set(self.variables)) != len(self.ranges):
-            raise ValueError(
-                "ranges %s must have distinct index_symbols" % repr(ranges))
-        super().__init__(term, ranges=ranges)
+    _rules = OrderedDict()  # see end of module
+    _simplifications = [assoc_indexed, indexed_sum_over_const, match_replace, ]
 
     @property
     def space(self):
         return self.term.space
 
-    @property
-    def term(self):
-        return self._term
-
-    @property
-    def operands(self):
-        return (self._term, )
-
-    @property
-    def args(self):
-        return tuple([self._term, *self.ranges])
-
-    @property
-    def variables(self):
-        """List of the dummy (index) variable symbols"""
-        return [r.index_symbol for r in self.ranges]
-
-    def all_symbols(self):
-        """Set of all free symbols"""
-        return set(
-            [sym for sym in all_symbols(self.term)
-                if sym not in self.variables])
-
-    @property
-    def kwargs(self):
-        return {}
+    def expand_sum(self, max_terms=None):
+        terms = super().expand_sum(max_terms=max_terms)
+        return KetPlus.create(*terms)
 
     def _expand(self):
         return self.__class__.create(self.term.expand(), *self.ranges)
@@ -987,59 +940,6 @@ class KetIndexedSum(Ket, Operation):
     def _series_expand(self, param, about, order):
         raise NotImplementedError()
 
-    @property
-    def terms(self):
-        for mapping in yield_from_ranges(self.ranges):
-            yield self.term.substitute(mapping).simplify(rules=[(
-                wc('label', head=SymbolicLabelBase),
-                lambda label: label.evaluate(mapping))])
-
-    def __len__(self):
-        length = 1
-        try:
-            for ind_range in self.ranges:
-                length *= len(ind_range)
-        except BasisNotSetError:
-            raise InfiniteSumError(
-                "sum %s has infinite length" % self)
-        return length
-
-    def expand_sum(self, max_terms=None):
-        terms = []
-        if max_terms is None:
-            len(self)  # side-effect: raise InfiniteSumError
-        else:
-            if max_terms > self._expand_limit:
-                raise ValueError(
-                    "max_terms = %s must be smaller than the limit %s"
-                    % (max_terms, self._expand_limit))
-        for i, term in enumerate(self.terms):
-            if max_terms is not None:
-                if i >= max_terms:
-                    break
-            terms.append(term)
-            if i > self._expand_limit:
-                raise InfiniteSumError(
-                    "Cannot expand %s: more than %s terms"
-                    % (self, self._expand_limit))
-        return self._expanded_cls.create(*terms)
-
-    def make_disjunct_indices(self, *others):
-        """Return a copy with modified indices to ensure disjunct indices with
-        `other`.
-
-        Each index symbol is primed until it does not match any index symbol in
-        `others`
-        """
-        new = self
-        other_index_symbols = set([
-            r.index_symbol for other in others for r in other.ranges])
-        for r in self.ranges:
-            index_symbol = r.index_symbol
-            while index_symbol in other_index_symbols:
-                index_symbol = index_symbol.incr_primed()
-            new = new.substitute({r.index_symbol: index_symbol})
-        return new
 
 
 ###############################################################################
@@ -1118,6 +1018,10 @@ def _algebraic_rules():
     ls = wc("ls", head=LocalSpace)
 
     basisket = wc('basisket', BasisKet, kwargs={'hs': ls})
+
+    term = wc('term', Expression)
+    indranges__ = wc("indranges__", head=IndexRangeBase)
+    sum = wc('sum', head=KetIndexedSum)
 
     ScalarTimesKet._rules.update(check_rules_dict([
         ('one', (
@@ -1230,6 +1134,9 @@ def _algebraic_rules():
                 pattern(Phase, u, hs=ls),
                 pattern(CoherentStateKet, v, hs=ls)),
             lambda ls, u, v: CoherentStateKet(v * exp(I * u), hs=ls))),
+        ('indexedsum', (
+            pattern_head(A, sum),
+            lambda A, sum: KetIndexedSum.create(A * sum.term, *sum.ranges))),
     ]))
 
     KetPlus._binary_rules.update(check_rules_dict([
@@ -1317,6 +1224,23 @@ def _algebraic_rules():
         ('scal2', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u.conjugate() * (Psi * Phi.adjoint()))),
+    ]))
+
+    def pull_constfactor_from_sum(u, Psi, indranges):
+        bound_symbols = set([r.index_symbol for r in indranges])
+        if len(all_symbols(u).intersection(bound_symbols)) == 0:
+            return u * KetIndexedSum.create(Psi, *indranges)
+        else:
+            raise CannotSimplify()
+
+    KetIndexedSum._rules.update(check_rules_dict([
+        ('R001', (  # sum over zero -> zero
+            pattern_head(ZeroKet, indranges__),
+            lambda indranges: ZeroKet)),
+        ('R002', (  # pull constant prefactor out of sum
+            pattern_head(pattern(ScalarTimesKet, u, Psi), indranges__),
+            lambda u, Psi, indranges:
+                pull_constfactor_from_sum(u, Psi, indranges))),
     ]))
 
 

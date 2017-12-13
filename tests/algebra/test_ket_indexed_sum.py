@@ -1,5 +1,5 @@
 from qnet.printing import ascii, unicode, latex, srepr, configure_printing
-from qnet.algebra.abstract_algebra import InfiniteSumError, all_symbols
+from qnet.algebra.abstract_algebra import all_symbols, InfiniteSumError
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.state_algebra import (
     KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet,

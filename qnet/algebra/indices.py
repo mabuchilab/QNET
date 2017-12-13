@@ -1,12 +1,31 @@
+# coding=utf-8
+# This file is part of QNET.
+#
+#    QNET is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#    QNET is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
+#
+###########################################################################
+
 import re
-from abc import ABCMeta, abstractmethod, abstractproperty
-from collections import OrderedDict
+from abc import ABCMeta, abstractmethod
+
 import attr
 import sympy
 from sympy.core.cache import cacheit as sympy_cacheit
 
-from ..printing import srepr, ascii
-from .abstract_algebra import substitute
+from ._attrs import immutable_attribs
 
 __all__ = [
     'IdxSym', 'IntIndex', 'FockIndex', 'StrLabel', 'IndexOverList',
@@ -40,27 +59,6 @@ def KroneckerDelta(i, j):
 
         else:
             return 0
-
-
-def _immutable_attribs(cls):
-    """Class decorator like ``attr.s(frozen=True)`` with improved __repr__"""
-    cls = attr.s(cls, frozen=True)
-    defaults = OrderedDict([(a.name, a.default) for a in cls.__attrs_attrs__])
-
-    def repr_(self):
-        real_cls = self.__class__
-        class_name = real_cls.__name__
-        args = []
-        for name in defaults.keys():
-            val = getattr(self, name)
-            positional = defaults[name] == attr.NOTHING
-            if val != defaults[name]:
-                args.append(
-                    srepr(val) if positional else "%s=%s" % (name, srepr(val)))
-        return "{0}({1})".format(class_name, ", ".join(args))
-
-    cls.__repr__ = repr_
-    return cls
 
 
 def _merge_dicts(*dicts):
@@ -146,6 +144,7 @@ class IdxSym(sympy.Symbol):
         indices in products of sums, or more generally if the same index occurs
         in an expression with potentially differnt values::
 
+            >>> from qnet.printing import ascii
             >>> ascii(IdxSym('i', primed=2))
             "i''"
             >>> IdxSym('i') == IdxSym('i', primed=1)
@@ -209,7 +208,7 @@ class IdxSym(sympy.Symbol):
 # Classes for symbolic labels
 
 
-@_immutable_attribs
+@immutable_attribs
 class SymbolicLabelBase(metaclass=ABCMeta):
     expr = attr.ib(validator=attr.validators.instance_of(sympy.Basic))
 
@@ -223,7 +222,7 @@ class SymbolicLabelBase(metaclass=ABCMeta):
         return self.expr
 
     def substitute(self, var_map):
-        return self.__class__(expr=substitute(self.expr, var_map))
+        return self.__class__(expr=self.expr.subs(var_map))
 
     def all_symbols(self):
         return self.expr.free_symbols
@@ -242,13 +241,14 @@ class FockIndex(IntIndex):
 class StrLabel(SymbolicLabelBase):
 
     def evaluate(self, mapping):
-        return ascii(self.expr.subs(mapping))
+        from qnet.printing.sympy import SympyStrPrinter
+        return SympyStrPrinter().doprint(self.expr.subs(mapping))
 
 
 # Index Ranges
 
 
-@_immutable_attribs
+@immutable_attribs
 class IndexRangeBase(metaclass=ABCMeta):
     index_symbol = attr.ib(validator=attr.validators.instance_of(IdxSym))
 
@@ -272,7 +272,7 @@ class IndexRangeBase(metaclass=ABCMeta):
         raise NotImplementedError()
 
 
-@_immutable_attribs
+@immutable_attribs
 class IndexOverList(IndexRangeBase):
     values = attr.ib(convert=tuple)
 
@@ -293,7 +293,7 @@ class IndexOverList(IndexRangeBase):
         return self.__class__(index_symbol=new_index_symbol, values=new_values)
 
 
-@_immutable_attribs
+@immutable_attribs
 class IndexOverRange(IndexRangeBase):
     start_from = attr.ib(validator=attr.validators.instance_of(int))
     to = attr.ib(validator=attr.validators.instance_of(int))
@@ -323,7 +323,7 @@ class IndexOverRange(IndexRangeBase):
             to=self.to, step=self.step)
 
 
-@_immutable_attribs
+@immutable_attribs
 class IndexOverFockSpace(IndexRangeBase):
     hs = attr.ib()
     # TODO: assert that hs is indeed a FockSpace
@@ -339,7 +339,7 @@ class IndexOverFockSpace(IndexRangeBase):
                 yield {self.index_symbol: ind}
 
     def __len__(self):
-        return self.hs.dimension
+        return self.hs._dimension
 
     def __contains__(self, val):
         if self.hs._dimension is None:

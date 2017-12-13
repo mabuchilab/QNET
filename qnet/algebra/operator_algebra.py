@@ -33,9 +33,9 @@ from sympy import (
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-    Expression, Operation, assoc, orderby, filter_neutral,
-    match_replace_binary, match_replace, set_union, substitute,
-    CannotSimplify, check_rules_dict)
+    Expression, Operation, ScalarTimesExpression, assoc, orderby,
+    filter_neutral, match_replace_binary, match_replace, CannotSimplify,
+    check_rules_dict)
 from .singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
     TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError)
@@ -60,8 +60,8 @@ __all__ = [
     'Squeeze', 'Jmjmcoeff', 'Jpjmcoeff', 'Jzjmcoeff', 'LocalProjector',
     'X', 'Y', 'Z', 'adjoint', 'create_operator_pm_cc', 'decompose_space',
     'expand_operator_pm_cc', 'factor_coeff', 'factor_for_trace', 'get_coeffs',
-    'scalar_free_symbols', 'simplify_scalar', 'space', 'II',
-    'IdentityOperator', 'ZeroOperator', 'Commutator']
+    'simplify_scalar', 'space', 'II', 'IdentityOperator', 'ZeroOperator',
+    'Commutator']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'implied_local_space',  'delegate_to_method', 'disjunct_hs_zero',
@@ -1201,7 +1201,7 @@ class OperatorTimes(OperatorOperation):
         return first._diff(sym) * rest + first * rest._diff(sym)
 
 
-class ScalarTimesOperator(Operator, Operation):
+class ScalarTimesOperator(Operator, ScalarTimesExpression):
     """Multiply an operator by a scalar coefficient.
 
     Args:
@@ -1210,9 +1210,6 @@ class ScalarTimesOperator(Operator, Operation):
     """
     _rules = OrderedDict()
     _simplifications = [match_replace, ]
-
-    def __init__(self, coeff, term):
-        super().__init__(coeff, term)
 
     @staticmethod
     def has_minus_prefactor(c):
@@ -1234,14 +1231,6 @@ class ScalarTimesOperator(Operator, Operation):
     @property
     def space(self):
         return self.operands[1].space
-
-    @property
-    def coeff(self):
-        return self.operands[0]
-
-    @property
-    def term(self):
-        return self.operands[1]
 
     def _expand(self):
         c, t = self.operands
@@ -1303,22 +1292,9 @@ class ScalarTimesOperator(Operator, Operation):
     def __hash__(self):
         return super().__hash__()
 
-    def _substitute(self, var_map):
-        st = self.term.substitute(var_map)
-        if isinstance(self.coeff, SympyBasic):
-            svar_map = {k: v for k, v in var_map.items()
-                        if not isinstance(k, Expression)}
-            sc = self.coeff.subs(svar_map)
-        else:
-            sc = substitute(self.coeff, var_map)
-        return sc * st
-
     def _simplify_scalar(self):
         coeff, term = self.operands
         return simplify_scalar(coeff) * term.simplify_scalar()
-
-    def all_symbols(self):
-        return scalar_free_symbols(self.coeff) | self.term.all_symbols()
 
 
 class Commutator(OperatorOperation):
@@ -1721,19 +1697,6 @@ def simplify_scalar(s):
     if isinstance(s, SympyBasic):
         return s.simplify()
     return s
-
-
-def scalar_free_symbols(*operands):
-    """Return all free symbols from any symbolic operand"""
-    if len(operands) > 1:
-        return set_union([scalar_free_symbols(o) for o in operands])
-    elif len(operands) < 1:
-        return set()
-    else:  # len(operands) == 1
-        o, = operands
-        if isinstance(o, SympyBasic):
-            return set(o.free_symbols)
-    return set()
 
 
 def _coeff_term(op):

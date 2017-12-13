@@ -22,12 +22,11 @@ from numpy import (
         array as np_array, ndarray, conjugate as np_conjugate,
         hstack as np_hstack, vstack as np_vstack, zeros as np_zeros, ones as
         np_ones, diag as np_diag)
-from sympy import Basic as SympyBasic, I, sympify
+from sympy import I, sympify
 
 from .scalar_types import SCALAR_TYPES
-from .abstract_algebra import (
-        Expression, Operation, substitute)
-from .operator_algebra import Operator, scalar_free_symbols, simplify_scalar
+from .abstract_algebra import Expression, substitute, _scalar_free_symbols
+from .operator_algebra import Operator, simplify_scalar
 from .hilbert_space_algebra import TrivialSpace, ProductSpace
 from .permutations import check_permutation
 
@@ -265,7 +264,7 @@ class Matrix(Expression):
             if isinstance(o, Operator):
                 ret = ret | o.all_symbols()
             else:
-                ret = ret | scalar_free_symbols(o)
+                ret = ret | _scalar_free_symbols(o)
         return ret
 
     @property
