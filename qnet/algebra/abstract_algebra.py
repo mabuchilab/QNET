@@ -680,7 +680,7 @@ class IndexedSum(Operation, metaclass=ABCMeta):
         return length
 
     @abstractmethod
-    def expand_sum(self, max_terms=None):
+    def doit(self, max_terms=None):
         terms = []
         if max_terms is None:
             len(self)  # side-effect: raise InfiniteSumError

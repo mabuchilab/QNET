@@ -85,7 +85,7 @@ def test_qubit_state():
         assert expr.args[0] == term
         assert expr.term == term
         assert len(expr.kwargs) == 0
-        expr_expand = expr.expand_sum().substitute(
+        expr_expand = expr.doit().substitute(
             {alpha[0]: alpha['g'], alpha[1]: alpha['e']})
         assert expr_expand == (
             alpha['g'] * BasisKet('g', hs=hs_tls) +
@@ -94,7 +94,7 @@ def test_qubit_state():
             ascii(expr_expand) == 'alpha_e * |e>^(tls) + alpha_g * |g>^(tls)')
 
     with pytest.raises(IndexError) as exc_info:
-        KetIndexedSum.create(term, IndexOverRange(i, 0, 2)).expand_sum()
+        KetIndexedSum.create(term, IndexOverRange(i, 0, 2)).doit()
     assert "tuple index out of range" in str(exc_info.value)
 
     with pytest.raises(TypeError) as exc_info:
@@ -129,7 +129,7 @@ def test_qubit_state_bra():
     assert expr.args[0] == term
     assert expr.term == term
     assert len(expr.kwargs) == 0
-    expr_expand = expr.expand_sum().substitute(
+    expr_expand = expr.doit().substitute(
         {alpha[0]: alpha['g'], alpha[1]: alpha['e']})
     assert expr_expand == (
         alpha['g'] * BasisKet('g', hs=hs_tls).dag +
@@ -233,8 +233,8 @@ def test_two_hs_symbol_sum():
         r'\sum_{i,j=0}^{2} a_{i j} '
         r'\left\lvert \Psi_{i j} \right\rangle^{(1 \otimes 2)}')
 
-    assert expr1.expand_sum() == expr2.expand_sum()
-    assert expr1.expand_sum() == KetPlus(
+    assert expr1.doit() == expr2.doit()
+    assert expr1.doit() == KetPlus(
         a[0, 0] * KetSymbol('Psi_00', hs=hs),
         a[0, 1] * KetSymbol('Psi_01', hs=hs),
         a[0, 2] * KetSymbol('Psi_02', hs=hs),

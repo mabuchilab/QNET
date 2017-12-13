@@ -22,7 +22,7 @@
 from functools import partial
 from collections import OrderedDict
 
-from .abstract_algebra import simplify
+from .abstract_algebra import simplify, IndexedSum
 from .operator_algebra import Operator, Commutator, OperatorTimes
 from .pattern_matching import pattern, wc
 
@@ -135,6 +135,7 @@ def simplify_by_method(expr, *method_names, head=None, **kwargs):
 
 
 def expand_indexed_sum(expr, max_terms=None):
-    """Expand indexed sums by calling the `expand_sum` method on any
+    """Expand indexed sums by calling the `doit` method on any
     sub-expression. Truncate after `max_terms`."""
-    return simplify_by_method(expr, 'expand_sum', max_terms=max_terms)
+    return simplify_by_method(
+        expr, 'doit', head=IndexedSum, max_terms=max_terms)

@@ -1307,6 +1307,7 @@ class Commutator(OperatorOperation):
     '''
     _rules = OrderedDict()
     _simplifications = [disjunct_hs_zero, commutator_order, match_replace]
+    # TODO: doit method
 
     order_key = FullCommutativeHSOrder
     # commutator_order makes FullCommutativeHSOrder anti-commutative
