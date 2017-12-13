@@ -35,7 +35,7 @@ from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
     Operation, Expression, substitute, AlgebraError, assoc, assoc_indexed,
     indexed_sum_over_const, orderby, filter_neutral, match_replace,
-    match_replace_binary, CannotSimplify, check_rules_dict, InfiniteSumError,
+    match_replace_binary, CannotSimplify, check_rules_dict,
     all_symbols, ScalarTimesExpression, IndexedSum)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
@@ -59,7 +59,8 @@ __all__ = [
 
 __private__ = [  # anything not in __all__ must be in __private__
     'act_locally', 'act_locally_times_tensor', 'tensor_decompose_kets',
-    'check_kets_same_space', 'check_op_ket_space', 'accept_bras']
+    'check_kets_same_space', 'check_op_ket_space', 'accept_bras',
+    'basis_ket_zero_outside_hs']
 
 
 ###############################################################################
@@ -111,6 +112,19 @@ def accept_bras(cls, ops, kwargs):
         else:
             return ops, kwargs
     return Bra.create(cls.create(*kets, **kwargs))
+
+
+def basis_ket_zero_outside_hs(cls, ops, kwargs):
+    """For ``BasisKet.create(ind, hs)`` with an integer label `ind`, return a
+    :class:`ZeroKet` if `ind` is outside of the range of the underlying Hilbert
+    space
+    """
+    ind, = ops
+    hs = kwargs['hs']
+    if isinstance(ind, int):
+        if ind < 0 or (hs._dimension is not None and ind >= hs._dimension):
+            return ZeroKet
+    return ops, kwargs
 
 
 ###############################################################################
@@ -357,7 +371,20 @@ class BasisKet(LocalKet):
             True
             >>> print(ascii(BasisKet(0, hs=hs)))
             |g>^(tls)
+
+        When instantiating the :class:`BasisKet` via
+        :meth:`~qnet.algebra.abstract_algebra.Expression.create`, an integer
+        label outside the range of the underlying Hilbert space results in a
+        :class:`ZeroKet`::
+
+            >>> BasisKet.create(-1, hs=0)
+            ZeroKet
+            >>> BasisKet.create(2, hs=LocalSpace('tls', dimension=2))
+            ZeroKet
     """
+
+    _simplifications = [basis_ket_zero_outside_hs]
+
     def __init__(self, label_or_index, *, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
@@ -1015,209 +1042,207 @@ def _algebraic_rules():
 
     basisket = wc('basisket', BasisKet, kwargs={'hs': ls})
 
-    term = wc('term', Expression)
     indranges__ = wc("indranges__", head=IndexRangeBase)
     sum = wc('sum', head=KetIndexedSum)
 
     ScalarTimesKet._rules.update(check_rules_dict([
-        ('one', (
+        ('R001', (
             pattern_head(1, Psi),
             lambda Psi: Psi)),
-        ('zero', (
+        ('R002', (
             pattern_head(0, Psi),
             lambda Psi: ZeroKet)),
-        ('uzero', (
+        ('R003', (
             pattern_head(u, ZeroKet),
             lambda u: ZeroKet)),
-        ('uvpsi', (
+        ('R004', (
             pattern_head(u, pattern(ScalarTimesKet, v, Psi)),
             lambda u, v, Psi: (u * v) * Psi))
     ]))
-
-    # local_rule = lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)
 
     def local_rule(A, B, Psi):
         return OperatorTimes.create(*A) * (B * Psi)
 
     OperatorTimesKet._rules.update(check_rules_dict([
-        ('id', (
+        ('R001', (  # Id * Psi = Psi
             pattern_head(IdentityOperator, Psi),
             lambda Psi: Psi)),
-        ('zeroop', (
+        ('R002', (  # 0 * Psi = 0
             pattern_head(ZeroOperator, Psi),
             lambda Psi: ZeroKet)),
-        ('zeroket', (
+        ('R003', (  # A * 0 = 0
             pattern_head(A, ZeroKet),
             lambda A: ZeroKet)),
-        ('vApsi', (
+        ('R004', (  # A * v * Psi = v * A * Psi (pull out scalar)
             pattern_head(A, pattern(ScalarTimesKet, v, Psi)),
             lambda A, v, Psi:  v * (A * Psi))),
 
-        ('sig', (
+        ('R005', (  # |n><m| * |k> = delta_mk * |n>
             pattern_head(
                 pattern(LocalSigma, n, m, hs=ls),
                 pattern(BasisKet, k, hs=ls)),
             lambda ls, n, m, k: KroneckerDelta(m, k) * BasisKet(n, hs=ls))),
 
         # harmonic oscillator
-        ('create', (
+        ('R006', (  # a^+ |n> = sqrt(n+1) * |n+1>
             pattern_head(pattern(Create, hs=ls), basisket),
             lambda basisket, ls:
                 sqrt(basisket.index + 1) * basisket.next())),
-        ('destroy', (
+        ('R007', (  # a |n> = sqrt(n) * |n-1>
             pattern_head(pattern(Destroy, hs=ls), basisket),
             lambda basisket, ls:
                 sqrt(basisket.index) * basisket.prev())),
-        ('coherent', (
+        ('R008', (  # a |alpha> = alpha * |alpha> (eigenstate of annihilator)
             pattern_head(
                 pattern(Destroy, hs=ls),
                 pattern(CoherentStateKet, u, hs=ls)),
             lambda ls, u: u * CoherentStateKet(u, hs=ls))),
 
         # spin
-        ('jplus', (
+        ('R009', (
             pattern_head(pattern(Jplus, hs=ls), basisket),
             lambda basisket, ls:
                 Jpjmcoeff(basisket.space, basisket.index, shift=True) *
                 basisket.next())),
-        ('jminus', (
+        ('R010', (
             pattern_head(pattern(Jminus, hs=ls), basisket),
             lambda basisket, ls:
                 Jmjmcoeff(basisket.space, basisket.index, shift=True) *
                 basisket.prev())),
-        ('jz', (
+        ('R011', (
             pattern_head(pattern(Jz, hs=ls), basisket),
             lambda basisket, ls:
                 Jzjmcoeff(basisket.space, basisket.index, shift=True) *
                 basisket)),
 
-        ('local1', (
+        ('R012', (
             pattern_head(A_local, Psi_tensor),
             lambda A, Psi: act_locally(A, Psi))),
-        ('prod', (
+        ('R013', (
             pattern_head(A_times, Psi_tensor),
             lambda A, Psi: act_locally_times_tensor(A, Psi))),
-        ('ABPsi', (
+        ('R014', (
             pattern_head(A, pattern(OperatorTimesKet, B, Psi)),
             lambda A, B, Psi: (
                 (A * B) * Psi
                 if (B * Psi) == OperatorTimesKet(B, Psi)
                 else A * (B * Psi)))),
-        ('local2', (
+        ('R015', (
             pattern_head(pattern(OperatorTimes, A__, B_local), Psi_local),
             local_rule)),
-        ('uAPsi', (
+        ('R016', (
             pattern_head(pattern(ScalarTimesOperator, u, A), Psi),
             lambda u, A, Psi: u * (A * Psi))),
-        ('displace1', (
+        ('R017', (
             pattern_head(
                 pattern(Displace, u, hs=ls),
                 pattern(BasisKet, 0, hs=ls)),
             lambda ls, u: CoherentStateKet(u, hs=ls))),
-        ('displace2', (
+        ('R018', (
             pattern_head(
                 pattern(Displace, u, hs=ls),
                 pattern(CoherentStateKet, v, hs=ls)),
             lambda ls, u, v:
                 ((Displace(u, hs=ls) * Displace(v, hs=ls)) *
                  BasisKet(0, hs=ls)))),
-        ('phase1', (
+        ('R019', (
             pattern_head(
                 pattern(Phase, u, hs=ls), pattern(BasisKet, m, hs=ls)),
             lambda ls, u, m: exp(I * u * m) * BasisKet(m, hs=ls))),
-        ('phase2', (
+        ('R020', (
             pattern_head(
                 pattern(Phase, u, hs=ls),
                 pattern(CoherentStateKet, v, hs=ls)),
             lambda ls, u, v: CoherentStateKet(v * exp(I * u), hs=ls))),
-        ('indexedsum', (
+
+        ('R021', (
             pattern_head(A, sum),
             lambda A, sum: KetIndexedSum.create(A * sum.term, *sum.ranges))),
     ]))
 
     KetPlus._binary_rules.update(check_rules_dict([
-        ('scalsum', (
+        ('R001', (
             pattern_head(
                 pattern(ScalarTimesKet, u, Psi),
                 pattern(ScalarTimesKet, v, Psi)),
             lambda u, v, Psi: (u + v) * Psi)),
-        ('up1', (
+        ('R002', (
             pattern_head(pattern(ScalarTimesKet, u, Psi), Psi),
             lambda u, Psi: (u + 1) * Psi)),
-        ('1pv', (
+        ('R003', (
             pattern_head(Psi, pattern(ScalarTimesKet, v, Psi)),
             lambda v, Psi: (1 + v) * Psi)),
-        ('2psi', (
+        ('R004', (
             pattern_head(Psi, Psi),
             lambda Psi: 2 * Psi)),
     ]))
 
     TensorKet._binary_rules.update(check_rules_dict([
-        ('scal1', (
+        ('R001', (
             pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
             lambda u, Psi, Phi: u * (Psi * Phi))),
-        ('scal2', (
+        ('R002', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u * (Psi * Phi))),
     ]))
 
     BraKet._rules.update(check_rules_dict([
-        ('zero2', (
+        ('R001', (
             pattern_head(Phi, ZeroKet),
             lambda Phi: 0)),
-        ('zero1', (
+        ('R002', (
             pattern_head(ZeroKet, Phi),
             lambda Phi: 0)),
-        ('dirac', (
+        ('R003', (
             pattern_head(
                 pattern(BasisKet, m, hs=ls), pattern(BasisKet, n, hs=ls)),
             lambda ls, m, n: KroneckerDelta(m, n))),
-        ('norm', (
+        ('R004', (
             pattern_head(
                 pattern(BasisKet, nsym, hs=ls),
                 pattern(BasisKet, nsym, hs=ls)),
             lambda ls, nsym: 1)),
-        ('tensor', (
+        ('R005', (
             pattern_head(Psi_tensor, Phi_tensor),
             lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create))),
-        ('scal1', (
+        ('R006', (
             pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
             lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi))),
-        ('op', (
+        ('R007', (
             pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
             lambda A, Psi, Phi: (Psi.adjoint() * (A.dag() * Phi)))),
-        ('scal2', (
+        ('R008', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u * (Psi.adjoint() * Phi))),
     ]))
 
     KetBra._rules.update(check_rules_dict([
-        ('sig', (
+        ('R001', (
             pattern_head(
                 pattern(BasisKet, m, hs=ls),
                 pattern(BasisKet, n, hs=ls)),
             lambda ls, m, n: LocalSigma(m, n, hs=ls))),
-        ('coherent1', (
+        ('R002', (
             pattern_head(pattern(CoherentStateKet, u, hs=ls), Phi),
             lambda ls, u, Phi: (
                 Displace(u, hs=ls) * (BasisKet(0, hs=ls) * Phi.adjoint())))),
-        ('coherent2', (
+        ('R003', (
             pattern_head(Phi, pattern(CoherentStateKet, u, hs=ls)),
             lambda ls, u, Phi: (
                 (Phi * BasisKet(0, hs=ls).adjoint()) * Displace(-u, hs=ls)))),
-        ('tensor', (
+        ('R004', (
             pattern_head(Psi_tensor, Phi_tensor),
             lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, KetBra.create))),
-        ('op1', (
+        ('R005', (
             pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
             lambda A, Psi, Phi: A * (Psi * Phi.adjoint()))),
-        ('op2', (
+        ('R006', (
             pattern_head(Psi, pattern(OperatorTimesKet, A, Phi)),
             lambda Psi, A, Phi: (Psi * Phi.adjoint()) * A.adjoint())),
-        ('scal1', (
+        ('R007', (
             pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
             lambda u, Psi, Phi: u * (Psi * Phi.adjoint()))),
-        ('scal2', (
+        ('R008', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u.conjugate() * (Psi * Phi.adjoint()))),
     ]))

@@ -230,6 +230,12 @@ class SymbolicLabelBase(metaclass=ABCMeta):
 
 class IntIndex(SymbolicLabelBase):
 
+    def __mul__(self, other):
+        return other * self.expr
+
+    def __add__(self, other):
+        return self.expr + other
+
     def evaluate(self, mapping):
         return int(self.expr.subs(mapping))
 

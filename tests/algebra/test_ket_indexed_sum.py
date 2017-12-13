@@ -1,6 +1,7 @@
 from qnet.printing import ascii, unicode, latex, srepr, configure_printing
 from qnet.algebra.abstract_algebra import all_symbols, InfiniteSumError
 from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.algebra.operator_algebra import Create
 from qnet.algebra.state_algebra import (
     KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet,
     KetSymbol)
@@ -92,10 +93,6 @@ def test_qubit_state():
             alpha['e'] * BasisKet('e', hs=hs_tls))
         assert (
             ascii(expr_expand) == 'alpha_e * |e>^(tls) + alpha_g * |g>^(tls)')
-
-    with pytest.raises(IndexError) as exc_info:
-        KetIndexedSum.create(term, IndexOverRange(i, 0, 2)).doit()
-    assert "tuple index out of range" in str(exc_info.value)
 
     with pytest.raises(TypeError) as exc_info:
         KetIndexedSum.create(
@@ -315,3 +312,24 @@ def test_make_disjunct_indices():
     others = [sum(Psi[i], i), sum(Psi[i.prime], i.prime)]
     assert expr.make_disjunct_indices(*others) == expr.substitute({
             i: i.prime.prime})
+
+
+def test_create_on_fock_expansion():
+    """Test ``Create * sum_i alpha_i |i> = sqrt(i+1) * alpha_i * |i+1>``"""
+    i = IdxSym('i')
+    alpha = IndexedBase('alpha')
+    hs = LocalSpace('0', dimension=3)
+
+    expr = (
+        Create(hs=hs) *
+        KetIndexedSum(
+            alpha[i] * BasisKet(FockIndex(i), hs=hs),
+            IndexOverFockSpace(i, hs)))
+
+    assert expr == KetIndexedSum(
+        sympy.sqrt(i + 1) * alpha[i] * BasisKet(FockIndex(i + 1), hs=hs),
+        IndexOverFockSpace(i, hs))
+
+    assert expr.doit() == (
+        alpha[0] * BasisKet(1, hs=hs) +
+        sympy.sqrt(2) * alpha[1] * BasisKet(2, hs=hs))
