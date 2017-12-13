@@ -318,6 +318,7 @@ def test_ascii_ket_operations():
     phi_l = LocalKet("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
+    alpha = symbols('alpha')
     phase = exp(-I * gamma)
     assert ascii(psi1 + psi2) == '|Psi_1>^(q_1) + |Psi_2>^(q_1)'
     assert (ascii(psi1 - psi2 + psi3) ==
@@ -332,6 +333,9 @@ def test_ascii_ket_operations():
     with pytest.raises(OverlappingSpaces):
         psi1 * psi2
     assert ascii(phase * psi1) == 'exp(-I*gamma) * |Psi_1>^(q_1)'
+    assert (
+        ascii((alpha + 1) * KetSymbol('Psi', hs=0)) ==
+        '(alpha + 1) * |Psi>^(0)')
     assert ascii(A * psi1) == 'A_0^(q_1) |Psi_1>^(q_1)'
     with pytest.raises(SpaceTooLargeError):
         A * phi

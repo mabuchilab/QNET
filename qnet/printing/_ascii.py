@@ -347,7 +347,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         return self._spaced_product_sym.join(
             [self.parenthesize(op, prec, **kwargs) for op in expr.operands])
 
-    def _print_ScalarTimesOperator(self, expr, **kwargs):
+    def _print_ScalarTimesExpression(self, expr, **kwargs):
         prec = PRECEDENCE['Mul']
         coeff, term = expr.coeff, expr.term
         term_str = self.doprint(term, **kwargs)
@@ -468,23 +468,6 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 [self._render_state_label(o.label) for o in expr.operands])
             space = self._render_hs_label(expr.space)
             return fmt.format(label=label, space=space)
-
-    def _print_ScalarTimesKet(self, expr, adjoint=False):
-        prec = precedence(expr)
-        coeff, term = expr.coeff, expr.term
-        kwargs = {}
-        if adjoint:
-            kwargs['adjoint'] = adjoint
-        term_str = self.parenthesize(term, prec, **kwargs)
-
-        if coeff == -1:
-            if term_str.startswith(self._parenth_left):
-                return "- " + term_str
-            else:
-                return "-" + term_str
-        coeff_str = self.doprint(coeff, **kwargs)
-        return (
-            coeff_str.strip() + self._spaced_product_sym + term_str.strip())
 
     def _print_OperatorTimesKet(self, expr, adjoint=False):
         prec = precedence(expr)
@@ -688,14 +671,6 @@ class QnetAsciiPrinter(QnetBasePrinter):
         if adjoint:
             kwargs['adjoint'] = True
         return self._print_OperatorTimes(expr, superop=True, **kwargs)
-
-    def _print_ScalarTimesSuperOperator(
-            self, expr, adjoint=False, superop=True):
-        kwargs = {}
-        if adjoint:
-            kwargs['adjoint'] = True
-        return self._print_ScalarTimesOperator(
-            expr, superop=True, **kwargs)
 
     def _print_SuperAdjoint(self, expr, adjoint=False, superop=True):
         o = expr.operand

@@ -456,6 +456,7 @@ def test_tex_ket_operations():
     phi_l = LocalKet("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
+    alpha = symbols('alpha')
     phase = exp(-I * gamma)
     assert (
         latex(psi1 + psi2) ==
@@ -476,6 +477,9 @@ def test_tex_ket_operations():
     assert (
         latex(phase * psi1) ==
         r'e^{- i \gamma} \left\lvert \Psi_{1} \right\rangle^{(q_{1})}')
+    assert (
+        latex((alpha + 1) * KetSymbol('Psi', hs=0)) ==
+        r'\left(\alpha + 1\right) \left\lvert \Psi \right\rangle^{(0)}')
     assert (
         latex(A * psi1) ==
         r'\hat{A}_{0}^{(q_{1})} \left\lvert \Psi_{1} \right\rangle^{(q_{1})}')

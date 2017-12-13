@@ -319,11 +319,14 @@ def test_unicode_ket_operations():
     phi_l = LocalKet("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
+    alpha = symbols('alpha')
     phase = exp(-I * gamma)
     assert unicode(psi1 + psi2) == '|Ψ₁⟩^(q₁) + |Ψ₂⟩^(q₁)'
     assert unicode(psi1 * phi) == '|Ψ₁⟩^(q₁) ⊗ |Φ⟩^(q₂)'
     assert unicode(psi1_l * phi_l) == '|Ψ₁,Φ⟩^(q₁⊗q₂)'
     assert unicode(phase * psi1) == 'exp(-ⅈ γ) |Ψ₁⟩^(q₁)'
+    assert (
+        unicode((alpha + 1) * KetSymbol('Psi', hs=0)) == '(α + 1) |Ψ⟩⁽⁰⁾')
     assert (unicode(A * psi1) ==
             'A\u0302_0^(q\u2081) |\u03a8\u2081\u27e9^(q\u2081)')
     #        Â_0^(q₁) |Ψ₁⟩^(q₁)
