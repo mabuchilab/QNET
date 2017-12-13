@@ -22,13 +22,12 @@
 from functools import partial
 from collections import OrderedDict
 
-from .abstract_algebra import simplify, IndexedSum
+from .abstract_algebra import simplify, IndexedSum, simplify_by_method
 from .operator_algebra import Operator, Commutator, OperatorTimes
 from .pattern_matching import pattern, wc
 
 __all__ = [
-    'expand_commutators_leibniz', 'evaluate_commutators', 'simplify_by_method',
-    'expand_indexed_sum']
+    'expand_commutators_leibniz', 'evaluate_commutators', 'expand_indexed_sum']
 
 __private__ = []  # anything not in __all__ must be in __private__
 
@@ -96,46 +95,8 @@ def evaluate_commutators(expr):
         expr, [(pattern(Commutator, A, B), lambda A, B: A*B - B*A)])
 
 
-def simplify_by_method(expr, *method_names, head=None, **kwargs):
-    """Simplify `expr` by calling all of the given methods on it, if possible.
-
-    Args:
-        expr: The expression to simplify
-        method_names: One or more method names. Any subexpression that has a
-            method with any of the `method_names` will be replaced by the
-            result of calling the method.
-        head (None or type or list): An optional list of classes to which the
-            simplification should be restricted
-        kwargs: keyword arguments to be passed to all methods
-
-    Note:
-        If giving multiple `method_names`, all the methods must take all of the
-        `kwargs`
-    """
-
-    method_names_set = set(method_names)
-
-    def has_any_wanted_method(expr):
-        return len(method_names_set.intersection(dir(expr))) > 0
-
-    def apply_methods(expr, method_names, **kwargs):
-        for mtd in method_names:
-            if hasattr(expr, mtd):
-                try:
-                    expr = getattr(expr, mtd)(**kwargs)
-                except TypeError:
-                    # mtd turns out to not actually be a method (not callable)
-                    pass
-        return expr
-
-    pat = pattern(head=head, wc_name='X', conditions=(has_any_wanted_method, ))
-
-    return simplify(
-        expr, [(pat, lambda X: apply_methods(X, method_names, **kwargs))])
-
-
-def expand_indexed_sum(expr, max_terms=None):
+def expand_indexed_sum(expr, indices=None, max_terms=None):
     """Expand indexed sums by calling the `doit` method on any
     sub-expression. Truncate after `max_terms`."""
     return simplify_by_method(
-        expr, 'doit', head=IndexedSum, max_terms=max_terms)
+        expr, 'doit', head=IndexedSum, indices=indices, max_terms=max_terms)

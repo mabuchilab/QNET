@@ -87,9 +87,6 @@ class TestOperationSimplifcations(unittest.TestCase):
             def __rmul__(self, other):
                 return ScalarTimesExpression.create(other, self)
 
-            def doit(self, max_terms=None):
-                pass
-
         class AssocIndexed2(AssocIndexed):
             _simplifications = [indexed_sum_over_const]
 

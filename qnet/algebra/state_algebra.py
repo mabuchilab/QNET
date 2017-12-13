@@ -930,10 +930,6 @@ class KetIndexedSum(Ket, IndexedSum):
     def space(self):
         return self.term.space
 
-    def doit(self, max_terms=None):
-        terms = super().doit(max_terms=max_terms)
-        return KetPlus.create(*terms)
-
     def _expand(self):
         return self.__class__.create(self.term.expand(), *self.ranges)
 

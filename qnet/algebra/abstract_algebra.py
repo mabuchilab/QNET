@@ -34,21 +34,23 @@ from functools import reduce
 from collections import OrderedDict
 import logging
 
+import attr
 from sympy import Basic as SympyBasic
 from sympy.core.sympify import SympifyError
 
 from .pattern_matching import (  # some import for doctests
     ProtoExpr, match_pattern, wc, pattern_head, Pattern, pattern)
 from .singleton import Singleton
-from .indices import (yield_from_ranges, SymbolicLabelBase, IndexRangeBase)
+from .indices import (
+    yield_from_ranges, SymbolicLabelBase, IndexRangeBase, IdxSym)
+from .ordering import KeyTuple, expr_order_key
 
 __all__ = [
     'AlgebraException', 'AlgebraError', 'CannotSimplify',
     'WrongSignatureError', 'InfiniteSumError', 'Expression', 'Operation',
     'ScalarTimesExpression', 'IndexedSum', 'all_symbols', 'extra_binary_rules',
-    'extra_rules', 'no_instance_caching',
-    'no_rules', 'set_union', 'simplify', 'substitute',
-    'temporary_instance_cache']
+    'extra_rules', 'no_instance_caching', 'no_rules', 'set_union', 'simplify',
+    'simplify_by_method', 'substitute', 'temporary_instance_cache']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'assoc', 'assoc_indexed', 'indexed_sum_over_const', 'idem', 'orderby',
@@ -529,6 +531,44 @@ def simplify(expr, rules=None):
         return _simplify_expr(expr, rules)
 
 
+def simplify_by_method(expr, *method_names, head=None, **kwargs):
+    """Simplify `expr` by calling all of the given methods on it, if possible.
+
+    Args:
+        expr: The expression to simplify
+        method_names: One or more method names. Any subexpression that has a
+            method with any of the `method_names` will be replaced by the
+            result of calling the method.
+        head (None or type or list): An optional list of classes to which the
+            simplification should be restricted
+        kwargs: keyword arguments to be passed to all methods
+
+    Note:
+        If giving multiple `method_names`, all the methods must take all of the
+        `kwargs`
+    """
+
+    method_names_set = set(method_names)
+
+    def has_any_wanted_method(expr):
+        return len(method_names_set.intersection(dir(expr))) > 0
+
+    def apply_methods(expr, method_names, **kwargs):
+        for mtd in method_names:
+            if hasattr(expr, mtd):
+                try:
+                    expr = getattr(expr, mtd)(**kwargs)
+                except TypeError:
+                    # mtd turns out to not actually be a method (not callable)
+                    pass
+        return expr
+
+    pat = pattern(head=head, wc_name='X', conditions=(has_any_wanted_method, ))
+
+    return simplify(
+        expr, [(pat, lambda X: apply_methods(X, method_names, **kwargs))])
+
+
 def set_union(*sets):
     """Similar to ``sum()``, but for sets. Generate the union of an arbitrary
     number of set arguments.
@@ -628,6 +668,15 @@ class IndexedSum(Operation, metaclass=ABCMeta):
     def __init__(self, term, *ranges):
         self._term = term
         self.ranges = tuple(ranges)
+        for r in self.ranges:
+            if not isinstance(r, IndexRangeBase):
+                # We need this type check to that we can use attr.astuple below
+                raise TypeError(
+                    "Every range must be an instance of IndexRangeBase")
+
+        self._order_key = KeyTuple((
+            self.__class__.__name__, '__', 1.0, expr_order_key(term),
+            tuple([attr.astuple(r) for r in ranges])))
 
         index_symbols = set([r.index_symbol for r in ranges])
         if len(index_symbols) != len(self.ranges):
@@ -679,9 +728,18 @@ class IndexedSum(Operation, metaclass=ABCMeta):
                     "Cannot determine length from non-finite ranges")
         return length
 
-    @abstractmethod
-    def doit(self, max_terms=None):
-        terms = []
+    def doit(self, indices=None, max_terms=None):
+        if indices is None:
+            return self._doit_full(max_terms=max_terms)
+        else:
+            if max_terms is not None:
+                raise ValueError(
+                    "max_terms is incompatible with summing over specific "
+                    "indices")
+            return self._doit_over_indices(indices)
+
+    def _doit_full(self, max_terms=None):
+        res = None
         if max_terms is None:
             len(self)  # side-effect: raise InfiniteSumError
         else:
@@ -693,12 +751,47 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             if max_terms is not None:
                 if i >= max_terms:
                     break
-            terms.append(term)
+            if res is None:
+                res = term
+            else:
+                res += term
             if i > self._expand_limit:
                 raise InfiniteSumError(
                     "Cannot expand %s: more than %s terms"
                     % (self, self._expand_limit))
-        return terms  # subclasses should continue with terms to create "Plus"
+        return res
+
+    def _doit_over_indices(self, indices):
+        if len(indices) == 0:
+            return self
+        ind_sym, *indices = indices
+        if not isinstance(ind_sym, IdxSym):
+            ind_sym = IdxSym(ind_sym)
+        selected_range = None
+        other_ranges = []
+        for index_range in self.ranges:
+            if index_range.index_symbol == ind_sym:
+                selected_range = index_range
+            else:
+                other_ranges.append(index_range)
+        if selected_range is None:
+            raise ValueError(
+                "Index %s does not appear in %s" % (ind_sym, self))
+        res_term = None
+        for mapping in selected_range.iter():
+            res_summand = self.term.substitute(mapping)
+            if res_term is None:
+                res_term = res_summand
+            else:
+                res_term += res_summand
+        if len(other_ranges) == 0:
+            res = res_term.simplify(rules=[(
+                wc('label', head=SymbolicLabelBase),
+                lambda label: label.evaluate(mapping))])
+        else:
+            res = self.__class__.create(res_term, *other_ranges)
+            res = res._doit_over_indices(indices=indices)
+        return res
 
     def make_disjunct_indices(self, *others):
         """Return a copy with modified indices to ensure disjunct indices with

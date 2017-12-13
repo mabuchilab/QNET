@@ -246,6 +246,50 @@ def test_two_hs_symbol_sum():
         a[2, 2] * KetSymbol('Psi_22', hs=hs))
 
 
+def test_partial_expansion():
+    """Test partially executing the sum (only for a subset of summation
+    indices)"""
+    i = IdxSym('i')
+    j = IdxSym('j')
+    k = IdxSym('k')
+    hs = LocalSpace('0', dimension=2)
+    Psi = IndexedBase('Psi')
+
+    def r(index_symbol):
+        return IndexOverFockSpace(index_symbol, hs=hs)
+
+    psi_ijk = KetSymbol(StrLabel(Psi[i, j, k]), hs=hs)
+
+    def psi(i_val, j_val, k_val):
+        return psi_ijk.substitute({i: i_val, j: j_val, k: k_val})
+
+    expr = KetIndexedSum(psi_ijk, r(i), r(j), r(k))
+
+    expr_expanded = expr.doit(indices=[i, ])
+    assert expr_expanded == KetIndexedSum(
+        psi(0, j, k) + psi(1, j, k), r(j), r(k))
+
+    expr_expanded = expr.doit(indices=[j, ])
+    assert expr_expanded == KetIndexedSum(
+        psi(i, 0, k) + psi(i, 1, k), r(i), r(k))
+
+    assert expr.doit(indices=[j, ]) == expr.doit(indices=['j', ])
+
+    expr_expanded = expr.doit(indices=[i, j])
+    assert expr_expanded == KetIndexedSum(
+        psi(0, 0, k) + psi(1, 0, k) + psi(0, 1, k) + psi(1, 1, k), r(k))
+
+    assert expr.doit(indices=[i, j]) == expr.doit(indices=[j, i])
+
+    assert expr.doit(indices=[i, j, k]) == expr.doit()
+
+    with pytest.raises(ValueError):
+        expr.doit(indices=[i.prime])
+
+    with pytest.raises(ValueError):
+        expr.doit(indices=[i], max_terms=10)
+
+
 def test_make_disjunct_indices():
     i = IdxSym('i')
     j = IdxSym('j')
