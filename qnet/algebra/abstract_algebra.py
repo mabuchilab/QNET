@@ -825,6 +825,71 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             new = new.substitute({r.index_symbol: index_symbol})
         return new
 
+    def __mul__(self, other):
+        if isinstance(other, IndexedSum):
+            other = other.make_disjunct_indices(self)
+            new_ranges = self.ranges + other.ranges
+            return self.__class__.create(self.term * other.term, *new_ranges)
+        try:
+            return super().__mul__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __rmul__(self, other):
+        if isinstance(other, IndexedSum):
+            self = self.make_disjunct_indices(other)
+            new_ranges = other.ranges + self.ranges
+            return self.__class__.create(other.term * self.term, *new_ranges)
+        try:
+            return super()._r_mul__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            if set(self.variables).isdisjoint(other.variables):
+                new_ranges = self.ranges + other.ranges
+                return self.__class__.create(
+                    self.term + other.term, *new_ranges)
+        try:
+            return super().__add__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __radd__(self, other):
+        if isinstance(other, self.__class__):
+            if set(self.variables).isdisjoint(other.variables):
+                new_ranges = other.ranges + self.ranges
+                return self.__class__.create(
+                    other.term + self.term, *new_ranges)
+        try:
+            return super().__radd__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __sub__(self, other):
+        if isinstance(other, self.__class__):
+            if set(self.variables).isdisjoint(other.variables):
+                new_ranges = self.ranges + other.ranges
+                return self.__class__.create(
+                    self.term - other.term, *new_ranges)
+        try:
+            return super().__sub__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __rsub__(self, other):
+        if isinstance(other, self.__class__):
+            if set(self.variables).isdisjoint(other.variables):
+                new_ranges = other.ranges + self.ranges
+                return self.__class__.create(
+                    other.term - self.term, *new_ranges)
+        try:
+            return super().__rsub__(other)
+        except AttributeError:
+            return NotImplemented
+
+
 
 ###############################################################################
 ####################### ALGEBRAIC PROPERTIES FUNCTIONS ########################

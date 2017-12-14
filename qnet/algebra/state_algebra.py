@@ -168,14 +168,20 @@ class Ket(metaclass=ABCMeta):
             return TensorKet.create(self, other)
         elif isinstance(other, Bra):
             return KetBra.create(self, other.ket)
-        return NotImplemented
+        try:
+            return super().__mul__(other)
+        except AttributeError:
+            return NotImplemented
 
     def __rmul__(self, other):
         if isinstance(other, Operator):
             return OperatorTimesKet.create(other, self)
         elif isinstance(other, SCALAR_TYPES):
             return ScalarTimesKet.create(other, self)
-        return NotImplemented
+        try:
+            return super().__rmul__(other)
+        except AttributeError:
+            return NotImplemented
 
     def __sub__(self, other):
         return self + (-1) * other
@@ -189,7 +195,10 @@ class Ket(metaclass=ABCMeta):
     def __div__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return self * (sympyOne / other)
-        return NotImplemented
+        try:
+            return super().__rmul__(other)
+        except AttributeError:
+            return NotImplemented
 
     __truediv__ = __div__
 
@@ -821,7 +830,9 @@ class Bra(Operation):
             return BraKet.create(self.ket, other)
         elif isinstance(other, Bra):
             return Bra.create(self.ket * other.ket)
-        else:
+        try:
+            return super().__mul__(other)
+        except AttributeError:
             return NotImplemented
 
     def __rmul__(self, other):
@@ -947,7 +958,11 @@ class KetBra(Operator, Operation):
                      for n in range(order + 1) for k in range(n + 1))
 
 
-class KetIndexedSum(Ket, IndexedSum):
+class KetIndexedSum(IndexedSum, Ket):
+    # Order of superclasses is important for proper mro for __add__ etc.
+    # (we're using cooperative inheritance from both superclasses,
+    # cf. https://stackoverflow.com/q/47804919)
+
     # TODO: documentation
 
     _rules = OrderedDict()  # see end of module
@@ -962,7 +977,6 @@ class KetIndexedSum(Ket, IndexedSum):
 
     def _series_expand(self, param, about, order):
         raise NotImplementedError()
-
 
 
 ###############################################################################
@@ -1044,6 +1058,7 @@ def _algebraic_rules():
 
     indranges__ = wc("indranges__", head=IndexRangeBase)
     sum = wc('sum', head=KetIndexedSum)
+    sum2 = wc('sum2', head=KetIndexedSum)
 
     ScalarTimesKet._rules.update(check_rules_dict([
         ('R001', (
@@ -1184,6 +1199,9 @@ def _algebraic_rules():
         ('R002', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u * (Psi * Phi))),
+        ('R003', (  # combine consecutive products of sums (-> __mul__)
+            pattern_head(sum, sum2),
+            lambda sum, sum2: sum * sum2)),
     ]))
 
     BraKet._rules.update(check_rules_dict([

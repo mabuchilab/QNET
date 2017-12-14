@@ -333,3 +333,32 @@ def test_create_on_fock_expansion():
     assert expr.doit() == (
         alpha[0] * BasisKet(1, hs=hs) +
         sympy.sqrt(2) * alpha[1] * BasisKet(2, hs=hs))
+
+
+def test_tensor_indexed_sum():
+    """Test tensor product of sums"""
+    i = IdxSym('i')
+    hs1 = LocalSpace(1)
+    hs2 = LocalSpace(2)
+    alpha = IndexedBase('alpha')
+
+    psi1 = KetIndexedSum(
+        alpha[1, i] * BasisKet(FockIndex(i), hs=hs1),
+        IndexOverFockSpace(i, hs1))
+
+    psi2 = KetIndexedSum(
+        alpha[2, i] * BasisKet(FockIndex(i), hs=hs2),
+        IndexOverFockSpace(i, hs2))
+
+    expr = psi1 * psi2
+    assert expr.space == hs1 * hs2
+    assert expr == KetIndexedSum(
+        alpha[1, i] * alpha[2, i.prime] * (
+            BasisKet(FockIndex(i), hs=hs1) *
+            BasisKet(FockIndex(i.prime), hs=hs2)),
+        IndexOverFockSpace(i, hs1), IndexOverFockSpace(i.prime, hs2))
+
+    psi0 = KetSymbol('Psi', hs=0)
+    psi3 = KetSymbol('Psi', hs=3)
+    expr2 = psi0 * psi1 * psi2 * psi3
+    assert expr2.operands == (psi0, expr, psi3)
