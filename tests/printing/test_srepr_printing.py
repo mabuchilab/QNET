@@ -21,29 +21,34 @@ from textwrap import dedent
 
 import pytest
 
+# We need lots of extra import so that all "srepr" have a context in which they
+# can be evaluated
 from sympy import (
-        symbols, sqrt, exp, I, Pow, Mul, Integer, Symbol, Rational)
+    symbols, sqrt, exp, I, Float, Pow, Mul, Integer, Symbol, Rational,
+    factorial)
 from numpy import array, float64, complex128, int64
 
 from qnet.algebra.circuit_algebra import(
-        CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-        Concatenation, Feedback, SeriesInverse)
+    CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
+    Concatenation, Feedback, SeriesInverse)
 from qnet.algebra.operator_algebra import(
-        OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector, OperatorPlus, OperatorTimes,
-        ScalarTimesOperator, OperatorTrace, Commutator)
+    OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
+    Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
+    PseudoInverse, NullSpaceProjector, OperatorPlus, OperatorTimes,
+    ScalarTimesOperator, OperatorTrace, Commutator, OperatorIndexedSum)
 from qnet.algebra.hilbert_space_algebra import (
-        LocalSpace, TrivialSpace, FullSpace, ProductSpace)
+    LocalSpace, TrivialSpace, FullSpace, ProductSpace)
 from qnet.algebra.matrix_algebra import Matrix
 from qnet.algebra.state_algebra import (
-        KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet, CoherentStateKet,
-        UnequalSpaces, OperatorTimesKet, Bra, KetPlus, ScalarTimesKet,
-        OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, TensorKet)
+    KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet, CoherentStateKet,
+    UnequalSpaces, OperatorTimesKet, Bra, KetPlus, ScalarTimesKet,
+    OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, TensorKet,
+    KetIndexedSum)
 from qnet.algebra.super_operator_algebra import (
-        SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
-        SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
-        SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator)
+    SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
+    SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
+    SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator)
+from qnet.algebra.indices import IdxSym, FockIndex, IndexOverFockSpace
 from qnet.printing import srepr
 
 
@@ -67,13 +72,37 @@ def test_srepr_local_space():
 
 
 def test_srepr_circuit_elements():
-    """Test the tex representation of "atomic" circuit algebra elements"""
+    """Test the representation of "atomic" circuit algebra elements"""
     assert (srepr(CircuitSymbol("C_1", cdim=2)) ==
             "CircuitSymbol('C_1', 2)")
     assert (srepr(CIdentity) ==
             r'CIdentity')
     assert (srepr(CircuitZero) ==
             r'CircuitZero')
+
+
+def test_srepr_idx_sym():
+    """Test the representation of IdxSym instances"""
+    i = IdxSym('i')
+    assert srepr(i) == "IdxSym('i', integer=True)"
+    assert srepr(i.prime) == "IdxSym('i', integer=True, primed=1)"
+    assert eval(srepr(i)) == i
+    assert eval(srepr(i.prime)) == i.prime
+
+    i_pos = IdxSym('i', positive=True)
+    assert i != i_pos
+    assert srepr(i_pos) == "IdxSym('i', integer=True, positive=True)"
+    assert eval(srepr(i_pos)) == i_pos
+    assert (
+        srepr(i_pos.prime.prime) ==
+        "IdxSym('i', integer=True, positive=True, primed=2)")
+    assert eval(srepr(i_pos.prime.prime)) == i_pos.prime.prime
+
+    i_nonint = IdxSym('i', integer=False)
+    assert i != i_nonint
+    assert srepr(i_nonint) == "IdxSym('i', integer=False)"
+    assert eval(srepr(i_nonint)) == i_nonint
+    assert eval(srepr(i_nonint.prime.prime)) == i_nonint.prime.prime
 
 
 def test_indented_srepr():
@@ -397,6 +426,7 @@ def state_exprs():
         BasisKet('excited', hs=LocalSpace(1, basis=('ground', 'excited'))),
         BasisKet(1, hs=1),
         CoherentStateKet(2.0, hs=1),
+        CoherentStateKet(2.0, hs=1).to_fock_representation(),
         Bra(KetSymbol('Psi', hs=hs1)),
         Bra(KetSymbol('Psi', hs=1)),
         Bra(KetSymbol('Psi', hs=(1, 2))),

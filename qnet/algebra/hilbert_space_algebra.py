@@ -475,7 +475,10 @@ class LocalSpace(HilbertSpace, Expression):
 @singleton_object
 class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
     """The 'nullspace', i.e. a one dimensional Hilbert space, which is a factor
-    space of every other Hilbert space."""
+    space of every other Hilbert space.
+
+    This is the Hilbert space of scalars.
+    """
 
     def __hash__(self):
         return hash(self.__class__)

@@ -364,7 +364,9 @@ class QnetAsciiPrinter(QnetBasePrinter):
         else:
             coeff_str = self.doprint(coeff)
 
-        if term_str == '1':
+        if term_str in [
+                '1', self._print_IdentityOperator(expr),
+                self._print_IdentitySuperOperator]:
             return coeff_str
         else:
             coeff_str = coeff_str.strip()
@@ -482,7 +484,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         else:
             return rendered_op + " " + rendered_ket
 
-    def _print_KetIndexedSum(self, expr, adjoint=False):
+    def _print_IndexedSum(self, expr, adjoint=False):
         prec = precedence(expr)
         kwargs = {}
         if adjoint:
@@ -521,7 +523,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
             res += '_{%s}' % bottom
         if len(top) > 0:
             res += '^{%s}' % top
-        res += " " + self.parenthesize(expr.term, prec, **kwargs)
+        res += " " + self.parenthesize(expr.term, prec, strict=True, **kwargs)
         return res
 
     def _print_IndexRangeBase(self, expr, which='bottom'):

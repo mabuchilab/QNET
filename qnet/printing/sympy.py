@@ -41,6 +41,8 @@ SymPy's builtin printers:
   :class:`qnet.algebra.indices.IdxSym`) that the default printers don't know
   how to deal with (respectively, render incorrectly!)
 '''
+from collections import OrderedDict
+
 import sympy
 from sympy import sqrt
 from sympy.core import S, Rational, Mul, Pow
@@ -48,11 +50,14 @@ from sympy.core.mul import _keep_coeff
 from sympy.printing.precedence import precedence, PRECEDENCE
 from sympy.printing.str import StrPrinter
 from sympy.printing.latex import LatexPrinter
+from sympy.printing.repr import ReprPrinter
 from sympy.printing.pretty.pretty_symbology import pretty_symbol
 
 from ._unicode_mappings import _SUPERSCRIPT_MAPPING, _SUBSCRIPT_MAPPING
 
-__all__ = ['SympyLatexPrinter', 'SympyStrPrinter', 'SympyUnicodePrinter']
+__all__ = [
+    'SympyLatexPrinter', 'SympyStrPrinter', 'SympyUnicodePrinter',
+    'SympyReprPrinter']
 
 
 delattr(sympy.Indexed, '_sympystr')
@@ -148,7 +153,7 @@ class SympyStrPrinter(StrPrinter):
     def _print_Indexed(self, expr):
         indices = [self._print(i) for i in expr.indices]
         sep = ','
-        if all([len(i) == 1 for i in indices]):
+        if all([len(i.replace("'", '')) == 1 for i in indices]):
             sep = ''
         return self._print(expr.base)+'_%s' % sep.join(indices)
 
@@ -262,9 +267,12 @@ class SympyLatexPrinter(LatexPrinter):
         from qnet.printing._latex import _TEX_SINGLE_LETTER_SYMBOLS
         indices = [self._print(i) for i in expr.indices]
         sep = ','
-        indices_are_single_letters = [
-            (len(i) == 1 or i in _TEX_SINGLE_LETTER_SYMBOLS) for i in indices]
-        if all(indices_are_single_letters):
+        all_indices_are_single_letters = True
+        for i in indices:
+            i = i.replace(r'\prime', '')
+            if (i not in _TEX_SINGLE_LETTER_SYMBOLS) and (len(i) > 1):
+                all_indices_are_single_letters = False
+        if all_indices_are_single_letters:
             sep = ' '
         return self._print(expr.base)+'_{%s}' % sep.join(indices)
 
@@ -443,7 +451,7 @@ class SympyUnicodePrinter(SympyStrPrinter):
     def _print_Indexed(self, expr):
         indices = [self._print(i) for i in expr.indices]
         sep = ','
-        if all([len(i) == 1 for i in indices]):
+        if all([len(i.replace("'", '')) == 1 for i in indices]):
             sep = ''
         subscript = sep.join(indices)
         try:
@@ -454,9 +462,11 @@ class SympyUnicodePrinter(SympyStrPrinter):
 
     def _print_conjugate(self, expr, exp=None):
         if self._settings['conjg_style'] == 'star':
-            res = (
-                self.parenthesize(expr.args[0], PRECEDENCE["Func"]) +
-                self._settings['superscript_asterisk_sym'])
+            rendered_arg = self.parenthesize(expr.args[0], PRECEDENCE["Func"])
+            if '_' in rendered_arg or '^' in rendered_arg:
+                if not rendered_arg.endswith(')'):
+                    rendered_arg = "(%s)" % rendered_arg
+            res = (rendered_arg + self._settings['superscript_asterisk_sym'])
         elif self._settings['conjg_style'] in ['func', 'overbar']:
             # recognizing "overbar" is just for compatibility with the other
             # printers
@@ -471,3 +481,33 @@ class SympyUnicodePrinter(SympyStrPrinter):
             return r"%s^%s" % (res, exp)
         else:
             return res
+
+
+class SympyReprPrinter(ReprPrinter):
+    """Representation printer with support for
+    :class:`qnet.algebra.indices.IdxSym`"""
+
+    def _print_Symbol(self, expr):
+        d = expr._assumptions.generator
+
+        d = OrderedDict([(key, d[key]) for key in sorted(d.keys())])
+        # the use of an OrderedDict is the only diffference between this and
+        # ReprPrinter._print_Symbol. It ensures that we always get the same
+        # repr
+
+        # print the dummy_index like it was an assumption
+        if expr.is_Dummy:
+            d['dummy_index'] = expr.dummy_index
+
+        if d == {}:
+            return "%s(%s)" % (expr.__class__.__name__, self._print(expr.name))
+        else:
+            attr = ['%s=%s' % (k, v) for k, v in d.items()]
+            return "%s(%s, %s)" % (expr.__class__.__name__,
+                                   self._print(expr.name), ', '.join(attr))
+
+    def _print_IdxSym(self, expr):
+        res = self._print_Symbol(expr)
+        if expr.primed > 0:
+            res = res[:-1] + ", primed=%d)" % expr.primed
+        return res

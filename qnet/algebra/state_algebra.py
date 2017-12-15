@@ -34,9 +34,9 @@ from sympy import (
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
     Operation, Expression, substitute, AlgebraError, assoc, assoc_indexed,
-    indexed_sum_over_const, orderby, filter_neutral, match_replace,
-    match_replace_binary, CannotSimplify, check_rules_dict,
-    all_symbols, ScalarTimesExpression, IndexedSum)
+    indexed_sum_over_const, indexed_sum_over_kronecker, orderby,
+    filter_neutral, match_replace, match_replace_binary, CannotSimplify,
+    check_rules_dict, all_symbols, ScalarTimesExpression, IndexedSum)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
@@ -45,7 +45,7 @@ from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
     Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
-    Phase)
+    Phase, OperatorIndexedSum)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
 from .indices import (
     SymbolicLabelBase, IndexOverFockSpace, IndexOverRange,
@@ -165,9 +165,16 @@ class Ket(metaclass=ABCMeta):
         if isinstance(other, SCALAR_TYPES):
             return ScalarTimesKet.create(other, self)
         elif isinstance(other, Ket):
-            return TensorKet.create(self, other)
+            if isinstance(other, KetIndexedSum):
+                return other.__class__.create(self * other.term, *other.ranges)
+            else:
+                return TensorKet.create(self, other)
         elif isinstance(other, Bra):
-            return KetBra.create(self, other.ket)
+            if isinstance(other.ket, KetIndexedSum):
+                return OperatorIndexedSum.create(
+                    self * other.ket.term.dag, *other.ranges)
+            else:
+                return KetBra.create(self, other.ket)
         try:
             return super().__mul__(other)
         except AttributeError:
@@ -822,12 +829,25 @@ class Bra(Operation):
         return self.ket.label
 
     def __mul__(self, other):
+        if isinstance(self.ket, KetIndexedSum):
+            if isinstance(other, KetIndexedSum):
+                other = other.make_disjunct_indices(self.ket)
+                new_ranges = self.ket.ranges + other.ranges
+                new_term = BraKet.create(self.ket.term, other.term)
+                return OperatorIndexedSum.create(new_term, *new_ranges)
+            elif isinstance(other, Ket):
+                return OperatorIndexedSum(
+                    BraKet.create(self.ket.term, other), *self.ranges)
         if isinstance(other, SCALAR_TYPES):
             return Bra.create(self.ket * other.conjugate())
         elif isinstance(other, Operator):
             return Bra.create(other.adjoint() * self.ket)
         elif isinstance(other, Ket):
-            return BraKet.create(self.ket, other)
+            if isinstance(other, KetIndexedSum):
+                return OperatorIndexedSum(
+                    BraKet.create(self.ket, other.term), *other.ranges)
+            else:
+                return BraKet.create(self.ket, other)
         elif isinstance(other, Bra):
             return Bra.create(self.ket * other.ket)
         try:
@@ -870,8 +890,17 @@ class BraKet(Operator, Operation):
     which we define to be linear in the state :math:`k` and anti-linear in
     :math:`b`.
 
-    :param Ket bra: The anti-linear state argument.
-    :param Ket ket: The linear state argument.
+    Args:
+        bra (Ket): The anti-linear state argument.
+        ket (Ket): The linear state argument.
+
+    Note:
+        :class:`Braket` is an :class:`Operator` in the
+        :class:`~qnet.algebra.hilbert_space_algebra.TrivialSpace`, that is,
+        ultimately a scalar. However, ``BraKet.create`` may return scalars
+        directly, which can be used in place of operators in most expression,
+        owing to the :func:`~qnet.algebra.operator_algebra.scalars_to_op`
+        simplification rule.
     """
     _rules = OrderedDict()  # see end of module
     _space = TrivialSpace
@@ -966,7 +995,9 @@ class KetIndexedSum(IndexedSum, Ket):
     # TODO: documentation
 
     _rules = OrderedDict()  # see end of module
-    _simplifications = [assoc_indexed, indexed_sum_over_const, match_replace, ]
+    _simplifications = [
+        assoc_indexed, indexed_sum_over_const, indexed_sum_over_kronecker,
+        match_replace, ]
 
     @property
     def space(self):
@@ -977,6 +1008,28 @@ class KetIndexedSum(IndexedSum, Ket):
 
     def _series_expand(self, param, about, order):
         raise NotImplementedError()
+
+    def _adjoint(self):
+        return self.__class__.create(self.term.adjoint(), *self.ranges)
+
+    def __mul__(self, other):
+        if isinstance(other, Bra):
+            if isinstance(other.ket, KetIndexedSum):
+                other_ket = other.ket.make_disjunct_indices(self)
+                new_ranges = self.ranges + other_ket.ranges
+                new_term = KetBra.create(self.term, other_ket)
+                return OperatorIndexedSum(new_term, *new_ranges)
+            else:
+                return OperatorIndexedSum(
+                    KetBra.create(self.term, other.ket), *self.ranges)
+        elif isinstance(other, Ket):
+            if not isinstance(other, KetIndexedSum):
+                return KetIndexedSum(self.term * other, *self.ranges)
+            # isinstance(other, KetIndexedSum) is handled by IndexedSum.__mul__
+        try:
+            return super().__mul__(other)
+        except AttributeError:
+            return NotImplemented
 
 
 ###############################################################################
@@ -1199,12 +1252,19 @@ def _algebraic_rules():
         ('R002', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u * (Psi * Phi))),
-        ('R003', (  # combine consecutive products of sums (-> __mul__)
+        ('R003', (  # delegate to __mul__
             pattern_head(sum, sum2),
             lambda sum, sum2: sum * sum2)),
+        ('R004', (  # delegate to __mul__
+            pattern_head(Psi, sum),
+            lambda Psi, sum: Psi * sum)),
+        ('R005', (  # delegate to __mul__
+            pattern_head(sum, Psi),
+            lambda sum, Psi: sum * Psi)),
     ]))
 
     BraKet._rules.update(check_rules_dict([
+        # All rules must result in scalars or objects in the TrivialSpace
         ('R001', (
             pattern_head(Phi, ZeroKet),
             lambda Phi: 0)),
@@ -1232,6 +1292,15 @@ def _algebraic_rules():
         ('R008', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u * (Psi.adjoint() * Phi))),
+        ('R009', (  # delegate to __mul__
+            pattern_head(sum, sum2),
+            lambda sum, sum2: Bra.create(sum) * sum2)),
+        ('R010', (  # delegate to __mul__
+            pattern_head(Psi, sum),
+            lambda Psi, sum: Bra.create(Psi) * sum)),
+        ('R011', (  # delegate to __mul__
+            pattern_head(sum, Psi),
+            lambda sum, Psi: Bra.create(sum) * Psi)),
     ]))
 
     KetBra._rules.update(check_rules_dict([

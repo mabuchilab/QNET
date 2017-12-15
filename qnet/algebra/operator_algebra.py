@@ -33,23 +33,23 @@ from sympy import (
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-    Expression, Operation, ScalarTimesExpression, assoc, orderby,
+    Expression, Operation, ScalarTimesExpression, IndexedSum, assoc,
+    assoc_indexed, indexed_sum_over_const, indexed_sum_over_kronecker, orderby,
     filter_neutral, match_replace_binary, match_replace, CannotSimplify,
-    check_rules_dict)
+    check_rules_dict, _scalar_free_symbols, all_symbols)
 from .singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
     TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError)
 from .pattern_matching import wc, pattern_head, pattern
 from .ordering import (
     KeyTuple, DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
-from .indices import SymbolicLabelBase, KroneckerDelta
+from .indices import SymbolicLabelBase, KroneckerDelta, IndexRangeBase
 
 sympyOne = sympify(1)
 
 # for hilbert space dimensions less than or equal to this,
 # compute numerically PseudoInverse and NullSpaceProjector representations
 DENSE_DIMENSION_LIMIT = 1000
-
 
 __all__ = [
     'Adjoint', 'Create', 'Destroy', 'Displace', 'Jminus', 'Jplus',
@@ -61,12 +61,11 @@ __all__ = [
     'X', 'Y', 'Z', 'adjoint', 'create_operator_pm_cc', 'decompose_space',
     'expand_operator_pm_cc', 'factor_coeff', 'factor_for_trace', 'get_coeffs',
     'simplify_scalar', 'space', 'II', 'IdentityOperator', 'ZeroOperator',
-    'Commutator']
+    'Commutator', 'OperatorIndexedSum']
 
 __private__ = [  # anything not in __all__ must be in __private__
-    'implied_local_space',  'delegate_to_method', 'disjunct_hs_zero',
+    'implied_local_space', 'delegate_to_method', 'disjunct_hs_zero',
     'scalars_to_op', 'commutator_order']
-
 
 
 ###############################################################################
@@ -89,8 +88,8 @@ def implied_local_space(*, arg_index=None, keys=None):
             else:
                 hs = args[arg_index]
                 assert isinstance(hs, HilbertSpace)
-            new_args = (tuple(args[:arg_index]) + (hs, ) +
-                        tuple(args[arg_index+1:]))
+            new_args = (tuple(args[:arg_index]) + (hs,) +
+                        tuple(args[arg_index + 1:]))
         return new_args, kwargs
 
     def kwargs_to_local_space(cls, args, kwargs):
@@ -126,6 +125,7 @@ def implied_local_space(*, arg_index=None, keys=None):
 def delegate_to_method(mtd):
     """Create a simplification rule that delegates the instantiation to the
     method `mtd` of the operand (if defined)"""
+
     def _delegate_to_method(cls, ops, kwargs):
         assert len(ops) == 1
         op, = ops
@@ -133,6 +133,7 @@ def delegate_to_method(mtd):
             return getattr(op, mtd)()
         else:
             return ops, kwargs
+
     return _delegate_to_method
 
 
@@ -337,12 +338,18 @@ class Operator(metaclass=ABCMeta):
             return ScalarTimesOperator.create(other, self)
         elif isinstance(other, Operator):
             return OperatorTimes.create(self, other)
-        return NotImplemented
+        try:
+            return super().__mul__(other)
+        except AttributeError:
+            return NotImplemented
 
     def __rmul__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return ScalarTimesOperator.create(other, self)
-        return NotImplemented
+        try:
+            return super().__rmul__(other)
+        except AttributeError:
+            return NotImplemented
 
     def __sub__(self, other):
         return self + (-1) * other
@@ -356,14 +363,19 @@ class Operator(metaclass=ABCMeta):
     def __div__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return self * (sympyOne / other)
-        return NotImplemented
+        try:
+            return super().__rmul__(other)
+        except AttributeError:
+            return NotImplemented
 
     __truediv__ = __div__
 
     def __pow__(self, other):
         if isinstance(other, int):
             return OperatorTimes.create(*[self for __ in range(other)])
-        else:
+        try:
+            return super().__pow__(other)
+        except AttributeError:
             return NotImplemented
 
 
@@ -493,12 +505,15 @@ class OperatorOperation(Operator, Operation, metaclass=ABCMeta):
     def _simplify_scalar(self):
         return self.create(*[o.simplify_scalar() for o in self.operands])
 
+
 class SingleOperatorOperation(Operator, Operation, metaclass=ABCMeta):
     """Base class for Operations that act on a single Operator"""
 
     def __init__(self, op, **kwargs):
+        if isinstance(op, SCALAR_TYPES):
+            op = op * IdentityOperator
         self._space = op.space
-        self._order_key = op._order_key + KeyTuple((self.__class__.__name__, ))
+        self._order_key = op._order_key + KeyTuple((self.__class__.__name__,))
         super().__init__(op, **kwargs)
 
     @property
@@ -530,6 +545,7 @@ class OperatorSymbol(Operator, Expression):
         hs (HilbertSpace): associated Hilbert space (can be a
             :class:`~qnet.algebra.hilbert_space_algebra.ProductSpace`)
     """
+
     # Not a LocalOperator subclass because an OperatorSymbol may be defined for
     # a ProductSpace
 
@@ -552,7 +568,7 @@ class OperatorSymbol(Operator, Expression):
     @property
     def args(self):
         """The positional arguments used for instantiating the operator"""
-        return (self.identifier, )
+        return (self.identifier,)
 
     @property
     def kwargs(self):
@@ -842,7 +858,7 @@ class Phase(LocalOperator):
     def args(self):
         r'''List of arguments of the operator, containing the phase $\phi$ as
         the only element'''
-        return (self.phi, )
+        return (self.phi,)
 
     def _diff(self, sym):
         raise NotImplementedError()
@@ -857,7 +873,7 @@ class Phase(LocalOperator):
         return Phase.create(simplify_scalar(self.phi), hs=self.space)
 
     def all_symbols(self):
-        return scalar_free_symbols(self.space)
+        return _scalar_free_symbols(self.space)
 
 
 class Displace(LocalOperator):
@@ -893,7 +909,7 @@ class Displace(LocalOperator):
     def args(self):
         r'''List of arguments of the operator, containing the displacement
         amplitude $\alpha$ as the only element'''
-        return (self.alpha, )
+        return (self.alpha,)
 
     def _diff(self, sym):
         raise NotImplementedError()
@@ -907,7 +923,7 @@ class Displace(LocalOperator):
         return Displace.create(simplify_scalar(self.alpha), hs=self.space)
 
     def all_symbols(self):
-        return scalar_free_symbols(self.space)
+        return _scalar_free_symbols(self.space)
 
 
 class Squeeze(LocalOperator):
@@ -941,7 +957,7 @@ class Squeeze(LocalOperator):
 
     @property
     def args(self):
-        return (self.eta, )
+        return (self.eta,)
 
     def _diff(self, sym):
         raise NotImplementedError()
@@ -957,7 +973,7 @@ class Squeeze(LocalOperator):
     def all_symbols(self):
         r'''List of arguments of the operator, containing the squeezing
         parameter $\eta$ as the only element'''
-        return scalar_free_symbols(self.space)
+        return _scalar_free_symbols(self.space)
 
 
 class LocalSigma(LocalOperator):
@@ -1104,7 +1120,7 @@ class LocalProjector(LocalSigma):
     def args(self):
         """One-element tuple containing eigenstate label `j` that the projector
         projects onto"""
-        return (self.j, )
+        return (self.j,)
 
 
 ###############################################################################
@@ -1187,7 +1203,7 @@ class OperatorTimes(OperatorOperation):
         assert len(self.operands) > 1
         cfirst = self.operands[0].series_expand(param, about, order)
         crest = OperatorTimes.create(*self.operands[1:]).series_expand(
-                    param, about, order)
+            param, about, order)
         res = []
         for n in range(order + 1):
             summands = [cfirst[k] * crest[n - k] for k in range(n + 1)]
@@ -1226,7 +1242,7 @@ class ScalarTimesOperator(Operator, ScalarTimesExpression):
             c = abs(float(self.coeff))  # smallest coefficients first
         except (ValueError, TypeError):
             c = float('inf')
-        return KeyTuple(t[:2] + (c, ) + t[3:] + (str(self.coeff), ))
+        return KeyTuple(t[:2] + (c,) + t[3:] + (str(self.coeff),))
 
     @property
     def space(self):
@@ -1274,7 +1290,7 @@ class ScalarTimesOperator(Operator, ScalarTimesExpression):
     def _diff(self, sym):
         c, t = self.operands
         cd = c.diff(sym) if isinstance(c, SympyBasic) else 0
-        return cd*t + c * t._diff(sym)
+        return cd * t + c * t._diff(sym)
 
     def _pseudo_inverse(self):
         c, t = self.operands
@@ -1306,10 +1322,12 @@ class Commutator(OperatorOperation):
 
     '''
     _rules = OrderedDict()
-    _simplifications = [disjunct_hs_zero, commutator_order, match_replace]
+    _simplifications = [
+        scalars_to_op, disjunct_hs_zero, commutator_order, match_replace]
     # TODO: doit method
 
     order_key = FullCommutativeHSOrder
+
     # commutator_order makes FullCommutativeHSOrder anti-commutative
 
     def __init__(self, A, B):
@@ -1332,11 +1350,11 @@ class Commutator(OperatorOperation):
         if isinstance(A, OperatorPlus):
             A_summands = A.operands
         else:
-            A_summands = (A, )
+            A_summands = (A,)
         if isinstance(B, OperatorPlus):
             B_summands = B.operands
         else:
-            B_summands = (B, )
+            B_summands = (B,)
         summands = []
         for combo in cartesian_product(A_summands, B_summands):
             summands.append(Commutator.create(*combo))
@@ -1370,8 +1388,9 @@ class OperatorTrace(SingleOperatorOperation):
         op (Opwerator): The operator to take the trace of.
     '''
     _rules = OrderedDict()  # see end of module
-    _simplifications = [implied_local_space(keys=['over_space', ]),
-                        match_replace, ]
+    _simplifications = [
+        scalars_to_op, implied_local_space(keys=['over_space', ]),
+        match_replace, ]
 
     def __init__(self, op, *, over_space):
         if isinstance(over_space, (int, str)):
@@ -1424,7 +1443,8 @@ class Adjoint(SingleOperatorOperation):
     :type op: Operator
     """
     _rules = OrderedDict()  # see end of module
-    _simplifications = [match_replace, delegate_to_method('_adjoint')]
+    _simplifications = [
+        scalars_to_op, match_replace, delegate_to_method('_adjoint')]
 
     def _expand(self):
         eo = self.operand.expand()
@@ -1488,7 +1508,8 @@ class PseudoInverse(SingleOperatorOperation):
     _rules = OrderedDict()  # see end of module
     _delegate_to_method = (ScalarTimesOperator, Squeeze, Displace,
                            ZeroOperator.__class__, IdentityOperator.__class__)
-    _simplifications = [match_replace, delegate_to_method('_pseudo_inverse')]
+    _simplifications = [
+        scalars_to_op, match_replace, delegate_to_method('_pseudo_inverse')]
 
     def _expand(self):
         return self
@@ -1511,10 +1532,36 @@ class NullSpaceProjector(SingleOperatorOperation):
     """
 
     _rules = OrderedDict()  # see end of module
-    _simplifications = [match_replace, ]
+    _simplifications = [scalars_to_op, match_replace, ]
 
     def _expand(self):
         return self
+
+
+class OperatorIndexedSum(IndexedSum, SingleOperatorOperation):
+    # Order of superclasses is important for proper mro for __add__ etc.
+    # (we're using cooperative inheritance from both superclasses,
+    # cf. https://stackoverflow.com/q/47804919)
+
+    # TODO: documentation
+
+    _rules = OrderedDict()  # see end of module TODO
+    _simplifications = [
+        assoc_indexed, scalars_to_op, indexed_sum_over_const,
+        indexed_sum_over_kronecker, match_replace, ]
+
+    @property
+    def space(self):
+        return self.term.space
+
+    def _expand(self):
+        return self.__class__.create(self.term.expand(), *self.ranges)
+
+    def _series_expand(self, param, about, order):
+        raise NotImplementedError()
+
+    def _adjoint(self):
+        return self.__class__.create(self.term._adjoint(), *self.ranges)
 
 
 ###############################################################################
@@ -1535,7 +1582,7 @@ def X(local_space, states=("h", "g")):
     :return: Local X-operator as a linear combination of :class:`LocalSigma`
     :rtype: Operator
     """
-    h, g = states
+    h, g = states  # TODO: default should be 0, 1
     return (
         LocalSigma.create(h, g, hs=local_space) +
         LocalSigma.create(g, h, hs=local_space))
@@ -1641,8 +1688,8 @@ def decompose_space(H, A):
     :rtype: Operator
     """
     return OperatorTrace.create(
-                OperatorTrace.create(A, over_space=H.operands[-1]),
-                over_space=ProductSpace.create(*H.operands[:-1]))
+        OperatorTrace.create(A, over_space=H.operands[-1]),
+        over_space=ProductSpace.create(*H.operands[:-1]))
 
 
 def get_coeffs(expr, expand=False, epsilon=0.):
@@ -1674,7 +1721,9 @@ def get_coeffs(expr, expand=False, epsilon=0.):
 
 def space(obj):
     """Gives the associated HilbertSpace with an object. Also works for
-    `SCALAR_TYPES`"""
+    `SCALAR_TYPES` (returning
+    :class:`~qnet.algebra.hilbert_space_algebra.TrivialSpace`)
+    """
     try:
         return obj.space
     except AttributeError:
@@ -1756,15 +1805,15 @@ def Jpjmcoeff(ls, m, shift=False):
     '''
     try:
         n = ls.dimension
-        s = sympify(n-1)/2
-        assert n == int(2*s + 1)
+        s = sympify(n - 1) / 2
+        assert n == int(2 * s + 1)
         if isinstance(m, str):
             m = ls.basis.index(m) - s  # m is now Sympy expression
         elif isinstance(m, int):
             if shift:
                 assert 0 <= m < n
                 m = m - s
-        return sqrt(s*(s+1)-m*(m+1))
+        return sqrt(s * (s + 1) - m * (m + 1))
     except BasisNotSetError:
         raise CannotSimplify()
 
@@ -1781,8 +1830,8 @@ def Jzjmcoeff(ls, m, shift):
     '''
     try:
         n = ls.dimension
-        s = sympify(n-1)/2
-        assert n == int(2*s + 1)
+        s = sympify(n - 1) / 2
+        assert n == int(2 * s + 1)
         if isinstance(m, str):
             return ls.basis.index(m) - s
         elif isinstance(m, int):
@@ -1807,18 +1856,17 @@ def Jmjmcoeff(ls, m, shift):
     '''
     try:
         n = ls.dimension
-        s = sympify(n-1)/2
-        assert n == int(2*s + 1)
+        s = sympify(n - 1) / 2
+        assert n == int(2 * s + 1)
         if isinstance(m, str):
             m = ls.basis.index(m) - s  # m is now Sympy expression
         elif isinstance(m, int):
             if shift:
                 assert 0 <= m < n
                 m = m - s
-        return sqrt(s*(s+1)-m*(m-1))
+        return sqrt(s * (s + 1) - m * (m - 1))
     except BasisNotSetError:
         raise CannotSimplify()
-
 
 
 ###############################################################################
@@ -1838,6 +1886,7 @@ def _combine_operator_m_cc(A, B):
         return OperatorPlusMinusCC(A, sign=-1)
     else:
         raise CannotSimplify
+
 
 def _scal_combine_operator_pm_cc(c, A, d, B):
     if B.adjoint() == A:
@@ -1911,7 +1960,7 @@ def expand_operator_pm_cc():
 def _algebraic_rules():
     """Set the default algebraic rules for the operations defined in this
     module"""
-    PseudoInverse._delegate_to_method += (PseudoInverse, )
+    PseudoInverse._delegate_to_method += (PseudoInverse,)
 
     u = wc("u", head=SCALAR_TYPES)
     v = wc("v", head=SCALAR_TYPES)
@@ -1936,6 +1985,8 @@ def _algebraic_rules():
     rb = wc("rb", head=(int, str, SymbolicLabelBase))
     rc = wc("rc", head=(int, str, SymbolicLabelBase))
     rd = wc("rd", head=(int, str, SymbolicLabelBase))
+
+    indranges__ = wc("indranges__", head=IndexRangeBase)
 
     ScalarTimesOperator._rules.update(check_rules_dict([
         ('1A', (
@@ -2117,7 +2168,7 @@ def _algebraic_rules():
         # center and J_- to the right
         ('spinord1', (
             pattern_head(pattern(Jminus, hs=ls), pattern(Jplus, hs=ls)),
-            lambda ls: -2*Jz(hs=ls) + Jplus(hs=ls) * Jminus(hs=ls))),
+            lambda ls: -2 * Jz(hs=ls) + Jplus(hs=ls) * Jminus(hs=ls))),
 
         ('spinord2', (
             pattern_head(pattern(Jminus, hs=ls), pattern(Jz, hs=ls)),
@@ -2269,6 +2320,23 @@ def _algebraic_rules():
                 wc('A', head=(LocalSigma, LocalProjector, Jplus, Jminus, Jz)),
                 wc('B', head=(LocalSigma, LocalProjector, Jplus, Jminus, Jz))),
             lambda A, B: A * B - B * A)),
+    ]))
+
+    def pull_constfactor_from_sum(u, A, indranges):
+        bound_symbols = set([r.index_symbol for r in indranges])
+        if len(all_symbols(u).intersection(bound_symbols)) == 0:
+            return u * OperatorIndexedSum.create(A, *indranges)
+        else:
+            raise CannotSimplify()
+
+    OperatorIndexedSum._rules.update(check_rules_dict([
+        ('R001', (  # sum over zero -> zero
+            pattern_head(ZeroOperator, indranges__),
+            lambda indranges: ZeroOperator)),
+        ('R002', (  # pull constant prefactor out of sum
+            pattern_head(pattern(ScalarTimesOperator, u, A), indranges__),
+            lambda u, A, indranges:
+                pull_constfactor_from_sum(u, A, indranges))),
     ]))
 
 

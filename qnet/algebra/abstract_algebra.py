@@ -35,7 +35,9 @@ from collections import OrderedDict
 import logging
 
 import attr
-from sympy import Basic as SympyBasic
+from sympy import (
+    Basic as SympyBasic, Mul as SympyMul, KroneckerDelta as
+    SympyKroneckerDelta)
 from sympy.core.sympify import SympifyError
 
 from .pattern_matching import (  # some import for doctests
@@ -53,8 +55,9 @@ __all__ = [
     'simplify_by_method', 'substitute', 'temporary_instance_cache']
 
 __private__ = [  # anything not in __all__ must be in __private__
-    'assoc', 'assoc_indexed', 'indexed_sum_over_const', 'idem', 'orderby',
-    'filter_neutral', 'match_replace', 'match_replace_binary', 'cache_attr',
+    'assoc', 'assoc_indexed', 'indexed_sum_over_const',
+    'indexed_sum_over_kronecker', 'idem', 'orderby', 'filter_neutral',
+    'match_replace', 'match_replace_binary', 'cache_attr',
     'check_idempotent_create', 'check_rules_dict', '_scalar_free_symbols']
 
 LEVEL = 0  # for debugging create method
@@ -841,12 +844,14 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             new_ranges = other.ranges + self.ranges
             return self.__class__.create(other.term * self.term, *new_ranges)
         try:
-            return super()._r_mul__(other)
+            return super().__rmul__(other)
         except AttributeError:
             return NotImplemented
 
     def __add__(self, other):
+        raise NotImplementedError()
         if isinstance(other, self.__class__):
+            # TODO: this is wrong!!!!!!
             if set(self.variables).isdisjoint(other.variables):
                 new_ranges = self.ranges + other.ranges
                 return self.__class__.create(
@@ -857,7 +862,9 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             return NotImplemented
 
     def __radd__(self, other):
+        raise NotImplementedError()
         if isinstance(other, self.__class__):
+            # TODO: this is wrong!!!!!!
             if set(self.variables).isdisjoint(other.variables):
                 new_ranges = other.ranges + self.ranges
                 return self.__class__.create(
@@ -868,7 +875,9 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             return NotImplemented
 
     def __sub__(self, other):
+        raise NotImplementedError()
         if isinstance(other, self.__class__):
+            # TODO: this is wrong!!!!!!
             if set(self.variables).isdisjoint(other.variables):
                 new_ranges = self.ranges + other.ranges
                 return self.__class__.create(
@@ -880,6 +889,7 @@ class IndexedSum(Operation, metaclass=ABCMeta):
 
     def __rsub__(self, other):
         if isinstance(other, self.__class__):
+            # TODO: this is wrong!!!!!!
             if set(self.variables).isdisjoint(other.variables):
                 new_ranges = other.ranges + self.ranges
                 return self.__class__.create(
@@ -963,6 +973,28 @@ def indexed_sum_over_const(cls, ops, kwargs):
         return n * term
     else:
         return ops, kwargs
+
+
+def indexed_sum_over_kronecker(cls, ops, kwargs):
+    """Execute sums over KroneckerDelta prefactors"""
+    term, *ranges = ops
+    correct_structure = (
+        isinstance(term, ScalarTimesExpression) and
+        isinstance(term.coeff, SympyMul) and
+        len(ranges) >= 2)
+    if correct_structure:
+        bound_symbols = set([r.index_symbol for r in ranges])
+        for factor in term.coeff.args:
+            if isinstance(factor, SympyKroneckerDelta):
+                i, j = factor.args
+                assert i in bound_symbols and j in bound_symbols
+                if i.primed > j.primed:
+                    # we prefer eliminating indices with more prime dashes
+                    i, j = j, i
+                term = term.substitute({factor: 1, j: i})
+                ranges = [r for r in ranges if r.index_symbol != j]
+        ops = (term, ) + tuple(ranges)
+    return ops, kwargs
 
 
 def idem(cls, ops, kwargs):

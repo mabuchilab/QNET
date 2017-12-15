@@ -1,10 +1,11 @@
 from qnet.printing import ascii, unicode, latex, srepr, configure_printing
 from qnet.algebra.abstract_algebra import all_symbols, InfiniteSumError
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import Create
+from qnet.algebra.hilbert_space_algebra import LocalSpace, TrivialSpace
+from qnet.algebra.operator_algebra import (
+    Create, IdentityOperator, OperatorIndexedSum)
 from qnet.algebra.state_algebra import (
     KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet,
-    KetSymbol)
+    KetSymbol, Bra, TensorKet, BraKet)
 from qnet.algebra.indices import (
     IdxSym, StrLabel, FockIndex, IndexOverFockSpace, IndexOverList,
     IndexOverRange)
@@ -361,4 +362,37 @@ def test_tensor_indexed_sum():
     psi0 = KetSymbol('Psi', hs=0)
     psi3 = KetSymbol('Psi', hs=3)
     expr2 = psi0 * psi1 * psi2 * psi3
-    assert expr2.operands == (psi0, expr, psi3)
+    assert expr2 == KetIndexedSum(
+        alpha[1, i] * alpha[2, i.prime] * (
+            psi0 *
+            BasisKet(FockIndex(i), hs=hs1) *
+            BasisKet(FockIndex(i.prime), hs=hs2) *
+            psi3),
+        IndexOverFockSpace(i, hs1), IndexOverFockSpace(i.prime, hs2))
+    assert TensorKet.create(psi0, psi1, psi2, psi3) == expr2
+
+
+def test_braket_indexed_sum():
+    """Test tensor product of sums"""
+    i = IdxSym('i')
+    hs = LocalSpace(1, dimension=5)
+    alpha = IndexedBase('alpha')
+
+    psi1 = KetIndexedSum(
+        alpha[1, i] * BasisKet(FockIndex(i), hs=hs),
+        IndexOverFockSpace(i, hs))
+
+    psi2 = KetIndexedSum(
+        alpha[2, i] * BasisKet(FockIndex(i), hs=hs),
+        IndexOverFockSpace(i, hs))
+
+    expr = Bra.create(psi1) * psi2
+    assert expr.space == TrivialSpace
+    assert expr == OperatorIndexedSum(
+        alpha[1, i].conjugate() * alpha[2, i] * IdentityOperator,
+        IndexOverFockSpace(i, hs))
+
+    assert BraKet.create(psi1, psi2) == expr
+
+
+# TODO: ketbra, ketplus

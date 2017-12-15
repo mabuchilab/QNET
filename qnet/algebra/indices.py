@@ -197,7 +197,9 @@ class IdxSym(sympy.Symbol):
 
     def incr_primed(self, incr=1):
         """Return a copy of the index with an incremented :attr:`primed`"""
-        return self.__class__(self.name, primed=self._primed + incr)
+        return self.__class__(
+            self.name, primed=self._primed + incr,
+            **self._assumptions.generator)
 
     @property
     def prime(self):
