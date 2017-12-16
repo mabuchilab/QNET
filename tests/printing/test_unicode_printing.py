@@ -321,6 +321,7 @@ def test_unicode_ket_operations():
     gamma = symbols('gamma', positive=True)
     alpha = symbols('alpha')
     phase = exp(-I * gamma)
+    i = IdxSym('i')
     assert unicode(psi1 + psi2) == '|Ψ₁⟩^(q₁) + |Ψ₂⟩^(q₁)'
     assert unicode(psi1 * phi) == '|Ψ₁⟩^(q₁) ⊗ |Φ⟩^(q₂)'
     assert unicode(psi1_l * phi_l) == '|Ψ₁,Φ⟩^(q₁⊗q₂)'
@@ -346,6 +347,14 @@ def test_unicode_ket_operations():
             r'⟨g,g|^(q₁⊗q₂))')
     assert (unicode(KetBra.create(bell1, bell2), show_hs_label=False) ==
             r'1/2 (|e,g⟩ - ⅈ |g,e⟩)(⟨e,e| - ⟨g,g|)')
+    expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+    assert unicode(expr) == "|Ψ⟩⟨i|⁽⁰⁾"
+    expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+    assert unicode(expr) == "|i⟩⟨Ψ|⁽⁰⁾"
+    expr = BraKet(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+    assert unicode(expr) == "⟨Ψ|i⟩⁽⁰⁾"
+    expr = BraKet(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+    assert unicode(expr) == "⟨i|Ψ⟩⁽⁰⁾"
 
 
 def test_unicode_bra_operations():

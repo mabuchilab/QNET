@@ -172,7 +172,7 @@ class Ket(metaclass=ABCMeta):
         elif isinstance(other, Bra):
             if isinstance(other.ket, KetIndexedSum):
                 return OperatorIndexedSum.create(
-                    self * other.ket.term.dag, *other.ranges)
+                    self * other.ket.term.dag, *other.ket.ranges)
             else:
                 return KetBra.create(self, other.ket)
         try:
@@ -571,15 +571,7 @@ class CoherentStateKet(LocalKet):
 
 
 class KetPlus(Ket, Operation):
-    """A sum of Ket states.
-
-    Instantiate as::
-
-        KetPlus(*summands)
-
-    :param summands: State summands.
-    :type summands: Ket
-    """
+    """A sum of states."""
     neutral_element = ZeroKet
     _binary_rules = OrderedDict()  # see end of module
     _simplifications = [
@@ -609,12 +601,6 @@ class KetPlus(Ket, Operation):
 
 class TensorKet(Ket, Operation):
     """A tensor product of kets each belonging to different degrees of freedom.
-    Instantiate as::
-
-        TensorKet(*factors)
-
-    :param factors: Ket factors.
-    :type factors: Ket
     """
     _binary_rules = OrderedDict()  # see end of module
     neutral_element = TrivialKet
@@ -735,17 +721,12 @@ class ScalarTimesKet(Ket, ScalarTimesExpression):
 
 
 class OperatorTimesKet(Ket, Operation):
-    """Multiply an operator by an operator
-
-    Instantiate as::
-
-        OperatorTimesKet(op, ket)
-
-    :param Operator op: The multiplying operator.
-    :param Ket ket: The ket that is multiplied.
-    """
+    """Product of an operator and a state."""
     _rules = OrderedDict()  # see end of module
     _simplifications = [match_replace, check_op_ket_space]
+
+    def __init__(self, operator, ket):
+        super().__init__(operator, ket)
 
     @property
     def _order_key(self):
@@ -789,11 +770,7 @@ class OperatorTimesKet(Ket, Operation):
 
 
 class Bra(Operation):
-    """The associated dual/adjoint state for any ``Ket`` object ``k`` is given
-    by ``Bra(k)``.
-
-    :param Ket k: The state to represent as Bra.
-    """
+    """The associated dual/adjoint state for any `ket`"""
     def __init__(self, ket):
         self._order_key = KeyTuple(
                 (self.__class__.__name__, ket.__class__.__name__, 1.0) +
@@ -802,16 +779,14 @@ class Bra(Operation):
 
     @property
     def ket(self):
-        """The state that is represented as a Bra.
-
-        :rtype: Ket
-        """
+        """The original :class:`Ket`"""
         return self.operands[0]
 
     operand = ket
 
     def adjoint(self):
-        """The adjoint of a ``Bra`` is just the original ``Ket`` again."""
+        """The adjoint of a :class:`Bra` is just the original :class:`Ket`
+        again"""
         return self.ket
 
     dag = property(adjoint)
@@ -837,7 +812,7 @@ class Bra(Operation):
                 return OperatorIndexedSum.create(new_term, *new_ranges)
             elif isinstance(other, Ket):
                 return OperatorIndexedSum(
-                    BraKet.create(self.ket.term, other), *self.ranges)
+                    BraKet.create(self.ket.term, other), *self.ket.ranges)
         if isinstance(other, SCALAR_TYPES):
             return Bra.create(self.ket * other.conjugate())
         elif isinstance(other, Operator):
@@ -891,7 +866,8 @@ class BraKet(Operator, Operation):
     :math:`b`.
 
     Args:
-        bra (Ket): The anti-linear state argument.
+        bra (Ket): The anti-linear state argument. Not that this is *not* a
+            :class:`Bra` instance.
         ket (Ket): The linear state argument.
 
     Note:
@@ -1017,7 +993,7 @@ class KetIndexedSum(IndexedSum, Ket):
             if isinstance(other.ket, KetIndexedSum):
                 other_ket = other.ket.make_disjunct_indices(self)
                 new_ranges = self.ranges + other_ket.ranges
-                new_term = KetBra.create(self.term, other_ket)
+                new_term = KetBra.create(self.term, other_ket.term)
                 return OperatorIndexedSum(new_term, *new_ranges)
             else:
                 return OperatorIndexedSum(
@@ -1332,6 +1308,15 @@ def _algebraic_rules():
         ('R008', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u.conjugate() * (Psi * Phi.adjoint()))),
+        ('R009', (  # delegate to __mul__
+            pattern_head(sum, sum2),
+            lambda sum, sum2: sum * Bra.create(sum2))),
+        ('R010', (  # delegate to __mul__
+            pattern_head(Psi, sum),
+            lambda Psi, sum: Psi * Bra.create(sum))),
+        ('R011', (  # delegate to __mul__
+            pattern_head(sum, Psi),
+            lambda sum, Psi: sum * Bra.create(Psi))),
     ]))
 
     def pull_constfactor_from_sum(u, Psi, indranges):

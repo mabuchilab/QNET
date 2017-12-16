@@ -42,7 +42,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.algebra.indices import FockIndex, StrLabel
+from qnet.algebra.indices import FockIndex, StrLabel, IdxSym
 from qnet.printing import ascii
 
 
@@ -320,6 +320,7 @@ def test_ascii_ket_operations():
     gamma = symbols('gamma', positive=True)
     alpha = symbols('alpha')
     phase = exp(-I * gamma)
+    i = IdxSym('i')
     assert ascii(psi1 + psi2) == '|Psi_1>^(q_1) + |Psi_2>^(q_1)'
     assert (ascii(psi1 - psi2 + psi3) ==
             '|Psi_1>^(q_1) - |Psi_2>^(q_1) + |Psi_3>^(q_1)')
@@ -358,6 +359,14 @@ def test_ascii_ket_operations():
     assert (ascii(KetBra.create(bell1, bell2)) ==
             '1/2 * (|e,g>^(q_1*q_2) - I * |g,e>^(q_1*q_2))(<e,e|^(q_1*q_2) '
             '- <g,g|^(q_1*q_2))')
+    expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+    assert ascii(expr) == "|Psi><i|^(0)"
+    expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+    assert ascii(expr) == "|i><Psi|^(0)"
+    expr = BraKet(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+    assert ascii(expr) == "<Psi|i>^(0)"
+    expr = BraKet(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+    assert ascii(expr) == "<i|Psi>^(0)"
 
 
 def test_ascii_bra_operations():

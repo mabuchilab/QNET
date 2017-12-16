@@ -195,6 +195,10 @@ class Expression(metaclass=ABCMeta):
             simplified = simplification(cls, args, kwargs)
             try:
                 args, kwargs = simplified
+                if LOG:
+                    logger.debug(
+                        "%s(%s)-> args = %s, kwargs = %s", ("  " * LEVEL),
+                        simpl_name, args, kwargs)
             except (TypeError, ValueError):
                 # We assume that if the simplification didn't return a tuple,
                 # the result is a fully instantiated object

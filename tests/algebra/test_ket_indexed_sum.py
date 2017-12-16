@@ -5,7 +5,7 @@ from qnet.algebra.operator_algebra import (
     Create, IdentityOperator, OperatorIndexedSum)
 from qnet.algebra.state_algebra import (
     KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet,
-    KetSymbol, Bra, TensorKet, BraKet)
+    KetSymbol, Bra, TensorKet, BraKet, KetBra)
 from qnet.algebra.indices import (
     IdxSym, StrLabel, FockIndex, IndexOverFockSpace, IndexOverList,
     IndexOverRange)
@@ -373,10 +373,12 @@ def test_tensor_indexed_sum():
 
 
 def test_braket_indexed_sum():
-    """Test tensor product of sums"""
+    """Test braket product of sums"""
     i = IdxSym('i')
     hs = LocalSpace(1, dimension=5)
     alpha = IndexedBase('alpha')
+
+    psi = KetSymbol('Psi', hs=hs)
 
     psi1 = KetIndexedSum(
         alpha[1, i] * BasisKet(FockIndex(i), hs=hs),
@@ -391,8 +393,64 @@ def test_braket_indexed_sum():
     assert expr == OperatorIndexedSum(
         alpha[1, i].conjugate() * alpha[2, i] * IdentityOperator,
         IndexOverFockSpace(i, hs))
-
     assert BraKet.create(psi1, psi2) == expr
 
+    expr = psi.dag * psi2
+    assert expr == OperatorIndexedSum(
+        alpha[2, i] * BraKet(psi, BasisKet(FockIndex(i), hs=hs)),
+        IndexOverFockSpace(i, hs))
+    assert BraKet.create(psi, psi2) == expr
 
-# TODO: ketbra, ketplus
+    expr = psi1.dag * psi
+    assert expr == OperatorIndexedSum(
+        alpha[1, i].conjugate() * BraKet(BasisKet(FockIndex(i), hs=hs), psi),
+        IndexOverFockSpace(i, hs))
+    assert BraKet.create(psi1, psi) == expr
+
+
+def test_ketbra_indexed_sum():
+    """Test ketbra product of sums"""
+    i = IdxSym('i')
+    hs = LocalSpace(1, dimension=5)
+    alpha = IndexedBase('alpha')
+
+    psi = KetSymbol('Psi', hs=hs)
+
+    psi1 = KetIndexedSum(
+        alpha[1, i] * BasisKet(FockIndex(i), hs=hs),
+        IndexOverFockSpace(i, hs))
+
+    psi2 = KetIndexedSum(
+        alpha[2, i] * BasisKet(FockIndex(i), hs=hs),
+        IndexOverFockSpace(i, hs))
+
+    expr = psi1 * psi2.dag
+    assert expr.space == hs
+    expected = OperatorIndexedSum(
+        alpha[2, i.prime].conjugate() * alpha[1, i] * KetBra.create(
+            BasisKet(FockIndex(i), hs=hs),
+            BasisKet(FockIndex(i.prime), hs=hs)),
+        IndexOverFockSpace(i, hs), IndexOverFockSpace(i.prime, hs))
+    assert expr == expected
+    assert KetBra.create(psi1, psi2) == expr
+
+    expr = psi * psi2.dag
+    assert expr.space == hs
+    expected = OperatorIndexedSum(
+        alpha[2, i].conjugate() * KetBra.create(
+            psi, BasisKet(FockIndex(i), hs=hs)),
+        IndexOverFockSpace(i, hs))
+    assert expr == expected
+    assert KetBra.create(psi, psi2) == expr
+
+    expr = psi1 * psi.dag
+    assert expr.space == hs
+    expected = OperatorIndexedSum(
+        alpha[1, i] * KetBra.create(
+            BasisKet(FockIndex(i), hs=hs), psi),
+        IndexOverFockSpace(i, hs))
+    assert expr == expected
+    assert KetBra.create(psi1, psi) == expr
+
+
+# TODO: ketplus

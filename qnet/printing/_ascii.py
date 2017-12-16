@@ -596,24 +596,22 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _print_BraKet(self, expr, adjoint=False):
         trivial = True
         try:
-            bra_label = str(expr.bra.label)
+            bra_label = self._render_state_label(expr.bra.label)
         except AttributeError:
             trivial = False
         try:
-            ket_label = str(expr.ket.label)
+            ket_label = self._render_state_label(expr.ket.label)
         except AttributeError:
             trivial = False
         if trivial:
             fmt = self._braket_fmt('braket')
             if adjoint:
                 return fmt.format(
-                    label_i=self._render_state_label(ket_label),
-                    label_j=self._render_state_label(bra_label),
+                    label_i=ket_label, label_j=bra_label,
                     space=self._render_hs_label(expr.ket.space))
             else:
                 return fmt.format(
-                    label_i=self._render_state_label(bra_label),
-                    label_j=self._render_state_label(ket_label),
+                    label_i=bra_label, label_j=ket_label,
                     space=self._render_hs_label(expr.ket.space))
         else:
             prec = precedence(expr)
@@ -627,24 +625,22 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _print_KetBra(self, expr, adjoint=False):
         trivial = True
         try:
-            bra_label = str(expr.bra.label)
+            bra_label = self._render_state_label(expr.bra.label)
         except AttributeError:
             trivial = False
         try:
-            ket_label = str(expr.ket.label)
+            ket_label = self._render_state_label(expr.ket.label)
         except AttributeError:
             trivial = False
         if trivial:
             fmt = self._braket_fmt('ketbra')
             if adjoint:
                 return fmt.format(
-                    label_i=self._render_state_label(bra_label),
-                    label_j=self._render_state_label(ket_label),
+                    label_i=bra_label, label_j=ket_label,
                     space=self._render_hs_label(expr.ket.space))
             else:
                 return fmt.format(
-                    label_i=self._render_state_label(ket_label),
-                    label_j=self._render_state_label(bra_label),
+                    label_i=ket_label, label_j=bra_label,
                     space=self._render_hs_label(expr.ket.space))
         else:
             prec = precedence(expr)

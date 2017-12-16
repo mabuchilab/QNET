@@ -115,9 +115,9 @@ class QnetLatexPrinter(QnetAsciiPrinter):
                         r'\Ket{{{label_i}}}\!\Bra{{{label_j}}}_{{({space})}}',
                     False: r'\Ket{{{label_i}}}\!\Bra{{{label_j}}}'},
                 'braket': {
-                    True: r'\Braket{label_i} | {label_j}}^({space})',
-                    'subscript': r'\Braket{label_i} | {label_j}}_({space})',
-                    False:  r'\Braket{label_i} | {label_j}}'}},
+                    True: r'\Braket{{{label_i} | {label_j}}}^({space})',
+                    'subscript': r'\Braket{{{label_i} | {label_j}}}_({space})',
+                    False:  r'\Braket{{{label_i} | {label_j}}}'}},
             False: {  # explicit tex macros
                 'bra': {
                     True:

@@ -39,7 +39,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.algebra.indices import FockIndex, StrLabel
+from qnet.algebra.indices import FockIndex, StrLabel, IdxSym
 from qnet.printing import latex, configure_printing
 from qnet.printing._latex import QnetLatexPrinter
 
@@ -458,6 +458,7 @@ def test_tex_ket_operations():
     gamma = symbols('gamma', positive=True)
     alpha = symbols('alpha')
     phase = exp(-I * gamma)
+    i = IdxSym('i')
     assert (
         latex(psi1 + psi2) ==
         r'\left\lvert \Psi_{1} \right\rangle^{(q_{1})} + '
@@ -536,6 +537,15 @@ def test_tex_ket_operations():
         r'^{(q_{1} \otimes q_{2})}\right)\left(\left\langle e,e \right\rvert'
         r'^{(q_{1} \otimes q_{2})} - \left\langle g,g \right\rvert'
         r'^{(q_{1} \otimes q_{2})}\right)')
+    with configure_printing(tex_use_braket=True):
+        expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+        assert latex(expr) == r'\Ket{\Psi}\!\Bra{i}^{(0)}'
+        expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+        assert latex(expr) == r'\Ket{i}\!\Bra{\Psi}^{(0)}'
+        expr = BraKet(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+        assert latex(expr) == r'\Braket{\Psi | i}^(0)'
+        expr = BraKet(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+        assert latex(expr) == r'\Braket{i | \Psi}^(0)'
 
 
 def test_tex_bra_operations():
