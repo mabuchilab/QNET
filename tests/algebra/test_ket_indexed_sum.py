@@ -372,6 +372,17 @@ def test_tensor_indexed_sum():
     assert TensorKet.create(psi0, psi1, psi2, psi3) == expr2
 
 
+def test_tls_norm():
+    """Test that calculating the norm of a TLS state results in 1"""
+    hs = LocalSpace('tls', dimension=2)
+    i = IdxSym('i')
+    psi = KetIndexedSum(
+        (1/sympy.sqrt(2)) * BasisKet(FockIndex(i), hs=hs),
+        IndexOverFockSpace(i, hs))
+    nrm = BraKet.create(psi, psi)
+    assert nrm == 1
+
+
 def test_braket_indexed_sum():
     """Test braket product of sums"""
     i = IdxSym('i')

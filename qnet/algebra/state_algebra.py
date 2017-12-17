@@ -203,7 +203,7 @@ class Ket(metaclass=ABCMeta):
         if isinstance(other, SCALAR_TYPES):
             return self * (sympyOne / other)
         try:
-            return super().__rmul__(other)
+            return super().__div__(other)
         except AttributeError:
             return NotImplemented
 
@@ -807,6 +807,7 @@ class Bra(Operation):
         if isinstance(self.ket, KetIndexedSum):
             if isinstance(other, KetIndexedSum):
                 other = other.make_disjunct_indices(self.ket)
+                assert isinstance(other, KetIndexedSum)
                 new_ranges = self.ket.ranges + other.ranges
                 new_term = BraKet.create(self.ket.term, other.term)
                 return OperatorIndexedSum.create(new_term, *new_ranges)
@@ -992,6 +993,7 @@ class KetIndexedSum(IndexedSum, Ket):
         if isinstance(other, Bra):
             if isinstance(other.ket, KetIndexedSum):
                 other_ket = other.ket.make_disjunct_indices(self)
+                assert isinstance(other_ket, KetIndexedSum)
                 new_ranges = self.ranges + other_ket.ranges
                 new_term = KetBra.create(self.term, other_ket.term)
                 return OperatorIndexedSum(new_term, *new_ranges)

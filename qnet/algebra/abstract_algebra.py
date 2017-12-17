@@ -302,15 +302,28 @@ class Expression(metaclass=ABCMeta):
         """
         return self._substitute(var_map)
 
-    def _substitute(self, var_map):
+    def _substitute(self, var_map, safe=False):
+        """Implementation of :meth:`substitute`.
+
+        For internal use, the `safe` keyword argument allows to perform a
+        substitution on the `args` and `kwargs` of the expression only,
+        guaranteeing that the type of the expression does not change, at the
+        cost of possibly not returning a maximally simplified expression. The
+        `safe` keyword is not handled recursively, i.e. any `args`/`kwargs`
+        will be fully simplified, possibly changing their types.
+        """
         if self in var_map:
-            return var_map[self]
+            if not safe or (type(var_map[self]) == type(self)):
+                return var_map[self]
         if isinstance(self.__class__, Singleton):
             return self
         new_args = [substitute(arg, var_map) for arg in self.args]
         new_kwargs = {key: substitute(val, var_map)
                       for (key, val) in self.kwargs.items()}
-        return self.create(*new_args, **new_kwargs)
+        if safe:
+            return self.__class__(*new_args, **new_kwargs)
+        else:
+            return self.create(*new_args, **new_kwargs)
 
     def simplify(self, rules=None):
         """Recursively re-instantiate the expression, while applying all of the
@@ -652,7 +665,7 @@ class ScalarTimesExpression(Operation):
     def term(self):
         return self.operands[1]
 
-    def _substitute(self, var_map):
+    def _substitute(self, var_map, safe=False):
         st = self.term.substitute(var_map)
         if isinstance(self.coeff, SympyBasic):
             svar_map = {k: v for k, v in var_map.items()
@@ -660,7 +673,10 @@ class ScalarTimesExpression(Operation):
             sc = self.coeff.subs(svar_map)
         else:
             sc = substitute(self.coeff, var_map)
-        return sc * st
+        if safe:
+            return self.__class__(sc, st)
+        else:
+            return sc * st
 
     def all_symbols(self):
         return _scalar_free_symbols(self.coeff) | self.term.all_symbols()
@@ -785,12 +801,16 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             raise ValueError(
                 "Index %s does not appear in %s" % (ind_sym, self))
         res_term = None
-        for mapping in selected_range.iter():
+        for i, mapping in enumerate(selected_range.iter()):
             res_summand = self.term.substitute(mapping)
             if res_term is None:
                 res_term = res_summand
             else:
                 res_term += res_summand
+            if i > self._expand_limit:
+                raise InfiniteSumError(
+                    "Cannot expand %s: more than %s terms"
+                    % (self, self._expand_limit))
         if len(other_ranges) == 0:
             res = res_term.simplify(rules=[(
                 wc('label', head=SymbolicLabelBase),
@@ -802,7 +822,7 @@ class IndexedSum(Operation, metaclass=ABCMeta):
 
     def make_disjunct_indices(self, *others):
         """Return a copy with modified indices to ensure disjunct indices with
-        `other`.
+        `others`.
 
         Each index symbol is primed until it does not match any index symbol in
         `others`
@@ -829,7 +849,7 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             index_symbol = r.index_symbol
             while index_symbol in other_index_symbols:
                 index_symbol = index_symbol.incr_primed()
-            new = new.substitute({r.index_symbol: index_symbol})
+            new = new._substitute({r.index_symbol: index_symbol}, safe=True)
         return new
 
     def __mul__(self, other):
