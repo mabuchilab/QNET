@@ -23,7 +23,10 @@ from qnet.algebra.operator_algebra import (
     LocalSigma, ScalarTimesOperator, OperatorPlus, OperatorTimes)
 from qnet.printing._ascii import QnetAsciiDefaultPrinter
 from qnet.misc.trajectory_data import TrajectoryData
-from sympy.printing.ccode import C89CodePrinter as CCodePrinter
+try:
+    from sympy.printing.ccode import C89CodePrinter as CCodePrinter
+except ImportError:
+    from sympy.printing.ccode import CCodePrinter
 
 # max unsigned int in C/C++ when compiled the same way as python
 UNSIGNED_MAXINT = 2 ** (struct.Struct('I').size * 8 - 1) - 1
