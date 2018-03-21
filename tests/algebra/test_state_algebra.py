@@ -20,16 +20,20 @@
 
 import unittest
 
-from sympy import sqrt, exp, I, pi
+from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols, factorial
 
-from qnet.algebra.abstract_algebra import no_rules
+from qnet.algebra.abstract_algebra import no_rules, simplify
 from qnet.algebra.operator_algebra import (
         OperatorSymbol, Create, Destroy, Jplus, Jminus, Jz, Phase, Displace,
         LocalSigma, IdentityOperator, OperatorPlus)
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.state_algebra import (
         KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
-        TrivialKet, UnequalSpaces, TensorKet, BasisKet, KetBra)
+        TrivialKet, UnequalSpaces, TensorKet, LocalKet, BasisKet, KetBra)
+from qnet.algebra.indices import (
+    IdxSym, FockIndex, IntIndex, StrLabel, SymbolicLabelBase,
+    IndexOverFockSpace, IndexOverRange)
+from qnet.algebra.pattern_matching import wc
 import pytest
 
 
@@ -263,3 +267,96 @@ def test_expand_ketbra():
         KetBra(BasisKet('0', hs=hs), BasisKet('1', hs=hs)),
         KetBra(BasisKet('1', hs=hs), BasisKet('0', hs=hs)),
         KetBra(BasisKet('1', hs=hs), BasisKet('1', hs=hs)))
+
+
+def eval_lb(expr, mapping):
+    """Evaluate symbolic labels with the given mapping"""
+    return simplify(expr, rules=[(
+        wc('label', head=SymbolicLabelBase),
+        lambda label: label.evaluate(mapping))])
+
+
+def test_ket_symbolic_labels():
+    """Test that we can instantiate Kets with symbolic labels"""
+    i = Idx('i')
+    i_sym = symbols('i')
+    j = Idx('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+
+    assert (
+        eval_lb(BasisKet(FockIndex(2 * i), hs=hs0), {i: 2}) ==
+        BasisKet(4, hs=hs0))
+    assert (
+        eval_lb(BasisKet(FockIndex(2 * i_sym), hs=hs0), {i_sym: 2}) ==
+        BasisKet(4, hs=hs0))
+    with pytest.raises(TypeError) as exc_info:
+        BasisKet(IntIndex(2 * i), hs=hs0)
+    assert "not IntIndex" in str(exc_info.value)
+    with pytest.raises(TypeError) as exc_info:
+        BasisKet(StrLabel(2 * i), hs=hs0)
+    assert "not StrLabel" in str(exc_info.value)
+    with pytest.raises(TypeError) as exc_info:
+        BasisKet(2 * i, hs=hs0)
+    assert "not Mul" in str(exc_info.value)
+
+    assert(
+        eval_lb(LocalKet(StrLabel(2 * i), hs=hs0), {i: 2}) ==
+        LocalKet("4", hs=hs0))
+    with pytest.raises(TypeError) as exc_info:
+        eval_lb(LocalKet(FockIndex(2 * i), hs=hs0), {i: 2})
+    assert "type of label must be str" in str(exc_info.value)
+
+    assert StrLabel(Psi[i, j]).evaluate({i: 'i', j: 'j'}) == 'Psi_ij'
+    assert(
+        eval_lb(
+            KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1), {i: 'i', j: 'j'}) ==
+        KetSymbol("Psi_ij", hs=hs0*hs1))
+    assert(
+        eval_lb(
+            KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1), {i: 1, j: 2}) ==
+        KetSymbol("Psi_12", hs=hs0*hs1))
+
+    assert (
+        eval_lb(
+            LocalSigma(FockIndex(i), FockIndex(j), hs=hs0), {i: 1, j: 2}) ==
+        LocalSigma(1, 2, hs=hs0))
+    assert (
+        BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs0).dag ==
+        LocalSigma(FockIndex(i), FockIndex(j), hs=hs0))
+
+
+def test_coherent_state_to_fock_representation():
+    """Test the representation of a coherent state in the Fock basis"""
+    alpha = symbols('alpha')
+
+    expr1 = CoherentStateKet(alpha, hs=1).to_fock_representation()
+    expr2 = CoherentStateKet(alpha, hs=1).to_fock_representation(max_terms=10)
+    expr3 = CoherentStateKet(alpha, hs=1).to_fock_representation(
+        index_symbol='i')
+    expr4 = CoherentStateKet(alpha, hs=1).to_fock_representation(
+        index_symbol=IdxSym('m', positive=True))
+
+    assert (
+        expr1.term.ranges[0] ==
+        IndexOverFockSpace(IdxSym('n'), LocalSpace('1')))
+    assert (
+        expr2.term.ranges[0] ==
+        IndexOverRange(IdxSym('n', integer=True), 0, 9))
+    assert (
+        expr3.term.ranges[0] ==
+        IndexOverFockSpace(IdxSym('i'), LocalSpace('1')))
+    assert (
+        expr4.term.ranges[0] ==
+        IndexOverFockSpace(IdxSym('m', positive=True), LocalSpace('1')))
+
+    for expr in (expr1, expr2):
+        assert expr.coeff == exp(-alpha*alpha.conjugate()/2)
+        sum = expr.term
+        assert len(sum.ranges) == 1
+        n = sum.ranges[0].index_symbol
+        assert sum.term.coeff == alpha**n/sqrt(factorial(n))
+        assert (
+            sum.term.term ==
+            BasisKet(FockIndex(IdxSym('n')), hs=LocalSpace('1')))

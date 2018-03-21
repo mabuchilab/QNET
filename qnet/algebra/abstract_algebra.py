@@ -27,36 +27,44 @@ or scalars.
 
 See :ref:`abstract_algebra` for design details and usage.
 """
-from abc import ABCMeta, abstractproperty
+from abc import ABCMeta, abstractproperty, abstractmethod
 from contextlib import contextmanager
 from copy import copy
 from functools import reduce
 from collections import OrderedDict
 import logging
 
-from sympy import Basic as SympyBasic
+import attr
+from sympy import (
+    Basic as SympyBasic, Mul as SympyMul, KroneckerDelta as
+    SympyKroneckerDelta)
 from sympy.core.sympify import SympifyError
 
-from .pattern_matching import (
+from .pattern_matching import (  # some import for doctests
     ProtoExpr, match_pattern, wc, pattern_head, Pattern, pattern)
 from .singleton import Singleton
+from .indices import (
+    yield_from_ranges, SymbolicLabelBase, IndexRangeBase, IdxSym)
+from .ordering import KeyTuple, expr_order_key
 
 __all__ = [
     'AlgebraException', 'AlgebraError', 'CannotSimplify',
-    'WrongSignatureError', 'Expression', 'Operation', 'all_symbols',
-    'extra_binary_rules', 'extra_rules', 'no_instance_caching', 'no_rules',
-    'set_union', 'simplify', 'substitute', 'temporary_instance_cache']
+    'WrongSignatureError', 'InfiniteSumError', 'Expression', 'Operation',
+    'ScalarTimesExpression', 'IndexedSum', 'all_symbols', 'extra_binary_rules',
+    'extra_rules', 'no_instance_caching', 'no_rules', 'set_union', 'simplify',
+    'simplify_by_method', 'substitute', 'temporary_instance_cache']
 
 __private__ = [  # anything not in __all__ must be in __private__
-    'assoc', 'idem', 'orderby', 'filter_neutral', 'match_replace',
-    'match_replace_binary', 'cache_attr', 'check_idempotent_create',
-    'check_rules_dict']
+    'assoc', 'assoc_indexed', 'indexed_sum_over_const',
+    'indexed_sum_over_kronecker', 'idem', 'orderby', 'filter_neutral',
+    'match_replace', 'match_replace_binary', 'cache_attr',
+    'check_idempotent_create', 'check_rules_dict', '_scalar_free_symbols']
 
 LEVEL = 0  # for debugging create method
 
 LOG = True  # emit debug logging messages?
-# TODO: test if `LOG = False` results in significant performance increase. If
-# not, remove the flag
+LOG_NO_MATCH = False  # also log non-matching rules? (very verbose!)
+# TODO: test if `LOG = False` results in significant performance increase.
 
 
 def _trace(fn):
@@ -87,6 +95,11 @@ class AlgebraException(Exception):
 class AlgebraError(AlgebraException):
     """Base class for all errors concerning the mathematical definitions and
     rules of an algebra."""
+    pass
+
+
+class InfiniteSumError(AlgebraError):
+    """Raised when expanding a sum into an infinite number of terms"""
     pass
 
 
@@ -182,6 +195,10 @@ class Expression(metaclass=ABCMeta):
             simplified = simplification(cls, args, kwargs)
             try:
                 args, kwargs = simplified
+                if LOG:
+                    logger.debug(
+                        "%s(%s)-> args = %s, kwargs = %s", ("  " * LEVEL),
+                        simpl_name, args, kwargs)
             except (TypeError, ValueError):
                 # We assume that if the simplification didn't return a tuple,
                 # the result is a fully instantiated object
@@ -285,15 +302,28 @@ class Expression(metaclass=ABCMeta):
         """
         return self._substitute(var_map)
 
-    def _substitute(self, var_map):
+    def _substitute(self, var_map, safe=False):
+        """Implementation of :meth:`substitute`.
+
+        For internal use, the `safe` keyword argument allows to perform a
+        substitution on the `args` and `kwargs` of the expression only,
+        guaranteeing that the type of the expression does not change, at the
+        cost of possibly not returning a maximally simplified expression. The
+        `safe` keyword is not handled recursively, i.e. any `args`/`kwargs`
+        will be fully simplified, possibly changing their types.
+        """
         if self in var_map:
-            return var_map[self]
+            if not safe or (type(var_map[self]) == type(self)):
+                return var_map[self]
         if isinstance(self.__class__, Singleton):
             return self
         new_args = [substitute(arg, var_map) for arg in self.args]
         new_kwargs = {key: substitute(val, var_map)
                       for (key, val) in self.kwargs.items()}
-        return self.create(*new_args, **new_kwargs)
+        if safe:
+            return self.__class__(*new_args, **new_kwargs)
+        else:
+            return self.create(*new_args, **new_kwargs)
 
     def simplify(self, rules=None):
         """Recursively re-instantiate the expression, while applying all of the
@@ -521,6 +551,44 @@ def simplify(expr, rules=None):
         return _simplify_expr(expr, rules)
 
 
+def simplify_by_method(expr, *method_names, head=None, **kwargs):
+    """Simplify `expr` by calling all of the given methods on it, if possible.
+
+    Args:
+        expr: The expression to simplify
+        method_names: One or more method names. Any subexpression that has a
+            method with any of the `method_names` will be replaced by the
+            result of calling the method.
+        head (None or type or list): An optional list of classes to which the
+            simplification should be restricted
+        kwargs: keyword arguments to be passed to all methods
+
+    Note:
+        If giving multiple `method_names`, all the methods must take all of the
+        `kwargs`
+    """
+
+    method_names_set = set(method_names)
+
+    def has_any_wanted_method(expr):
+        return len(method_names_set.intersection(dir(expr))) > 0
+
+    def apply_methods(expr, method_names, **kwargs):
+        for mtd in method_names:
+            if hasattr(expr, mtd):
+                try:
+                    expr = getattr(expr, mtd)(**kwargs)
+                except TypeError:
+                    # mtd turns out to not actually be a method (not callable)
+                    pass
+        return expr
+
+    pat = pattern(head=head, wc_name='X', conditions=(has_any_wanted_method, ))
+
+    return simplify(
+        expr, [(pat, lambda X: apply_methods(X, method_names, **kwargs))])
+
+
 def set_union(*sets):
     """Similar to ``sum()``, but for sets. Generate the union of an arbitrary
     number of set arguments.
@@ -530,11 +598,32 @@ def set_union(*sets):
 
 
 def all_symbols(expr):
-    """Return all all_symbols featured within an expression."""
-    try:
-        return expr.all_symbols()
-    except AttributeError:
-        return set(())
+    """Return all (free) symbols featured within an expression."""
+    # TODO: consider renaming this to free_symbols property, for consistency
+    # with SymPy
+    methods = [
+        lambda expr: expr.all_symbols(),  # QNET
+        lambda expr: expr.free_symbols,   # SymPy
+        lambda expr: set(())]             # non-symbolic
+
+    for method in methods:
+        try:
+            return method(expr)
+        except AttributeError:
+            pass  # try next method
+
+
+def _scalar_free_symbols(*operands):
+    """Return all free symbols from any symbolic operand"""
+    if len(operands) > 1:
+        return set_union([_scalar_free_symbols(o) for o in operands])
+    elif len(operands) < 1:
+        return set()
+    else:  # len(operands) == 1
+        o, = operands
+        if isinstance(o, SympyBasic):
+            return set(o.free_symbols)
+    return set()
 
 
 class Operation(Expression, metaclass=ABCMeta):
@@ -562,6 +651,280 @@ class Operation(Expression, metaclass=ABCMeta):
         return self._operands
 
 
+class ScalarTimesExpression(Operation):
+    """Mixin class for any product of a scalar and an expression"""
+
+    def __init__(self, coeff, term):
+        super().__init__(coeff, term)
+
+    @property
+    def coeff(self):
+        return self.operands[0]
+
+    @property
+    def term(self):
+        return self.operands[1]
+
+    def _substitute(self, var_map, safe=False):
+        st = self.term.substitute(var_map)
+        if isinstance(self.coeff, SympyBasic):
+            svar_map = {k: v for k, v in var_map.items()
+                        if not isinstance(k, Expression)}
+            sc = self.coeff.subs(svar_map)
+        else:
+            sc = substitute(self.coeff, var_map)
+        if safe:
+            return self.__class__(sc, st)
+        else:
+            return sc * st
+
+    def all_symbols(self):
+        return _scalar_free_symbols(self.coeff) | self.term.all_symbols()
+
+
+class IndexedSum(Operation, metaclass=ABCMeta):
+    # TODO: documentation
+
+    _expanded_cls = None  # must be set by subclasses
+    _expand_limit = 1000
+
+    def __init__(self, term, *ranges):
+        self._term = term
+        self.ranges = tuple(ranges)
+        for r in self.ranges:
+            if not isinstance(r, IndexRangeBase):
+                # We need this type check to that we can use attr.astuple below
+                raise TypeError(
+                    "Every range must be an instance of IndexRangeBase")
+
+        self._order_key = KeyTuple((
+            self.__class__.__name__, '__', 1.0, expr_order_key(term),
+            tuple([attr.astuple(r) for r in ranges])))
+
+        index_symbols = set([r.index_symbol for r in ranges])
+        if len(index_symbols) != len(self.ranges):
+            raise ValueError(
+                "ranges %s must have distinct index_symbols" % repr(ranges))
+        super().__init__(term, ranges=ranges)
+
+    @property
+    def term(self):
+        return self._term
+
+    @property
+    def operands(self):
+        return (self._term, )
+
+    @property
+    def args(self):
+        return tuple([self._term, *self.ranges])
+
+    @property
+    def variables(self):
+        """List of the dummy (index) variable symbols"""
+        return [r.index_symbol for r in self.ranges]
+
+    def all_symbols(self):
+        """Set of all free symbols"""
+        return set(
+            [sym for sym in all_symbols(self.term)
+                if sym not in self.variables])
+
+    @property
+    def kwargs(self):
+        return {}
+
+    @property
+    def terms(self):
+        for mapping in yield_from_ranges(self.ranges):
+            yield self.term.substitute(mapping).simplify(rules=[(
+                wc('label', head=SymbolicLabelBase),
+                lambda label: label.evaluate(mapping))])
+
+    def __len__(self):
+        length = 1
+        for ind_range in self.ranges:
+            try:
+                length *= len(ind_range)
+            except TypeError:
+                raise InfiniteSumError(
+                    "Cannot determine length from non-finite ranges")
+        return length
+
+    def doit(self, indices=None, max_terms=None):
+        if indices is None:
+            return self._doit_full(max_terms=max_terms)
+        else:
+            if max_terms is not None:
+                raise ValueError(
+                    "max_terms is incompatible with summing over specific "
+                    "indices")
+            return self._doit_over_indices(indices)
+
+    def _doit_full(self, max_terms=None):
+        res = None
+        if max_terms is None:
+            len(self)  # side-effect: raise InfiniteSumError
+        else:
+            if max_terms > self._expand_limit:
+                raise ValueError(
+                    "max_terms = %s must be smaller than the limit %s"
+                    % (max_terms, self._expand_limit))
+        for i, term in enumerate(self.terms):
+            if max_terms is not None:
+                if i >= max_terms:
+                    break
+            if res is None:
+                res = term
+            else:
+                res += term
+            if i > self._expand_limit:
+                raise InfiniteSumError(
+                    "Cannot expand %s: more than %s terms"
+                    % (self, self._expand_limit))
+        return res
+
+    def _doit_over_indices(self, indices):
+        if len(indices) == 0:
+            return self
+        ind_sym, *indices = indices
+        if not isinstance(ind_sym, IdxSym):
+            ind_sym = IdxSym(ind_sym)
+        selected_range = None
+        other_ranges = []
+        for index_range in self.ranges:
+            if index_range.index_symbol == ind_sym:
+                selected_range = index_range
+            else:
+                other_ranges.append(index_range)
+        if selected_range is None:
+            raise ValueError(
+                "Index %s does not appear in %s" % (ind_sym, self))
+        res_term = None
+        for i, mapping in enumerate(selected_range.iter()):
+            res_summand = self.term.substitute(mapping)
+            if res_term is None:
+                res_term = res_summand
+            else:
+                res_term += res_summand
+            if i > self._expand_limit:
+                raise InfiniteSumError(
+                    "Cannot expand %s: more than %s terms"
+                    % (self, self._expand_limit))
+        if len(other_ranges) == 0:
+            res = res_term.simplify(rules=[(
+                wc('label', head=SymbolicLabelBase),
+                lambda label: label.evaluate(mapping))])
+        else:
+            res = self.__class__.create(res_term, *other_ranges)
+            res = res._doit_over_indices(indices=indices)
+        return res
+
+    def make_disjunct_indices(self, *others):
+        """Return a copy with modified indices to ensure disjunct indices with
+        `others`.
+
+        Each index symbol is primed until it does not match any index symbol in
+        `others`
+        """
+        new = self
+        other_index_symbols = set()
+        for other in others:
+            try:
+                if isinstance(other, IndexRangeBase):
+                    other_index_symbols.add(other.index_symbol)
+                elif hasattr(other, 'ranges'):
+                    other_index_symbols.update(
+                        [r.index_symbol for r in other.ranges])
+                else:
+                    other_index_symbols.update(
+                        [r.index_symbol for r in other])
+            except AttributeError:
+                raise ValueError(
+                    "Each element of other must be an an instance of "
+                    "IndexRangeBase, and object with a `ranges` attribute "
+                    "with a list of IndexRangeBase instances, or a list of"
+                    "IndexRangeBase objects directly")
+        for r in self.ranges:
+            index_symbol = r.index_symbol
+            while index_symbol in other_index_symbols:
+                index_symbol = index_symbol.incr_primed()
+            new = new._substitute({r.index_symbol: index_symbol}, safe=True)
+        return new
+
+    def __mul__(self, other):
+        if isinstance(other, IndexedSum):
+            other = other.make_disjunct_indices(self)
+            new_ranges = self.ranges + other.ranges
+            return self.__class__.create(self.term * other.term, *new_ranges)
+        try:
+            return super().__mul__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __rmul__(self, other):
+        if isinstance(other, IndexedSum):
+            self = self.make_disjunct_indices(other)
+            new_ranges = other.ranges + self.ranges
+            return self.__class__.create(other.term * self.term, *new_ranges)
+        try:
+            return super().__rmul__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __add__(self, other):
+        raise NotImplementedError()
+        if isinstance(other, self.__class__):
+            # TODO: this is wrong!!!!!!
+            if set(self.variables).isdisjoint(other.variables):
+                new_ranges = self.ranges + other.ranges
+                return self.__class__.create(
+                    self.term + other.term, *new_ranges)
+        try:
+            return super().__add__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __radd__(self, other):
+        raise NotImplementedError()
+        if isinstance(other, self.__class__):
+            # TODO: this is wrong!!!!!!
+            if set(self.variables).isdisjoint(other.variables):
+                new_ranges = other.ranges + self.ranges
+                return self.__class__.create(
+                    other.term + self.term, *new_ranges)
+        try:
+            return super().__radd__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __sub__(self, other):
+        raise NotImplementedError()
+        if isinstance(other, self.__class__):
+            # TODO: this is wrong!!!!!!
+            if set(self.variables).isdisjoint(other.variables):
+                new_ranges = self.ranges + other.ranges
+                return self.__class__.create(
+                    self.term - other.term, *new_ranges)
+        try:
+            return super().__sub__(other)
+        except AttributeError:
+            return NotImplemented
+
+    def __rsub__(self, other):
+        if isinstance(other, self.__class__):
+            # TODO: this is wrong!!!!!!
+            if set(self.variables).isdisjoint(other.variables):
+                new_ranges = other.ranges + self.ranges
+                return self.__class__.create(
+                    other.term - self.term, *new_ranges)
+        try:
+            return super().__rsub__(other)
+        except AttributeError:
+            return NotImplemented
+
+
+
 ###############################################################################
 ####################### ALGEBRAIC PROPERTIES FUNCTIONS ########################
 ###############################################################################
@@ -578,6 +941,84 @@ def assoc(cls, ops, kwargs):
     """
     expanded = [(o,) if not isinstance(o, cls) else o.operands for o in ops]
     return sum(expanded, ()), kwargs
+
+
+def assoc_indexed(cls, ops, kwargs):
+    r"""Flatten nested indexed structures while pulling out possible prefactors
+
+    For example, for an :class:`IndexedSum`:
+
+    .. math::
+
+        \sum_j \left( a \sum_i \dots \right) = a \sum_{j, i} \dots
+    """
+    term, *ranges = ops
+
+    if isinstance(term, cls):
+        coeff = 1
+    elif isinstance(term, ScalarTimesExpression):
+        coeff = term.coeff
+        term = term.term
+        if not isinstance(term, cls):
+            return ops, kwargs
+    else:
+        return ops, kwargs
+
+    term = term.make_disjunct_indices(*ranges)
+    combined_ranges = tuple(ranges) + term.ranges
+
+    if coeff == 1:
+        return cls(term.term, *combined_ranges)
+    else:
+        bound_symbols = set([r.index_symbol for r in combined_ranges])
+        if len(all_symbols(coeff).intersection(bound_symbols)) == 0:
+            return coeff * cls(term.term, *combined_ranges)
+        else:
+            return cls(coeff * term.term, *combined_ranges)
+
+
+def indexed_sum_over_const(cls, ops, kwargs):
+    """Execute an indexed sum over a term that does not depend on the summation
+    indices
+
+    ..math::
+
+        \sum_{j=1}{N} a = N a
+    """
+    term, *ranges = ops
+    bound_symbols = set([r.index_symbol for r in ranges])
+    if len(all_symbols(term).intersection(bound_symbols)) == 0:
+        n = 1
+        for r in ranges:
+            try:
+                n *= len(r)
+            except TypeError:
+                return ops, kwargs
+        return n * term
+    else:
+        return ops, kwargs
+
+
+def indexed_sum_over_kronecker(cls, ops, kwargs):
+    """Execute sums over KroneckerDelta prefactors"""
+    term, *ranges = ops
+    correct_structure = (
+        isinstance(term, ScalarTimesExpression) and
+        isinstance(term.coeff, SympyMul) and
+        len(ranges) >= 2)
+    if correct_structure:
+        bound_symbols = set([r.index_symbol for r in ranges])
+        for factor in term.coeff.args:
+            if isinstance(factor, SympyKroneckerDelta):
+                i, j = factor.args
+                assert i in bound_symbols and j in bound_symbols
+                if i.primed > j.primed:
+                    # we prefer eliminating indices with more prime dashes
+                    i, j = j, i
+                term = term.substitute({factor: 1, j: i})
+                ranges = [r for r in ranges if r.index_symbol != j]
+        ops = (term, ) + tuple(ranges)
+    return ops, kwargs
 
 
 def idem(cls, ops, kwargs):
@@ -694,7 +1135,16 @@ def match_replace(cls, ops, kwargs):
                         cls.__name__, key, expr.args, expr.kwargs, replaced)
                 return replaced
             except CannotSimplify:
+                if LOG_NO_MATCH:
+                    logger.debug(
+                        "%sRule %s.%s: no match: CannotSimplify",
+                        ("  " * (LEVEL)), cls.__name__, key)
                 continue
+        else:
+            if LOG_NO_MATCH:
+                logger.debug(
+                    "%sRule %s.%s: no match: %s", ("  " * (LEVEL)),
+                    cls.__name__, key, match_dict.reason)
     # No matching rules
     return ops, kwargs
 

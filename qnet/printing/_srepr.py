@@ -20,11 +20,10 @@
 
 from textwrap import dedent, indent
 
-from sympy.printing.repr import (
-    ReprPrinter as SympyReprPrinter, srepr as sympy_srepr)
 from sympy.core.basic import Basic as SympyBasic
 
 from .base import QnetBasePrinter
+from .sympy import SympyReprPrinter
 from ._render_head_repr import render_head_repr
 from ..algebra.abstract_algebra import Expression
 from ..algebra.singleton import Singleton
@@ -115,7 +114,7 @@ class IndentedSReprPrinter(QnetBasePrinter):
                 lines[-1] = lines[-1][:-1]  # drop trailing comma for last arg
             lines[-1] += ")"
         elif isinstance(expr, SympyBasic):
-            lines.append(indent_str + sympy_srepr(expr))
+            lines.append(indent_str + SympyReprPrinter().doprint(expr))
         else:
             lines.append(indent_str + repr(expr))
         return "\n".join(lines)

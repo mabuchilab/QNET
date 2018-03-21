@@ -23,6 +23,7 @@ r"""This module implements the algebra of states in a Hilbert space
 For more details see :ref:`state_algebra`.
 """
 import re
+import sympy
 from abc import ABCMeta, abstractmethod, abstractproperty
 from itertools import product as cartesian_product
 from collections import OrderedDict
@@ -32,9 +33,10 @@ from sympy import (
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-    Operation, Expression, substitute, AlgebraError, assoc, orderby,
-    filter_neutral, match_replace, match_replace_binary,
-    CannotSimplify, check_rules_dict)
+    Operation, Expression, substitute, AlgebraError, assoc, assoc_indexed,
+    indexed_sum_over_const, indexed_sum_over_kronecker, orderby,
+    filter_neutral, match_replace, match_replace_binary, CannotSimplify,
+    check_rules_dict, all_symbols, ScalarTimesExpression, IndexedSum)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
@@ -42,19 +44,23 @@ from .hilbert_space_algebra import (
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorTimes, OperatorPlus,
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
-    Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace, Phase)
+    Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
+    Phase, OperatorIndexedSum)
 from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
+from .indices import (
+    SymbolicLabelBase, IndexOverFockSpace, IndexOverRange,
+    KroneckerDelta, IdxSym, FockIndex, IndexRangeBase)
 
 __all__ = [
     'OverlappingSpaces', 'SpaceTooLargeError', 'UnequalSpaces', 'BasisKet',
     'Bra', 'BraKet', 'CoherentStateKet', 'Ket', 'KetBra', 'KetPlus',
     'KetSymbol', 'LocalKet', 'OperatorTimesKet', 'ScalarTimesKet',
-    'TensorKet', 'TrivialKet', 'ZeroKet']
+    'TensorKet', 'TrivialKet', 'ZeroKet', 'KetIndexedSum']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'act_locally', 'act_locally_times_tensor', 'tensor_decompose_kets',
-    'check_kets_same_space', 'check_op_ket_space']
-
+    'check_kets_same_space', 'check_op_ket_space', 'accept_bras',
+    'basis_ket_zero_outside_hs']
 
 
 ###############################################################################
@@ -96,6 +102,31 @@ def check_op_ket_space(cls, ops, kwargs):
     return ops, kwargs
 
 
+def accept_bras(cls, ops, kwargs):
+    """Accept operands that are all bras, and turn that into to bra of the
+    operation applied to all corresponding kets"""
+    kets = []
+    for bra in ops:
+        if isinstance(bra, Bra):
+            kets.append(bra.ket)
+        else:
+            return ops, kwargs
+    return Bra.create(cls.create(*kets, **kwargs))
+
+
+def basis_ket_zero_outside_hs(cls, ops, kwargs):
+    """For ``BasisKet.create(ind, hs)`` with an integer label `ind`, return a
+    :class:`ZeroKet` if `ind` is outside of the range of the underlying Hilbert
+    space
+    """
+    ind, = ops
+    hs = kwargs['hs']
+    if isinstance(ind, int):
+        if ind < 0 or (hs._dimension is not None and ind >= hs._dimension):
+            return ZeroKet
+    return ops, kwargs
+
+
 ###############################################################################
 # Abstract base classes
 ###############################################################################
@@ -134,17 +165,30 @@ class Ket(metaclass=ABCMeta):
         if isinstance(other, SCALAR_TYPES):
             return ScalarTimesKet.create(other, self)
         elif isinstance(other, Ket):
-            return TensorKet.create(self, other)
+            if isinstance(other, KetIndexedSum):
+                return other.__class__.create(self * other.term, *other.ranges)
+            else:
+                return TensorKet.create(self, other)
         elif isinstance(other, Bra):
-            return KetBra.create(self, other.ket)
-        return NotImplemented
+            if isinstance(other.ket, KetIndexedSum):
+                return OperatorIndexedSum.create(
+                    self * other.ket.term.dag, *other.ket.ranges)
+            else:
+                return KetBra.create(self, other.ket)
+        try:
+            return super().__mul__(other)
+        except AttributeError:
+            return NotImplemented
 
     def __rmul__(self, other):
         if isinstance(other, Operator):
             return OperatorTimesKet.create(other, self)
         elif isinstance(other, SCALAR_TYPES):
             return ScalarTimesKet.create(other, self)
-        return NotImplemented
+        try:
+            return super().__rmul__(other)
+        except AttributeError:
+            return NotImplemented
 
     def __sub__(self, other):
         return self + (-1) * other
@@ -158,7 +202,10 @@ class Ket(metaclass=ABCMeta):
     def __div__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return self * (sympyOne / other)
-        return NotImplemented
+        try:
+            return super().__div__(other)
+        except AttributeError:
+            return NotImplemented
 
     __truediv__ = __div__
 
@@ -169,23 +216,28 @@ class Ket(metaclass=ABCMeta):
 
 
 class KetSymbol(Ket, Expression):
-    """Ket symbol class, parametrized by an identifier string and an associated
-    Hilbert space.
+    """Symbolic state
 
-    :param label: Symbol identifier
-    :type label: str
-    :param hs: Associated Hilbert space.
-    :type hs: HilbertSpace
+    Args:
+        label (str or SymbolicLabelBase): Symbol Identifier
+        hs (HilbertSpace): associated Hilbert space (may be a
+            :class:`~qnet.algebra.hilbert_space_algebra.ProductSpace`)
     """
-    _rx_label = re.compile('^[A-Za-z0-9+-]+(_[A-Za-z0-9().+-]+)?$')
+    _rx_label = re.compile('^[A-Za-z0-9+-]+(_[A-Za-z0-9().,+-]+)?$')
 
     def __init__(self, label, *, hs):
         self._label = label
-        if not isinstance(label, str):
-            raise TypeError("type of label must be str, not %s" % type(label))
-        if not self._rx_label.match(label):
-            raise ValueError("label '%s' does not match pattern '%s'"
-                             % (label, self._rx_label.pattern))
+        if isinstance(label, str):
+            if not self._rx_label.match(label):
+                raise ValueError(
+                    "label '%s' does not match pattern '%s'"
+                    % (label, self._rx_label.pattern))
+        elif isinstance(label, SymbolicLabelBase):
+            self._label = label
+        else:
+            raise TypeError(
+                "type of label must be str or SymbolicLabelBase, not %s"
+                % type(label))
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         elif isinstance(hs, tuple):
@@ -217,7 +269,10 @@ class KetSymbol(Ket, Expression):
         return (self, ) + (0, ) * (order - 1)
 
     def all_symbols(self):
-        return set([self, ])
+        try:
+            return self.label.all_symbols()
+        except AttributeError:
+            return set([self, ])
 
 
 class LocalKet(KetSymbol):
@@ -229,11 +284,14 @@ class LocalKet(KetSymbol):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
         if not isinstance(hs, LocalSpace):
-            raise ValueError("hs must be a LocalSpace")
+            raise TypeError("hs must be a LocalSpace")
         super().__init__(label, hs=hs)
 
     def all_symbols(self):
-        return set([])
+        try:
+            return self.label.all_symbols()
+        except AttributeError:
+            return set([])
 
 
 @singleton_object
@@ -306,15 +364,17 @@ class BasisKet(LocalKet):
     can be used to move between basis states.
 
     Args:
-        label_or_index (str or int): If `str`, the label of the basis state.
-            Must be an element of `hs.basis_labels`. If `int`, the (zero-based)
+        label_or_index: If `str`, the label of the basis state (must be an
+            element of `hs.basis_labels`). If `int`, the (zero-based)
             index of the basis state. This works if `hs` has an unknown
-            dimension
+            dimension. For a symbolic index, `label_or_index` can be an
+            instance of an appropriate subclass of
+            :class:`~qnet.algebra.indices.SymbolicLabelBase`
         hs (LocalSpace): The Hilbert space in which the basis is defined
 
     Raises:
         ValueError: if `label_or_index` is not in the Hilbert space
-        TypeError: if `label_or_index` is not an `int` or `str`.
+        TypeError: if `label_or_index` is not of an appropriate type
         ~qnet.algebra.hilbert_space_algebra.BasisNotSetError: if
             `label_or_index` is a `str` but no basis is defined for `hs`
 
@@ -327,10 +387,26 @@ class BasisKet(LocalKet):
             True
             >>> print(ascii(BasisKet(0, hs=hs)))
             |g>^(tls)
+
+        When instantiating the :class:`BasisKet` via
+        :meth:`~qnet.algebra.abstract_algebra.Expression.create`, an integer
+        label outside the range of the underlying Hilbert space results in a
+        :class:`ZeroKet`::
+
+            >>> BasisKet.create(-1, hs=0)
+            ZeroKet
+            >>> BasisKet.create(2, hs=LocalSpace('tls', dimension=2))
+            ZeroKet
     """
+
+    _simplifications = [basis_ket_zero_outside_hs]
+
     def __init__(self, label_or_index, *, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
+        if not isinstance(hs, LocalSpace):
+            raise TypeError("hs must be a LocalSpace")
+        hs._check_basis_label_type(label_or_index)
         if isinstance(label_or_index, str):
             label = label_or_index
             ind = hs.basis_labels.index(label)  # raises BasisNotSetError
@@ -347,9 +423,13 @@ class BasisKet(LocalKet):
                     raise ValueError(
                         "Index %s must be < the dimension %d of Hilbert "
                         "space %s" % (ind, hs.dimension, hs))
+        elif isinstance(label_or_index, SymbolicLabelBase):
+            label = label_or_index
+            ind = label_or_index
         else:
-            raise TypeError("label_or_index must be an int or str, not %s"
-                            % type(label_or_index))
+            raise TypeError(
+                "label_or_index must be an int or str, not %s"
+                % type(label_or_index))
         self._index = ind
         super().__init__(label, hs=hs)
 
@@ -428,6 +508,7 @@ class CoherentStateKet(LocalKet):
         # The "label" here is something that is solely used to set the
         # _instance_key / uniquely identify the instance. Using the hash gets
         # around variations in str(ampl) due to printer settings
+        # TODO: is this safe against hash collisions?
         super().__init__(label, hs=hs)
 
     @property
@@ -466,6 +547,23 @@ class CoherentStateKet(LocalKet):
         else:
             return set([])
 
+    def to_fock_representation(self, index_symbol='n', max_terms=None):
+        """Return the coherent state written out as an indexed sum over Fock
+        basis states"""
+        phase_factor = sympy.exp(
+            sympy.Rational(-1, 2) * self.ampl * self.ampl.conjugate())
+        if not isinstance(index_symbol, IdxSym):
+            index_symbol = IdxSym(index_symbol)
+        n = index_symbol
+        if max_terms is None:
+            index_range = IndexOverFockSpace(n, hs=self._hs)
+        else:
+            index_range = IndexOverRange(n, 0, max_terms-1)
+        term = (
+            (self.ampl**n / sympy.sqrt(sympy.factorial(n))) *
+            BasisKet(FockIndex(n), hs=self._hs))
+        return phase_factor * KetIndexedSum(term, index_range)
+
 
 ###############################################################################
 # Algebra Operations
@@ -473,19 +571,12 @@ class CoherentStateKet(LocalKet):
 
 
 class KetPlus(Ket, Operation):
-    """A sum of Ket states.
-
-    Instantiate as::
-
-        KetPlus(*summands)
-
-    :param summands: State summands.
-    :type summands: Ket
-    """
+    """A sum of states."""
     neutral_element = ZeroKet
     _binary_rules = OrderedDict()  # see end of module
-    _simplifications = [assoc, orderby, filter_neutral, check_kets_same_space,
-                        match_replace_binary]
+    _simplifications = [
+        accept_bras, assoc, orderby, filter_neutral, check_kets_same_space,
+        match_replace_binary]
 
     order_key = FullCommutativeHSOrder
 
@@ -510,16 +601,11 @@ class KetPlus(Ket, Operation):
 
 class TensorKet(Ket, Operation):
     """A tensor product of kets each belonging to different degrees of freedom.
-    Instantiate as::
-
-        TensorKet(*factors)
-
-    :param factors: Ket factors.
-    :type factors: Ket
     """
     _binary_rules = OrderedDict()  # see end of module
     neutral_element = TrivialKet
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+    _simplifications = [
+        accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = FullCommutativeHSOrder
 
@@ -590,19 +676,18 @@ class TensorKet(Ket, Operation):
             return self._label
 
 
-class ScalarTimesKet(Ket, Operation):
+class ScalarTimesKet(Ket, ScalarTimesExpression):
     """Multiply a Ket by a scalar coefficient.
 
-    Instantiate as::
-        ScalarTimesKet(coefficient, term)
-
-    :param coefficient: Scalar coefficient.
-    :type coefficient: SCALAR_TYPES
-    :param term: The ket that is multiplied.
-    :type term: Ket
+    Args:
+        coeff (SCALAR_TYPES): coefficient
+        term (Ket): the ket that is multiplied
     """
     _rules = OrderedDict()  # see end of module
     _simplifications = [match_replace, ]
+
+    def __init__(self, coeff, term):
+        super().__init__(coeff, term)
 
     @property
     def _order_key(self):
@@ -618,14 +703,6 @@ class ScalarTimesKet(Ket, Operation):
     def space(self):
         return self.operands[1].space
 
-    @property
-    def coeff(self):
-        return self.operands[0]
-
-    @property
-    def term(self):
-        return self.operands[1]
-
     def _expand(self):
         c, t = self.coeff, self.term
         et = t.expand()
@@ -638,32 +715,18 @@ class ScalarTimesKet(Ket, Operation):
         ce = tuple(ceo for ceo, k in zip(ceg, range(order + 1)))
         te = self.term.series_expand(param, about, order)
 
-        return tuple(ce[k] * te[n - k]
-                     for n in range(order + 1) for k in range(n + 1))
-
-    def _substitute(self, var_map):
-        st = self.term.substitute(var_map)
-        if isinstance(self.coeff, SympyBasic):
-            svar_map = {k: v for (k, v) in var_map.items()
-                        if not isinstance(k, Expression)}
-            sc = self.coeff.subs(svar_map)
-        else:
-            sc = substitute(self.coeff, var_map)
-        return sc * st
+        return tuple(
+            ce[k] * te[n - k]
+            for n in range(order + 1) for k in range(n + 1))
 
 
 class OperatorTimesKet(Ket, Operation):
-    """Multiply an operator by an operator
-
-    Instantiate as::
-
-        OperatorTimesKet(op, ket)
-
-    :param Operator op: The multiplying operator.
-    :param Ket ket: The ket that is multiplied.
-    """
+    """Product of an operator and a state."""
     _rules = OrderedDict()  # see end of module
     _simplifications = [match_replace, check_op_ket_space]
+
+    def __init__(self, operator, ket):
+        super().__init__(operator, ket)
 
     @property
     def _order_key(self):
@@ -707,11 +770,7 @@ class OperatorTimesKet(Ket, Operation):
 
 
 class Bra(Operation):
-    """The associated dual/adjoint state for any ``Ket`` object ``k`` is given
-    by ``Bra(k)``.
-
-    :param Ket k: The state to represent as Bra.
-    """
+    """The associated dual/adjoint state for any `ket`"""
     def __init__(self, ket):
         self._order_key = KeyTuple(
                 (self.__class__.__name__, ket.__class__.__name__, 1.0) +
@@ -720,16 +779,14 @@ class Bra(Operation):
 
     @property
     def ket(self):
-        """The state that is represented as a Bra.
-
-        :rtype: Ket
-        """
+        """The original :class:`Ket`"""
         return self.operands[0]
 
     operand = ket
 
     def adjoint(self):
-        """The adjoint of a ``Bra`` is just the original ``Ket`` again."""
+        """The adjoint of a :class:`Bra` is just the original :class:`Ket`
+        again"""
         return self.ket
 
     dag = property(adjoint)
@@ -747,15 +804,31 @@ class Bra(Operation):
         return self.ket.label
 
     def __mul__(self, other):
+        if isinstance(self.ket, KetIndexedSum):
+            if isinstance(other, KetIndexedSum):
+                other = other.make_disjunct_indices(self.ket)
+                assert isinstance(other, KetIndexedSum)
+                new_ranges = self.ket.ranges + other.ranges
+                new_term = BraKet.create(self.ket.term, other.term)
+                return OperatorIndexedSum.create(new_term, *new_ranges)
+            elif isinstance(other, Ket):
+                return OperatorIndexedSum(
+                    BraKet.create(self.ket.term, other), *self.ket.ranges)
         if isinstance(other, SCALAR_TYPES):
             return Bra.create(self.ket * other.conjugate())
         elif isinstance(other, Operator):
             return Bra.create(other.adjoint() * self.ket)
         elif isinstance(other, Ket):
-            return BraKet.create(self.ket, other)
+            if isinstance(other, KetIndexedSum):
+                return OperatorIndexedSum(
+                    BraKet.create(self.ket, other.term), *other.ranges)
+            else:
+                return BraKet.create(self.ket, other)
         elif isinstance(other, Bra):
             return Bra.create(self.ket * other.ket)
-        else:
+        try:
+            return super().__mul__(other)
+        except AttributeError:
             return NotImplemented
 
     def __rmul__(self, other):
@@ -793,8 +866,18 @@ class BraKet(Operator, Operation):
     which we define to be linear in the state :math:`k` and anti-linear in
     :math:`b`.
 
-    :param Ket bra: The anti-linear state argument.
-    :param Ket ket: The linear state argument.
+    Args:
+        bra (Ket): The anti-linear state argument. Not that this is *not* a
+            :class:`Bra` instance.
+        ket (Ket): The linear state argument.
+
+    Note:
+        :class:`Braket` is an :class:`Operator` in the
+        :class:`~qnet.algebra.hilbert_space_algebra.TrivialSpace`, that is,
+        ultimately a scalar. However, ``BraKet.create`` may return scalars
+        directly, which can be used in place of operators in most expression,
+        owing to the :func:`~qnet.algebra.operator_algebra.scalars_to_op`
+        simplification rule.
     """
     _rules = OrderedDict()  # see end of module
     _space = TrivialSpace
@@ -881,6 +964,52 @@ class KetBra(Operator, Operation):
                      for n in range(order + 1) for k in range(n + 1))
 
 
+class KetIndexedSum(IndexedSum, Ket):
+    # Order of superclasses is important for proper mro for __add__ etc.
+    # (we're using cooperative inheritance from both superclasses,
+    # cf. https://stackoverflow.com/q/47804919)
+
+    # TODO: documentation
+
+    _rules = OrderedDict()  # see end of module
+    _simplifications = [
+        assoc_indexed, indexed_sum_over_const, indexed_sum_over_kronecker,
+        match_replace, ]
+
+    @property
+    def space(self):
+        return self.term.space
+
+    def _expand(self):
+        return self.__class__.create(self.term.expand(), *self.ranges)
+
+    def _series_expand(self, param, about, order):
+        raise NotImplementedError()
+
+    def _adjoint(self):
+        return self.__class__.create(self.term.adjoint(), *self.ranges)
+
+    def __mul__(self, other):
+        if isinstance(other, Bra):
+            if isinstance(other.ket, KetIndexedSum):
+                other_ket = other.ket.make_disjunct_indices(self)
+                assert isinstance(other_ket, KetIndexedSum)
+                new_ranges = self.ranges + other_ket.ranges
+                new_term = KetBra.create(self.term, other_ket.term)
+                return OperatorIndexedSum(new_term, *new_ranges)
+            else:
+                return OperatorIndexedSum(
+                    KetBra.create(self.term, other.ket), *self.ranges)
+        elif isinstance(other, Ket):
+            if not isinstance(other, KetIndexedSum):
+                return KetIndexedSum(self.term * other, *self.ranges)
+            # isinstance(other, KetIndexedSum) is handled by IndexedSum.__mul__
+        try:
+            return super().__mul__(other)
+        except AttributeError:
+            return NotImplemented
+
+
 ###############################################################################
 # Auxilliary routines
 ###############################################################################
@@ -934,9 +1063,9 @@ def _algebraic_rules():
     u = wc("u", head=SCALAR_TYPES)
     v = wc("v", head=SCALAR_TYPES)
 
-    n = wc("n", head=(int, str))
-    m = wc("m", head=(int, str))
-    k = wc("k", head=(int, str))
+    n = wc("n", head=(int, str, SymbolicLabelBase))
+    m = wc("m", head=(int, str, SymbolicLabelBase))
+    k = wc("k", head=(int, str, SymbolicLabelBase))
 
     A = wc("A", head=Operator)
     A__ = wc("A__", head=Operator)
@@ -958,204 +1087,255 @@ def _algebraic_rules():
 
     basisket = wc('basisket', BasisKet, kwargs={'hs': ls})
 
+    indranges__ = wc("indranges__", head=IndexRangeBase)
+    sum = wc('sum', head=KetIndexedSum)
+    sum2 = wc('sum2', head=KetIndexedSum)
+
     ScalarTimesKet._rules.update(check_rules_dict([
-        ('one', (
+        ('R001', (
             pattern_head(1, Psi),
             lambda Psi: Psi)),
-        ('zero', (
+        ('R002', (
             pattern_head(0, Psi),
             lambda Psi: ZeroKet)),
-        ('uzero', (
+        ('R003', (
             pattern_head(u, ZeroKet),
             lambda u: ZeroKet)),
-        ('uvpsi', (
+        ('R004', (
             pattern_head(u, pattern(ScalarTimesKet, v, Psi)),
             lambda u, v, Psi: (u * v) * Psi))
     ]))
-
-    # local_rule = lambda A, B, Psi: OperatorTimes.create(*A) * (B * Psi)
 
     def local_rule(A, B, Psi):
         return OperatorTimes.create(*A) * (B * Psi)
 
     OperatorTimesKet._rules.update(check_rules_dict([
-        ('id', (
+        ('R001', (  # Id * Psi = Psi
             pattern_head(IdentityOperator, Psi),
             lambda Psi: Psi)),
-        ('zeroop', (
+        ('R002', (  # 0 * Psi = 0
             pattern_head(ZeroOperator, Psi),
             lambda Psi: ZeroKet)),
-        ('zeroket', (
+        ('R003', (  # A * 0 = 0
             pattern_head(A, ZeroKet),
             lambda A: ZeroKet)),
-        ('vApsi', (
+        ('R004', (  # A * v * Psi = v * A * Psi (pull out scalar)
             pattern_head(A, pattern(ScalarTimesKet, v, Psi)),
             lambda A, v, Psi:  v * (A * Psi))),
 
-        ('sig', (
+        ('R005', (  # |n><m| * |k> = delta_mk * |n>
             pattern_head(
                 pattern(LocalSigma, n, m, hs=ls),
                 pattern(BasisKet, k, hs=ls)),
-            lambda ls, n, m, k: BasisKet(n, hs=ls) if m == k else ZeroKet)),
+            lambda ls, n, m, k: KroneckerDelta(m, k) * BasisKet(n, hs=ls))),
 
         # harmonic oscillator
-        ('create', (
+        ('R006', (  # a^+ |n> = sqrt(n+1) * |n+1>
             pattern_head(pattern(Create, hs=ls), basisket),
             lambda basisket, ls:
                 sqrt(basisket.index + 1) * basisket.next())),
-        ('destroy', (
+        ('R007', (  # a |n> = sqrt(n) * |n-1>
             pattern_head(pattern(Destroy, hs=ls), basisket),
             lambda basisket, ls:
                 sqrt(basisket.index) * basisket.prev())),
-        ('coherent', (
+        ('R008', (  # a |alpha> = alpha * |alpha> (eigenstate of annihilator)
             pattern_head(
                 pattern(Destroy, hs=ls),
                 pattern(CoherentStateKet, u, hs=ls)),
             lambda ls, u: u * CoherentStateKet(u, hs=ls))),
 
         # spin
-        ('jplus', (
+        ('R009', (
             pattern_head(pattern(Jplus, hs=ls), basisket),
             lambda basisket, ls:
                 Jpjmcoeff(basisket.space, basisket.index, shift=True) *
                 basisket.next())),
-        ('jminus', (
+        ('R010', (
             pattern_head(pattern(Jminus, hs=ls), basisket),
             lambda basisket, ls:
                 Jmjmcoeff(basisket.space, basisket.index, shift=True) *
                 basisket.prev())),
-        ('jz', (
+        ('R011', (
             pattern_head(pattern(Jz, hs=ls), basisket),
             lambda basisket, ls:
                 Jzjmcoeff(basisket.space, basisket.index, shift=True) *
                 basisket)),
 
-        ('local1', (
+        ('R012', (
             pattern_head(A_local, Psi_tensor),
             lambda A, Psi: act_locally(A, Psi))),
-        ('prod', (
+        ('R013', (
             pattern_head(A_times, Psi_tensor),
             lambda A, Psi: act_locally_times_tensor(A, Psi))),
-        ('ABPsi', (
+        ('R014', (
             pattern_head(A, pattern(OperatorTimesKet, B, Psi)),
             lambda A, B, Psi: (
                 (A * B) * Psi
                 if (B * Psi) == OperatorTimesKet(B, Psi)
                 else A * (B * Psi)))),
-        ('local2', (
+        ('R015', (
             pattern_head(pattern(OperatorTimes, A__, B_local), Psi_local),
             local_rule)),
-        ('uAPsi', (
+        ('R016', (
             pattern_head(pattern(ScalarTimesOperator, u, A), Psi),
             lambda u, A, Psi: u * (A * Psi))),
-        ('displace1', (
+        ('R017', (
             pattern_head(
                 pattern(Displace, u, hs=ls),
                 pattern(BasisKet, 0, hs=ls)),
             lambda ls, u: CoherentStateKet(u, hs=ls))),
-        ('displace2', (
+        ('R018', (
             pattern_head(
                 pattern(Displace, u, hs=ls),
                 pattern(CoherentStateKet, v, hs=ls)),
             lambda ls, u, v:
                 ((Displace(u, hs=ls) * Displace(v, hs=ls)) *
                  BasisKet(0, hs=ls)))),
-        ('phase1', (
+        ('R019', (
             pattern_head(
                 pattern(Phase, u, hs=ls), pattern(BasisKet, m, hs=ls)),
             lambda ls, u, m: exp(I * u * m) * BasisKet(m, hs=ls))),
-        ('phase2', (
+        ('R020', (
             pattern_head(
                 pattern(Phase, u, hs=ls),
                 pattern(CoherentStateKet, v, hs=ls)),
             lambda ls, u, v: CoherentStateKet(v * exp(I * u), hs=ls))),
+
+        ('R021', (
+            pattern_head(A, sum),
+            lambda A, sum: KetIndexedSum.create(A * sum.term, *sum.ranges))),
     ]))
 
     KetPlus._binary_rules.update(check_rules_dict([
-        ('scalsum', (
+        ('R001', (
             pattern_head(
                 pattern(ScalarTimesKet, u, Psi),
                 pattern(ScalarTimesKet, v, Psi)),
             lambda u, v, Psi: (u + v) * Psi)),
-        ('up1', (
+        ('R002', (
             pattern_head(pattern(ScalarTimesKet, u, Psi), Psi),
             lambda u, Psi: (u + 1) * Psi)),
-        ('1pv', (
+        ('R003', (
             pattern_head(Psi, pattern(ScalarTimesKet, v, Psi)),
             lambda v, Psi: (1 + v) * Psi)),
-        ('2psi', (
+        ('R004', (
             pattern_head(Psi, Psi),
             lambda Psi: 2 * Psi)),
     ]))
 
     TensorKet._binary_rules.update(check_rules_dict([
-        ('scal1', (
+        ('R001', (
             pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
             lambda u, Psi, Phi: u * (Psi * Phi))),
-        ('scal2', (
+        ('R002', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u * (Psi * Phi))),
+        ('R003', (  # delegate to __mul__
+            pattern_head(sum, sum2),
+            lambda sum, sum2: sum * sum2)),
+        ('R004', (  # delegate to __mul__
+            pattern_head(Psi, sum),
+            lambda Psi, sum: Psi * sum)),
+        ('R005', (  # delegate to __mul__
+            pattern_head(sum, Psi),
+            lambda sum, Psi: sum * Psi)),
     ]))
 
     BraKet._rules.update(check_rules_dict([
-        ('zero2', (
+        # All rules must result in scalars or objects in the TrivialSpace
+        ('R001', (
             pattern_head(Phi, ZeroKet),
             lambda Phi: 0)),
-        ('zero1', (
+        ('R002', (
             pattern_head(ZeroKet, Phi),
             lambda Phi: 0)),
-        ('dirac', (
+        ('R003', (
             pattern_head(
                 pattern(BasisKet, m, hs=ls), pattern(BasisKet, n, hs=ls)),
-            lambda ls, m, n: 1 if m == n else 0)),
-        ('norm', (
+            lambda ls, m, n: KroneckerDelta(m, n))),
+        ('R004', (
             pattern_head(
                 pattern(BasisKet, nsym, hs=ls),
                 pattern(BasisKet, nsym, hs=ls)),
             lambda ls, nsym: 1)),
-        ('tensor', (
+        ('R005', (
             pattern_head(Psi_tensor, Phi_tensor),
             lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create))),
-        ('scal1', (
+        ('R006', (
             pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
             lambda u, Psi, Phi: u.conjugate() * (Psi.adjoint() * Phi))),
-        ('op', (
+        ('R007', (
             pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
             lambda A, Psi, Phi: (Psi.adjoint() * (A.dag() * Phi)))),
-        ('scal2', (
+        ('R008', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u * (Psi.adjoint() * Phi))),
+        ('R009', (  # delegate to __mul__
+            pattern_head(sum, sum2),
+            lambda sum, sum2: Bra.create(sum) * sum2)),
+        ('R010', (  # delegate to __mul__
+            pattern_head(Psi, sum),
+            lambda Psi, sum: Bra.create(Psi) * sum)),
+        ('R011', (  # delegate to __mul__
+            pattern_head(sum, Psi),
+            lambda sum, Psi: Bra.create(sum) * Psi)),
     ]))
 
     KetBra._rules.update(check_rules_dict([
-        ('sig', (
+        ('R001', (
             pattern_head(
                 pattern(BasisKet, m, hs=ls),
                 pattern(BasisKet, n, hs=ls)),
             lambda ls, m, n: LocalSigma(m, n, hs=ls))),
-        ('coherent1', (
+        ('R002', (
             pattern_head(pattern(CoherentStateKet, u, hs=ls), Phi),
             lambda ls, u, Phi: (
                 Displace(u, hs=ls) * (BasisKet(0, hs=ls) * Phi.adjoint())))),
-        ('coherent2', (
+        ('R003', (
             pattern_head(Phi, pattern(CoherentStateKet, u, hs=ls)),
             lambda ls, u, Phi: (
                 (Phi * BasisKet(0, hs=ls).adjoint()) * Displace(-u, hs=ls)))),
-        ('tensor', (
+        ('R004', (
             pattern_head(Psi_tensor, Phi_tensor),
             lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, KetBra.create))),
-        ('op1', (
+        ('R005', (
             pattern_head(pattern(OperatorTimesKet, A, Psi), Phi),
             lambda A, Psi, Phi: A * (Psi * Phi.adjoint()))),
-        ('op2', (
+        ('R006', (
             pattern_head(Psi, pattern(OperatorTimesKet, A, Phi)),
             lambda Psi, A, Phi: (Psi * Phi.adjoint()) * A.adjoint())),
-        ('scal1', (
+        ('R007', (
             pattern_head(pattern(ScalarTimesKet, u, Psi), Phi),
             lambda u, Psi, Phi: u * (Psi * Phi.adjoint()))),
-        ('scal2', (
+        ('R008', (
             pattern_head(Psi, pattern(ScalarTimesKet, u, Phi)),
             lambda Psi, u, Phi: u.conjugate() * (Psi * Phi.adjoint()))),
+        ('R009', (  # delegate to __mul__
+            pattern_head(sum, sum2),
+            lambda sum, sum2: sum * Bra.create(sum2))),
+        ('R010', (  # delegate to __mul__
+            pattern_head(Psi, sum),
+            lambda Psi, sum: Psi * Bra.create(sum))),
+        ('R011', (  # delegate to __mul__
+            pattern_head(sum, Psi),
+            lambda sum, Psi: sum * Bra.create(Psi))),
+    ]))
+
+    def pull_constfactor_from_sum(u, Psi, indranges):
+        bound_symbols = set([r.index_symbol for r in indranges])
+        if len(all_symbols(u).intersection(bound_symbols)) == 0:
+            return u * KetIndexedSum.create(Psi, *indranges)
+        else:
+            raise CannotSimplify()
+
+    KetIndexedSum._rules.update(check_rules_dict([
+        ('R001', (  # sum over zero -> zero
+            pattern_head(ZeroKet, indranges__),
+            lambda indranges: ZeroKet)),
+        ('R002', (  # pull constant prefactor out of sum
+            pattern_head(pattern(ScalarTimesKet, u, Psi), indranges__),
+            lambda u, Psi, indranges:
+                pull_constfactor_from_sum(u, Psi, indranges))),
     ]))
 
 

@@ -22,11 +22,12 @@
 from functools import partial
 from collections import OrderedDict
 
-from .abstract_algebra import simplify
+from .abstract_algebra import simplify, IndexedSum, simplify_by_method
 from .operator_algebra import Operator, Commutator, OperatorTimes
 from .pattern_matching import pattern, wc
 
-__all__ = ['expand_commutators_leibniz', 'evaluate_commutators']
+__all__ = [
+    'expand_commutators_leibniz', 'evaluate_commutators', 'expand_indexed_sum']
 
 __private__ = []  # anything not in __all__ must be in __private__
 
@@ -92,3 +93,10 @@ def evaluate_commutators(expr):
     B = wc('B', head=Operator)
     return simplify(
         expr, [(pattern(Commutator, A, B), lambda A, B: A*B - B*A)])
+
+
+def expand_indexed_sum(expr, indices=None, max_terms=None):
+    """Expand indexed sums by calling the `doit` method on any
+    sub-expression. Truncate after `max_terms`."""
+    return simplify_by_method(
+        expr, 'doit', head=IndexedSum, indices=indices, max_terms=max_terms)

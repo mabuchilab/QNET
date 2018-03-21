@@ -17,7 +17,7 @@
 #
 ###########################################################################
 
-from sympy import symbols, sqrt, exp, I, Rational
+from sympy import symbols, sqrt, exp, I, Rational, Idx, IndexedBase
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -39,8 +39,25 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.printing import latex
+from qnet.algebra.indices import FockIndex, StrLabel, IdxSym
+from qnet.printing import latex, configure_printing
 from qnet.printing._latex import QnetLatexPrinter
+
+
+def test_ascii_scalar():
+    """Test rendering of scalar values"""
+    assert latex(2) == '2'
+    latex.printer.cache = {}
+    # we always want 2.0 to be printed as '2'. Without this normalization, the
+    # state of the cache might introduce non-reproducible behavior, as 2==2.0
+    assert latex(2.0) == '2'
+    assert latex(1j) == '1i'
+    assert latex('foo') == 'foo'
+
+    i = Idx('i')
+    alpha = IndexedBase('alpha')
+    assert latex(i) == 'i'
+    assert latex(alpha[i]) == r'\alpha_{i}'
 
 
 def test_tex_render_string():
@@ -341,6 +358,49 @@ def test_tex_ket_elements():
             r'\left\lvert \alpha=2 \right\rangle^{(1)}')
 
 
+def test_tex_ket_symbolic_labels():
+    """Test tex representation of Kets with symbolic labels"""
+    i = Idx('i')
+    i_sym = symbols('i')
+    j = Idx('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+    with configure_printing(tex_use_braket=True):
+        assert (
+            latex(BasisKet(FockIndex(2 * i), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (
+            latex(BasisKet(FockIndex(2 * i_sym), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (latex(
+            LocalKet(StrLabel(2 * i), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (
+            latex(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) ==
+            r'\Ket{\Psi_{i j}}^{(0 \otimes 1)}')
+        expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
+        assert latex(expr) == r'\Ket{i,j}^{(0 \otimes 1)}'
+        assert (
+            latex(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) ==
+            r'\Bra{2 i}^{(0)}')
+        assert (
+            latex(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) ==
+            r'\Ket{i}\!\Bra{j}^{(0)}')
+        alpha = symbols('alpha')
+        expr = CoherentStateKet(alpha, hs=1).to_fock_representation()
+        assert (
+            latex(expr) ==
+            r'e^{- \frac{\alpha \overline{\alpha}}{2}} '
+            r'\left(\sum_{n \in \mathcal{H}_{1}} '
+            r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')
+        assert (
+            latex(expr, conjg_style='star') ==
+            r'e^{- \frac{\alpha {\alpha}^*}{2}} '
+            r'\left(\sum_{n \in \mathcal{H}_{1}} '
+            r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')
+
+
 def test_tex_bra_elements():
     """Test the tex representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
@@ -351,23 +411,32 @@ def test_tex_bra_elements():
     assert (
         latex(bra, tex_use_braket=True, show_hs_label='subscript') ==
         r'\Bra{\Psi}_{(q_{1})}')
-    assert (latex(bra, tex_use_braket=True, show_hs_label=False) == r'\Bra{\Psi}')
-    assert (latex(Bra(KetSymbol('Psi', hs=1))) ==
-            r'\left\langle \Psi \right\rvert^{(1)}')
-    assert (latex(Bra(KetSymbol('Psi', hs=(1, 2)))) ==
-            r'\left\langle \Psi \right\rvert^{(1 \otimes 2)}')
-    assert (latex(Bra(KetSymbol('Psi', hs=hs1*hs2))) ==
-            r'\left\langle \Psi \right\rvert^{(q_{1} \otimes q_{2})}')
-    assert (latex(LocalKet('Psi', hs=1).dag) ==
-            r'\left\langle \Psi \right\rvert^{(1)}')
+    assert (
+        latex(bra, tex_use_braket=True, show_hs_label=False) ==
+        r'\Bra{\Psi}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=1))) ==
+        r'\left\langle \Psi \right\rvert^{(1)}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=(1, 2)))) ==
+        r'\left\langle \Psi \right\rvert^{(1 \otimes 2)}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=hs1*hs2))) ==
+        r'\left\langle \Psi \right\rvert^{(q_{1} \otimes q_{2})}')
+    assert (
+        latex(LocalKet('Psi', hs=1).dag) ==
+        r'\left\langle \Psi \right\rvert^{(1)}')
     assert latex(Bra(ZeroKet)) == '0'
     assert latex(Bra(TrivialKet)) == '1'
-    assert (latex(BasisKet('e', hs=hs1).adjoint()) ==
-            r'\left\langle e \right\rvert^{(q_{1})}')
-    assert (latex(BasisKet(1, hs=1).adjoint()) ==
-            r'\left\langle 1 \right\rvert^{(1)}')
-    assert (latex(CoherentStateKet(2.0, hs=1).dag) ==
-            r'\left\langle \alpha=2 \right\rvert^{(1)}')
+    assert (
+        latex(BasisKet('e', hs=hs1).adjoint()) ==
+        r'\left\langle e \right\rvert^{(q_{1})}')
+    assert (
+        latex(BasisKet(1, hs=1).adjoint()) ==
+        r'\left\langle 1 \right\rvert^{(1)}')
+    assert (
+        latex(CoherentStateKet(2.0, hs=1).dag) ==
+        r'\left\langle \alpha=2 \right\rvert^{(1)}')
 
 
 def test_tex_ket_operations():
@@ -387,7 +456,9 @@ def test_tex_ket_operations():
     phi_l = LocalKet("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
+    alpha = symbols('alpha')
     phase = exp(-I * gamma)
+    i = IdxSym('i')
     assert (
         latex(psi1 + psi2) ==
         r'\left\lvert \Psi_{1} \right\rangle^{(q_{1})} + '
@@ -407,6 +478,9 @@ def test_tex_ket_operations():
     assert (
         latex(phase * psi1) ==
         r'e^{- i \gamma} \left\lvert \Psi_{1} \right\rangle^{(q_{1})}')
+    assert (
+        latex((alpha + 1) * KetSymbol('Psi', hs=0)) ==
+        r'\left(\alpha + 1\right) \left\lvert \Psi \right\rangle^{(0)}')
     assert (
         latex(A * psi1) ==
         r'\hat{A}_{0}^{(q_{1})} \left\lvert \Psi_{1} \right\rangle^{(q_{1})}')
@@ -463,6 +537,15 @@ def test_tex_ket_operations():
         r'^{(q_{1} \otimes q_{2})}\right)\left(\left\langle e,e \right\rvert'
         r'^{(q_{1} \otimes q_{2})} - \left\langle g,g \right\rvert'
         r'^{(q_{1} \otimes q_{2})}\right)')
+    with configure_printing(tex_use_braket=True):
+        expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+        assert latex(expr) == r'\Ket{\Psi}\!\Bra{i}^{(0)}'
+        expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+        assert latex(expr) == r'\Ket{i}\!\Bra{\Psi}^{(0)}'
+        expr = BraKet(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+        assert latex(expr) == r'\Braket{\Psi | i}^(0)'
+        expr = BraKet(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+        assert latex(expr) == r'\Braket{i | \Psi}^(0)'
 
 
 def test_tex_bra_operations():

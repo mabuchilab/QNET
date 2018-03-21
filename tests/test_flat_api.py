@@ -83,7 +83,8 @@ def test_flat_algebra(request):
 
     import qnet
 
-    exclude = ['Singleton', 'singleton_object', 'SingletonType']
+    exclude = [
+        'Singleton', 'singleton_object', 'SingletonType', 'immutable_attribs']
 
     for modname in modules:
         mod = importlib.import_module(modname)

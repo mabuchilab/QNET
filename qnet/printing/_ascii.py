@@ -53,6 +53,11 @@ class QnetAsciiPrinter(QnetBasePrinter):
     _circuit_series_sym = "<<"
     _circuit_concat_sym = "+"
     _cid = 'cid(%d)'
+    _sum_sym = 'Sum'
+    _element_sym = 'in'
+    _ellipsis = '...'
+    _set_delim_left = '{'
+    _set_delim_right = '}'
 
     @property
     def _spaced_product_sym(self):
@@ -118,6 +123,12 @@ class QnetAsciiPrinter(QnetBasePrinter):
         else:
             return self._tensor_sym.join(
                 [self._render_str(ls.label) for ls in hs.local_factors])
+
+    def _render_state_label(self, label):
+        if self._isinstance(label, 'SymbolicLabelBase'):
+            return self._print_SCALAR_TYPES(label.expr)
+        else:
+            return self._render_str(label)
 
     def _braket_fmt(self, expr_type):
         """Return a format string for printing an `expr_type`
@@ -276,13 +287,13 @@ class QnetAsciiPrinter(QnetBasePrinter):
             fmt = self._braket_fmt('ketbra')
             if adjoint:
                 return fmt.format(
-                    label_i=self._render_str(expr.k),
-                    label_j=self._render_str(expr.j),
+                    label_i=self._render_state_label(expr.k),
+                    label_j=self._render_state_label(expr.j),
                     space=self._render_hs_label(expr.space))
             else:
                 return fmt.format(
-                    label_i=self._render_str(expr.j),
-                    label_j=self._render_str(expr.k),
+                    label_i=self._render_state_label(expr.j),
+                    label_j=self._render_state_label(expr.k),
                     space=self._render_hs_label(expr.space))
         else:
             if adjoint:
@@ -336,7 +347,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         return self._spaced_product_sym.join(
             [self.parenthesize(op, prec, **kwargs) for op in expr.operands])
 
-    def _print_ScalarTimesOperator(self, expr, **kwargs):
+    def _print_ScalarTimesExpression(self, expr, **kwargs):
         prec = PRECEDENCE['Mul']
         coeff, term = expr.coeff, expr.term
         term_str = self.doprint(term, **kwargs)
@@ -353,7 +364,9 @@ class QnetAsciiPrinter(QnetBasePrinter):
         else:
             coeff_str = self.doprint(coeff)
 
-        if term_str == '1':
+        if term_str in [
+                '1', self._print_IdentityOperator(expr),
+                self._print_IdentitySuperOperator]:
             return coeff_str
         else:
             coeff_str = coeff_str.strip()
@@ -417,7 +430,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         else:
             fmt = self._braket_fmt('ket')
         return fmt.format(
-            label=self._render_str(expr.label),
+            label=self._render_state_label(expr.label),
             space=self._render_hs_label(expr.space))
 
     def _print_ZeroKet(self, expr, adjoint=False):
@@ -431,7 +444,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
             fmt = self._braket_fmt('bra')
         else:
             fmt = self._braket_fmt('ket')
-        label = self._render_str('alpha=') + self.doprint(expr._ampl)
+        label = self._render_state_label('alpha=') + self.doprint(expr._ampl)
         space = self._render_hs_label(expr.space)
         return fmt.format(label=label, space=space)
 
@@ -454,26 +467,9 @@ class QnetAsciiPrinter(QnetBasePrinter):
             if adjoint:
                 fmt = self._braket_fmt('bra')
             label = ",".join(
-                [self._render_str(o.label) for o in expr.operands])
+                [self._render_state_label(o.label) for o in expr.operands])
             space = self._render_hs_label(expr.space)
             return fmt.format(label=label, space=space)
-
-    def _print_ScalarTimesKet(self, expr, adjoint=False):
-        prec = precedence(expr)
-        coeff, term = expr.coeff, expr.term
-        kwargs = {}
-        if adjoint:
-            kwargs['adjoint'] = adjoint
-        term_str = self.parenthesize(term, prec, **kwargs)
-
-        if coeff == -1:
-            if term_str.startswith(self._parenth_left):
-                return "- " + term_str
-            else:
-                return "-" + term_str
-        coeff_str = self.doprint(coeff, **kwargs)
-        return (
-            coeff_str.strip() + self._spaced_product_sym + term_str.strip())
 
     def _print_OperatorTimesKet(self, expr, adjoint=False):
         prec = precedence(expr)
@@ -488,30 +484,134 @@ class QnetAsciiPrinter(QnetBasePrinter):
         else:
             return rendered_op + " " + rendered_ket
 
+    def _print_IndexedSum(self, expr, adjoint=False):
+        prec = precedence(expr)
+        kwargs = {}
+        if adjoint:
+            kwargs['adjoint'] = adjoint
+        indices = []
+        bottom_rhs = None
+        top = None
+        res = ''
+        # ranges with the same limits are grouped into the same sum symbol
+        for index_range in expr.ranges:
+            current_index = self.doprint(index_range, which='bottom_index')
+            current_bottom_rhs = self.doprint(index_range, which='bottom_rhs')
+            current_top = self.doprint(index_range, which='top')
+            if top is not None:  # index_ranges after the first one
+                if current_top != top or current_bottom_rhs != bottom_rhs:
+                    res += self._sum_sym
+                    bottom = ",".join(indices) + bottom_rhs
+                    if len(bottom) > 0:
+                        res += '_{%s}' % bottom
+                    if len(top) > 0:
+                        res += '^{%s}' % top
+                    res += " "
+                    indices = [current_index, ]
+                    top = current_top
+                    bottom_rhs = current_bottom_rhs
+                else:
+                    indices.append(current_index)
+            else:  # first range
+                indices.append(current_index)
+                top = current_top
+                bottom_rhs = current_bottom_rhs
+        # add the final accumulated sum symbol
+        res += self._sum_sym
+        bottom = ",".join(indices) + bottom_rhs
+        if len(bottom) > 0:
+            res += '_{%s}' % bottom
+        if len(top) > 0:
+            res += '^{%s}' % top
+        res += " " + self.parenthesize(expr.term, prec, strict=True, **kwargs)
+        return res
+
+    def _print_IndexRangeBase(self, expr, which='bottom'):
+        assert which in ['bottom', 'bottom_index', 'bottom_rhs', 'top']
+        if which in ['bottom', 'bottom_index']:
+            return self.doprint(expr.index_symbol)
+        else:
+            return ''
+
+    def _print_IndexOverFockSpace(self, expr, which='bottom'):
+        assert which in ['bottom', 'bottom_index', 'bottom_rhs', 'top']
+        if 'bottom' in which:
+            bottom_index = self.doprint(expr.index_symbol)
+            bottom_rhs = " " + self._element_sym + " " + self.doprint(expr.hs)
+            if which == 'bottom_index':
+                return bottom_index
+            elif which == 'bottom_rhs':
+                return bottom_rhs
+            else:
+                return bottom_index + bottom_rhs
+        elif which == 'top':
+            return ''
+        else:
+            raise ValueError("invalid `which`: %s" % which)
+
+    def _print_IndexOverList(self, expr, which='bottom'):
+        assert which in ['bottom', 'bottom_index', 'bottom_rhs', 'top']
+        if 'bottom' in which:
+            bottom_index = self.doprint(expr.index_symbol)
+            bottom_rhs = (
+                " " + self._element_sym + " " + self._set_delim_left +
+                ",".join([self.doprint(val) for val in expr.values]) +
+                self._set_delim_right)
+            if which == 'bottom_index':
+                return bottom_index
+            elif which == 'bottom_rhs':
+                return bottom_rhs
+            else:
+                return bottom_index + bottom_rhs
+        elif which == 'top':
+            return ''
+        else:
+            raise ValueError("invalid `which`: %s" % which)
+
+    def _print_IndexOverRange(self, expr, which='bottom'):
+        assert which in ['bottom', 'bottom_index', 'bottom_rhs', 'top']
+        if 'bottom' in which:
+            bottom_index = self.doprint(expr.index_symbol)
+            bottom_rhs = "=%s" % expr.start_from
+            if abs(expr.step) > 1:
+                bottom_rhs += ", %s" % expr.start_from + expr.step
+                bottom_rhs += ", " + self._ellipsis
+            if which == 'bottom_index':
+                return bottom_index
+            elif which == 'bottom_rhs':
+                return bottom_rhs
+            else:
+                return bottom_index + bottom_rhs
+        elif which == 'top':
+            return str(expr.to)
+        else:
+            raise ValueError("invalid `which`: %s" % which)
+
+    def _print_BaseLabel(self, expr):
+        return self.doprint(expr.expr)
+
     def _print_Bra(self, expr, adjoint=False):
         return self.doprint(expr.ket, adjoint=(not adjoint))
 
     def _print_BraKet(self, expr, adjoint=False):
         trivial = True
         try:
-            bra_label = str(expr.bra.label)
+            bra_label = self._render_state_label(expr.bra.label)
         except AttributeError:
             trivial = False
         try:
-            ket_label = str(expr.ket.label)
+            ket_label = self._render_state_label(expr.ket.label)
         except AttributeError:
             trivial = False
         if trivial:
             fmt = self._braket_fmt('braket')
             if adjoint:
                 return fmt.format(
-                    label_i=self._render_str(ket_label),
-                    label_j=self._render_str(bra_label),
+                    label_i=ket_label, label_j=bra_label,
                     space=self._render_hs_label(expr.ket.space))
             else:
                 return fmt.format(
-                    label_i=self._render_str(bra_label),
-                    label_j=self._render_str(ket_label),
+                    label_i=bra_label, label_j=ket_label,
                     space=self._render_hs_label(expr.ket.space))
         else:
             prec = precedence(expr)
@@ -525,24 +625,22 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _print_KetBra(self, expr, adjoint=False):
         trivial = True
         try:
-            bra_label = str(expr.bra.label)
+            bra_label = self._render_state_label(expr.bra.label)
         except AttributeError:
             trivial = False
         try:
-            ket_label = str(expr.ket.label)
+            ket_label = self._render_state_label(expr.ket.label)
         except AttributeError:
             trivial = False
         if trivial:
             fmt = self._braket_fmt('ketbra')
             if adjoint:
                 return fmt.format(
-                    label_i=self._render_str(bra_label),
-                    label_j=self._render_str(ket_label),
+                    label_i=bra_label, label_j=ket_label,
                     space=self._render_hs_label(expr.ket.space))
             else:
                 return fmt.format(
-                    label_i=self._render_str(ket_label),
-                    label_j=self._render_str(bra_label),
+                    label_i=ket_label, label_j=bra_label,
                     space=self._render_hs_label(expr.ket.space))
         else:
             prec = precedence(expr)
@@ -571,14 +669,6 @@ class QnetAsciiPrinter(QnetBasePrinter):
         if adjoint:
             kwargs['adjoint'] = True
         return self._print_OperatorTimes(expr, superop=True, **kwargs)
-
-    def _print_ScalarTimesSuperOperator(
-            self, expr, adjoint=False, superop=True):
-        kwargs = {}
-        if adjoint:
-            kwargs['adjoint'] = True
-        return self._print_ScalarTimesOperator(
-            expr, superop=True, **kwargs)
 
     def _print_SuperAdjoint(self, expr, adjoint=False, superop=True):
         o = expr.operand

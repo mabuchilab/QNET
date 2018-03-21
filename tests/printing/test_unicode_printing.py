@@ -18,7 +18,7 @@
 ###########################################################################
 
 import sympy
-from sympy import symbols, sqrt, exp, I, Rational
+from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -40,6 +40,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
+from qnet.algebra.indices import FockIndex, StrLabel, IdxSym
 from qnet.printing import unicode
 
 
@@ -57,6 +58,11 @@ def test_unicode_scalar():
     assert unicode(0.5j) == '0.5j'
     assert unicode(sympy.pi) == 'π'
     assert unicode(sympy.pi/4) == 'π/4'
+
+    i = IdxSym('i')
+    alpha = IndexedBase('alpha')
+    assert unicode(alpha[i]) == 'α_i'
+    assert unicode(alpha[1]) == 'α₁'
 
 
 def test_unicode_circuit_elements():
@@ -261,6 +267,28 @@ def test_unicode_ket_elements():
     assert unicode(CoherentStateKet(2.1, hs=1)) == '|α=2.1⟩⁽¹⁾'
 
 
+def test_unicode_ket_symbolic_labels():
+    """Test unicode representation of Kets with symbolic labels"""
+    i = IdxSym('i')
+    i_sym = symbols('i')
+    j = IdxSym('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+    assert unicode(BasisKet(FockIndex(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
+    assert unicode(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2 i⟩⁽⁰⁾'
+    assert unicode(LocalKet(StrLabel(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
+    assert (
+        unicode(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Ψ_ij⟩^(0⊗1)')
+    expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
+    assert unicode(expr) == '|i,j⟩^(0⊗1)'
+    assert unicode(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) == '⟨2 i|⁽⁰⁾'
+    assert (
+        unicode(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) == '|i⟩⟨j|⁽⁰⁾')
+    expr = CoherentStateKet(symbols('alpha'), hs=1).to_fock_representation()
+    assert unicode(expr) == 'exp(-α α ⃰/2) (∑_{n ∈ ℌ₁} αⁿ/√n! |n⟩⁽¹⁾)'
+
+
 def test_unicode_bra_elements():
     """Test the unicode representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
@@ -291,11 +319,15 @@ def test_unicode_ket_operations():
     phi_l = LocalKet("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
+    alpha = symbols('alpha')
     phase = exp(-I * gamma)
+    i = IdxSym('i')
     assert unicode(psi1 + psi2) == '|Ψ₁⟩^(q₁) + |Ψ₂⟩^(q₁)'
     assert unicode(psi1 * phi) == '|Ψ₁⟩^(q₁) ⊗ |Φ⟩^(q₂)'
     assert unicode(psi1_l * phi_l) == '|Ψ₁,Φ⟩^(q₁⊗q₂)'
     assert unicode(phase * psi1) == 'exp(-ⅈ γ) |Ψ₁⟩^(q₁)'
+    assert (
+        unicode((alpha + 1) * KetSymbol('Psi', hs=0)) == '(α + 1) |Ψ⟩⁽⁰⁾')
     assert (unicode(A * psi1) ==
             'A\u0302_0^(q\u2081) |\u03a8\u2081\u27e9^(q\u2081)')
     #        Â_0^(q₁) |Ψ₁⟩^(q₁)
@@ -315,6 +347,14 @@ def test_unicode_ket_operations():
             r'⟨g,g|^(q₁⊗q₂))')
     assert (unicode(KetBra.create(bell1, bell2), show_hs_label=False) ==
             r'1/2 (|e,g⟩ - ⅈ |g,e⟩)(⟨e,e| - ⟨g,g|)')
+    expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+    assert unicode(expr) == "|Ψ⟩⟨i|⁽⁰⁾"
+    expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+    assert unicode(expr) == "|i⟩⟨Ψ|⁽⁰⁾"
+    expr = BraKet(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+    assert unicode(expr) == "⟨Ψ|i⟩⁽⁰⁾"
+    expr = BraKet(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+    assert unicode(expr) == "⟨i|Ψ⟩⁽⁰⁾"
 
 
 def test_unicode_bra_operations():

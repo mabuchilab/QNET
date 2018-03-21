@@ -57,6 +57,11 @@ class QnetLatexPrinter(QnetAsciiPrinter):
     _circuit_series_sym = r'\lhd'
     _circuit_concat_sym = r'\boxplus'
     _cid = r'{\rm cid}(%d)'
+    _sum_sym = r'\sum'
+    _element_sym = r'\in'
+    _ellipsis = r'\dots'
+    _set_delim_left = r'\{'
+    _set_delim_right = r'\}'
 
     def __init__(self, cache=None, settings=None):
         super().__init__(cache=cache, settings=settings)
@@ -110,9 +115,9 @@ class QnetLatexPrinter(QnetAsciiPrinter):
                         r'\Ket{{{label_i}}}\!\Bra{{{label_j}}}_{{({space})}}',
                     False: r'\Ket{{{label_i}}}\!\Bra{{{label_j}}}'},
                 'braket': {
-                    True: r'\Braket{label_i} | {label_j}}^({space})',
-                    'subscript': r'\Braket{label_i} | {label_j}}_({space})',
-                    False:  r'\Braket{label_i} | {label_j}}'}},
+                    True: r'\Braket{{{label_i} | {label_j}}}^({space})',
+                    'subscript': r'\Braket{{{label_i} | {label_j}}}_({space})',
+                    False:  r'\Braket{{{label_i} | {label_j}}}'}},
             False: {  # explicit tex macros
                 'bra': {
                     True:

@@ -30,20 +30,19 @@ from collections import defaultdict, OrderedDict
 from numpy.linalg import eigh
 from numpy import (sqrt as np_sqrt, array as np_array)
 
-from sympy import (
-    Basic as SympyBasic, Matrix as SympyMatrix, sqrt, I)
+from sympy import (Matrix as SympyMatrix, sqrt, I)
 
 from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
     Operation, Expression, AlgebraError, assoc, orderby,
     filter_neutral, match_replace, match_replace_binary, AlgebraException,
-    check_rules_dict)
+    check_rules_dict, ScalarTimesExpression)
 from .singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import TrivialSpace, LocalSpace, ProductSpace
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
-    IdentityOperator, simplify_scalar, Create, Destroy)
+    IdentityOperator, simplify_scalar)
 from .ordering import (
     KeyTuple, FullCommutativeHSOrder, DisjunctCommutativeHSOrder)
 from .matrix_algebra import Matrix
@@ -375,7 +374,7 @@ class SuperOperatorTimes(SuperOperatorOperation):
                    ZeroSuperOperator)
 
 
-class ScalarTimesSuperOperator(SuperOperator, Operation):
+class ScalarTimesSuperOperator(SuperOperator, ScalarTimesExpression):
     """Multiply an operator by a scalar coefficient::
 
         ScalarTimesSuperOperator(coeff, term)
@@ -402,16 +401,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
             c = float('inf')
         return KeyTuple(t[:2] + (c, ) + t[3:] + (ascii(self.coeff), ))
 
-    @property
-    def coeff(self):
-        """The scalar coefficient."""
-        return self.operands[0]
-
-    @property
-    def term(self):
-        """The super-operator term."""
-        return self.operands[1]
-
     def _expand(self):
         c, t = self.coeff, self.term
         et = t.expand()
@@ -436,16 +425,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
         if self.term is IdentitySuperOperator:
             return float(self.coeff)
         return NotImplemented
-
-    def _substitute(self, var_map):
-        coeff, term = self.operands
-        st = term.substitute(var_map)
-        if isinstance(coeff, SympyBasic):
-            svar_map = {k:v for k,v in var_map.items() if not isinstance(k,Expression)}
-            sc = coeff.subs(svar_map)
-        else:
-            sc = substitute(coeff, var_map)
-        return sc * st
 
 
 class SuperAdjoint(SuperOperatorOperation):
@@ -703,6 +682,7 @@ def liouvillian_normal_form(L, symbolic = False):
     first port:
 
     >>> from sympy import symbols
+    >>> from qnet.algebra import Create, Destroy
     >>> kappa_1, kappa_2 = symbols('kappa_1, kappa_2', positive = True)
     >>> Delta = symbols('Delta', real = True)
     >>> alpha = symbols('alpha')
@@ -734,7 +714,7 @@ def liouvillian_normal_form(L, symbolic = False):
     if isinstance(L, SuperOperatorPlus):
         spres = []
         sposts = []
-        collapse_form = defaultdict(lambda : defaultdict(int))
+        collapse_form = defaultdict(lambda: defaultdict(int))
         for s in L.operands:
             if isinstance(s, ScalarTimesSuperOperator):
                 coeff, term = s.operands

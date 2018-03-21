@@ -85,6 +85,9 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
     _product_sym = ' '
     _circuit_series_sym = '◁'
     _circuit_concat_sym = '⊞'
+    _sum_sym = '∑'
+    _element_sym = '∈'
+    _ellipsis = '…'
 
     def _render_str(self, string):
         """Returned a unicodified version of the string"""

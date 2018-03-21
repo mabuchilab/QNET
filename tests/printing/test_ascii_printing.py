@@ -19,7 +19,7 @@
 
 import pytest
 
-from sympy import symbols, sqrt, exp, I
+from sympy import symbols, sqrt, exp, I, Idx, IndexedBase
 
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -42,6 +42,7 @@ from qnet.algebra.state_algebra import (
 from qnet.algebra.super_operator_algebra import (
         SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
+from qnet.algebra.indices import FockIndex, StrLabel, IdxSym
 from qnet.printing import ascii
 
 
@@ -54,6 +55,11 @@ def test_ascii_scalar():
     assert ascii(2.0) == '2'
     assert ascii(1j) == '1j'
     assert ascii('foo') == 'foo'
+
+    i = Idx('i')
+    alpha = IndexedBase('alpha')
+    assert ascii(i) == 'i'
+    assert ascii(alpha[i]) == 'alpha_i'
 
 
 def test_ascii_circuit_elements():
@@ -236,7 +242,7 @@ def test_ascii_ket_elements():
     with pytest.raises(ValueError):
         KetSymbol(r'\Psi', hs=hs1)
     assert ascii(LocalKet('Psi', hs=1)) == '|Psi>^(1)'
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         LocalKet('Psi', hs=hs1*hs2)
     assert ascii(ZeroKet) == '0'
     assert ascii(TrivialKet) == '1'
@@ -247,6 +253,31 @@ def test_ascii_ket_elements():
         BasisKet('1', hs=hs1)
     assert ascii(CoherentStateKet(2.0, hs=1)) == '|alpha=2>^(1)'
     assert ascii(CoherentStateKet(2.1, hs=1)) == '|alpha=2.1>^(1)'
+
+
+def test_ascii_ket_symbolic_labels():
+    """Test ascii representation of Kets with symbolic labels"""
+    i = Idx('i')
+    i_sym = symbols('i')
+    j = Idx('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+    assert ascii(BasisKet(FockIndex(2 * i), hs=hs0)) == '|2*i>^(0)'
+    assert ascii(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2*i>^(0)'
+    assert ascii(LocalKet(StrLabel(2 * i), hs=hs0)) == '|2*i>^(0)'
+    assert (
+        ascii(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Psi_ij>^(0*1)')
+    expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
+    assert ascii(expr) == '|i,j>^(0*1)'
+    assert ascii(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) == '<2*i|^(0)'
+    assert (
+        ascii(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) == '|i><j|^(0)')
+    expr = CoherentStateKet(symbols('alpha'), hs=1).to_fock_representation()
+    assert (
+        ascii(expr) ==
+        'exp(-alpha*conjugate(alpha)/2) * '
+        '(Sum_{n in H_1} alpha**n/sqrt(n!) * |n>^(1))')
 
 
 def test_ascii_bra_elements():
@@ -287,7 +318,9 @@ def test_ascii_ket_operations():
     phi_l = LocalKet("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
+    alpha = symbols('alpha')
     phase = exp(-I * gamma)
+    i = IdxSym('i')
     assert ascii(psi1 + psi2) == '|Psi_1>^(q_1) + |Psi_2>^(q_1)'
     assert (ascii(psi1 - psi2 + psi3) ==
             '|Psi_1>^(q_1) - |Psi_2>^(q_1) + |Psi_3>^(q_1)')
@@ -301,6 +334,9 @@ def test_ascii_ket_operations():
     with pytest.raises(OverlappingSpaces):
         psi1 * psi2
     assert ascii(phase * psi1) == 'exp(-I*gamma) * |Psi_1>^(q_1)'
+    assert (
+        ascii((alpha + 1) * KetSymbol('Psi', hs=0)) ==
+        '(alpha + 1) * |Psi>^(0)')
     assert ascii(A * psi1) == 'A_0^(q_1) |Psi_1>^(q_1)'
     with pytest.raises(SpaceTooLargeError):
         A * phi
@@ -323,6 +359,14 @@ def test_ascii_ket_operations():
     assert (ascii(KetBra.create(bell1, bell2)) ==
             '1/2 * (|e,g>^(q_1*q_2) - I * |g,e>^(q_1*q_2))(<e,e|^(q_1*q_2) '
             '- <g,g|^(q_1*q_2))')
+    expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+    assert ascii(expr) == "|Psi><i|^(0)"
+    expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+    assert ascii(expr) == "|i><Psi|^(0)"
+    expr = BraKet(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+    assert ascii(expr) == "<Psi|i>^(0)"
+    expr = BraKet(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+    assert ascii(expr) == "<i|Psi>^(0)"
 
 
 def test_ascii_bra_operations():
