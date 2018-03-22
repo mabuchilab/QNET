@@ -19,8 +19,6 @@
 
 import qnet.misc.euler_mayurama
 import qnet.misc.kerr_model_matrices
-import qnet.misc.parse_circuit_strings
-import qnet.misc.parser
 import qnet.misc.qsd_codegen
 import qnet.misc.testing_tools
 import qnet.misc.trajectory_data

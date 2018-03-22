@@ -2,19 +2,6 @@ import os
 import sys
 from distutils.core import setup
 from setuptools import find_packages
-# from distutils.extension import Extension
-#
-# from Cython.Distutils import build_ext
-# import numpy as np
-#
-#
-# ext_modules = [
-#     Extension("qnet.misc.kerr_cysolve",
-#               ["qnet/misc/src/kerr_cysolve.pyx"],
-#               include_dirs=[np.get_include()],
-#               extra_link_args=['-lm']),
-# ]
-
 
 def get_version(filename):
     """Extract the package version"""
@@ -39,13 +26,13 @@ setup(
     packages=find_packages(exclude=["tests"]),
     # ext_modules=ext_modules,
     install_requires=[
-        'matplotlib', 'sympy', 'ply', 'six', 'numpy', 'attrs',
+        'matplotlib', 'sympy', 'six', 'numpy', 'attrs',
     ],
     extras_require={
         'dev': ['click', 'pytest>=3.3.0', 'sphinx', 'sphinx-autobuild',
-                'sphinx_rtd_theme', 'better-apidoc', 'nose', 'cython',
+                'sphinx_rtd_theme', 'better-apidoc', 'nose',
                 'coverage', 'pytest-cov', 'pytest-xdist'],
-        'simulation': ['cython', 'qutip>=3.0.1'],
+        'simulation': ['qutip>=3.0.1'],
         'circuit_visualization': 'pyx>0.14',
     },
     classifiers=[

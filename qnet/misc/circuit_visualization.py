@@ -33,7 +33,6 @@ except ImportError as e:
     print("PyX is not installed. Please install PyX for circuit visualization purposes.")
     raise e
 
-import qnet.misc.parse_circuit_strings as parse_circuit_strings
 import qnet.algebra.circuit_algebra as ca
 from qnet.printing import latex as tex  # TODO tex -> latex
 from qnet.circuit_components.component import Component, SubComponent
@@ -92,19 +91,6 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
     :return: A PyX canvas object that can be further manipulated or printed to an output image.
     :rtype: pyx.canvas.canvas
     """
-
-    if isinstance(circuit, str):
-        try:
-            parsed = parse_circuit_strings.parse_circuit_strings(circuit)
-            if not isinstance(parsed, ca.Circuit):
-                if len(parsed) > 1:
-                    raise NotImplementedError('Can currently only process a single expression.')
-                circuit = parsed[0]
-            else:
-                circuit = parsed
-        except parse_circuit_strings.ParseCircuitStringError as e:
-            raise ValueError('Could not parse {}'.format(circuit))
-
 
     if not isinstance(circuit, ca.Circuit):
         raise ValueError()

@@ -18,7 +18,6 @@
 ###########################################################################
 
 
-from qnet.misc.parse_circuit_strings import parse_circuit_strings
 from qnet.algebra.circuit_algebra import (
         Concatenation, SeriesProduct, CPermutation, CircuitSymbol, CIdentity,
         cid, Feedback, SLH)
@@ -31,37 +30,6 @@ import pyx
 
 import unittest
 
-class TestCircuitParsing(unittest.TestCase):
-    def testSymbol(self):
-        self.assertEqual(parse_circuit_strings('a(2)'), CircuitSymbol('a', 2))
-        self.assertEqual(parse_circuit_strings('a(5)'), CircuitSymbol('a', 5))
-        self.assertEqual(parse_circuit_strings('longerstring(5)'), CircuitSymbol('longerstring', 5))
-
-    def testCPermutation(self):
-        self.assertEqual(parse_circuit_strings('P_sigma(0,2,1)'), CPermutation((0,2,1)))
-        self.assertEqual(parse_circuit_strings('P_sigma(0,2,1,4,3)'), CPermutation((0,2,1,4,3)))
-
-    def testSeries(self):
-        self.assertEqual(parse_circuit_strings('a(2) <<  b(2)'), SeriesProduct(CircuitSymbol('a',2),CircuitSymbol('b',2)))
-        self.assertEqual(parse_circuit_strings('a(5) <<  b(5) << c(5)'), SeriesProduct(CircuitSymbol('a',5),CircuitSymbol('b',5),CircuitSymbol('c',5)))
-
-    def testConcatenation(self):
-        self.assertEqual(parse_circuit_strings('a(1) +  b(2)'), Concatenation(CircuitSymbol('a',1),CircuitSymbol('b',2)))
-        self.assertEqual(parse_circuit_strings('a(1) +  b(2) + c(3)'), Concatenation(CircuitSymbol('a',1),CircuitSymbol('b',2),CircuitSymbol('c',3)))
-
-    def testCIdentity(self):
-        self.assertEqual(parse_circuit_strings('cid(1)'), CIdentity)
-        self.assertEqual(parse_circuit_strings('cid(5)'), cid(5))
-
-    def testFeedback(self):
-        lhs = parse_circuit_strings('[M(5)]_(3->4)')
-        rhs = Feedback(CircuitSymbol('M',5), out_port=3, in_port=4)
-        self.assertEqual(lhs, rhs)
-
-    def testNested(self):
-        self.assertEqual(parse_circuit_strings('a(2) <<  (b(1) + c(1))'), SeriesProduct(CircuitSymbol('a',2),Concatenation(CircuitSymbol('b',1), CircuitSymbol('c',1))))
-        self.assertEqual(parse_circuit_strings('a(2) +  (b(1) << c(1))'), Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))))
-        self.assertEqual(parse_circuit_strings('[a(2) +  (b(1) << c(1))]_(2->0)'), Feedback(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))), out_port=2, in_port=0))
 
 class TestVisualizationPNG(unittest.TestCase):
 

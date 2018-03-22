@@ -27,7 +27,6 @@ available:
     * A library of circuit components as :mod:`qnet.cc <qnet.circuit_components>`
       (as a shorthand for the :mod:`~qnet.circuit_components` subpackage)
     * Conversion utilities to Sympy and Numpy as :mod:`qnet.convert`
-    * Parsing utilities for the QHDL language, as :mod:`qnet.qhdl`
     * Miscellaneous additional tools, as :mod:`qnet.misc`
 
 For interactive usage, the package should be initialized as follows::
@@ -71,7 +70,6 @@ import qnet.circuit_components as cc
 import qnet.convert
 import qnet.misc
 import qnet.printing
-import qnet.qhdl
 
 from .printing import init_printing
 
