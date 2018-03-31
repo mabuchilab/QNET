@@ -18,7 +18,6 @@ setup(
     name='QNET',
     version=version,
     description="Tools for symbolically analyzing quantum feedback networks.",
-    scripts=["bin/parse_qhdl.py"],
     author="Nikolas Tezak, Michael Goerz",
     author_email="mail@michaelgoerz.net",
     url="http://github.com/mabuchilab/QNET",
