@@ -75,4 +75,4 @@ from .printing import init_printing
 
 __all__ = ['init_printing']
 
-__version__ = "1.4.3"
+__version__ = "2.0.0-dev"
