@@ -19,9 +19,7 @@
 
 import qnet.misc.euler_mayurama
 import qnet.misc.kerr_model_matrices
-import qnet.misc.qsd_codegen
 import qnet.misc.testing_tools
-import qnet.misc.trajectory_data
 # circuit_visualization is not exposed: it causes a circular import and is
 # deprecated in favor of a new implementation anyway
 
