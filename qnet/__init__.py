@@ -24,8 +24,6 @@ available:
 
     * Symbolic quantum and circuit algebra as :mod:`qnet.algebra`
     * Printers for symbolic symbolic expressions as :mod:`qnet.printing`
-    * A library of circuit components as :mod:`qnet.cc <qnet.circuit_components>`
-      (as a shorthand for the :mod:`~qnet.circuit_components` subpackage)
     * Conversion utilities to Sympy and Numpy as :mod:`qnet.convert`
     * Miscellaneous additional tools, as :mod:`qnet.misc`
 
@@ -46,9 +44,7 @@ the two objects may be more succintly imported from a higher level namespace as
 
 .. code-block:: python
 
-    import qnet  # required for qnet.cc to work
-    from qnet.algebra import LocalOperator
-    from qnet.cc import Displace
+    from qnet.algebra import LocalOperator, Displace
 
 In an interactive context (and only there!), a star import such as
 
@@ -66,7 +62,6 @@ Internally, the flat API (or star imports) must never be used.
 
 import qnet.algebra
 import qnet.circuit_components
-import qnet.circuit_components as cc
 import qnet.convert
 import qnet.misc
 import qnet.printing
