@@ -1,5 +1,0 @@
-sympy
-numpy
-qutip
-PyX
-six
