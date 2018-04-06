@@ -129,25 +129,3 @@ def test_algebra_all(request):
             assert set(mod.__all__).isdisjoint(mod.__private__)
         for member in public_members:
             assert member in mod.__all__ or member in mod.__private__
-
-
-def test_flat_circuit_components(request):
-    """Check that all items defined in an __all__ list of any of the
-    qnet.circuit_components.* modules are directly accessible through qnet.cc
-    """
-    filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = [m for m in get_leaf_modules(qnet_dir)
-               if m.startswith('qnet.circuit_components.')]
-
-    import qnet
-
-    exclude = []
-
-    for modname in modules:
-        mod = importlib.import_module(modname)
-        assert hasattr(mod, '__all__'), "All cc mods must define __all__"
-        for name in mod.__all__:
-            if name in exclude:
-                continue
-            assert getattr(qnet.cc, name) is not None
