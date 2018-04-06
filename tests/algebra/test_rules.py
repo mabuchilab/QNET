@@ -20,6 +20,7 @@
 """Test *all* of the algebraic rules (the rules in the _rules and _binary_rules
 class attributes of all Operation subclasses"""
 
+import logging
 from collections import defaultdict
 
 import pytest
@@ -115,8 +116,9 @@ def test_rule(cls, rule, args, kwargs, expected, caplog):
     """
     log_marker = "Rule %s.%s" % (cls.__name__, rule)
     print("\n", log_marker)
-    with no_instance_caching():
-        expr = cls.create(*args, **kwargs)
+    with caplog.at_level(logging.DEBUG):
+        with no_instance_caching():
+            expr = cls.create(*args, **kwargs)
     assert expr == expected
     assert log_marker in caplog.text
 
