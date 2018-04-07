@@ -41,7 +41,7 @@ def get_leaf_modules(package_path):
 def test_get_leaf_modules(request):
     """Test that get_leaf_modules produces expected results"""
     filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
+    qnet_dir = os.path.join(os.path.split(filename)[0], '../src/qnet')
     modules = get_leaf_modules(qnet_dir)
     assert "qnet.algebra.abstract_algebra" in modules
 
@@ -49,7 +49,7 @@ def test_get_leaf_modules(request):
 def test_module_access(request):
     """Test that we can reach all leaf modules by importing just qnet"""
     filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
+    qnet_dir = os.path.join(os.path.split(filename)[0], '../src/qnet')
     modules = get_leaf_modules(qnet_dir)
 
     import qnet
@@ -77,7 +77,7 @@ def test_flat_algebra(request):
     qnet.algebra.* modules are directly accessible through qnet.algebra
     """
     filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
+    qnet_dir = os.path.join(os.path.split(filename)[0], '../src/qnet')
     modules = [m for m in get_leaf_modules(qnet_dir)
                if m.startswith('qnet.algebra.')]
 
@@ -117,7 +117,7 @@ def test_algebra_all(request):
     in private, we force the developer to make a conscious choice.
     """
     filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
+    qnet_dir = os.path.join(os.path.split(filename)[0], '../src/qnet')
     modules = [m for m in get_leaf_modules(qnet_dir)
                if m.startswith('qnet.algebra.')]
     for modname in modules:

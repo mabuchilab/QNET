@@ -1,87 +1,114 @@
-PROJECT_NAME = QNET
-PACKAGES =  pip numpy matplotlib scipy sympy ipython bokeh pytest sphinx nose ply cython coverage
-TESTPYPI = https://testpypi.python.org/pypi
-
-TESTENV = MATPLOTLIBRC=tests
-#TESTOPTIONS = --doctest-modules --cov=qnet
+.PHONY: clean clean-test clean-pyc clean-build clean-venvs line pep8 docs dist install develop help
+.DEFAULT_GOAL := help
+CONDA_PACKAGES =  anaconda pytest-cov pytest-xdist coverage sphinx_rtd_theme flake8
+TESTENV =
+#TESTENV = MATPLOTLIBRC=tests
 TESTOPTIONS = --doctest-modules --cov=qnet
-TESTS = qnet tests
-# You may redefine TESTS to run a specific test. E.g.
-#     make test TESTS="tests/algebra"
+TESTS = src tests
 
-VERSION = $(shell grep __version__ < qnet/__init__.py | sed 's/.*"\(.*\)"/\1/')
+
+define PRINT_HELP_PYSCRIPT
+import re, sys
+
+for line in sys.stdin:
+	match = re.match(r'^([a-zA-Z_-]+):.*?## (.*)$$', line)
+	if match:
+		target, help = match.groups()
+		print("%-20s %s" % (target, help))
+endef
+export PRINT_HELP_PYSCRIPT
 
 help:
-	@echo 'Makefile for qnet                                                      '
-	@echo '                                                                       '
-	@echo 'Usage:                                                                 '
-	@echo '   make develop       Install "editable" version of package            '
-	@echo '   make install       Install package into current environment         '
-	@echo '   make uninstall     Remove package from current environment          '
-	@echo '   make upload        Upload package to pypi                           '
-	@echo '   make test-upload   Upload package to testpypi                       '
-	@echo '   make test-install  Install fromm testpypi                           '
-	@echo '   make clean         Remove build files                               '
-	@echo '   make distclean     Restore to pristine state (clean checkout)       '
-	@echo '   make test          Run all tests                                    '
-	@echo '   make coverage      Generate coverage report htmlcov                 '
+	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
 
-develop:
-	pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
+clean: clean-build clean-pyc clean-test clean-venvs ## remove all build, test, coverage, and Python artifacts, as well as environments
 
-install:
-	pip install --process-dependency-links .
+clean-build: ## remove build artifacts
+	rm -fr build/
+	rm -fr dist/
+	rm -fr .eggs/
+	find tests src -name '*.egg-info' -exec rm -fr {} +
+	find tests src -name '*.egg' -exec rm -f {} +
 
-uninstall:
-	pip uninstall $(PROJECT_NAME)
+clean-pyc: ## remove Python file artifacts
+	find tests src -name '*.pyc' -exec rm -f {} +
+	find tests src -name '*.pyo' -exec rm -f {} +
+	find tests src -name '*~' -exec rm -f {} +
+	find tests src -name '__pycache__' -exec rm -fr {} +
 
-sdist:
-	python setup.py sdist
+clean-test: ## remove test and coverage artifacts
+	rm -f .coverage
+	rm -fr htmlcov/
 
-upload:
-	python setup.py register
-	python setup.py sdist upload
+clean-venvs: ## remove testing/build environments
+	rm -fr .tox
+	rm -fr .venv
 
-test-upload:
-	python setup.py register -r $(TESTPYPI)
-	python setup.py sdist upload -r $(TESTPYPI)
+lint: ## check style with flake8
+	flake8 src tests
 
-test-install:
-	pip install -i $(TESTPYPI) $(PROJECT_NAME)
+pep8: ## check style with pep8
+	pep8 src tests
 
-clean:
-	@rm -rf build
-	@rm -rf dist
-	@rm -rf QNET.egg-info
-	@find . -iname *pyc | xargs rm -f
-	@find . -iname __pycache__ | xargs rm -rf
-	@make -C docs clean
-	@rm -rf htmlcov
-	@rm -rf .cache
-	@rm -f .coverage
 
-distclean: clean
-	@rm -rf .venv
+test:  test35 test36 ## run tests on every Python version
+
 
 .venv/py35/bin/py.test:
-	@conda create -y -m -p .venv/py35 python=3.5 $(PACKAGES)
+	@conda create -y -m -p .venv/py35 python=3.5 $(CONDA_PACKAGES)
 	@# if the conda installation does not work, simply comment out the following line, and let pip handle it
 	@conda install -y -c conda-forge -p .venv/py35 qutip
-	@.venv/py35/bin/pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
+	@.venv/py35/bin/pip install -e .[simulation,visualization,dev]
 
-test35: .venv/py35/bin/py.test
-	@$(TESTENV) $< -v $(TESTOPTIONS) $(TESTS)
+test35: .venv/py35/bin/py.test ## run tests for Python 3.5
+	$(TESTENV) $< -v $(TESTOPTIONS) $(TESTS)
 
-test: test35
 
-coverage: test35
-	@rm -rf htmlcov/index.html
-	.venv/py35/bin/coverage html
 
-doc: .venv/py35/bin/py.test
-	@rm -f docs/API/*.rst
-	$(MAKE) -C docs SPHINXBUILD=../.venv/py35/bin/sphinx-build SPHINXAPIDOC=../.venv/py35/bin/sphinx-apidoc html
-	@echo "Documentation is in docs/_build/html"
+.venv/py36/bin/py.test:
+	@conda create -y -m -p .venv/py36 python=3.6 $(CONDA_PACKAGES)
+	@# if the conda installation does not work, simply comment out the following line, and let pip handle it
+	@conda install -y -c conda-forge -p .venv/py36 qutip
+	@.venv/py36/bin/pip install -e .[simulation,visualization,dev]
 
-.PHONY: install develop uninstall upload test-upload test-install sdist clean \
-test test35 doc coverage distclean
+test36: .venv/py36/bin/py.test ## run tests for Python 3.6
+	$(TESTENV) $< -v $(TESTOPTIONS) $(TESTS)
+
+.venv/py36/bin/sphinx-build: .venv/py36/bin/py.test
+
+docs: .venv/py36/bin/sphinx-build ## generate Sphinx HTML documentation, including API docs
+	$(MAKE) -C docs SPHINXBUILD=../.venv/py36/bin/sphinx-build clean
+	$(MAKE) -C docs SPHINXBUILD=../.venv/py36/bin/sphinx-build html
+	@echo "open docs/_build/html/index.html"
+
+coverage: test36  ## generate coverage report in ./htmlcov
+	.venv/py36/bin/coverage html
+	@echo "open htmlcov/index.html"
+
+test-release: clean-build clean-pyc dist ## package and upload a release to test.pypi.org
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+release: clean-build clean-pyc dist ## package and upload a release
+	twine upload dist/*
+
+
+dist: clean-build clean-pyc ## builds source and wheel package
+	python setup.py sdist
+	python setup.py bdist_wheel
+	ls -l dist
+
+install: clean-build clean-pyc ## install the package to the active Python's site-packages
+	pip install .
+
+uninstall:  ## uinstall the package from the active Python's site-packages
+	pip uninstall qnet
+
+develop: clean-build clean-pyc ## install the package to the active Python's site-packages, in develop mode
+	pip install -e .
+
+develop-test: develop ## run tests within the active Python environment
+	$(TESTENV) py.test -v $(TESTOPTIONS) $(TESTS)
+
+develop-docs: develop  ## generate Sphinx HTML documentation, including API docs, within the active Python environment
+	$(MAKE) -C docs clean
+	$(MAKE) -C docs html
+	@echo "open docs/_build/html/index.html"

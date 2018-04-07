@@ -1,7 +1,10 @@
+# Config file for automatic testing at travis-ci.org
+
 language: python
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
-  - "3.5"
+  - 3.6
+  - 3.5
 install:
   - sudo apt-get -qq update && sudo apt-get install -y --no-install-recommends texlive-full
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -11,11 +14,13 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION pip numpy matplotlib scipy sympy ipython bokeh pytest nose ply sphinx cython
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION anaconda pytest-cov pytest-xdist coverage sphinx_rtd_theme flake8
   - source activate test-environment
   - conda install -y -c conda-forge qutip
-  - pip install --process-dependency-links -e .[simulation,circuit_visualization,dev]
+  - pip install -e .[simulation,visualization,dev]
+  - pip install coveralls
 
 script:
-  - which sphinx-build
-  - py.test --doctest-modules --cov=qnet qnet tests
+  - py.test --doctest-modules --cov=qnet src tests
+after_success:
+  - coveralls
