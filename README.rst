@@ -14,9 +14,9 @@ QNET
    :alt: Travis Continuous Integration
    :target: https://travis-ci.org/mabuchilab/QNET
 
-.. image:: https://coveralls.io/repos/github/mabuchilab/QNET/badge.svg?branch=master
+.. image:: https://coveralls.io/repos/github/mabuchilab/QNET/badge.svg?branch=develop
    :alt: Coveralls
-   :target: https://coveralls.io/github/mabuchilab/QNET?branch=master
+   :target: https://coveralls.io/github/mabuchilab/QNET?branch=develop
 
 .. image:: https://readthedocs.org/projects/qnet/badge/?version=latest
    :alt: Documentation Status
