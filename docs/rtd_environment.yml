@@ -9,3 +9,16 @@ dependencies:
   - pytest-xdist
   - coverage
   - flake8
+  - pip:
+    - argh
+    - better-apidoc>=0.1.4
+    - livereload
+    - pathtools
+    - port-for
+    - pyx>=0.14.1
+    - requests-toolbelt
+    - sphinx-autobuild
+    - tables
+    - tqdm
+    - twine
+    - watchdog

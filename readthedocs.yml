@@ -8,7 +8,7 @@ build:
     image: latest
 python:
    version: 3.6
-   setup_py_install: false
-   pip_install: true
+   setup_py_install: true
+   pip_install: false
    extra_requirements:
         - dev
