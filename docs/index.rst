@@ -1,6 +1,8 @@
 Welcome to QNET's documentation!
 ================================
 
+.. image:: _static/logo_medium.png
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -22,7 +24,4 @@ API
 
    API of the QNET package <API/qnet>
 
-Indices and tables
-==================
-* :ref:`genindex`
 * :ref:`modindex`
