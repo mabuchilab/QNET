@@ -59,7 +59,6 @@ setup(
         'dev': dev_requirements,
         'simulation': ['qutip>=3.0.1'],
         'visualization': ['matplotlib', 'pyx>0.14'],
-        'rtd': [pkg for pkg in dev_requirements if 'sphinx' not in pkg],
     },
     license="MIT license",
     long_description=readme + '\n\n' + history,

@@ -11,4 +11,4 @@ python:
    setup_py_install: false
    pip_install: true
    extra_requirements:
-        - rtd
+        - dev
