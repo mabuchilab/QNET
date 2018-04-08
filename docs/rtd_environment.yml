@@ -9,5 +9,3 @@ dependencies:
   - pytest-xdist
   - coverage
   - flake8
-  - pip:
-      - sphinx_rtd_theme==0.3.0
