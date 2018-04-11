@@ -275,7 +275,7 @@ class Circuit(metaclass=ABCMeta):
 
         :return (str): The path to the image file
         """
-        import qnet.misc.circuit_visualization as circuit_visualization
+        import qnet.visualization.circuit_pyx as circuit_visualization
 
         if not fname:
             from tempfile import gettempdir

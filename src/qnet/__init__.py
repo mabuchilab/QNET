@@ -25,7 +25,6 @@ available:
     * Symbolic quantum and circuit algebra as :mod:`qnet.algebra`
     * Printers for symbolic symbolic expressions as :mod:`qnet.printing`
     * Conversion utilities to Sympy and Numpy as :mod:`qnet.convert`
-    * Miscellaneous additional tools, as :mod:`qnet.misc`
 
 For interactive usage, the package should be initialized as follows::
 
@@ -63,8 +62,9 @@ Internally, the flat API (or star imports) must never be used.
 import qnet.algebra
 import qnet.circuit_components
 import qnet.convert
-import qnet.misc
 import qnet.printing
+import qnet.utils
+import qnet.visualization
 
 from .printing import init_printing
 

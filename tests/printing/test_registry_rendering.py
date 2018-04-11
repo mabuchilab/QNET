@@ -21,7 +21,7 @@ import os
 
 import pytest
 
-from qnet.misc.testing_tools import datadir
+from qnet.utils.testing import datadir
 from qnet.algebra.circuit_algebra import (
     cid, P_sigma, FB, SeriesProduct, Feedback, CPermutation, Concatenation,
     CIdentity)

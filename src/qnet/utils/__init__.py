@@ -17,10 +17,4 @@
 #
 ###########################################################################
 
-import qnet.misc.euler_mayurama
-import qnet.misc.kerr_model_matrices
-import qnet.misc.testing_tools
-# circuit_visualization is not exposed: it causes a circular import and is
-# deprecated in favor of a new implementation anyway
-
-__all__ = []
+import qnet.utils.testing

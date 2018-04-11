@@ -25,7 +25,7 @@ from sympy import symbols, sqrt, atan
 from sympy.printing.str import StrPrinter
 from sympy.printing.printer import Printer
 
-from qnet.misc.testing_tools import datadir, QnetAsciiTestPrinter
+from qnet.utils.testing import datadir, QnetAsciiTestPrinter
 
 from qnet.algebra.operator_algebra import LocalSigma
 from qnet.algebra.state_algebra import BasisKet

@@ -25,8 +25,8 @@ def datadir(tmpdir, request):
     In any test, import the datadir routine and turn it into a fixture::
 
         >>> import pytest
-        >>> import qnet.misc.testing_tools
-        >>> datadir = pytest.fixture(qnet.misc.testing_tools.datadir)
+        >>> import qnet.utils.testing
+        >>> datadir = pytest.fixture(qnet.utils.testing.datadir)
     '''
     # http://stackoverflow.com/questions/29627341/pytest-where-to-store-expected-data
     filename = request.module.__file__

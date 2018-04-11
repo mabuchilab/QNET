@@ -19,11 +19,10 @@
 
 
 from qnet.algebra.circuit_algebra import (
-        Concatenation, SeriesProduct, CPermutation, CircuitSymbol, CIdentity,
-        cid, Feedback, SLH)
+    Concatenation, SeriesProduct, CPermutation, CircuitSymbol, cid, Feedback, SLH)
 from qnet.algebra.operator_algebra import Create, Destroy
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
-from qnet.misc.circuit_visualization import draw_circuit
+from qnet.visualization.circuit_pyx import draw_circuit
 from os import path, remove
 from tempfile import gettempdir
 import pyx
