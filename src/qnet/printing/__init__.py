@@ -11,15 +11,16 @@ from functools import partial
 from sympy.printing.printer import Printer as SympyPrinter
 
 from .base import QnetBasePrinter
-from ._ascii import QnetAsciiPrinter
-from ._unicode import QnetUnicodePrinter
-from ._latex import QnetLatexPrinter
-from ._srepr import QnetSReprPrinter, IndentedSReprPrinter
-from .tree import print_tree, tree
+from .asciiprinter import QnetAsciiPrinter
+from .unicodeprinter import QnetUnicodePrinter
+from .latexprinter import QnetLatexPrinter
+from .sreprprinter import QnetSReprPrinter, IndentedSReprPrinter
+from .treeprinting import print_tree, tree
 from .dot import dotprint
 
 __all__ = ['init_printing', 'configure_printing', 'ascii', 'unicode', 'latex',
            'tex', 'srepr', 'dotprint', 'tree', 'print_tree']
+__private__ = []
 
 
 def _printer_cls(label, class_address, require_base=QnetBasePrinter):
@@ -134,13 +135,13 @@ def init_printing(*, reset=False, **kwargs):
 
 def _init_printing(
         str_format=None, repr_format=None, caching=True,
-        ascii_printer='qnet.printing._ascii.QnetAsciiPrinter',
+        ascii_printer='qnet.printing.asciiprinter.QnetAsciiPrinter',
         ascii_sympy_printer='qnet.printing.sympy.SympyStrPrinter',
         ascii_settings=None,
-        unicode_printer='qnet.printing._unicode.QnetUnicodePrinter',
+        unicode_printer='qnet.printing.unicodeprinter.QnetUnicodePrinter',
         unicode_sympy_printer='qnet.printing.sympy.SympyUnicodePrinter',
         unicode_settings=None,
-        latex_printer='qnet.printing._latex.QnetLatexPrinter',
+        latex_printer='qnet.printing.latexprinter.QnetLatexPrinter',
         latex_sympy_printer='qnet.printing.sympy.SympyLatexPrinter',
         latex_settings=None, _freeze=False, **settings):
     # Note: the *_printer args are undocumented, it's preferable to use them

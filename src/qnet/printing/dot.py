@@ -50,7 +50,8 @@ the graph's structural and visual properties.
 
 from ..algebra.abstract_algebra import Expression, Operation
 
-__all__ = ['dotprint']
+__all__ = []
+__private__ = ['dotprint', 'expr_labelfunc']
 
 template = r'''
 digraph{

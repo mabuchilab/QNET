@@ -1,5 +1,10 @@
 """A module providing information about the necessity of parenthesis when
 printing"""
+__all__ = []
+__private__ = [
+    'PRECEDENCE_VALUES', 'precedence_ScalarTimesX',
+    'precedence_OperatorTimesKet', 'precedence_Bra',
+    'precedence_SuperOperatorTimesOperator', 'precedence']
 
 from sympy.printing.precedence import (
     PRECEDENCE,

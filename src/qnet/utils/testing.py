@@ -6,7 +6,7 @@ See <https://pytest.org/latest/fixture.html>
 """
 import os
 from distutils import dir_util
-from qnet.printing._ascii import QnetAsciiPrinter
+from qnet.printing.asciiprinter import QnetAsciiPrinter
 
 __all__ = []
 __private__ = ['QnetAsciiTestPrinter', 'datadir']

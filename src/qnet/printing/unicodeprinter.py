@@ -2,11 +2,12 @@
 from sympy.printing.pretty.pretty_symbology import modifier_dict
 from sympy.printing.conventions import split_super_sub
 
-from ._ascii import QnetAsciiPrinter
+from .asciiprinter import QnetAsciiPrinter
 from .sympy import SympyUnicodePrinter
 from ._unicode_mappings import render_unicode_sub_super
 
-__all__ = ['QnetUnicodePrinter']
+__all__ = []
+__private__ = ['QnetUnicodePrinter', 'SubSupFmt', 'SubSupFmtNoUni']
 
 
 class SubSupFmt():

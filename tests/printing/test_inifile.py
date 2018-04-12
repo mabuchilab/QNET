@@ -12,8 +12,8 @@ from qnet.algebra.operator_algebra import LocalSigma
 from qnet.algebra.state_algebra import BasisKet
 from qnet.printing import (
     init_printing, configure_printing, ascii, unicode, latex)
-from qnet.printing._ascii import QnetAsciiPrinter
-from qnet.printing._unicode import QnetUnicodePrinter
+from qnet.printing.asciiprinter import QnetAsciiPrinter
+from qnet.printing.unicodeprinter import QnetUnicodePrinter
 from qnet.printing.sympy import SympyStrPrinter
 
 

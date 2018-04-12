@@ -51,8 +51,4 @@ __imported_data__ = {
 __version__ = "2.0.0-dev"
 
 _import_submodules(
-    __all__, __path__, __name__,
-    exclude=['qnet.printing'])
-_import_submodules(
-    __all__, __path__, __name__,
-    include=['qnet.printing'], recursive=False)
+    __all__, __path__, __name__)

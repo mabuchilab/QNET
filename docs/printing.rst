@@ -201,9 +201,9 @@ Consider the following annotated example for an INI file::
     # printers
 
     [ascii]
-    printer = qnet.printing._ascii.QnetAsciiPrinter
+    printer = qnet.printing.asciiprinter.QnetAsciiPrinter
     # we use the SymPy StrPrinter here, instead of the default
-    # qnet.printing._ascii.SympyStrPrinter that is customized to not
+    # qnet.printing.sympy.SympyStrPrinter that is customized to not
     # rationalize denominators
     sympy_printer = sympy.printing.str.StrPrinter
     # we override the the settings from the 'global' section
@@ -211,13 +211,13 @@ Consider the following annotated example for an INI file::
     sig_as_ketbra = True
 
     [unicode]
-    printer = qnet.printing._unicode.QnetUnicodePrinter
+    printer = qnet.printing.unicodeprinter.QnetUnicodePrinter
     sympy_printer = qnet.printing.sympy.SympyUnicodePrinter
     show_hs_label = subscript
     unicode_op_hats = False
 
     [latex]
-    printer = qnet.printing._latex.QnetLatexPrinter
+    printer = qnet.printing.latexprinter.QnetLatexPrinter
     sympy_printer = qnet.printing.sympy.SympyLatexPrinter
     # string values can be written un-escaped
     tex_op_macro = \Op{{{name}}}

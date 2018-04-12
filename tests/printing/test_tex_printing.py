@@ -20,7 +20,7 @@ from qnet.algebra.super_operator_algebra import (
         SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
 from qnet.algebra.indices import FockIndex, StrLabel, IdxSym
 from qnet.printing import latex, configure_printing
-from qnet.printing._latex import QnetLatexPrinter
+from qnet.printing.latexprinter import QnetLatexPrinter
 
 
 def test_ascii_scalar():

@@ -38,7 +38,8 @@ from sympy.printing.pretty.pretty_symbology import pretty_symbol
 
 from ._unicode_mappings import _SUPERSCRIPT_MAPPING, _SUBSCRIPT_MAPPING
 
-__all__ = [
+__all__ = []
+__private__ = [
     'SympyLatexPrinter', 'SympyStrPrinter', 'SympyUnicodePrinter',
     'SympyReprPrinter']
 
@@ -247,7 +248,7 @@ class SympyLatexPrinter(LatexPrinter):
             return tex
 
     def _print_Indexed(self, expr):
-        from qnet.printing._latex import _TEX_SINGLE_LETTER_SYMBOLS
+        from qnet.printing.latexprinter import _TEX_SINGLE_LETTER_SYMBOLS
         indices = [self._print(i) for i in expr.indices]
         sep = ','
         all_indices_are_single_letters = True

@@ -4,7 +4,8 @@ from .base import QnetBasePrinter
 from .sympy import SympyStrPrinter
 from ._precedence import precedence, PRECEDENCE
 
-__all__ = ['QnetAsciiPrinter']
+__all__ = []
+__private__ = ['QnetAsciiPrinter', 'QnetAsciiDefaultPrinter']
 
 
 class QnetAsciiPrinter(QnetBasePrinter):

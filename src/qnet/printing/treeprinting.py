@@ -4,7 +4,8 @@ This is mainly for interactive use.
 """
 from ._render_head_repr import render_head_repr
 
-__all__ = ['tree', 'print_tree']
+__all__ = []
+__private__ = ['tree', 'print_tree']
 
 
 def _shorten_render(renderer, max_len):

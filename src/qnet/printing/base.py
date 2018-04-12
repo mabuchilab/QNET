@@ -7,7 +7,8 @@ from ..algebra.scalar_types import SCALAR_TYPES
 from .sympy import SympyStrPrinter
 from ._render_head_repr import render_head_repr
 
-__all__ = ['QnetBasePrinter']
+__all__ = []
+__private__ = ['QnetBasePrinter']
 
 
 class QnetBasePrinter(SympyPrinter):

@@ -8,11 +8,12 @@ from sympy.printing.conventions import split_super_sub
 from numpy import complex128
 
 from ..algebra.singleton import Singleton
-from ._ascii import QnetAsciiPrinter
+from .asciiprinter import QnetAsciiPrinter
 from ._precedence import precedence
 from .sympy import SympyLatexPrinter
 
-__all__ = ['QnetLatexPrinter']
+__all__ = []
+__private__ = ['QnetLatexPrinter', 'render_latex_sub_super']
 
 
 class QnetLatexPrinter(QnetAsciiPrinter):
