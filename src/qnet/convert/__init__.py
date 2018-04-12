@@ -16,16 +16,3 @@
 # Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
 #
 ###########################################################################
-
-import qnet.convert.to_qutip
-import qnet.convert.to_sympy_matrix
-
-from .to_qutip import *
-from .to_sympy_matrix import *
-
-from qnet._flat_api_tools import _combine_all
-
-__all__ = _combine_all(
-    'qnet.convert.to_qutip',
-    'qnet.convert.to_sympy_matrix')
-

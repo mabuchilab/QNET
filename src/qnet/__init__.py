@@ -59,15 +59,18 @@ attribute of each subpackage (see each package's documentation).
 Internally, the flat API (or star imports) must never be used.
 """
 
-import qnet.algebra
-import qnet.circuit_components
-import qnet.convert
-import qnet.printing
-import qnet.utils
-import qnet.visualization
+from qnet._flat_api_tools import _import_submodules
 
-from .printing import init_printing
+__all__ = []  # will be set by _import_submodules
 
-__all__ = ['init_printing']
+__imported_data__ = {
+    'SCALAR_TYPES': ':data:`~qnet.algebra.scalar_types.SCALAR_TYPES`'}
 
 __version__ = "2.0.0-dev"
+
+_import_submodules(
+    __all__, __path__, __name__,
+    exclude=['qnet.printing', 'qnet.circuit_components'])
+_import_submodules(
+    __all__, __path__, __name__,
+    include=['qnet.printing'], recursive=False)

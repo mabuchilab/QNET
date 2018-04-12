@@ -8,6 +8,9 @@ import os
 from distutils import dir_util
 from qnet.printing._ascii import QnetAsciiPrinter
 
+__all__ = []
+__private__ = ['QnetAsciiTestPrinter', 'datadir']
+
 
 class QnetAsciiTestPrinter(QnetAsciiPrinter):
     """A Printer subclass for testing"""
