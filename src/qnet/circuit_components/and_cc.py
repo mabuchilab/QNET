@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
 """And component"""
 
 from qnet.circuit_components.component import Component

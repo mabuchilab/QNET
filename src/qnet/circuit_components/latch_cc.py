@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
 from qnet.circuit_components.library import make_namespace_string
 from qnet.circuit_components.component import Component
 from qnet.algebra.circuit_algebra import cid, P_sigma, FB

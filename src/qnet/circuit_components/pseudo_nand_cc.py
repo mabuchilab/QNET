@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# encoding: utf-8
 from sympy import symbols
 
 from qnet.circuit_components.library import make_namespace_string
