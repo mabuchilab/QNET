@@ -4,7 +4,6 @@ channels:
 dependencies:
   - python=3.6
   - anaconda
-  - pytest-cov
-  - pytest-xdist
-  - coverage
-  - flake8
+  - pip:
+    - better-apidoc>=0.1.4
+    - pyx>=0.14.1
