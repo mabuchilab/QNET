@@ -1,9 +1,8 @@
 formats:
-    - none
-
+    - epub
+    - pdf
 conda:
     file: docs/rtd_environment.yml
-
 build:
     image: latest
 python:
