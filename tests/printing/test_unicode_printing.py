@@ -23,9 +23,7 @@ from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
         Feedback, SeriesInverse, cid)
-from qnet.circuit_components.beamsplitter_cc import Beamsplitter
-from qnet.circuit_components.three_port_kerr_cavity_cc import (
-        ThreePortKerrCavity)
+from qnet.algebra.library.circuit_components import Beamsplitter
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
@@ -76,21 +74,6 @@ def test_unicode_circuit_elements():
     assert unicode(CIdentity) == 'CIdentity'
     assert unicode(cid(4)) == 'cid(4)'
     assert unicode(CircuitZero) == 'CircuitZero'
-
-
-def test_unicode_circuit_components():
-    """Test ascii-printing of some of the circuit components"""
-    B11 = Beamsplitter('Latch.B11')
-    assert unicode(B11) == 'Latch.B11(theta=π/4)'
-    C1 = ThreePortKerrCavity('Latch.C1')
-    assert (
-        unicode(C1) == 'Latch.C1(Delta=Δ, chi=χ, kappa_1=κ₁, kappa_2=κ₂, '
-        'kappa_3=κ₃, FOCK_DIM=75)')
-    A = CircuitSymbol("A", cdim=2)
-    expr = A << B11
-    assert unicode(expr) == 'A ◁ Latch.B11(theta=π/4)'
-    expr = Feedback(Beamsplitter('BS'), out_port=1, in_port=0)
-    assert unicode(expr) == '[BS(theta=π/4)]₁₋₀'
 
 
 def test_unicode_circuit_operations():

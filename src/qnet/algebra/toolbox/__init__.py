@@ -3,9 +3,9 @@
 from functools import partial
 from collections import OrderedDict
 
-from .abstract_algebra import simplify, IndexedSum, simplify_by_method
-from .operator_algebra import Operator, Commutator, OperatorTimes
-from .pattern_matching import pattern, wc
+from ..abstract_algebra import simplify, IndexedSum, simplify_by_method
+from ..operator_algebra import Operator, Commutator, OperatorTimes
+from ..pattern_matching import pattern, wc
 
 __all__ = [
     'expand_commutators_leibniz', 'evaluate_commutators', 'expand_indexed_sum']

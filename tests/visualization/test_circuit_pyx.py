@@ -19,7 +19,8 @@
 
 
 from qnet.algebra.circuit_algebra import (
-    Concatenation, SeriesProduct, CPermutation, CircuitSymbol, cid, Feedback, SLH)
+    Concatenation, SeriesProduct, CPermutation, CircuitSymbol, cid, Feedback,
+    SLH)
 from qnet.algebra.operator_algebra import Create, Destroy
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
 from qnet.visualization.circuit_pyx import draw_circuit
@@ -93,14 +94,6 @@ class TestVisualizationPNG(unittest.TestCase):
     def testDrawSLH(self):
         self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1)*Destroy(hs=1)))
 
-    def testDrawComponent(self):
-        from qnet.circuit_components import kerr_cavity_cc as kerr
-        K = kerr.KerrCavity('Kerr')
-        self.assertCanBeDrawn(K)
-        self.assertCanBeDrawn(K.creduce())
-        slh = K.toSLH()
-        self.assertCanBeDrawn(slh)
-
 
 class TestVisualizationEPS(unittest.TestCase):
     def setUp(self):
@@ -166,13 +159,6 @@ class TestVisualizationEPS(unittest.TestCase):
     def testDrawSLH(self):
         self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1) * Destroy(hs=1)))
 
-    def testDrawComponent(self):
-        from qnet.circuit_components import kerr_cavity_cc as kerr
-
-        K = kerr.KerrCavity('Kerr')
-        self.assertCanBeDrawn(K)
-        self.assertCanBeDrawn(K.creduce())
-        self.assertCanBeDrawn(K.toSLH())
 
 
 class TestVisualizationPDF(unittest.TestCase):
@@ -238,14 +224,6 @@ class TestVisualizationPDF(unittest.TestCase):
 
     def testDrawSLH(self):
         self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1) * Destroy(hs=1)))
-
-    def testDrawComponent(self):
-        from qnet.circuit_components import kerr_cavity_cc as kerr
-
-        K = kerr.KerrCavity('Kerr')
-        self.assertCanBeDrawn(K)
-        self.assertCanBeDrawn(K.creduce())
-        self.assertCanBeDrawn(K.toSLH())
 
 
 if __name__ == '__main__':

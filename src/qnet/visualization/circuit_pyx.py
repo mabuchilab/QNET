@@ -17,7 +17,7 @@ except ImportError as e:
 
 import qnet.algebra.circuit_algebra as ca
 from qnet.printing import latex as tex  # TODO tex -> latex
-from qnet.circuit_components.component import Component, SubComponent
+from qnet.algebra.circuit_algebra import Component, SubComponent
 
 __all__ = ['draw_circuit_canvas', 'draw_circuit']
 

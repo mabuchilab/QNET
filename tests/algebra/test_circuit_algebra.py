@@ -23,21 +23,19 @@ from numpy import array as np_array
 import pytest
 
 from qnet.algebra.circuit_algebra import (
-        SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
-        SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
-        map_signals_circuit, FB, getABCD, connect, CIdentity,
-        pad_with_identity, move_drive_to_H, try_adiabatic_elimination)
+    SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
+    SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
+    map_signals_circuit, FB, getABCD, connect, CIdentity,
+    pad_with_identity, move_drive_to_H, try_adiabatic_elimination)
 from qnet.algebra.permutations import (
-        permute, full_block_perm, block_perm_and_perms_within_blocks)
+    permute, full_block_perm, block_perm_and_perms_within_blocks)
 from qnet.algebra.operator_algebra import (
-        Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator, LocalSigma,
-        LocalProjector, IdentityOperator)
+    Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator, LocalSigma,
+    LocalProjector, IdentityOperator)
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.matrix_algebra import Matrix, identity_matrix
-from qnet.circuit_components.displace_cc import Displace
-from qnet.circuit_components.phase_cc import Phase
-from qnet.circuit_components.beamsplitter_cc import Beamsplitter
-from qnet.circuit_components import mach_zehnder_cc
+from qnet.algebra.library.circuit_components import (
+    CoherentDriveCC, PhaseCC, Beamsplitter)
 
 
 symbol_counter = 0
@@ -333,7 +331,7 @@ def test_feedback():
 
     cav = SLH([[1]], [sq2 * sqg * a], 0)
     bs = Beamsplitter('theta', theta=theta)
-    ph = Phase('phi', phi=phi)
+    ph = PhaseCC('phi', phi=phi)
     flip = map_signals_circuit({1: 0}, 2)
 
     sys = (
@@ -487,7 +485,7 @@ def test_move_drive_to_H():
 
     # Single Drive
     α = sympy.symbols('alpha')
-    W = Displace('W', alpha=α)
+    W = CoherentDriveCC('W', alpha=α)
     SLH_driven = (SLH1 << W).toSLH()
     SLH_driven_out = move_drive_to_H(SLH_driven)
     assert SLH_driven_out.S == SLH1.S
@@ -497,7 +495,7 @@ def test_move_drive_to_H():
 
     # Concatenated drives (single channel)
     β = sympy.symbols('beta')
-    Wb = Displace('W', alpha=β)
+    Wb = CoherentDriveCC('W', alpha=β)
     SLH_concat_driven = (SLH1 << Wb << W).toSLH()
     SLH_concat_driven_out = move_drive_to_H(SLH_concat_driven)
     assert SLH_concat_driven_out.S == SLH1.S
@@ -510,8 +508,8 @@ def test_move_drive_to_H():
     # Two Drives (two channels)
     α1 = sympy.symbols('alpha_1')
     α2 = sympy.symbols('alpha_2')
-    W1 = Displace('W', alpha=α1)
-    W2 = Displace('W', alpha=α2)
+    W1 = CoherentDriveCC('W', alpha=α1)
+    W2 = CoherentDriveCC('W', alpha=α2)
     SLH2_driven = (SLH2 << (W1 + W2)).toSLH()
     term2 = SLH2_driven.H.expand().operands
     # ###  remove both inhomogeneities (implicitly)
@@ -539,11 +537,3 @@ def test_move_drive_to_H():
     # ###  remove both inhomogeneities (explicitly)
     SLH2_driven_out12 = move_drive_to_H(SLH2_driven, [0, 1])
     assert SLH2_driven_out12 == SLH2_driven_out
-
-    # SLH with only passive elements (scalar entries)
-    mz = mach_zehnder_cc.MachZehnder('Zender', alpha=1, phi=0)
-    passive_slh = mz.toSLH()
-    passive_slh_out = move_drive_to_H(passive_slh)
-    assert passive_slh_out.S == identity_matrix(2)
-    assert passive_slh_out.L == Matrix([[ZeroOperator, ], [ZeroOperator, ]])
-    assert passive_slh_out.H == ZeroOperator

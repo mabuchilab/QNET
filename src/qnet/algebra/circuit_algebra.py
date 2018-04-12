@@ -12,6 +12,7 @@ References:
 import os
 import re
 from abc import ABCMeta, abstractproperty, abstractmethod
+from collections.__init__ import OrderedDict
 from functools import reduce
 from collections import OrderedDict
 
@@ -20,6 +21,9 @@ from sympy import Matrix as SympyMatrix
 from sympy import I
 
 import numpy as np
+
+from qnet.algebra.abstract_algebra import Expression, substitute
+from qnet.algebra.hilbert_space_algebra import TrivialSpace
 
 from .abstract_algebra import (
         AlgebraException, AlgebraError, Operation, Expression, assoc,
@@ -52,7 +56,8 @@ __all__ = [
     'extract_signal', 'extract_signal_circuit', 'getABCD',
     'get_common_block_structure', 'map_signals', 'map_signals_circuit',
     'move_drive_to_H', 'pad_with_identity', 'prepare_adiabatic_limit',
-    'try_adiabatic_elimination', 'CIdentity', 'CircuitZero']
+    'try_adiabatic_elimination', 'CIdentity', 'CircuitZero', 'Component',
+    'SubComponent']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'check_cdims']
@@ -334,7 +339,7 @@ class Circuit(metaclass=ABCMeta):
         n_inputs = len(input_amps)
         if n_inputs != self.cdim:
             raise WrongCDimError()
-        from qnet.circuit_components.displace_cc import Displace as Displace_cc
+        from qnet.algebra.library.circuit_components import CoherentDriveCC as Displace_cc
 
         if n_inputs == 1:
             concat_displacements = Displace_cc('W', alpha=input_amps[0])
@@ -1994,7 +1999,7 @@ def getABCD(slh, a0=None, doubled_up=True):
 def move_drive_to_H(slh, which=[]):
     r'''For the given `slh` model, move inhomogeneities in the Lindblad
     operators (resulting from the presence of a coherent drive, see
-    :class:`~qnet.circuit_components.displace_cc.Displace`) to the
+    :class:`~qnet.circuit_components.displace_cc.CoherentDriveCC`) to the
     Hamiltonian.
 
     This exploits the invariance of the Lindblad master equation under the
@@ -2323,3 +2328,149 @@ def _algebraic_rules():
 
 
 _algebraic_rules()
+
+
+class Component(Circuit, Expression, metaclass=ABCMeta):
+    """Base class for all circuit components,
+    both primitive components such as beamsplitters
+    and cavity models and also composite circuit models
+    that are built up from these.
+    Via the creduce() method, an object can be decomposed into its parts.
+    """
+
+    CDIM = 0
+
+    # ingoing port names
+    PORTSIN = []
+
+    # outgoing port names
+    PORTSOUT = []
+
+    _parameters = []
+    _sub_components = []
+
+    _rx_name = re.compile('^[A-Za-z][A-Za-z0-9.]*$')
+
+    def __init__(self, name, **kwargs):
+        self._name = str(name)
+        if not self._rx_name.match(name):
+            raise ValueError("name '%s' does not match pattern '%s'"
+                             % (self.name, self._rx_name.pattern))
+        for pname, val in kwargs.items():
+            if pname in self._parameters:
+                setattr(self, pname, val)
+            else:
+                del kwargs[pname]
+                print("Unknown parameter!")
+        super().__init__(name, **kwargs)
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def args(self):
+        return (self._name, )
+
+    @property
+    def kwargs(self):
+        res = OrderedDict()
+        for key in self._parameters:
+            try:
+                res[key] = getattr(self, key)
+            except AttributeError:
+                pass
+        return res
+
+    @property
+    def cdim(self):
+        return self.CDIM
+
+    def _all_symbols(self):
+        return set(())
+
+    @abstractmethod
+    def _toSLH(self):
+        raise NotImplementedError()
+
+    @property
+    def space(self):
+        return TrivialSpace
+
+    def _creduce(self):
+        return self
+
+    def _toABCD(self, linearize):
+        return self.toSLH().toABCD(linearize)
+
+    def _substitute(self, var_map):
+        all_names = self._parameters
+        all_namesubvals = [(n, substitute(getattr(self, n), var_map))
+                           for n in all_names]
+        return self.__class__(self._name, **dict(all_namesubvals))
+
+
+class SubComponent(Circuit, Expression, metaclass=ABCMeta):
+    """Class for the subcomponents of a reducible (but primitive) Component."""
+
+    parent_component = None
+    sub_index = 0
+
+    def __init__(self, parent_component, sub_index):
+        self.parent_component = parent_component
+        self.sub_index = sub_index
+        super().__init__(parent_component, sub_index)
+
+    def __getattr__(self, attrname):
+        try:
+            return getattr(self.parent_component, attrname)
+        except AttributeError:
+            raise AttributeError(self.__class__.__name__ + "." + attrname)
+
+    @property
+    def PORTSIN(self):
+        "Names of ingoing ports."
+        offset = sum(self.parent_component.sub_blockstructure[:self.sub_index],
+                     0)
+        return self.parent_component.PORTSIN[offset: offset + self.cdim]
+
+    @property
+    def PORTSOUT(self):
+        "Names of outgoing ports."
+        offset = sum(self.parent_component.sub_blockstructure[:self.sub_index],
+                     0)
+        return self.parent_component.PORTSOUT[offset: offset + self.cdim]
+
+    @property
+    def cdim(self):
+        "Numbers of channels"
+        return self.parent_component.sub_blockstructure[self.sub_index]
+
+    @property
+    def name(self):
+        return self.parent_component.name + '_' + str(self.sub_index)
+
+    @property
+    def args(self):
+        return self.parent_component, self.sub_index
+
+    @abstractmethod
+    def _toSLH(self):
+        raise NotImplementedError()
+
+    def _toABCD(self, linearize):
+        raise CannotConvertToABCD()
+
+    def _creduce(self):
+        return self
+
+    def all_symbols(self):
+        return self.parent_component.all_symbols()
+
+    @property
+    def space(self):
+        return self.parent_component.space
+
+    def _substitute(self, var_map):
+        raise NotImplementedError("Carry out substitution before calling "
+                                  "creduce() or after converting to SLH")

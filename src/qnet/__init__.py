@@ -19,13 +19,13 @@ API. That is, instead of
 .. code-block:: python
 
     from qnet.algebra.operator_algebra import LocalOperator
-    from qnet.circuit_components.displace_cc import Displace
+    from qnet.algebra.library.circuit_components import CoherentDriveCC
 
 the two objects may be more succintly imported from a higher level namespace as
 
 .. code-block:: python
 
-    from qnet.algebra import LocalOperator, Displace
+    from qnet.algebra import LocalOperator, CoherentDriveCC
 
 In an interactive context (and only there!), a star import such as
 
@@ -52,7 +52,7 @@ __version__ = "2.0.0-dev"
 
 _import_submodules(
     __all__, __path__, __name__,
-    exclude=['qnet.printing', 'qnet.circuit_components'])
+    exclude=['qnet.printing'])
 _import_submodules(
     __all__, __path__, __name__,
     include=['qnet.printing'], recursive=False)

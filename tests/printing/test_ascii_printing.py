@@ -24,9 +24,7 @@ from sympy import symbols, sqrt, exp, I, Idx, IndexedBase
 from qnet.algebra.circuit_algebra import(
         CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
         Feedback, SeriesInverse, cid)
-from qnet.circuit_components.beamsplitter_cc import Beamsplitter
-from qnet.circuit_components.three_port_kerr_cavity_cc import (
-        ThreePortKerrCavity)
+from qnet.algebra.library.circuit_components import Beamsplitter
 from qnet.algebra.operator_algebra import(
         OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
@@ -73,16 +71,6 @@ def test_ascii_circuit_elements():
     assert ascii(CIdentity) == 'CIdentity'
     assert ascii(cid(4)) == 'cid(4)'
     assert ascii(CircuitZero) == 'CircuitZero'
-
-
-def test_ascii_circuit_components():
-    """Test ascii-printing of some of the circuit components"""
-    B11 = Beamsplitter('Latch.B11')
-    assert ascii(B11) == 'Latch.B11(theta=pi/4)'
-    C1 = ThreePortKerrCavity('Latch.C1')
-    assert (
-        ascii(C1) == 'Latch.C1(Delta=Delta, chi=chi, kappa_1=kappa_1, '
-        'kappa_2=kappa_2, kappa_3=kappa_3, FOCK_DIM=75)')
 
 
 def test_ascii_circuit_operations():

@@ -229,7 +229,7 @@ def test_trivial_space_conversion():
     from qnet.convert.to_qutip import convert_to_qutip, SLH_to_qutip
     from qnet.algebra.operator_algebra import ZeroOperator
     from qnet.algebra.hilbert_space_algebra import LocalSpace
-    from qnet.circuit_components import mach_zehnder_cc
+    from qnet.algebra.library.circuit_components import Beamsplitter
     from qnet.algebra.abstract_algebra import AlgebraError
 
     with pytest.raises(AlgebraError) as excinfo:
@@ -239,8 +239,8 @@ def test_trivial_space_conversion():
     O = convert_to_qutip(ZeroOperator, full_space=LocalSpace(0, dimension=10))
     assert np.linalg.norm((O.data.todense() - np.zeros((10, 10)))) == 0.0
 
-    mz = mach_zehnder_cc.MachZehnder('Zender', alpha=1, phi=0)
-    slh = mz.toSLH()
+    bs = Beamsplitter("BS", theta=0)
+    slh = bs.toSLH()
 
     with pytest.raises(AlgebraError) as excinfo:
         H, Ls = SLH_to_qutip(slh)

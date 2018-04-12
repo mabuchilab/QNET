@@ -366,7 +366,7 @@ def operator_exprs():
         Jplus(hs=LocalSpace(1, local_identifiers={'Jplus': 'Jp'})),
         Jminus(hs=LocalSpace(1, local_identifiers={'Jminus': 'Jm'})),
         Phase(0.5, hs=1),
-        Phase(0.5, hs=LocalSpace(1, local_identifiers={'Phase': 'Ph'})),
+        Phase(0.5, hs=LocalSpace(1, local_identifiers={'PhaseCC': 'Ph'})),
         Displace(0.5, hs=1),
         Squeeze(0.5, hs=1),
         LocalSigma('e', 'g', hs=LocalSpace(1, basis=('g', 'e'))),
