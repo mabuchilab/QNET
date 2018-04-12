@@ -12,7 +12,6 @@ References:
 import os
 import re
 from abc import ABCMeta, abstractproperty, abstractmethod
-from collections.__init__ import OrderedDict
 from functools import reduce
 from collections import OrderedDict
 
@@ -22,14 +21,11 @@ from sympy import I
 
 import numpy as np
 
-from qnet.algebra.abstract_algebra import Expression, substitute
-from qnet.algebra.hilbert_space_algebra import TrivialSpace
-
 from .abstract_algebra import (
         AlgebraException, AlgebraError, Operation, Expression, assoc,
         filter_neutral, match_replace_binary, match_replace,
         CannotSimplify, substitute, set_union, check_rules_dict)
-from .singleton import Singleton, singleton_object
+from ..utils.singleton import Singleton, singleton_object
 from .operator_algebra import (
         Operator, ScalarTimesOperator, IdentityOperator, Create,
         Destroy, get_coeffs, ZeroOperator, OperatorSymbol,
@@ -37,7 +33,7 @@ from .operator_algebra import (
 from .matrix_algebra import (
         Matrix, block_matrix, zerosm, permutation_matrix, Im, ImAdjoint,
         vstackm, identity_matrix)
-from .permutations import (
+from ..utils.permutations import (
         check_permutation, invert_permutation, BadPermutationError,
         permutation_to_block_permutations, block_perm_and_perms_within_blocks,
         full_block_perm, concatenate_permutations)

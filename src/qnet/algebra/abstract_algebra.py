@@ -9,7 +9,7 @@ or scalars.
 
 See :ref:`abstract_algebra` for design details and usage.
 """
-from abc import ABCMeta, abstractproperty, abstractmethod
+from abc import ABCMeta, abstractproperty
 from contextlib import contextmanager
 from copy import copy
 from functools import reduce
@@ -24,10 +24,10 @@ from sympy.core.sympify import SympifyError
 
 from .pattern_matching import (  # some import for doctests
     ProtoExpr, match_pattern, wc, pattern_head, Pattern, pattern)
-from .singleton import Singleton
-from .indices import (
+from ..utils.singleton import Singleton
+from ..utils.indices import (
     yield_from_ranges, SymbolicLabelBase, IndexRangeBase, IdxSym)
-from .ordering import KeyTuple, expr_order_key
+from ..utils.ordering import KeyTuple, expr_order_key
 
 __all__ = [
     'AlgebraException', 'AlgebraError', 'CannotSimplify',

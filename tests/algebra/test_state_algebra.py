@@ -10,7 +10,7 @@ from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.state_algebra import (
         KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
         TrivialKet, UnequalSpaces, TensorKet, LocalKet, BasisKet, KetBra)
-from qnet.algebra.indices import (
+from qnet.utils.indices import (
     IdxSym, FockIndex, IntIndex, StrLabel, SymbolicLabelBase,
     IndexOverFockSpace, IndexOverRange)
 from qnet.algebra.pattern_matching import wc

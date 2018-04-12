@@ -8,7 +8,7 @@ from qnet.algebra.circuit_algebra import (
     SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
     map_signals_circuit, FB, getABCD, connect, CIdentity,
     pad_with_identity, move_drive_to_H, try_adiabatic_elimination)
-from qnet.algebra.permutations import (
+from qnet.utils.permutations import (
     permute, full_block_perm, block_perm_and_perms_within_blocks)
 from qnet.algebra.operator_algebra import (
     Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator, LocalSigma,

@@ -10,7 +10,7 @@ from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import Expression, substitute, _scalar_free_symbols
 from .operator_algebra import Operator, simplify_scalar
 from .hilbert_space_algebra import TrivialSpace, ProductSpace
-from .permutations import check_permutation
+from ..utils.permutations import check_permutation
 
 __all__ = [
     'NonSquareMatrix', 'Matrix', 'block_matrix', 'diagm', 'hstackm',

@@ -14,9 +14,9 @@ from itertools import product as cartesian_product
 
 from .abstract_algebra import (
         Expression, Operation, AlgebraError, assoc, idem, filter_neutral)
-from .ordering import KeyTuple
-from .singleton import Singleton, singleton_object
-from .indices import SymbolicLabelBase, FockIndex
+from ..utils.ordering import KeyTuple
+from ..utils.singleton import Singleton, singleton_object
+from ..utils.indices import SymbolicLabelBase, FockIndex
 
 __all__ = [
     'BasisNotSetError', 'HilbertSpace', 'LocalSpace', 'ProductSpace',

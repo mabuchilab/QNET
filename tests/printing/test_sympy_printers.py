@@ -2,7 +2,7 @@ import pytest
 
 from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 from sympy.core import S
-from qnet.algebra.indices import IdxSym
+from qnet.utils.indices import IdxSym
 
 from qnet.printing.sympy import (
     SympyUnicodePrinter, SympyLatexPrinter, SympyStrPrinter,

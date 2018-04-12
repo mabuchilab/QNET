@@ -1,14 +1,13 @@
 from sympy import symbols
 import unittest
 from collections import OrderedDict
-import pytest
 
 from qnet.algebra.abstract_algebra import (
     Operation, assoc, assoc_indexed, indexed_sum_over_const, orderby,
     filter_neutral, CannotSimplify, match_replace_binary, idem, IndexedSum,
     ScalarTimesExpression)
-from qnet.algebra.indices import IndexOverRange, IdxSym
-from qnet.algebra.ordering import expr_order_key
+from qnet.utils.indices import IndexOverRange, IdxSym
+from qnet.utils.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
 from qnet.algebra.operator_algebra import (
     LocalSigma, LocalProjector, OperatorTimes, Displace)

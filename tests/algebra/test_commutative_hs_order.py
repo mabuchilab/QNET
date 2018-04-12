@@ -4,7 +4,7 @@ import sympy
 from qnet.algebra.hilbert_space_algebra import LocalSpace
 from qnet.algebra.operator_algebra import (
     OperatorSymbol, tr, Phase, Displace)
-from qnet.algebra.ordering import (
+from qnet.utils.ordering import (
     DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
 from qnet.algebra.state_algebra import BraKet, KetBra, BasisKet
 

@@ -7,7 +7,7 @@ from sympy.printing.latex import (greek_letters_set, other_symbols)
 from sympy.printing.conventions import split_super_sub
 from numpy import complex128
 
-from ..algebra.singleton import Singleton
+from ..utils.singleton import Singleton
 from .asciiprinter import QnetAsciiPrinter
 from ._precedence import precedence
 from .sympy import SympyLatexPrinter

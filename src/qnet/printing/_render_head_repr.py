@@ -3,7 +3,7 @@ from typing import Any
 from sympy.printing.repr import srepr as sympy_srepr
 from sympy.core.basic import Basic as SympyBasic
 
-from ..algebra.singleton import Singleton
+from ..utils.singleton import Singleton
 from ..algebra.abstract_algebra import Expression
 
 

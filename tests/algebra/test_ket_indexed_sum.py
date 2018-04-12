@@ -6,7 +6,7 @@ from qnet.algebra.operator_algebra import (
 from qnet.algebra.state_algebra import (
     KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet,
     KetSymbol, Bra, TensorKet, BraKet, KetBra)
-from qnet.algebra.indices import (
+from qnet.utils.indices import (
     IdxSym, StrLabel, FockIndex, IndexOverFockSpace, IndexOverList,
     IndexOverRange)
 from qnet.algebra.toolbox import expand_indexed_sum

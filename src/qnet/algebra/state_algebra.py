@@ -17,7 +17,7 @@ from .abstract_algebra import (
     indexed_sum_over_const, indexed_sum_over_kronecker, orderby,
     filter_neutral, match_replace, match_replace_binary, CannotSimplify,
     check_rules_dict, all_symbols, ScalarTimesExpression, IndexedSum)
-from .singleton import Singleton, singleton_object
+from ..utils.singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import (
     FullSpace, TrivialSpace, LocalSpace, ProductSpace)
@@ -26,8 +26,8 @@ from .operator_algebra import (
     IdentityOperator, ZeroOperator, LocalSigma, Create, Destroy, Jplus,
     Jminus, Jz, LocalOperator, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff, Displace,
     Phase, OperatorIndexedSum)
-from .ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
-from .indices import (
+from ..utils.ordering import KeyTuple, expr_order_key, FullCommutativeHSOrder
+from ..utils.indices import (
     SymbolicLabelBase, IndexOverFockSpace, IndexOverRange,
     KroneckerDelta, IdxSym, FockIndex, IndexRangeBase)
 

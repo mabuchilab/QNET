@@ -8,7 +8,7 @@ from .base import QnetBasePrinter
 from .sympy import SympyReprPrinter
 from ._render_head_repr import render_head_repr
 from ..algebra.abstract_algebra import Expression
-from ..algebra.singleton import Singleton
+from ..utils.singleton import Singleton
 
 __all__ = []
 __private__ = [

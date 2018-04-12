@@ -1,4 +1,4 @@
-from qnet.algebra.indices import IdxSym
+from qnet.utils.indices import IdxSym
 from qnet.algebra.abstract_algebra import substitute
 
 import sympy

@@ -2,27 +2,17 @@ import pytest
 
 from sympy import symbols, sqrt, exp, I, Idx, IndexedBase
 
-from qnet.algebra.circuit_algebra import(
-        CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-        Feedback, SeriesInverse, cid)
-from qnet.algebra.library.circuit_components import Beamsplitter
-from qnet.algebra.operator_algebra import(
-        OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
-        tr, Adjoint, PseudoInverse, NullSpaceProjector, Commutator,
-        OperatorTimes, OperatorPlusMinusCC)
-from qnet.algebra.hilbert_space_algebra import (
-        LocalSpace, TrivialSpace, FullSpace)
-from qnet.algebra.matrix_algebra import Matrix
-from qnet.algebra.state_algebra import (
-        KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet, CoherentStateKet,
-        UnequalSpaces, Bra, OverlappingSpaces, SpaceTooLargeError, BraKet,
-        KetBra)
-from qnet.algebra.super_operator_algebra import (
-        SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
-        SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.algebra.indices import FockIndex, StrLabel, IdxSym
-from qnet.printing import ascii
+from qnet import (
+    CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
+    Feedback, SeriesInverse, cid, Beamsplitter, OperatorSymbol,
+    IdentityOperator, ZeroOperator, Create, Destroy, Jz, Jplus, Jminus, Phase,
+    Displace, Squeeze, LocalSigma, LocalProjector, tr, Adjoint, PseudoInverse,
+    NullSpaceProjector, Commutator, OperatorTimes, OperatorPlusMinusCC,
+    LocalSpace, TrivialSpace, FullSpace, Matrix, KetSymbol, LocalKet, ZeroKet,
+    TrivialKet, BasisKet, CoherentStateKet, UnequalSpaces, Bra,
+    OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
+    IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
+    SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, ascii)
 
 
 def test_ascii_scalar():

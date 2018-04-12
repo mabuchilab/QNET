@@ -2,24 +2,16 @@ from textwrap import dedent
 
 from sympy import symbols, sqrt, exp, I
 
-from qnet.algebra.circuit_algebra import(
-        CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-        Feedback, SeriesInverse)
-from qnet.algebra.operator_algebra import(
-        OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-        PseudoInverse, NullSpaceProjector)
-from qnet.algebra.hilbert_space_algebra import (
-        LocalSpace, TrivialSpace, FullSpace)
-from qnet.algebra.matrix_algebra import Matrix
-from qnet.algebra.state_algebra import (
-        KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet, CoherentStateKet,
-        UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
-        OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra)
-from qnet.algebra.super_operator_algebra import (
-        SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
-        SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.printing.treeprinting import tree as tree_str
+from qnet import (
+    CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
+    Feedback, SeriesInverse, OperatorSymbol, IdentityOperator, ZeroOperator,
+    Create, Destroy, Jz, Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma,
+    tr, Adjoint, PseudoInverse, NullSpaceProjector, LocalSpace, TrivialSpace,
+    FullSpace, Matrix, KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet,
+    CoherentStateKet, UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
+    OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
+    IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
+    SuperOperatorTimesOperator, tree as tree_str)
 
 
 def test_circuit_tree():

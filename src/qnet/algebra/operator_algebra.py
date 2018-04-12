@@ -19,13 +19,13 @@ from .abstract_algebra import (
     assoc_indexed, indexed_sum_over_const, indexed_sum_over_kronecker, orderby,
     filter_neutral, match_replace_binary, match_replace, CannotSimplify,
     check_rules_dict, _scalar_free_symbols, all_symbols)
-from .singleton import Singleton, singleton_object
+from ..utils.singleton import Singleton, singleton_object
 from .hilbert_space_algebra import (
     TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError)
 from .pattern_matching import wc, pattern_head, pattern
-from .ordering import (
+from ..utils.ordering import (
     KeyTuple, DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
-from .indices import SymbolicLabelBase, KroneckerDelta, IndexRangeBase
+from ..utils.indices import SymbolicLabelBase, KroneckerDelta, IndexRangeBase
 
 sympyOne = sympify(1)
 
@@ -43,7 +43,7 @@ __all__ = [
     'X', 'Y', 'Z', 'adjoint', 'create_operator_pm_cc', 'decompose_space',
     'expand_operator_pm_cc', 'factor_coeff', 'factor_for_trace', 'get_coeffs',
     'simplify_scalar', 'space', 'II', 'IdentityOperator', 'ZeroOperator',
-    'Commutator', 'OperatorIndexedSum']
+    'Commutator', 'OperatorIndexedSum', 'tr']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'implied_local_space', 'delegate_to_method', 'disjunct_hs_zero',

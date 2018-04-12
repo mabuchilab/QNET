@@ -9,7 +9,7 @@ import pytest
 import sympy
 from sympy import symbols, IndexedBase
 
-from qnet.algebra import (
+from qnet import (
     ScalarTimesOperator, OperatorSymbol, LocalSpace,
     no_instance_caching, ZeroOperator, OperatorPlus, KetIndexedSum,
     IdxSym, BasisKet, KetSymbol, StrLabel, FockIndex, IndexOverRange,

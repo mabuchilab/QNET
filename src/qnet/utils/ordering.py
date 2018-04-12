@@ -27,7 +27,7 @@ their replacements to all the desired algebraic classes.
 
 from collections import OrderedDict
 
-from .scalar_types import SCALAR_TYPES
+from ..algebra.scalar_types import SCALAR_TYPES
 
 __all__ = []
 
@@ -90,7 +90,7 @@ class DisjunctCommutativeHSOrder():
     """
 
     def __init__(self, op, space_order=None, op_order=None):
-        from .hilbert_space_algebra import TrivialSpace
+        from qnet.algebra.hilbert_space_algebra import TrivialSpace
         self.op = op
         self.space = op.space
         if space_order is None:

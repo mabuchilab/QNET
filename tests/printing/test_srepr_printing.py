@@ -9,28 +9,20 @@ from sympy import (
     factorial)
 from numpy import array, float64, complex128, int64
 
-from qnet.algebra.circuit_algebra import(
+from qnet import(
     CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-    Concatenation, Feedback, SeriesInverse)
-from qnet.algebra.operator_algebra import(
-    OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-    Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, tr, Adjoint,
-    PseudoInverse, NullSpaceProjector, OperatorPlus, OperatorTimes,
-    ScalarTimesOperator, OperatorTrace, Commutator, OperatorIndexedSum)
-from qnet.algebra.hilbert_space_algebra import (
-    LocalSpace, TrivialSpace, FullSpace, ProductSpace)
-from qnet.algebra.matrix_algebra import Matrix
-from qnet.algebra.state_algebra import (
-    KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet, CoherentStateKet,
-    UnequalSpaces, OperatorTimesKet, Bra, KetPlus, ScalarTimesKet,
-    OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, TensorKet,
-    KetIndexedSum)
-from qnet.algebra.super_operator_algebra import (
-    SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
-    SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
-    SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator)
-from qnet.algebra.indices import IdxSym, FockIndex, IndexOverFockSpace
-from qnet.printing import srepr
+    Concatenation, Feedback, SeriesInverse, OperatorSymbol, IdentityOperator,
+    ZeroOperator, Create, Destroy, Jz, Jplus, Jminus, Phase, Displace, Squeeze,
+    LocalSigma, tr, Adjoint, PseudoInverse, NullSpaceProjector, OperatorPlus,
+    OperatorTimes, ScalarTimesOperator, OperatorTrace, Commutator,
+    OperatorIndexedSum, LocalSpace, TrivialSpace, FullSpace, ProductSpace,
+    Matrix, KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet,
+    CoherentStateKet, UnequalSpaces, OperatorTimesKet, Bra, KetPlus,
+    ScalarTimesKet, OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra,
+    TensorKet, KetIndexedSum, SuperOperatorSymbol, IdentitySuperOperator,
+    ZeroSuperOperator, SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
+    SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator, IdxSym,
+    FockIndex, IndexOverFockSpace, srepr)
 
 
 def test_srepr_local_space():

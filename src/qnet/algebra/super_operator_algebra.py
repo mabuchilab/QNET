@@ -17,13 +17,13 @@ from .abstract_algebra import (
     Operation, Expression, AlgebraError, assoc, orderby,
     filter_neutral, match_replace, match_replace_binary, AlgebraException,
     check_rules_dict, ScalarTimesExpression)
-from .singleton import Singleton, singleton_object
+from ..utils.singleton import Singleton, singleton_object
 from .pattern_matching import wc, pattern_head, pattern
 from .hilbert_space_algebra import TrivialSpace, LocalSpace, ProductSpace
 from .operator_algebra import (
     Operator, sympyOne, ScalarTimesOperator, OperatorPlus, ZeroOperator,
     IdentityOperator, simplify_scalar)
-from .ordering import (
+from ..utils.ordering import (
     KeyTuple, FullCommutativeHSOrder, DisjunctCommutativeHSOrder)
 from .matrix_algebra import Matrix
 
