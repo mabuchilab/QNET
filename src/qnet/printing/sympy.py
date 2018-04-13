@@ -41,7 +41,7 @@ from ._unicode_mappings import _SUPERSCRIPT_MAPPING, _SUBSCRIPT_MAPPING
 __all__ = []
 __private__ = [
     'SympyLatexPrinter', 'SympyStrPrinter', 'SympyUnicodePrinter',
-    'SympyReprPrinter']
+    'SympyReprPrinter', 'derationalize_denom']
 
 
 delattr(sympy.Indexed, '_sympystr')

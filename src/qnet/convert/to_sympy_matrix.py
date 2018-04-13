@@ -1,17 +1,18 @@
 """Conversion of QNET expressions to sympy matrices. For small Hilbert spaces,
 this facilitates some analytic treatments, such as decomposition into a basis.
 """
-import qnet
 import sympy
 from sympy.physics.quantum import TensorProduct as tensor
-from qnet.algebra.operator_algebra import (IdentityOperator, ZeroOperator,
-        LocalOperator, Create, Destroy, Jz, Jplus, Jminus, Phase, Displace,
-        Squeeze, LocalSigma, OperatorOperation, SingleOperatorOperation,
-        OperatorPlus, OperatorTimes, ScalarTimesOperator, Adjoint,
-        PseudoInverse, OperatorTrace, NullSpaceProjector)
+from qnet.algebra.operator_algebra import (
+    IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz, Jplus,
+    Jminus, Phase, Displace, Squeeze, LocalSigma, OperatorOperation,
+    SingleOperatorOperation, OperatorPlus, OperatorTimes, ScalarTimesOperator,
+    Adjoint, PseudoInverse, OperatorTrace, NullSpaceProjector)
 
 
 __all__ = ['convert_to_sympy_matrix']
+__private__ = ['SympyCreate', 'basis_state']
+
 
 def basis_state(i, n):
     """``n x 1`` `sympy.Matrix` representing the `i`'th eigenstate of an
@@ -19,6 +20,7 @@ def basis_state(i, n):
     v = sympy.zeros(n, 1)
     v[i] = 1
     return v
+
 
 def SympyCreate(n):
     """Creation operator for a Hilbert space of dimension `n`, as an instance

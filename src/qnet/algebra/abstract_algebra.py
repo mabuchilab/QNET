@@ -39,8 +39,8 @@ __all__ = [
 __private__ = [  # anything not in __all__ must be in __private__
     'assoc', 'assoc_indexed', 'indexed_sum_over_const',
     'indexed_sum_over_kronecker', 'idem', 'orderby', 'filter_neutral',
-    'match_replace', 'match_replace_binary', 'cache_attr',
-    'check_idempotent_create', 'check_rules_dict', '_scalar_free_symbols']
+    'match_replace', 'match_replace_binary', 'check_idempotent_create',
+    'check_rules_dict']
 
 LEVEL = 0  # for debugging create method
 
