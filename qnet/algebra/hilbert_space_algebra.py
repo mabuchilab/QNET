@@ -630,14 +630,8 @@ class ProductSpace(HilbertSpace, Operation):
         except BasisNotSetError:
             self._dimension = None
         # determine the basis labels automatically
-        try:
-            ls_bases = [ls.basis_labels for ls in local_spaces]
-            basis = []
-            for label_tuple in cartesian_product(*ls_bases):
-                basis.append(",".join([str(l) for l in label_tuple]))
-            self._basis = tuple(basis)
-        except BasisNotSetError:
-            self._basis = None
+        self._has_basis = all([ls.has_basis for ls in local_spaces])
+        self._basis = None  # delayed until first call to basis_labels()
         op_keys = [space._order_key for space in local_spaces]
         self._order_key = KeyTuple([v for op_key in op_keys for v in op_key])
         super().__init__(*local_spaces)  # Operation __init__
@@ -652,7 +646,7 @@ class ProductSpace(HilbertSpace, Operation):
     def has_basis(self):
         """True if the all the local factors of the `ProductSpace` have a
         defined basis"""
-        return self._basis is not None
+        return self._has_basis
 
     @property
     def basis_states(self):
@@ -679,10 +673,20 @@ class ProductSpace(HilbertSpace, Operation):
         Raises:
             BasisNotSetError: if the Hilbert space has no defined basis
         """
-        if self._basis is None:
+        if self._has_basis:
+            if self._basis is None:
+                # Calculating the basis for a Product space can be very
+                # expensive, which is why we delay calculating self._basis for
+                # as long as possible
+                ls_bases = [ls.basis_labels for ls in self.args]
+                basis = []
+                for label_tuple in cartesian_product(*ls_bases):
+                    basis.append(",".join(label_tuple))
+                self._basis = tuple(basis)
+            return self._basis
+        else:
             raise BasisNotSetError(
                 "Hilbert space %s has no defined basis" % str(self))
-        return self._basis
 
     def basis_state(self, index_or_label):
         """Return the basis state with the given index or label.
