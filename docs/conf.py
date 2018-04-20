@@ -180,6 +180,8 @@ html_theme_options = {
     'navigation_depth': 4,
 }
 
+graphviz_output_format = 'svg'
+
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
 
