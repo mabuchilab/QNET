@@ -33,6 +33,8 @@ def run_apidoc(_):
 nitpicky = True
 
 extensions = [
+    'graphviz_ext',
+    'inheritance_diagram',
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
@@ -46,7 +48,6 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.todo',
     'dollarmath',
-    'sphinx.ext.inheritance_diagram',
 ]
 if os.getenv('SPELLCHECK'):
     extensions += 'sphinxcontrib.spelling',
@@ -180,6 +181,7 @@ html_theme_options = {
     'navigation_depth': 4,
 }
 
+#inheritance_graph_attrs = dict(size='""')
 graphviz_output_format = 'svg'
 
 # Add any paths that contain custom themes here, relative to this directory.

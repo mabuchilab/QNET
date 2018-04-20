@@ -25,3 +25,7 @@ img.inheritance {
 div.math {
     overflow: auto;
 }
+
+div.graphviz {
+    overflow: auto;
+}
