@@ -22,10 +22,10 @@ img.inheritance {
     max-width: none;
 }
 
-div.math {
-    overflow: auto;
+object.inheritance {
+    max-width: 100%;
 }
 
-div.graphviz {
+div.math {
     overflow: auto;
 }
