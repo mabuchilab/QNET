@@ -6,21 +6,21 @@ Symbolic Algebra
 
 .. _abstract_algebra:
 
-.. currentmodule:: qnet.algebra.abstract_algebra
+.. currentmodule:: qnet.algebra.core.abstract_algebra
 
 Expressions and Operations
 ==========================
 
 QNET includes a rich (and extensible) symbolic algebra system for quantum
 mechanics and circuit models. The foundation of the symbolic algebra are the
-:class:`~Expression` class and its subclass :class:`~Operation`.
+:class:`~.Expression` class and its subclass :class:`~.Operation`.
 
 A general algebraic expression has a tree structure. The branches of the tree
 are operations; their children are the operands. The leaves of the tree are
 scalars or "atomic" expressions, where "atomic" means *not* an object of type
-:class:`~Operation` (e.g., a symbol)
+:class:`~.Operation` (e.g., a symbol)
 
-For example, the :class:`~qnet.algebra.state_algebra.KetPlus` operation
+For example, the :class:`~.KetPlus` operation
 defines the sum of Hilbert space vectors, represented as::
 
     KetPlus(psi1, psi2, ..., psiN)
@@ -34,28 +34,27 @@ operands, which may be other operations, scalars, or atomic
 :class:`~Expression` objects.
 
 Note that all expressions (inluding operations) can have associated
-*arguments*. For example :class:`~qnet.algebra.state_algebra.KetSymbol` takes
-`label` as an argument, and the Hilbert space displacement operator
-:class:`~qnet.algebra.operator_algebra.Displace` takes a displacement amplitude
-as an argument. To avoid confusion between operands and arguments, operations
-are required to take their operands as positional arguments, and possible
-additional arguments as keyword arguments.
+*arguments*. For example :class:`~.KetSymbol` takes `label` as an argument, and
+the Hilbert space displacement operator :class:`~.Displace` takes a
+displacement amplitude as an argument. To avoid confusion between operands and
+arguments, operations are required to take their operands as positional
+arguments, and possible additional arguments as keyword arguments.
 
 
 Expressions should generally not be instantiated directly, but through their
-:meth:`~Expression.create` method allowing for simplifications. This is true
+:meth:`~.Expression.create` method allowing for simplifications. This is true
 both for operations and atomic expressions. For example, instantiating
-:class:`~qnet.algebra.operator_algebra.Displace` with ``alpha=0`` results in an
-:obj:`~qnet.algebra.operator_algebra.IdentityOperator` (unlike direct
-instantiation, the create method of any class may or may not
+:class:`~.Displace` with ``alpha=0`` results in an :data:`~.IdentityOperator`
+(unlike direct instantiation, the create method of any class may or may not
 return an instance of the same class). For operations, the `create` method
 handles the application of algebraic rules such as associativity (translating
-e.g.  ``KetPlus(psi1, KetPlus(psi2, psi3))`` into ``KetPlus(psi1, psi2, psi3)``)
+e.g. ``KetPlus(psi1, KetPlus(psi2, psi3))`` into ``KetPlus(psi1, psi2, psi3)``)
 
 Many operations are associated with infix operators, e.g.
-a :class:`~qnet.algebra.state_algebra.KetPlus` instance is automatically
-created if two instances of :class:`~qnet.algebra.state_algebra.KetSymbol`
-are added with ``+``. In this case, the `create` method is used automatically.
+a :class:`~.KetPlus` instance is automatically
+created if two instances of :class:`~.KetSymbol`
+are added with ``+``. In this case, the :meth:`.create` method is used
+automatically.
 
 Expressions and Operations are considered immutable: any change to the
 expression tree (e.g. an algebraic simplification) generates a new expression.
@@ -67,15 +66,14 @@ Defining ``Operation`` subclasses
 When extending an algebra with new operations, it is essential to define the
 expression rewriting ("simplification") rules that govern how new expressions
 are instantiated. To this end, the ``_simplification`` class attribute of an
-:class:`~Expression` subclass must be defined.
-This attribute contains a list of callables. Each of these callables takes
-three parameters (the class, the list ``args`` of positional arguments given to
-:meth:`~Expression.create` and
+:class:`~.Expression` subclass must be defined.  This attribute contains a list
+of callables. Each of these callables takes three parameters (the class, the
+list ``args`` of positional arguments given to :meth:`~.Expression.create` and
 a dictionary ``kwargs`` of keyword arguments given to
-:meth:`~Expression.create`) and return either a
-tuple of new ``args`` and ``kwargs`` (which are then handed to the next
-callable), or an :class:`~Expression` (which is
-directly returned as the result of the call to :meth:`Expression.create`).
+:meth:`~.Expression.create`) and return either a tuple of new ``args`` and
+``kwargs`` (which are then handed to the next callable), or an
+:class:`~.Expression` (which is directly returned as the result of the call to
+:meth:`.Expression.create`).
 
 Callables such as as :func:`assoc`, :func:`idem`, :func:`orderby`, and
 :func:`filter_neutral` handle common algebraic properties such as associativity
@@ -84,11 +82,12 @@ callables are central to any more advanced simplification through pattern
 matching. They delegate to a list of :class:`Patterns
 <qnet.algebra.pattern_matching.Pattern>` and replacements that are defined
 in the ``_rules``, respectively ``_binary_rules`` class attributes of the
-:class:`Expression` subclass.
+:class:`.Expression` subclass.
 
 The pattern matching rules may temporarily extended or modified using the
-:func:`extra_rules`, :func:`extra_binary_rules`,  and :func:`no_rules` context
-managers.
+:func:`qnet.algebra.toolbox.core.extra_rules`,
+:func:`qnet.algebra.toolbox.core.extra_binary_rules`,  and
+:func:`qnet.algebra.toolbox.core.no_rules` context managers.
 
 
 Pattern matching
@@ -113,9 +112,9 @@ Since inside :func:`~qnet.algebra.abstract_algebra.match_replace` and
 are matched against expressions that are not yet instantiated (we call these
 :class:`ProtoExpressions <ProtoExpr>`), the patterns in the ``_rules``
 and ``_binary_rules`` class attributes are always constructed using the
-:func:`pattern_head` helper function. In contrast, patterns for
-:func:`~qnet.algebra.abstract_algebra.simplify` are usually created through the
-:func:`pattern` helper function. The :func:`wc` function is used to associate
+:func:`.pattern_head` helper function. In contrast, patterns for
+:func:`~qnet.algebra.core.abstract_algebra.simplify` are usually created through the
+:func:`.pattern` helper function. The :func:`.wc` function is used to associate
 Expression arguments with wildcard names.
 
 .. _hilbert_space_algebra:
@@ -146,19 +145,19 @@ Common maniupulations and symbolic algorithms are collected in
 Hilbert Space Algebra
 =====================
 
-.. currentmodule:: qnet.algebra.hilbert_space_algebra
+.. currentmodule:: qnet.algebra.core.hilbert_space_algebra
 
 The :mod:`~qnet.algebra.hilbert_space_algebra` module defines a simple algebra
 of finite dimensional or countably infinite dimensional Hilbert spaces.
 
-.. inheritance-diagram:: qnet.algebra.hilbert_space_algebra
+.. inheritance-diagram:: qnet.algebra.core.hilbert_space_algebra
    :parts: 1
 
 Local/primitive degrees of freedom (e.g. a single multi-level atom or a cavity
 mode) are described by a :class:`LocalSpace`; it requires a label, and may
 define a basis through the `basis` or `dimension` arguments. The :class:`LocalSpace`
 may also define custom identifiers for operators acting on that space
-(subclasses of :class:`~qnet.algebra.oprator_algebra.LocalOperator`)::
+(subclasses of :class:`~.LocalOperator`)::
 
     >>> from qnet.printing import ascii
     >>> from qnet.algebra.operator_algebra import Destroy
@@ -175,11 +174,11 @@ composite tensor product spaces are given by instances of the :class:`ProductSpa
 
 Furthermore,
 
-* the :obj:`~qnet.algebra.hilbert_space_algebra.TrivialSpace` represents a
+* the :obj:`~qnet.algebra.core.hilbert_space_algebra.TrivialSpace` represents a
   *trivial* [#f1]_ Hilbert space :math:`\mathcal{H}_0 \simeq \mathbb{C}`
 
-* the :obj:`~qnet.algebra.hilbert_space_algebra.FullSpace` represents a Hilbert
-  space that includes all possible degrees of freedom.
+* the :obj:`~qnet.algebra.core.hilbert_space_algebra.FullSpace` represents a
+  Hilbert space that includes all possible degrees of freedom.
 
 .. [#f1] *trivial* in the sense that :math:`\mathcal{H}_0 \simeq \mathbb{C}`,
          i.e., all states are multiples of each other and thus equivalent.
@@ -198,11 +197,11 @@ with updated Hilbert spaces through the
 Operator Algebra
 ================
 
-.. currentmodule:: qnet.algebra.operator_algebra
+.. currentmodule:: qnet.algebra.core.operator_algebra
 
 The :mod:`~qnet.algebra.operator_algebra` module implements and algebra of Hilbert space operators
 
-.. inheritance-diagram:: qnet.algebra.operator_algebra
+.. inheritance-diagram:: qnet.algebra.core.operator_algebra
    :parts: 1
 
 Operator expressions are constructed from sums (:class:`OperatorPlus`) and
@@ -309,11 +308,11 @@ Or for higher powers one can use the ``expand()`` method:
 State (Ket-) Algebra
 ====================
 
-.. currentmodule:: qnet.algebra.state_algebra
+.. currentmodule:: qnet.algebra.core.state_algebra
 
 The :mod:`~qnet.algebra.state_algebra` module implements an algebra of Hilbert space states.
 
-.. inheritance-diagram:: qnet.algebra.state_algebra
+.. inheritance-diagram:: qnet.algebra.core.state_algebra
    :parts: 1
 
 By default we represent states :math:`\psi` as :class:`Ket` vectors :math:`\psi \to | \psi \rangle`.
@@ -357,7 +356,7 @@ The :mod:`~qnet.algebra.super_operator_algebra` contains an implementation of a
 superoperator algebra, i.e., operators acting on Hilbert space operator or
 elements of Liouville space (density matrices).
 
-.. inheritance-diagram:: qnet.algebra.super_operator_algebra
+.. inheritance-diagram:: qnet.algebra.core.super_operator_algebra
    :parts: 1
 
 Each super-operator has an associated `space` property which gives the Hilbert space
@@ -402,7 +401,7 @@ In their works on networks of open quantum systems [GoughJames08]_, [GoughJames0
 
 .. currentmodule:: qnet.algebra.circuit_algebra
 
-.. inheritance-diagram:: qnet.algebra.circuit_algebra
+.. inheritance-diagram:: qnet.algebra.core.circuit_algebra
    :parts: 1
 
 A general system with an equal number :math:`n` of input and output channels is described by the parameter triplet :math:`\left(\mathbf{S}, \mathbf{L}, H\right)`, where :math:`H` is the effective internal *Hamilton operator* for the system, :math:`\mathbf{L} = (L_1, L_2, \dots, L_n)^T` the *coupling vector* and :math:`\mathbf{S} = (S_{jk})_{j,k=1}^n` is the *scattering matrix* (whose elements are themselves operators).
@@ -481,7 +480,7 @@ There already exist some investigations along these lines for the particular sub
 Representation as Python objects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Python objects that are of the :class:`~qnet.algebra.circuit_algebra.Circuit` type have some of their operators overloaded to realize symbolic circuit algebra operations::
+Python objects that are of the :class:`~.Circuit` type have some of their operators overloaded to realize symbolic circuit algebra operations::
 
     >>> A = CircuitSymbol('A', 2)
     >>> B = CircuitSymbol('B', 2)

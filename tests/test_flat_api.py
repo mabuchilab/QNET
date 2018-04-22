@@ -38,7 +38,7 @@ def test_get_leaf_modules(request):
     filename = request.module.__file__
     qnet_dir = os.path.join(os.path.split(filename)[0], '../src/qnet')
     modules = get_leaf_modules(qnet_dir)
-    assert "qnet.algebra.abstract_algebra" in modules
+    assert "qnet.algebra.core.abstract_algebra" in modules
 
 
 def test_flat_api(request):

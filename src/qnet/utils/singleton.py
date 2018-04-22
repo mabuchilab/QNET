@@ -22,9 +22,10 @@ Singletons in QNET should use both of these.
             directivetype = 'data'
             objtype = 'singleton'
             priority = 20
+
             @classmethod
             def can_document_member(cls, member, membername, isattr, parent):
-                return isinstance(member, qnet.algebra.singleton.SingletonType)
+                return isinstance(member, qnet.utils.singleton.SingletonType)
 
         def setup(app):
             # ... (other hook settings)

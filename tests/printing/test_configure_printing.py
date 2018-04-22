@@ -1,11 +1,10 @@
 import pytest
 
-from sympy import symbols, sqrt, exp, I, atan
+from sympy import symbols, atan
 
-from qnet.algebra.circuit_algebra import CircuitSymbol, Feedback
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import OperatorSymbol, LocalSigma
-from qnet.algebra.state_algebra import CoherentStateKet
+from qnet.algebra.core.circuit_algebra import CircuitSymbol, Feedback
+from qnet.algebra.core.operator_algebra import OperatorSymbol, LocalSigma
+from qnet.algebra.core.state_algebra import CoherentStateKet
 from qnet.printing import (
     init_printing, configure_printing, ascii, unicode, latex)
 

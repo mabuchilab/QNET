@@ -48,7 +48,7 @@ def init_printing(*, reset=False, **kwargs):
 
     This determines the behavior of the :func:`ascii`, :func:`unicode`,
     and :func:`latex` functions, as well as the ``__str__`` and ``__repr__`` of
-    any :class:`~qnet.algebra.abstract_algebra.Expression`.
+    any :class:`.Expression`.
 
     The routine may be called in one of two forms. First,
 
@@ -62,10 +62,10 @@ def init_printing(*, reset=False, **kwargs):
 
     Args:
         str_format (str): Format for ``__str__`` representation of an
-            :class:`~qnet.algebra.abstract_algebra.Expression`. One of 'ascii',
-            'unicode', 'latex', 'srepr', 'indsrepr' ("indented `srepr`"), or
-            'tree'. The string representation will be affected by the settings
-            for the corresponding print routine, e.g. :func:`unicode` for
+            :class:`.Expression`. One of 'ascii', 'unicode', 'latex', 'srepr',
+            'indsrepr' ("indented `srepr`"), or 'tree'. The string
+            representation will be affected by the settings for the
+            corresponding print routine, e.g. :func:`unicode` for
             ``str_format='unicode'``
         repr_format (str): Like `str_format`, but for ``__repr__``. This is
             what gets displayed in an interactive (I)Python session.
@@ -218,7 +218,7 @@ def _init_printing(
     except KeyError:
         raise ValueError(
             "repr_format must be one of %s" % ", ".join(_PRINT_FUNC.keys()))
-    from qnet.algebra.abstract_algebra import Expression
+    from qnet.algebra.core.abstract_algebra import Expression
     freeze[Expression]['__str__'] = Expression.__str__
     freeze[Expression]['__repr__'] = Expression.__repr__
     freeze[Expression]['_repr_latex_'] = Expression._repr_latex_
@@ -292,8 +292,8 @@ def ascii(expr, cache=None, **settings):
             ``show_hs_label='subscript'`` or suppressed entirely
             (``show_hs_label=False``)
         sig_as_ketbra (bool): Whether to render instances of
-            :class:`~qnet.algebra.operator_algebra.LocalSigma` as a ket-bra
-            (default), or as an operator symbol
+            :class:`.LocalSigma` as a ket-bra (default), or as an operator
+            symbol
 
     Examples:
         >>> from qnet.algebra import OperatorSymbol, LocalSigma
@@ -339,8 +339,8 @@ def unicode(expr, cache=None, **settings):
             ``show_hs_label='subscript'`` or suppressed entirely
             (``show_hs_label=False``)
         sig_as_ketbra (bool): Whether to render instances of
-            :class:`~qnet.algebra.operator_algebra.LocalSigma` as a ket-bra
-            (default), or as an operator symbol
+            :class:`.LocalSigma` as a ket-bra (default), or as an operator
+            symbol
         unicode_sub_super (bool): Whether to try to use unicode symbols for
             sub- or superscripts if possible
         unicode_op_hats (bool): Whether to draw unicode hats on single-letter

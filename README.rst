@@ -41,7 +41,7 @@ Features
 * Publication-ready, configurable rendering of mathematical formulas
 * Conversion to QuTiP_ objects for numerical simulation
 
-Note that version 2.0 of QNET is a major redesign. See :ref:`History` for details.
+Note that version 2.0 of QNET is a major redesign. See :ref:`History <history>` for details.
 
 
 Dependencies

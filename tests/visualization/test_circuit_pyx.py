@@ -1,8 +1,8 @@
-from qnet.algebra.circuit_algebra import (
+from qnet.algebra.core.circuit_algebra import (
     Concatenation, SeriesProduct, CPermutation, CircuitSymbol, cid, Feedback,
     SLH)
-from qnet.algebra.operator_algebra import Create, Destroy
-from qnet.algebra.matrix_algebra import Matrix, identity_matrix
+from qnet.algebra.core.operator_algebra import Create, Destroy
+from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
 from qnet.visualization.circuit_pyx import draw_circuit
 from os import path, remove
 from tempfile import gettempdir

@@ -1,10 +1,11 @@
 from sympy import symbols
 import pytest
 
-from qnet.algebra.abstract_algebra import substitute
-from qnet.algebra.hilbert_space_algebra import LocalSpace, BasisNotSetError
-from qnet.algebra.matrix_algebra import Matrix
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.abstract_algebra import substitute
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.exceptions import BasisNotSetError
+from qnet.algebra.core.matrix_algebra import Matrix
+from qnet.algebra.core.operator_algebra import (
     IdentityOperator, Destroy, II, OperatorSymbol)
 
 

@@ -2,14 +2,14 @@ import unittest
 from sympy import symbols, sqrt, I, conjugate
 
 
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.super_operator_algebra import (
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.super_operator_algebra import (
         SuperOperator, SuperOperatorSymbol, IdentitySuperOperator,
         SuperOperatorPlus, SuperOperatorTimes, SuperOperatorTimesOperator,
         ScalarTimesSuperOperator, ZeroSuperOperator, SPre, SPost, liouvillian,
         liouvillian_normal_form)
 from qnet.algebra.pattern_matching import wc, ProtoExpr, pattern_head
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.operator_algebra import (
         OperatorPlus, ScalarTimesOperator, OperatorSymbol, ZeroOperator,
         Create, Destroy, OperatorTimes)
 

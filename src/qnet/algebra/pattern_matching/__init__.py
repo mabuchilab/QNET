@@ -1,4 +1,5 @@
-r'''
+r'''QNET's pattern matching engine.
+
 Patterns may be constructed by either instantiating a :class:`Pattern` instance
 directly, or (preferred) by calling the :func:`pattern`, :func:`pattern_head`,
 or :func:`wc` helper routines.
@@ -131,7 +132,7 @@ class Pattern():
 
         Consider the following nested circuit expression::
 
-            >>> from qnet.algebra.circuit_algebra import *
+            >>> from qnet.algebra.core.circuit_algebra import *
             >>> C1 = CircuitSymbol('C1', 3)
             >>> C2 = CircuitSymbol('C2', 3)
             >>> C3 = CircuitSymbol('C3', 3)
@@ -482,7 +483,7 @@ class ProtoExpr(Sequence):
         args (list): positional arguments that would be used in the
             instantiation of the Expression
         kwargs (dict):  keyword arguments. Will we converted to an
-            :class:`OrderedDict`
+            :class:`~collections.OrderedDict`
         cls (class or None): The class of the Expression that will ultimately
             be instantiated.
     """

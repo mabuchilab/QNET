@@ -21,8 +21,8 @@ SymPy's builtin printers:
 * Some algebraic structures such as factorials, complex-conjugates and indexed
   symbols have sub-optimal rendering in :class:`sympy.printing.str.StrPrinter`
 * QNET contains some custom subclasses of SymPy objects (e.g.
-  :class:`qnet.algebra.indices.IdxSym`) that the default printers don't know
-  how to deal with (respectively, render incorrectly!)
+  :class:`.IdxSym`) that the default printers don't know how to deal with
+  (respectively, render incorrectly!)
 '''
 from collections import OrderedDict
 
@@ -98,7 +98,7 @@ class SympyStrPrinter(StrPrinter):
 
     Additionally, it contains the following modifications:
 
-    * Support for :class:`qnet.algebra.indices.IdxSym`
+    * Support for :class:`.IdxSym`
     * Rendering of :class:`sympy.tensor.indexed.Indexed` as subscripts
     * Rendering of :class:`sympy.functions.combinatorial.factorials.factorial`
       as ``!``
@@ -177,7 +177,7 @@ class SympyLatexPrinter(LatexPrinter):
 
     Additionally, it contains the following modifications:
 
-    * Support for :class:`qnet.algebra.indices.IdxSym`
+    * Support for :class:`.IdxSym`
     * A setting `conjg_style` that allows to specify how complex conjugate are
       rendered: ``'overline'`` (the default) draws a line over the number,
       'star' uses an exponentiated asterisk, and 'func' renders a a
@@ -265,7 +265,7 @@ class SympyUnicodePrinter(SympyStrPrinter):
     """Printer that represents SymPy expressions as (single-line) unicode
     strings.
 
-    This is a mixture of :class:`sympy.printing.str.StrPrinter`
+    This is a mixture of :class:`.StrPrinter`
     and :class:`sympy.printing.pretty.pretty.PrettyPrinter` (minus the 2D
     printing), with the same extensions as :class:`SympyStrPrinter`
     """
@@ -469,7 +469,7 @@ class SympyUnicodePrinter(SympyStrPrinter):
 
 class SympyReprPrinter(ReprPrinter):
     """Representation printer with support for
-    :class:`qnet.algebra.indices.IdxSym`"""
+    :class:`.IdxSym`"""
 
     def _print_Symbol(self, expr):
         d = expr._assumptions.generator

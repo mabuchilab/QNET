@@ -8,8 +8,8 @@ from sympy.printing.printer import Printer
 
 from qnet.utils.testing import datadir, QnetAsciiTestPrinter
 
-from qnet.algebra.operator_algebra import LocalSigma
-from qnet.algebra.state_algebra import BasisKet
+from qnet.algebra.core.operator_algebra import LocalSigma
+from qnet.algebra.core.state_algebra import BasisKet
 from qnet.printing import (
     init_printing, configure_printing, ascii, unicode, latex)
 from qnet.printing.asciiprinter import QnetAsciiPrinter

@@ -334,12 +334,12 @@ def render_latex_sub_super(
     r'''Assemble a string from the primary name and the given sub- and
     superscripts::
 
-    >>> render_latex_sub_super(name='alpha', subs=['mu', 'nu'], supers=[2])
-    '\\alpha_{\\mu,\\nu}^{2}'
+        >>> render_latex_sub_super(name='alpha', subs=['mu', 'nu'], supers=[2])
+        '\\alpha_{\\mu,\\nu}^{2}'
 
-    >>> render_latex_sub_super(
-    ...     name='alpha', subs=['1', '2'], supers=['(1)'], sep='')
-    '\\alpha_{12}^{(1)}'
+        >>> render_latex_sub_super(
+        ...     name='alpha', subs=['1', '2'], supers=['(1)'], sep='')
+        '\\alpha_{12}^{(1)}'
 
     Args:
         name (str):  the string without the subscript/superscript

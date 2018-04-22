@@ -5,13 +5,13 @@ from numpy import (array as np_array, conjugate as np_conjugate,
                    int_ as np_int, float_ as np_float)
 from sympy import symbols, sqrt, I, exp, sympify, Idx
 
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.operator_algebra import (
         Displace, Create, Destroy, OperatorSymbol, IdentityOperator,
         ZeroOperator, OperatorPlus, LocalSigma, LocalProjector, OperatorTrace,
         Adjoint, X, Y, Z, ScalarTimesOperator, OperatorTimes, Jz,
         Jplus, Jminus, Phase)
-from qnet.algebra.matrix_algebra import Matrix, identity_matrix
-from qnet.algebra.hilbert_space_algebra import (
+from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
+from qnet.algebra.core.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, ProductSpace)
 from qnet.utils.indices import (
     FockIndex)

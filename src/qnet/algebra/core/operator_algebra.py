@@ -3,29 +3,34 @@ This module features classes and functions to define and manipulate symbolic
 Operator expressions.  For more details see :ref:`operator_algebra`.
 
 For a list of all properties and methods of an operator object, see the
-documentation for the basic :py:class:`Operator` class.
+documentation for the basic :class:`Operator` class.
 """
 import re
-from abc import ABCMeta, abstractmethod, abstractproperty
-from collections import defaultdict, OrderedDict
+from abc import ABCMeta, abstractmethod
+from collections import OrderedDict, defaultdict
 from itertools import product as cartesian_product
+from typing import Tuple
 
 from sympy import (
-    exp, sqrt, I, sympify, Basic as SympyBasic, series as sympy_series)
+    Basic as SympyBasic, I, Symbol, series as sympy_series, sqrt, sympify, )
 
-from .scalar_types import SCALAR_TYPES
 from .abstract_algebra import (
-    Expression, Operation, ScalarTimesExpression, IndexedSum, assoc,
-    assoc_indexed, indexed_sum_over_const, indexed_sum_over_kronecker, orderby,
-    filter_neutral, match_replace_binary, match_replace, CannotSimplify,
-    check_rules_dict, _scalar_free_symbols, all_symbols)
-from ..utils.singleton import Singleton, singleton_object
+    Expression, Operation, ScalarTimesExpression, _scalar_free_symbols, )
+from .algebraic_properties import (
+    assoc, assoc_indexed, commutator_order, delegate_to_method,
+    disjunct_hs_zero, filter_neutral, implied_local_space, match_replace,
+    match_replace_binary, orderby, scalars_to_op, )
+from .exceptions import BasisNotSetError, CannotSimplify
 from .hilbert_space_algebra import (
-    TrivialSpace, HilbertSpace, LocalSpace, ProductSpace, BasisNotSetError)
-from .pattern_matching import wc, pattern_head, pattern
-from ..utils.ordering import (
-    KeyTuple, DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
-from ..utils.indices import SymbolicLabelBase, KroneckerDelta, IndexRangeBase
+    HilbertSpace, LocalSpace, ProductSpace, TrivialSpace, )
+from .indexed_operations import (
+    IndexedSum, indexed_sum_over_const, indexed_sum_over_kronecker, )
+from .scalar_types import SCALAR_TYPES
+from ..pattern_matching import pattern, pattern_head, wc
+from ...utils.indices import SymbolicLabelBase
+from ...utils.ordering import (
+    DisjunctCommutativeHSOrder, FullCommutativeHSOrder, KeyTuple, )
+from ...utils.singleton import Singleton, singleton_object
 
 sympyOne = sympify(1)
 
@@ -45,118 +50,7 @@ __all__ = [
     'simplify_scalar', 'space', 'II', 'IdentityOperator', 'ZeroOperator',
     'Commutator', 'OperatorIndexedSum', 'tr']
 
-__private__ = [  # anything not in __all__ must be in __private__
-    'implied_local_space', 'delegate_to_method', 'disjunct_hs_zero',
-    'scalars_to_op', 'commutator_order']
-
-
-###############################################################################
-# Algebraic properties
-###############################################################################
-
-
-def implied_local_space(*, arg_index=None, keys=None):
-    """Return a simplification that converts the positional argument
-    `arg_index` from (str, int) to LocalSpace, as well as any keyword argument
-    with one of the given keys"""
-
-    def args_to_local_space(cls, args, kwargs):
-        """Convert (str, int) of selected args to LocalSpace"""
-        if isinstance(args[arg_index], LocalSpace):
-            new_args = args
-        else:
-            if isinstance(args[arg_index], (int, str)):
-                hs = LocalSpace(args[arg_index])
-            else:
-                hs = args[arg_index]
-                assert isinstance(hs, HilbertSpace)
-            new_args = (tuple(args[:arg_index]) + (hs,) +
-                        tuple(args[arg_index + 1:]))
-        return new_args, kwargs
-
-    def kwargs_to_local_space(cls, args, kwargs):
-        """Convert (str, int) of selected kwargs to LocalSpace"""
-        if all([isinstance(kwargs[key], LocalSpace) for key in keys]):
-            new_kwargs = kwargs
-        else:
-            new_kwargs = {}
-            for key, val in kwargs.items():
-                if key in keys:
-                    if isinstance(val, (int, str)):
-                        val = LocalSpace(val)
-                    assert isinstance(val, HilbertSpace)
-                new_kwargs[key] = val
-        return args, new_kwargs
-
-    def to_local_space(cls, args, kwargs):
-        """Convert (str, int) of selected args and kwargs to LocalSpace"""
-        new_args, __ = args_to_local_space(args, kwargs, arg_index)
-        __, new_kwargs = kwargs_to_local_space(args, kwargs, keys)
-        return new_args, new_kwargs
-
-    if (arg_index is not None) and (keys is None):
-        return args_to_local_space
-    elif (arg_index is None) and (keys is not None):
-        return kwargs_to_local_space
-    elif (arg_index is not None) and (keys is not None):
-        return to_local_space
-    else:
-        raise ValueError("must give at least one of arg_index and keys")
-
-
-def delegate_to_method(mtd):
-    """Create a simplification rule that delegates the instantiation to the
-    method `mtd` of the operand (if defined)"""
-
-    def _delegate_to_method(cls, ops, kwargs):
-        assert len(ops) == 1
-        op, = ops
-        if hasattr(op, mtd):
-            return getattr(op, mtd)()
-        else:
-            return ops, kwargs
-
-    return _delegate_to_method
-
-
-def scalars_to_op(cls, ops, kwargs):
-    r'''Convert any scalar $\alpha$ in `ops` into an operator $\alpha
-    \identity$'''
-    op_ops = []
-    for op in ops:
-        if isinstance(op, SCALAR_TYPES):
-            op_ops.append(ScalarTimesOperator.create(op, IdentityOperator))
-        else:
-            op_ops.append(op)
-    return op_ops, kwargs
-
-
-def disjunct_hs_zero(cls, ops, kwargs):
-    """Return ZeroOperator if all the operators in `ops` have a disjunct
-    Hilbert space, or an unchanged `ops`, `kwargs` otherwise
-    """
-    hilbert_spaces = []
-    for op in ops:
-        try:
-            hs = op.space
-        except AttributeError:  # scalars
-            hs = TrivialSpace
-        for hs_prev in hilbert_spaces:
-            if not hs.isdisjoint(hs_prev):
-                return ops, kwargs
-        hilbert_spaces.append(hs)
-    return ZeroOperator
-
-
-def commutator_order(cls, ops, kwargs):
-    """Apply anti-commutative property of the commutator to apply a standard
-    ordering of the commutator arguments
-    """
-    assert len(ops) == 2
-    if cls.order_key(ops[1]) < cls.order_key(ops[0]):
-        return -1 * Commutator.create(ops[1], ops[0])
-    else:
-        return ops, kwargs
+__private__ = []  # anything not in __all__ must be in __private__
 
 
 ###############################################################################
@@ -171,9 +65,10 @@ class Operator(metaclass=ABCMeta):
     on which it is taken to act non-trivially.
     """
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def space(self):
-        """The :class:`HilbertSpace` on which the operator acts
+        """The :class:`.HilbertSpace` on which the operator acts
         non-trivially"""
         raise NotImplementedError(self.__class__.__name__)
 
@@ -192,27 +87,27 @@ class Operator(metaclass=ABCMeta):
         """Expand out distributively all products of sums. Note that this does
         not expand out sums of scalar coefficients.
 
-        :return: A fully expanded sum of operators.
-        :rtype: Operator
+        Returns:
+            Operator: A fully expanded sum of operators.
         """
         return self._expand()
 
     def expand_in_basis(self, basis_states=None, hermitian=False):
-        """Write the operator as an expansion into all :class:`KetBras
-        <qnet.algebra.state_algebra.KetBra>` spanned by `basis_states`.
+        """Write the operator as an expansion into all
+        :class:`KetBras <.KetBra>`
+        spanned by `basis_states`.
 
         Args:
-            basis_states (list or None): List of basis states
-                (:class:`~qnet.algebra.state_algebra.Ket` instances) into which
-                to expand the operator. If None, use the operator's
-                `space.basis_states`
+            basis_states (list or None): List of basis states (:class:`.Ket`
+                instances) into which to expand the operator. If None, use the
+                operator's `space.basis_states`
             hermitian (bool): If True, assume that the operator is Hermitian
                 and represent all elements in the lower triangle of the
                 expansion via :class:`OperatorPlusMinusCC`. This is meant to
                 enhance readability
 
         Raises:
-            BasisNotSetError: If `basis_states` is None and the operator's
+            .BasisNotSetError: If `basis_states` is None and the operator's
                 Hilbert space has no well-defined basis
 
         Example:
@@ -227,7 +122,7 @@ class Operator(metaclass=ABCMeta):
             >>> print(ascii(op.expand_in_basis(hermitian=True)))
             |g><e|^(1) + c.c.
         """
-        from qnet.algebra.state_algebra import KetBra  # avoid circ. import
+        from qnet.algebra.core.state_algebra import KetBra  # avoid circ. import
         if basis_states is None:
             basis_states = list(self.space.basis_states)
         else:
@@ -261,21 +156,26 @@ class Operator(metaclass=ABCMeta):
     def simplify_scalar(self):
         """Simplify all scalar coefficients within the Operator expression.
 
-        :return: The simplified expression.
-        :rtype: Operator
+        Returns:
+            Operator: The simplified expression.
         """
         return self._simplify_scalar()
 
     def _simplify_scalar(self):
         return self
 
-    def diff(self, sym, n=1, expand_simplify=True):
-        """Differentiate by scalar parameter sym.
+    def diff(
+            self, sym: Symbol, n: int = 1,
+            expand_simplify: bool = True) -> 'Operator':
+        """Differentiate by scalar parameter `sym`.
 
-        :param ~sympy.cor.symbol.Symbol sym: What to differentiate by.
-        :param int n: How often to differentiate
-        :param bool expand_simplify: Whether to simplify the result.
-        :return (Operator): The n-th derivative.
+        Args:
+            sym: What to differentiate by.
+            n: How often to differentiate
+            expand_simplify: Whether to simplify the result.
+
+        Returns:
+            The n-th derivative.
         """
         expr = self
         for k in range(n):
@@ -287,14 +187,15 @@ class Operator(metaclass=ABCMeta):
     def _diff(self, sym):
         return ZeroOperator
 
-    def series_expand(self, param, about, order):
+    def series_expand(
+            self, param: Symbol, about, order: int) -> Tuple['Operator']:
         """Expand the operator expression as a truncated power series in a
         scalar parameter.
 
         Args:
-            param (~sympy.core.symbol.Symbol): Expansion parameter
+            param: Expansion parameter
             about (SCALAR_TYPES): Point about which to expand
-            order (int): Maximum order of expansion (>= 0)
+            order: Maximum order of expansion (>= 0)
 
         Returns:
             tuple of length ``order + 1``, where the entries are the
@@ -367,12 +268,11 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
 
     All :class:`LocalOperator` instances have a fixed associated identifier
     (symbol) that is used when printing that operator. A custom identifier can
-    be useed through the associated
-    :class:`~qnet.algebra.hilbert_space_algebra.LocalSpace`'s
+    be useed through the associated :class:`.LocalSpace`'s
     `local_identifiers` parameter. For example::
 
         >>> from qnet.printing import ascii
-        >>> from qnet.algebra.operator_algebra import Destroy
+        >>> from qnet.algebra.core.operator_algebra import Destroy
         >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
         >>> b = Destroy(hs=hs1_custom)
         >>> ascii(b)
@@ -411,8 +311,7 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
 
     @property
     def space(self):
-        """Hilbert space of the operator
-        (:class:`~qdyn.algebra.hilbert_space_algebra.LocalSpace` instance)"""
+        """Hilbert space of the operator (:class:`.LocalSpace` instance)"""
         return self._hs
 
     @property
@@ -429,12 +328,10 @@ class LocalOperator(Operator, Expression, metaclass=ABCMeta):
     def identifier(self):
         """The identifier (symbol) that is used when printing the operator.
 
-        A custom identifier can
-        be used through the associated
-        :class:`~qnet.algebra.hilbert_space_algebra.LocalSpace`'s
-        `local_identifiers` parameter. For example::
+        A custom identifier can be used through the associated
+        :class:`.LocalSpace`'s `local_identifiers` parameter. For example::
 
-            >>> from qnet.algebra.operator_algebra import Destroy
+            >>> from qnet.algebra.core.operator_algebra import Destroy
             >>> a = Destroy(hs=1)
             >>> a.identifier
             'a'
@@ -524,8 +421,8 @@ class OperatorSymbol(Operator, Expression):
 
     Args:
         identifier (str): Symbol identifier
-        hs (HilbertSpace): associated Hilbert space (can be a
-            :class:`~qnet.algebra.hilbert_space_algebra.ProductSpace`)
+        hs (.HilbertSpace): associated Hilbert space (can be a
+            :class:`.ProductSpace`)
     """
 
     # Not a LocalOperator subclass because an OperatorSymbol may be defined for
@@ -578,7 +475,7 @@ class IdentityOperator(Operator, Expression, metaclass=Singleton):
 
     @property
     def space(self):
-        """TrivialSpace"""
+        """:class:`.TrivialSpace`"""
         return TrivialSpace
 
     @property
@@ -619,7 +516,7 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
 
     @property
     def space(self):
-        """TrivialSpace"""
+        """:class:`.TrivialSpace`"""
         return TrivialSpace
 
     @property
@@ -653,7 +550,7 @@ class ZeroOperator(Operator, Expression, metaclass=Singleton):
 
 class Destroy(LocalOperator):
     """Bosonic annihilation operator acting on a particular
-    :class:`LocalSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     It obeys the bosonic commutation relation::
 
@@ -677,7 +574,7 @@ class Destroy(LocalOperator):
         set through the `local_identifiers` parameter of the associated Hilbert
         space::
 
-            >>> from qnet.algebra.operator_algebra import Create, Destroy
+            >>> from qnet.algebra.core.operator_algebra import Create, Destroy
             >>> hs_custom = LocalSpace(0, local_identifiers={'Destroy': 'b'})
             >>> Create(hs=hs_custom).identifier
             'b'
@@ -695,7 +592,7 @@ class Destroy(LocalOperator):
 
 
 class Create(LocalOperator):
-    """Bosonic creation operator acting on a particular :class:`LocalSpace`
+    """Bosonic creation operator acting on a particular :class:`.LocalSpace`
     `hs`. It is the adjoint of :class:`Destroy`.
     """
     _identifier = 'a'
@@ -721,7 +618,7 @@ class Create(LocalOperator):
 
 class Jz(LocalOperator):
     """$\Op{J}_z$ is the $z$ component of a general spin operator acting
-    on a particular :class:`LocalSpace` `hs` of freedom with well defined spin
+    on a particular :class:`.LocalSpace` `hs` of freedom with well defined spin
     quantum number $s$.  It is Hermitian::
 
         >>> print(ascii(Jz(hs=1).adjoint()))
@@ -758,7 +655,7 @@ class Jz(LocalOperator):
 
 class Jplus(LocalOperator):
     """ $\Op{J}_{+} = \Op{J}_x + i \op{J}_y$ is the raising ladder operator
-    of a general spin operator acting on a particular :class:`LocalSpace` `hs`
+    of a general spin operator acting on a particular :class:`.LocalSpace` `hs`
     with well defined spin quantum number $s$.  It's adjoint is the
     lowering operator::
 
@@ -784,7 +681,7 @@ class Jplus(LocalOperator):
 
 class Jminus(LocalOperator):
     """$\Op{J}_{-} = \Op{J}_x - i \op{J}_y$ is lowering ladder operator of a
-    general spin operator acting on a particular :class:`LocalSpace` `hs`
+    general spin operator acting on a particular :class:`.LocalSpace` `hs`
     with well defined spin quantum number $s$.  It's adjoint is the raising
     operator::
 
@@ -817,7 +714,7 @@ class Phase(LocalOperator):
         \exp\left(i \phi \Op{a}_{\rm hs}^\dagger \Op{a}_{\rm hs}\right)
 
     where :math:`a_{\rm hs}` is the annihilation operator acting on the
-    :class:`LocalSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     Printers should represent this operator with the default identifier::
 
@@ -868,7 +765,7 @@ class Displace(LocalOperator):
                    \alpha^* \Op{a}_{\rm hs}}\right)
 
     where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
-    :class:`LocalSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     Printers should represent this operator with the default identifier::
 
@@ -918,7 +815,7 @@ class Squeeze(LocalOperator):
                      \frac{\eta^*}{2} {\Op{a}_{\rm hs}}^2 \right)}
 
     where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
-    :class:`LocalSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     Printers should represent this operator with the default identifier::
 
@@ -960,7 +857,7 @@ class Squeeze(LocalOperator):
 
 class LocalSigma(LocalOperator):
     r'''A local level flip operator operator acting on a particular
-    :class:`LocalSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     .. math::
 
@@ -1111,11 +1008,7 @@ class LocalProjector(LocalSigma):
 
 
 class OperatorPlus(OperatorOperation):
-    """A sum of Operators
-
-    Args:
-        operands (list): Operator summands
-    """
+    """A sum of Operators"""
     neutral_element = ZeroOperator
     _binary_rules = OrderedDict()
     _simplifications = [assoc, scalars_to_op, orderby, filter_neutral,
@@ -1366,8 +1259,8 @@ class OperatorTrace(SingleOperatorOperation):
         {\rm Tr}_{\mathcal{H}} \Op{O}
 
     Args:
-        over_space (HilbertSpace): The degrees of freedom to trace over
-        op (Opwerator): The operator to take the trace of.
+        over_space (.HilbertSpace): The degrees of freedom to trace over
+        op (Operator): The operator to take the trace of.
     '''
     _rules = OrderedDict()  # see end of module
     _simplifications = [
@@ -1467,10 +1360,12 @@ class OperatorPlusMinusCC(SingleOperatorOperation):
         return self
 
     def _pseudo_inverse(self):
-        return OperatorPlusMinusCC(self.operand.pseudo_inverse(), self._sign)
+        return OperatorPlusMinusCC(
+            self.operand.pseudo_inverse(), sign=self._sign)
 
     def _diff(self, sym):
-        return OperatorPlusMinusCC(self.operands._diff(sym), self._sign)
+        return OperatorPlusMinusCC(
+            self.operands._diff(sym), sign=self._sign)
 
 
 class PseudoInverse(SingleOperatorOperation):
@@ -1506,11 +1401,17 @@ class NullSpaceProjector(SingleOperatorOperation):
 
     .. math::
 
-        X \mathcal{P}_{{\rm Ker} X} = 0 \Leftrightarrow  X (1 - \mathcal{P}_{{\rm Ker} X}) = X\\
-        \mathcal{P}_{{\rm Ker} X}^\dagger = \mathcal{P}_{{\rm Ker} X} = \mathcal{P}_{{\rm Ker} X}^2
+        X \mathcal{P}_{{\rm Ker} X}
+          = 0
+        \Leftrightarrow
+        X (1 - \mathcal{P}_{{\rm Ker} X})
+          = X \\
+        \mathcal{P}_{{\rm Ker} X}^\dagger
+          = \mathcal{P}_{{\rm Ker} X}
+          = \mathcal{P}_{{\rm Ker} X}^2
 
-    :param X: Operator argument
-    :type X: Operator
+    Args:
+        X (Operator): Operator argument
     """
 
     _rules = OrderedDict()  # see end of module
@@ -1557,12 +1458,15 @@ tr = OperatorTrace.create
 def X(local_space, states=("h", "g")):
     r"""Pauli-type X-operator
 
-    :param local_space: Associated Hilbert space.
-    :type local_space: LocalSpace
-    :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
-    :return: Local X-operator as a linear combination of :class:`LocalSigma`
-    :rtype: Operator
+    Args:
+        local_space (.LocalSpace): Associated Hilbert space.
+        states (tuple[int or str]): The qubit state labels for the basis states
+            :math:`\left\{|0\rangle, |1\rangle \right\}`,
+            where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
+
+    Returns:
+        Operator: Local X-operator as a linear combination of
+        :class:`LocalSigma`
     """
     h, g = states  # TODO: default should be 0, 1
     return (
@@ -1573,12 +1477,16 @@ def X(local_space, states=("h", "g")):
 def Y(local_space, states=("h", "g")):
     r""" Pauli-type Y-operator
 
-    :param local_space: Associated Hilbert space.
-    :type local_space: LocalSpace
-    :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
-    :return: Local Y-operator as a linear combination of :class:`LocalSigma`
-    :rtype: Operator
+    Args:
+        local_space (LocalSpace): Associated Hilbert space.
+        states (tuple[int or str]): The qubit state labels for the basis states
+            :math:`\left\{|0\rangle, |1\rangle \right\}`,
+            where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
+
+    Returns:
+        Operator: Local Y-operator as a linear combination of
+        :class:`LocalSigma`
+
     """
     h, g = states
     return I * (-LocalSigma.create(h, g, hs=local_space) +
@@ -1588,12 +1496,15 @@ def Y(local_space, states=("h", "g")):
 def Z(local_space, states=("h", "g")):
     r"""Pauli-type Z-operator
 
-    :param local_space: Associated Hilbert space.
-    :type local_space: LocalSpace
-    :param states: The qubit state labels for the basis states :math:`\left\{|0\rangle, |1\rangle \right\}`, where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-    :type states: tuple with two elements of type int or str
-    :return: Local Z-operator as a linear combination of :class:`LocalSigma`
-    :rtype: Operator
+    Args:
+        local_space (LocalSpace): Associated Hilbert space.
+        states (tuple[int or str]): The qubit state labels for the basis states
+            :math:`\left\{|0\rangle, |1\rangle \right\}`,
+            where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
+
+    Returns:
+        Operator: Local Z-operator as a linear combination of
+        :class:`LocalSigma`
     """
     h, g = states
     return (LocalProjector(h, hs=local_space) -
@@ -1605,25 +1516,25 @@ def Z(local_space, states=("h", "g")):
 ###############################################################################
 
 
-def factor_for_trace(ls, op):
-    r'''Given a :class:`LocalSpace` `ls` to take the partial trace over and an
+def factor_for_trace(ls: HilbertSpace, op: Operator) -> Operator:
+    r'''Given a :class:`.LocalSpace` `ls` to take the partial trace over and an
     operator `op`, factor the trace such that operators acting on disjoint
     degrees of freedom are pulled out of the trace. If the operator acts
     trivially on ls the trace yields only a pre-factor equal to the dimension
-    of ls. If there are LocalSigma operators among a product, the trace's
-    cyclical property is used to move to sandwich the full product by
-    :py:class:`LocalSigma` operators:
+    of ls. If there are :class:`LocalSigma` operators among a product, the
+    trace's cyclical property is used to move to sandwich the full product by
+    :class:`LocalSigma` operators:
 
     .. math::
 
         {\rm Tr} A \sigma_{jk} B = {\rm Tr} \sigma_{jk} B A \sigma_{jj}
 
-    :param ls: Degree of Freedom to trace over
-    :type ls: HilbertSpace
-    :param op: Operator to take the trace of
-    :type op: Operator
-    :return: The (partial) trace over the operator's spc-degrees of freedom
-    :rtype: Operator
+    Args:
+        ls: Degree of Freedom to trace over
+        op: Operator to take the trace of
+
+    Returns:
+        The (partial) trace over the operator's spc-degrees of freedom
     '''
     if op.space == ls:
         if isinstance(op, OperatorTimes):
@@ -1663,11 +1574,12 @@ def decompose_space(H, A):
     """Simplifies OperatorTrace expressions over tensor-product spaces by
     turning it into iterated partial traces.
 
-    :param H: The full space.
-    :type H: ProductSpace
-    :type A: Operator
-    :return: Iterative partial trace expression
-    :rtype: Operator
+    Args:
+        H (ProductSpace): The full space.
+        A (Operator):
+
+    Returns:
+        Operator: Iterative partial trace expression
     """
     return OperatorTrace.create(
         OperatorTrace.create(A, over_space=H.operands[-1]),
@@ -1680,11 +1592,15 @@ def get_coeffs(expr, expand=False, epsilon=0.):
 
     The returned object is a defaultdict that return 0. if a term/key
     doesn't exist.
-    :param expr: The operator expression to get all coefficients from.
-    :param expand: Whether to expand the expression distributively.
-    :param epsilon: If non-zero, drop all Operators with coefficients that have absolute value less than epsilon.
-    :return: A dictionary of {op1: coeff1, op2: coeff2, ...}
-    :rtype: dict
+
+    Args:
+        expr: The operator expression to get all coefficients from.
+        expand: Whether to expand the expression distributively.
+        epsilon: If non-zero, drop all Operators with coefficients that have
+            absolute value less than epsilon.
+
+    Returns:
+        dict: A dictionary ``{op1: coeff1, op2: coeff2, ...}``
     """
     if expand:
         expr = expr.expand()
@@ -1703,8 +1619,7 @@ def get_coeffs(expr, expand=False, epsilon=0.):
 
 def space(obj):
     """Gives the associated HilbertSpace with an object. Also works for
-    `SCALAR_TYPES` (returning
-    :class:`~qnet.algebra.hilbert_space_algebra.TrivialSpace`)
+    :obj:`SCALAR_TYPES` (returning :class:`~.TrivialSpace`)
     """
     try:
         return obj.space
@@ -1717,10 +1632,11 @@ def space(obj):
 def simplify_scalar(s):
     """Simplify all occurences of scalar expressions in s
 
-    :param s: The expression to simplify.
-    :type s: Expression or SympyBasic
-    :return: The simplified version.
-    :rtype: Expression or SympyBasic
+    Args:
+        s (Expression or sympy.core.basic.Basic): The expression to simplify.
+
+    Returns:
+        A simplified expression of the same type as `s`.
     """
     try:
         return s.simplify_scalar()
@@ -1777,7 +1693,7 @@ def Jpjmcoeff(ls, m, shift=False):
     Args:
         ls (LocalSpace): The Hilbert space in which the $\Op{J}_{+}$ operator
             acts.
-        m (Any): If str, the label of the basis state of `hs` to which
+        m (str or int): If str, the label of the basis state of `hs` to which
             the operator is applied. If integer together with ``shift=True``,
             the zero-based index of the basis state. Otherwise, directly the
             quantum number $m$.
@@ -1881,13 +1797,12 @@ def _scal_combine_operator_pm_cc(c, A, d, B):
 
 def create_operator_pm_cc():
     """Return a list of rules that can be used in an
-    :func:`~qnet.algebra.abstract_algebra.extra_binary_rules`
-    context for :class:`OperatorPlus` in order to combine suitable terms into a
-    :class:`OperatorPlusMinusCC` instance::
+    :func:`.extra_binary_rules` context for :class:`OperatorPlus` in order to
+    combine suitable terms into a :class:`OperatorPlusMinusCC` instance::
 
         >>> A = OperatorSymbol('A', hs=1)
         >>> sum = A + A.dag()
-        >>> from qnet.algebra.abstract_algebra import extra_binary_rules
+        >>> from qnet import extra_binary_rules
         >>> with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
         ...     sum2 = sum.simplify()
         >>> print(ascii(sum2))
@@ -1932,394 +1847,3 @@ def expand_operator_pm_cc():
             pattern(OperatorPlusMinusCC, A, sign=-1),
             lambda A: A - A.dag())),
     ])
-
-
-###############################################################################
-# Algebraic rules
-###############################################################################
-
-
-def _algebraic_rules():
-    """Set the default algebraic rules for the operations defined in this
-    module"""
-    PseudoInverse._delegate_to_method += (PseudoInverse,)
-
-    u = wc("u", head=SCALAR_TYPES)
-    v = wc("v", head=SCALAR_TYPES)
-
-    n = wc("n", head=(int, str, SymbolicLabelBase))
-    m = wc("m", head=(int, str, SymbolicLabelBase))
-
-    A = wc("A", head=Operator)
-    B = wc("B", head=Operator)
-
-    A_plus = wc("A", head=OperatorPlus)
-    A_times = wc("A", head=OperatorTimes)
-
-    ls = wc("ls", head=LocalSpace)
-    h1 = wc("h1", head=HilbertSpace)
-    H_ProductSpace = wc("H", head=ProductSpace)
-
-    localsigma = wc(
-        'localsigma', head=(LocalSigma, LocalProjector), kwargs={'hs': ls})
-
-    ra = wc("ra", head=(int, str, SymbolicLabelBase))
-    rb = wc("rb", head=(int, str, SymbolicLabelBase))
-    rc = wc("rc", head=(int, str, SymbolicLabelBase))
-    rd = wc("rd", head=(int, str, SymbolicLabelBase))
-
-    indranges__ = wc("indranges__", head=IndexRangeBase)
-
-    ScalarTimesOperator._rules.update(check_rules_dict([
-        ('1A', (
-            pattern_head(1, A),
-            lambda A: A)),
-        ('0A', (
-            pattern_head(0, A),
-            lambda A: ZeroOperator)),
-        ('u0', (
-            pattern_head(u, ZeroOperator),
-            lambda u: ZeroOperator)),
-        ('assoc_coeff', (
-            pattern_head(u, pattern(ScalarTimesOperator, v, A)),
-            lambda u, v, A: (u * v) * A)),
-        ('negsum', (
-            pattern_head(-1, A_plus),
-            lambda A: OperatorPlus.create(*[-1 * op for op in A.args]))),
-    ]))
-
-    OperatorPlus._binary_rules.update(check_rules_dict([
-        ('upv', (
-            pattern_head(
-                pattern(ScalarTimesOperator, u, A),
-                pattern(ScalarTimesOperator, v, A)),
-            lambda u, v, A: (u + v) * A)),
-        ('up1', (
-            pattern_head(pattern(ScalarTimesOperator, u, A), A),
-            lambda u, A: (u + 1) * A)),
-        ('1pv', (
-            pattern_head(A, pattern(ScalarTimesOperator, v, A)),
-            lambda v, A: (1 + v) * A)),
-        ('2A', (
-            pattern_head(A, A),
-            lambda A: 2 * A)),
-    ]))
-
-    OperatorTimes._binary_rules.update(check_rules_dict([
-        ('uAB', (
-            pattern_head(pattern(ScalarTimesOperator, u, A), B),
-            lambda u, A, B: u * (A * B))),
-
-        ('zero1', (
-            pattern_head(ZeroOperator, B),
-            lambda B: ZeroOperator)),
-        ('zero2', (
-            pattern_head(A, ZeroOperator),
-            lambda A: ZeroOperator)),
-
-        ('coeff', (
-            pattern_head(A, pattern(ScalarTimesOperator, u, B)),
-            lambda A, u, B: u * (A * B))),
-
-        ('sig', (
-            pattern_head(
-                pattern(LocalSigma, ra, rb, hs=ls),
-                pattern(LocalSigma, rc, rd, hs=ls)),
-            lambda ls, ra, rb, rc, rd: (
-                KroneckerDelta(rb, rc) * LocalSigma.create(ra, rd, hs=ls)))),
-        ('sigproj', (
-            pattern_head(
-                pattern(LocalSigma, ra, rb, hs=ls),
-                pattern(LocalProjector, rc, hs=ls)),
-            lambda ls, ra, rb, rc: (
-                KroneckerDelta(rb, rc) * LocalSigma.create(ra, rc, hs=ls)))),
-        ('projsig', (
-            pattern_head(
-                pattern(LocalProjector, ra, hs=ls),
-                pattern(LocalSigma, rc, rd, hs=ls)),
-            lambda ls, ra, rc, rd: (
-                KroneckerDelta(ra, rc) * LocalSigma.create(ra, rd, hs=ls)))),
-        ('projproj', (
-            pattern_head(
-                pattern(LocalProjector, ra, hs=ls),
-                pattern(LocalProjector, rc, hs=ls)),
-            lambda ls, ra, rc: (
-                KroneckerDelta(ra, rc) * LocalProjector(ra, hs=ls)))),
-
-        # Harmonic oscillator rules
-        ('hamos1', (
-            pattern_head(pattern(Create, hs=ls), localsigma),
-            lambda ls, localsigma:
-                sqrt(localsigma.index_j + 1) * localsigma.raise_jk(j_incr=1))),
-
-        ('hamos2', (
-            pattern_head(pattern(Destroy, hs=ls), localsigma),
-            lambda ls, localsigma:
-                sqrt(localsigma.index_j) * localsigma.raise_jk(j_incr=-1))),
-
-        ('hamos3', (
-            pattern_head(localsigma, pattern(Destroy, hs=ls)),
-            lambda ls, localsigma:
-                sqrt(localsigma.index_k + 1) * localsigma.raise_jk(k_incr=1))),
-
-        ('hamos4', (
-            pattern_head(localsigma, pattern(Create, hs=ls)),
-            lambda ls, localsigma:
-                sqrt(localsigma.index_k) * localsigma.raise_jk(k_incr=-1))),
-
-        # Normal ordering for harmonic oscillator <=> all a^* to the left, a to
-        # the right.
-        ('hamosord', (
-            pattern_head(pattern(Destroy, hs=ls), pattern(Create, hs=ls)),
-            lambda ls: IdentityOperator + Create(hs=ls) * Destroy(hs=ls))),
-
-        # Oscillator unitary group rules
-        ('phase2', (
-            pattern_head(pattern(Phase, u, hs=ls), pattern(Phase, v, hs=ls)),
-            lambda ls, u, v: Phase.create(u + v, hs=ls))),
-        ('displace2', (
-            pattern_head(
-                pattern(Displace, u, hs=ls),
-                pattern(Displace, v, hs=ls)),
-            lambda ls, u, v: (
-                exp((u * v.conjugate() - u.conjugate() * v) / 2) *
-                Displace.create(u + v, hs=ls)))),
-
-        ('dphase', (
-            pattern_head(pattern(Destroy, hs=ls), pattern(Phase, u, hs=ls)),
-            lambda ls, u:
-                exp(I * u) * Phase.create(u, hs=ls) * Destroy(hs=ls))),
-        ('ddisplace', (
-            pattern_head(pattern(Destroy, hs=ls), pattern(Displace, u, hs=ls)),
-            lambda ls, u: Displace.create(u, hs=ls) * (Destroy(hs=ls) + u))),
-
-        ('phasec', (
-            pattern_head(pattern(Phase, u, hs=ls), pattern(Create, hs=ls)),
-            lambda ls, u:
-                exp(I * u) * Create(hs=ls) * Phase.create(u, hs=ls))),
-        ('displacec', (
-            pattern_head(pattern(Displace, u, hs=ls), pattern(Create, hs=ls)),
-            lambda ls, u: (((Create(hs=ls) - u.conjugate()) *
-                            Displace.create(u, hs=ls))))),
-
-        ('phasesig', (
-            pattern_head(pattern(Phase, u, hs=ls), localsigma),
-            lambda ls, u, localsigma:
-            exp(I * u * localsigma.index_j) * localsigma)),
-        ('sigphase', (
-            pattern_head(localsigma, pattern(Phase, u, hs=ls)),
-            lambda ls, u, localsigma:
-            exp(I * u * localsigma.index_k) * localsigma)),
-
-        # Spin rules
-        ('spin1', (
-            pattern_head(pattern(Jplus, hs=ls), localsigma),
-            lambda ls, localsigma:
-                Jpjmcoeff(ls, localsigma.index_j, shift=True) *
-                localsigma.raise_jk(j_incr=1))),
-
-        ('spin2', (
-            pattern_head(pattern(Jminus, hs=ls), localsigma),
-            lambda ls, localsigma:
-                Jmjmcoeff(ls, localsigma.index_j, shift=True) *
-                localsigma.raise_jk(j_incr=-1))),
-
-        ('spin3', (
-            pattern_head(pattern(Jz, hs=ls), localsigma),
-            lambda ls, localsigma:
-                Jzjmcoeff(ls, localsigma.index_j, shift=True) * localsigma)),
-
-        ('spin4', (
-            pattern_head(localsigma, pattern(Jplus, hs=ls)),
-            lambda ls, localsigma:
-                Jmjmcoeff(ls, localsigma.index_k, shift=True) *
-                localsigma.raise_jk(k_incr=-1))),
-
-        ('spin5', (
-            pattern_head(localsigma, pattern(Jminus, hs=ls)),
-            lambda ls, localsigma:
-                Jpjmcoeff(ls, localsigma.index_k, shift=True) *
-                localsigma.raise_jk(k_incr=+1))),
-
-        ('spin6', (
-            pattern_head(localsigma, pattern(Jz, hs=ls)),
-            lambda ls, localsigma:
-                Jzjmcoeff(ls, localsigma.index_k, shift=True) * localsigma)),
-
-        # Normal ordering for angular momentum <=> all J_+ to the left, J_z to
-        # center and J_- to the right
-        ('spinord1', (
-            pattern_head(pattern(Jminus, hs=ls), pattern(Jplus, hs=ls)),
-            lambda ls: -2 * Jz(hs=ls) + Jplus(hs=ls) * Jminus(hs=ls))),
-
-        ('spinord2', (
-            pattern_head(pattern(Jminus, hs=ls), pattern(Jz, hs=ls)),
-            lambda ls: Jz(hs=ls) * Jminus(hs=ls) + Jminus(hs=ls))),
-
-        ('spinord3', (
-            pattern_head(pattern(Jz, hs=ls), pattern(Jplus, hs=ls)),
-            lambda ls: Jplus(hs=ls) * Jz(hs=ls) + Jplus(hs=ls))),
-    ]))
-
-    Adjoint._rules.update(check_rules_dict([
-        ('uA', (
-            pattern_head(pattern(ScalarTimesOperator, u, A)),
-            lambda u, A: u.conjugate() * A.adjoint())),
-        ('plus', (
-            pattern_head(A_plus),
-            lambda A: OperatorPlus.create(*[o.adjoint()
-                                            for o in A.operands]))),
-        ('times', (
-            pattern_head(A_times),
-            lambda A: OperatorTimes.create(*[o.adjoint()
-                                             for o in A.operands[::-1]]))),
-        ('adjoint', (
-            pattern_head(pattern(Adjoint, A)),
-            lambda A: A)),
-        ('create', (
-            pattern_head(pattern(Create, hs=ls)),
-            lambda ls: Destroy(hs=ls))),
-        ('destroy', (
-            pattern_head(pattern(Destroy, hs=ls)),
-            lambda ls: Create(hs=ls))),
-        ('jplus', (
-            pattern_head(pattern(Jplus, hs=ls)),
-            lambda ls: Jminus(hs=ls))),
-        ('jminus', (
-            pattern_head(pattern(Jminus, hs=ls)),
-            lambda ls: Jplus(hs=ls))),
-        ('jz', (
-            pattern_head(pattern(Jz, hs=ls)),
-            lambda ls: Jz(hs=ls))),
-        ('sig', (
-            pattern_head(pattern(LocalSigma, ra, rb, hs=ls)),
-            lambda ls, ra, rb: LocalSigma(rb, ra, hs=ls))),
-        ('proj', (
-            pattern_head(pattern(LocalProjector, ra, hs=ls)),
-            lambda ls, ra: LocalProjector(ra, hs=ls))),
-    ]))
-
-    Displace._rules.update(check_rules_dict([
-        ('zero', (
-            pattern_head(0, hs=ls), lambda ls: IdentityOperator))
-    ]))
-    Phase._rules.update(check_rules_dict([
-        ('zero', (
-            pattern_head(0, hs=ls), lambda ls: IdentityOperator))
-    ]))
-    Squeeze._rules.update(check_rules_dict([
-        ('zero', (
-            pattern_head(0, hs=ls), lambda ls: IdentityOperator))
-    ]))
-    LocalSigma._rules.update(check_rules_dict([
-        ('projector', (
-            pattern_head(n, n, hs=ls), lambda n, ls: LocalProjector(n, hs=ls)))
-    ]))
-
-    OperatorTrace._rules.update(check_rules_dict([
-        ('triv', (
-            pattern_head(A, over_space=TrivialSpace),
-            lambda A: A)),
-        ('zero', (
-            pattern_head(ZeroOperator, over_space=h1),
-            lambda h1: ZeroOperator)),
-        ('id', (
-            pattern_head(IdentityOperator, over_space=h1),
-            lambda h1: h1.dimension * IdentityOperator)),
-        ('plus', (
-            pattern_head(A_plus, over_space=h1),
-            lambda h1, A: OperatorPlus.create(
-                *[OperatorTrace.create(o, over_space=h1)
-                  for o in A.operands]))),
-        ('adjoint', (
-            pattern_head(pattern(Adjoint, A), over_space=h1),
-            lambda h1, A: Adjoint.create(
-                OperatorTrace.create(A, over_space=h1)))),
-        ('uA', (
-            pattern_head(pattern(ScalarTimesOperator, u, A), over_space=h1),
-            lambda h1, u, A: u * OperatorTrace.create(A, over_space=h1))),
-        ('prodspace', (
-            pattern_head(A, over_space=H_ProductSpace),
-            lambda H, A: decompose_space(H, A))),
-        ('create', (
-            pattern_head(pattern(Create, hs=ls), over_space=ls),
-            lambda ls: ZeroOperator)),
-        ('destroy', (
-            pattern_head(pattern(Destroy, hs=ls), over_space=ls),
-            lambda ls: ZeroOperator)),
-        ('sigma', (
-            pattern_head(pattern(LocalSigma, n, m, hs=ls), over_space=ls),
-            lambda ls, n, m: KroneckerDelta(n, m) * IdentityOperator)),
-        ('proj', (
-            pattern_head(pattern(LocalProjector, n, hs=ls), over_space=ls),
-            lambda ls, n: IdentityOperator)),
-        ('factor', (
-            pattern_head(A, over_space=ls),
-            lambda ls, A: factor_for_trace(ls, A))),
-    ]))
-
-    PseudoInverse._rules.update(check_rules_dict([
-        ('sig', (
-            pattern_head(pattern(LocalSigma, m, n, hs=ls)),
-            lambda ls, m, n: LocalSigma(n, m, hs=ls))),
-        ('proj', (
-            pattern_head(pattern(LocalProjector, m, hs=ls)),
-            lambda ls, m: LocalSigma(m, hs=ls))),
-    ]))
-
-    Commutator._rules.update(check_rules_dict([
-        ('AA', (
-            pattern_head(A, A), lambda A: ZeroOperator)),
-        ('uAvB', (
-            pattern_head(
-                pattern(ScalarTimesOperator, u, A),
-                pattern(ScalarTimesOperator, v, B)),
-            lambda u, v, A, B: u * v * Commutator.create(A, B))),
-        ('vAB', (
-            pattern_head(pattern(ScalarTimesOperator, v, A), B),
-            lambda v, A, B: v * Commutator.create(A, B))),
-        ('AvB', (
-            pattern_head(A, pattern(ScalarTimesOperator, v, B)),
-            lambda v, A, B: v * Commutator.create(A, B))),
-
-        # special known commutators
-        ('crdest', (
-            pattern_head(pattern(Create, hs=ls), pattern(Destroy, hs=ls)),
-            lambda ls: ScalarTimesOperator(-1, IdentityOperator))),
-        # the remaining  rules basically defer to OperatorTimes; just writing
-        # out the commutator will generate something simple
-        ('expand1', (
-            pattern_head(
-                wc('A', head=(
-                    Create, Destroy, LocalSigma, LocalProjector, Phase,
-                    Displace)),
-                wc('B', head=(
-                    Create, Destroy, LocalSigma, LocalProjector, Phase,
-                    Displace))),
-            lambda A, B: A * B - B * A)),
-        ('expand2', (
-            pattern_head(
-                wc('A', head=(LocalSigma, LocalProjector, Jplus, Jminus, Jz)),
-                wc('B', head=(LocalSigma, LocalProjector, Jplus, Jminus, Jz))),
-            lambda A, B: A * B - B * A)),
-    ]))
-
-    def pull_constfactor_from_sum(u, A, indranges):
-        bound_symbols = set([r.index_symbol for r in indranges])
-        if len(all_symbols(u).intersection(bound_symbols)) == 0:
-            return u * OperatorIndexedSum.create(A, *indranges)
-        else:
-            raise CannotSimplify()
-
-    OperatorIndexedSum._rules.update(check_rules_dict([
-        ('R001', (  # sum over zero -> zero
-            pattern_head(ZeroOperator, indranges__),
-            lambda indranges: ZeroOperator)),
-        ('R002', (  # pull constant prefactor out of sum
-            pattern_head(pattern(ScalarTimesOperator, u, A), indranges__),
-            lambda u, A, indranges:
-                pull_constfactor_from_sum(u, A, indranges))),
-    ]))
-
-
-_algebraic_rules()

@@ -24,11 +24,12 @@ try:
 except OSError:
     history = ''
 
-requirements = ['sympy', 'numpy', 'attrs']
+requirements = ['sympy', 'scipy', 'numpy', 'attrs']
 
 dev_requirements = [
     'coverage', 'pytest', 'pytest-cov', 'pytest-xdist', 'twine', 'pep8',
-    'flake8', 'wheel', 'sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme']
+    'flake8', 'wheel', 'sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme',
+    'sphinx-autodoc-typehints']
 dev_requirements.append('better-apidoc>=0.1.4')
 
 
@@ -37,7 +38,8 @@ version = get_version('./src/qnet/__init__.py')
 setup(
     name='QNET',
     version=version,
-    description="Computer algebra package for quantum mechanics and photonic quantum networks",
+    description="Computer algebra package for quantum mechanics and "
+    "photonic quantum networks",
     author="Nikolas Tezak, Michael Goerz",
     author_email='mail@michaelgoerz.net',
     url='https://github.com/mabuchilab/QNET',

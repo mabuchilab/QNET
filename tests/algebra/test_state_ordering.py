@@ -1,7 +1,5 @@
-import pytest
-
-from qnet.algebra.state_algebra import BasisKet
-from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.state_algebra import BasisKet
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
 
 def test_operator_times_order():

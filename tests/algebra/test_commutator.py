@@ -1,11 +1,12 @@
 from sympy import symbols, sqrt
 
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.operator_algebra import (
     OperatorSymbol, Commutator, ZeroOperator, Create, Destroy, LocalSigma,
     LocalProjector, IdentityOperator, Jplus, Jz)
-from qnet.algebra.toolbox import (
-    expand_commutators_leibniz, evaluate_commutators)
+from qnet.algebra.toolbox.commutator_manipulation import \
+    (
+    expand_commutators_leibniz, evaluate_commutators, )
 
 
 def test_disjunct_hs():

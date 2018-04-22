@@ -1,7 +1,5 @@
-import pytest
-
-from qnet.algebra.hilbert_space_algebra import (
-        LocalSpace, TrivialSpace, FullSpace)
+from qnet.algebra.core.hilbert_space_algebra import (
+        LocalSpace)
 
 def test_product_space_order():
     H1 = LocalSpace(1)

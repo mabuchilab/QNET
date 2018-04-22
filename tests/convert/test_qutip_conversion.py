@@ -5,14 +5,14 @@ import qutip
 
 import pytest
 
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.operator_algebra import (
     Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol,
     ScalarTimesOperator, ZeroOperator)
-from qnet.algebra.circuit_algebra import SLH
-from qnet.algebra.matrix_algebra import identity_matrix, Matrix
+from qnet.algebra.core.circuit_algebra import SLH
+from qnet.algebra.core.matrix_algebra import identity_matrix, Matrix
 from qnet.convert.to_qutip import (
     _time_dependent_to_qutip, convert_to_qutip, SLH_to_qutip)
-from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
 _hs_counter = 0
 
@@ -208,10 +208,10 @@ def test_trivial_space_conversion():
     This tests the resolution of issue #48
     """
     from qnet.convert.to_qutip import convert_to_qutip, SLH_to_qutip
-    from qnet.algebra.operator_algebra import ZeroOperator
-    from qnet.algebra.hilbert_space_algebra import LocalSpace
+    from qnet.algebra.core.operator_algebra import ZeroOperator
+    from qnet.algebra.core.hilbert_space_algebra import LocalSpace
     from qnet.algebra.library.circuit_components import Beamsplitter
-    from qnet.algebra.abstract_algebra import AlgebraError
+    from qnet.algebra.core.exceptions import AlgebraError
 
     with pytest.raises(AlgebraError) as excinfo:
         O = convert_to_qutip(ZeroOperator)

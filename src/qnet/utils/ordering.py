@@ -27,8 +27,6 @@ their replacements to all the desired algebraic classes.
 
 from collections import OrderedDict
 
-from ..algebra.scalar_types import SCALAR_TYPES
-
 __all__ = []
 
 __private__ = [  # anything not in __all__ must be in __private__
@@ -42,6 +40,7 @@ class KeyTuple(tuple):
     Operations. It differs from a normal tuple in that it falls back to string
     comparison if any elements are not directly comparable"""
     def __lt__(self, other):
+        from qnet.algebra.core.scalar_types import SCALAR_TYPES
         if isinstance(other, (SCALAR_TYPES, str)):
             return False
         for (a, b) in zip(self, other):
@@ -90,7 +89,7 @@ class DisjunctCommutativeHSOrder():
     """
 
     def __init__(self, op, space_order=None, op_order=None):
-        from qnet.algebra.hilbert_space_algebra import TrivialSpace
+        from qnet.algebra.core.hilbert_space_algebra import TrivialSpace
         self.op = op
         self.space = op.space
         if space_order is None:

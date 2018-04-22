@@ -3,7 +3,7 @@ this facilitates some analytic treatments, such as decomposition into a basis.
 """
 import sympy
 from sympy.physics.quantum import TensorProduct as tensor
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.operator_algebra import (
     IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz, Jplus,
     Jminus, Phase, Displace, Squeeze, LocalSigma, OperatorOperation,
     SingleOperatorOperation, OperatorPlus, OperatorTimes, ScalarTimesOperator,

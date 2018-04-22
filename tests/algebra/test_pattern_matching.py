@@ -3,13 +3,13 @@ from collections import OrderedDict
 from sympy import Symbol
 import pytest
 
-from qnet.algebra.scalar_types import SCALAR_TYPES
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.scalar_types import SCALAR_TYPES
+from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, ScalarTimesOperator, OperatorTimes, Operator,
         LocalOperator, Create)
-from qnet.algebra.hilbert_space_algebra import (
+from qnet.algebra.core.hilbert_space_algebra import (
         FullSpace, HilbertSpace, LocalSpace)
-from qnet.algebra.circuit_algebra import (
+from qnet.algebra.core.circuit_algebra import (
         Circuit, CPermutation, Concatenation, SeriesProduct, CircuitSymbol,
         Feedback)
 from qnet.algebra.pattern_matching import (

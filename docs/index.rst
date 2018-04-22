@@ -11,6 +11,7 @@ Welcome to QNET's documentation!
    contributing
    authors
    history
+   library_structure
    symbolic_algebra
    circuit_rules
    printing
@@ -23,5 +24,3 @@ API
    :maxdepth: 1
 
    API of the QNET package <API/qnet>
-
-* :ref:`modindex`

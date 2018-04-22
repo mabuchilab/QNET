@@ -7,7 +7,7 @@ from sympy.core.basic import Basic as SympyBasic
 from .base import QnetBasePrinter
 from .sympy import SympyReprPrinter
 from ._render_head_repr import render_head_repr
-from ..algebra.abstract_algebra import Expression
+from qnet.algebra.core.abstract_algebra import Expression
 from ..utils.singleton import Singleton
 
 __all__ = []

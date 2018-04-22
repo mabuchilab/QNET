@@ -1,9 +1,10 @@
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.operator_algebra import (
     OperatorSymbol, ScalarTimesOperator, OperatorPlus, Operator,
     OperatorTimes)
-from qnet.algebra.abstract_algebra import (
-     extra_binary_rules, simplify, CannotSimplify)
+from qnet.algebra.core.abstract_algebra import simplify
+from qnet.algebra.toolbox.core import extra_binary_rules
+from qnet.algebra.core.exceptions import CannotSimplify
 from qnet.algebra.pattern_matching import wc, pattern_head, pattern
 from qnet.printing import srepr
 

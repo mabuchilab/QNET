@@ -10,7 +10,7 @@ any algebraic operation may have. The lists consist of the following:
 .. _Numpy numerical types: https://docs.scipy.org/doc/numpy/user/basics.types.html
 '''
 import sympy
-from numpy import int64, complex128, float64
+from numpy import complex128, float64, int64
 
 __all__ = ['SCALAR_TYPES']
 

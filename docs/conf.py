@@ -43,10 +43,10 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.autosummary',
-    'sphinx.ext.autosectionlabel',
     'sphinx.ext.extlinks',
     'sphinx.ext.ifconfig',
     'sphinx.ext.todo',
+    'sphinx_autodoc_typehints',
     'dollarmath',
 ]
 if os.getenv('SPELLCHECK'):
@@ -72,7 +72,7 @@ author = 'Nikolas Tezak and Michael Goerz'
 copyright = u'2012-2018, Nikolas Tezak, Michael Goerz'
 version = release = qnet.__version__
 
-pygments_style = 'sphinx'
+pygments_style = 'friendly'
 extlinks = {
     'issue': ('https://github.com/mabuchilab/QNET/issues/%s', '#'),
     'pr': ('https://github.com/mabuchilab/QNET/pull/%s', 'PR #'),
@@ -152,10 +152,10 @@ class SingletonDocumenter(DataDocumenter):
     directivetype = 'data'
     objtype = 'singleton'
     priority = 20
+
     @classmethod
     def can_document_member(cls, member, membername, isattr, parent):
-        return isinstance(member, qnet.algebra.singleton.SingletonType)
-
+        return isinstance(member, qnet.utils.singleton.SingletonType)
 
 
 # -- Options for HTML output ---------------------------------------------------
@@ -178,10 +178,10 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 html_theme_options = {
     'collapse_navigation': True,
     'display_version': True,
-    'navigation_depth': 4,
+    'navigation_depth': 3,
 }
 
-#inheritance_graph_attrs = dict(size='""')
+inheritance_graph_attrs = dict(size='""')
 graphviz_output_format = 'svg'
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -251,4 +251,5 @@ html_show_sourcelink = False
 
 # -----------------------------------------------------------------------------
 def setup(app):
+    app.add_autodocumenter(SingletonDocumenter)
     app.connect('builder-inited', run_apidoc)

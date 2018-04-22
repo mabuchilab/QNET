@@ -1,10 +1,11 @@
 import pytest
 
-from qnet.algebra.hilbert_space_algebra import (
-        LocalSpace, ProductSpace, TrivialSpace, FullSpace, BasisNotSetError)
-from qnet.algebra.operator_algebra import Destroy
-from qnet.algebra.state_algebra import (
-        KetSymbol, BasisKet, TensorKet, TrivialKet)
+from qnet.algebra.core.hilbert_space_algebra import (
+        LocalSpace, ProductSpace, TrivialSpace, FullSpace)
+from qnet.algebra.core.exceptions import BasisNotSetError
+from qnet.algebra.core.operator_algebra import Destroy
+from qnet.algebra.core.state_algebra import (
+    KetSymbol, BasisKet, TrivialKet)
 
 
 def test_instantiate_with_basis():

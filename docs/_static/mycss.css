@@ -29,3 +29,5 @@ object.inheritance {
 div.math {
     overflow: auto;
 }
+
+.highlight  { background: none; }

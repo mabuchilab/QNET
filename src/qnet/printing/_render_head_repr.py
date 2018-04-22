@@ -4,7 +4,7 @@ from sympy.printing.repr import srepr as sympy_srepr
 from sympy.core.basic import Basic as SympyBasic
 
 from ..utils.singleton import Singleton
-from ..algebra.abstract_algebra import Expression
+from qnet.algebra.core.abstract_algebra import Expression
 
 
 def render_head_repr(

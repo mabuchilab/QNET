@@ -3,9 +3,9 @@ from textwrap import dedent
 
 import pytest
 
-from qnet.algebra.scalar_types import SCALAR_TYPES
-from qnet.algebra.abstract_algebra import Expression, Operation
-from qnet.algebra.operator_algebra import OperatorSymbol, Adjoint
+from qnet.algebra.core.scalar_types import SCALAR_TYPES
+from qnet.algebra.core.abstract_algebra import Expression, Operation
+from qnet.algebra.core.operator_algebra import OperatorSymbol, Adjoint
 from qnet.printing import ascii, srepr, configure_printing
 from qnet.printing.dot import dotprint, expr_labelfunc
 

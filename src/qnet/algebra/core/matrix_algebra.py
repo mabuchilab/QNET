@@ -1,19 +1,20 @@
 """Matrices of Operators"""
 
 from numpy import (
-        array as np_array, ndarray, conjugate as np_conjugate,
-        hstack as np_hstack, vstack as np_vstack, zeros as np_zeros, ones as
-        np_ones, diag as np_diag)
-from sympy import I, sympify
+    array as np_array, conjugate as np_conjugate, diag as np_diag,
+    hstack as np_hstack, ndarray, ones as np_ones, vstack as np_vstack,
+    zeros as np_zeros, )
+from sympy import I, sympify, Symbol
 
-from .scalar_types import SCALAR_TYPES
-from .abstract_algebra import Expression, substitute, _scalar_free_symbols
+from .abstract_algebra import Expression, _scalar_free_symbols, substitute
+from .exceptions import NonSquareMatrix
+from .hilbert_space_algebra import ProductSpace, TrivialSpace
 from .operator_algebra import Operator, simplify_scalar
-from .hilbert_space_algebra import TrivialSpace, ProductSpace
-from ..utils.permutations import check_permutation
+from .scalar_types import SCALAR_TYPES
+from ...utils.permutations import check_permutation
 
 __all__ = [
-    'NonSquareMatrix', 'Matrix', 'block_matrix', 'diagm', 'hstackm',
+    'Matrix', 'block_matrix', 'diagm', 'hstackm',
     'identity_matrix', 'permutation_matrix', 'vstackm', 'zerosm',
     'ImMatrix', 'ReMatrix', 'ImAdjoint', 'ReAdjoint']
 
@@ -21,10 +22,6 @@ __private__ = [  # anything not in __all__ must be in __private__
     'sympyOne', 'Re', 'Im']
 
 sympyOne = sympify(1)
-
-
-class NonSquareMatrix(Exception):
-    pass
 
 
 class Matrix(Expression):
@@ -208,18 +205,18 @@ class Matrix(Expression):
         emat = [method(o) for o in self.matrix.ravel()]
         return Matrix(np_array(emat).reshape(s))
 
-    def series_expand(self, param, about, order):
+    def series_expand(self, param: Symbol, about, order: int):
         """Expand the matrix expression as a truncated power series in a scalar
         parameter.
 
-        :param param: Expansion parameter.
-        :type param: sympy.core.symbol.Symbol
-        :param about: Point about which to expand.
-        :type about:  Any one of Operator.scalar_types
-        :param order: Maximum order of expansion.
-        :type order: int >= 0
-        :return: tuple of length (order+1), where the entries are the expansion coefficients.
-        :rtype: tuple of Operator
+        Args:
+            param: Expansion parameter.
+            about (SCALAR_TYPES): Point about which to expand.
+            order: Maximum order of expansion >= 0
+
+        Returns:
+            tuple of length (order+1), where the entries are the expansion
+            coefficients.
         """
         s = self.shape
         emats = zip(*[o.series_expand(param, about, order)
@@ -228,8 +225,9 @@ class Matrix(Expression):
 
     def expand(self):
         """Expand each matrix element distributively.
-        :return: Expanded matrix.
-        :rtype: Matrix
+
+        Returns:
+            Matrix: Expanded matrix.
         """
         return self.element_wise(
             lambda o: o.expand() if isinstance(o, Operator) else o)
@@ -260,19 +258,17 @@ class Matrix(Expression):
             return ProductSpace.create(*arg_spaces)
 
     def simplify_scalar(self):
-        """
-        Simplify all scalar expressions appearing in the Matrix.
-        """
+        """Simplify all scalar expressions appearing in the Matrix."""
         return self.element_wise(simplify_scalar)
 
 
 def hstackm(matrices):
-    """Generalizes `numpy.hstack` to OperatorMatrix objects."""
+    """Generalizes `numpy.hstack` to :class:`Matrix` objects."""
     return Matrix(np_hstack(tuple(m.matrix for m in matrices)))
 
 
 def vstackm(matrices):
-    """Generalizes `numpy.vstack` to OperatorMatrix objects."""
+    """Generalizes `numpy.vstack` to :class:`Matrix` objects."""
     arr = np_vstack(tuple(m.matrix for m in matrices))
     #    print(tuple(m.matrix.dtype for m in matrices))
     #    print(arr.dtype)
@@ -281,7 +277,7 @@ def vstackm(matrices):
 
 def diagm(v, k=0):
     """Generalizes the diagonal matrix creation capabilities of `numpy.diag` to
-    OperatorMatrix objects."""
+    :class:`Matrix` objects."""
     return Matrix(np_diag(v, k))
 
 
@@ -302,7 +298,7 @@ def block_matrix(A, B, C, D):
     :type D: Matrix
 
     :return: The combined block matrix [[A, B], [C, D]].
-    :type: OperatorMatrix
+    :type: Matrix
     """
     return vstackm((hstackm((A, B)), hstackm((C, D))))
 
@@ -359,13 +355,14 @@ def permutation_matrix(permutation):
 
 
 def Im(op):
-    """The imaginary part of a number or operator. Acting on OperatorMatrices,
-    it produces the element-wise imaginary parts.
+    """The imaginary part of a number, operator, or Matrix (elementwise).
 
-    :param op: Anything that has a conjugate method.
-    :type op: Operator or Matrix or any of Operator.scalar_types
-    :return: The imaginary part of the operand.
-    :rtype: Same as type of `op`.
+    Args:
+        op: Anything that has a `conjugate` method.
+
+    Returns:
+        The element-wise imaginary part of the operand.
+
     """
     return (op.conjugate() - op) * I / 2
 
@@ -374,13 +371,13 @@ ImMatrix = Im  # for flat API
 
 
 def Re(op):
-    """The real part of a number or operator. Acting on OperatorMatrices, it
-    produces the element-wise real parts.
+    """The real part of a number, operator, or Matrix (elementwise).
 
-    :param op: Anything that has a conjugate method.
-    :type op: Operator or Matrix or any of Operator.scalar_types
-    :return: The real part of the operand.
-    :rtype: Same as type of `op`.
+    Args:
+        op: Anything that has a `conjugate` method.
+
+    Returns:
+        The element-wise real part of the operand.
     """
     return (op.conjugate() + op) / 2
 
@@ -389,21 +386,24 @@ ReMatrix = Re  # for flat API
 
 
 def ImAdjoint(opmatrix):
-    """
-    The imaginary part of an OperatorMatrix, i.e. a Hermitian OperatorMatrix
-    :param opmatrix: The operand.
-    :type opmatrix: Matrix
-    :return: The matrix imaginary part of the operand.
-    :rtype: Matrix
+    """The imaginary part of a :class:`Matrix`
+
+    Args:
+        opmatrix (Matrix): The operand.
+
+    Returns:
+        Matrix: The matrix imaginary part of the operand.
     """
     return (opmatrix.H - opmatrix) * I / 2
 
 
 def ReAdjoint(opmatrix):
-    """The real part of an OperatorMatrix, i.e. a Hermitian OperatorMatrix
-    :param opmatrix: The operand.
-    :type opmatrix: Matrix
-    :return: The matrix real part of the operand.
-    :rtype: Matrix
+    """The real part of a :class:`Matrix`
+
+    Args:
+        opmatrix (Matrix): The operand.
+
+    Returns:
+        Matrix: The matrix real part of the operand.
     """
     return (opmatrix.H + opmatrix) / 2

@@ -1,5 +1,5 @@
 from qnet.utils.indices import IdxSym
-from qnet.algebra.abstract_algebra import substitute
+from qnet.algebra.core.abstract_algebra import substitute
 
 import sympy
 import pytest

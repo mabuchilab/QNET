@@ -2,16 +2,19 @@ from sympy import symbols
 import unittest
 from collections import OrderedDict
 
-from qnet.algebra.abstract_algebra import (
-    Operation, assoc, assoc_indexed, indexed_sum_over_const, orderby,
-    filter_neutral, CannotSimplify, match_replace_binary, idem, IndexedSum,
-    ScalarTimesExpression)
+from qnet.algebra.core.abstract_algebra import (
+    Operation, ScalarTimesExpression)
+from qnet.algebra.core.algebraic_properties import (
+    assoc, assoc_indexed, idem,
+    orderby, filter_neutral, match_replace_binary, )
+from qnet.algebra.core.indexed_operations import IndexedSum, indexed_sum_over_const
+from qnet.algebra.core.exceptions import CannotSimplify
 from qnet.utils.indices import IndexOverRange, IdxSym
 from qnet.utils.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
-from qnet.algebra.operator_algebra import (
-    LocalSigma, LocalProjector, OperatorTimes, Displace)
-from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.operator_algebra import (
+    LocalProjector, OperatorTimes, Displace)
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
 
 class TestOperationSimplifcations(unittest.TestCase):

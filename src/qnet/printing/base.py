@@ -3,7 +3,7 @@
 from sympy.core.basic import Basic as SympyBasic
 from sympy.printing.printer import Printer as SympyPrinter
 
-from ..algebra.scalar_types import SCALAR_TYPES
+from qnet.algebra.core.scalar_types import SCALAR_TYPES
 from .sympy import SympyStrPrinter
 from ._render_head_repr import render_head_repr
 

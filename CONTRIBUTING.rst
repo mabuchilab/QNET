@@ -104,6 +104,27 @@ In order to create topic branches with ``git flow``, after cloning the  ``qnet``
 .. _Git Workflow Notes: https://www.asmeurer.com/git-workflow/
 .. _Aaron Meurer's Git Workflow Notes:  https://www.asmeurer.com/git-workflow/
 
+Testing
+-------
+
+QDYN's uses pytest_ for testing. The test-suite for all supported Python versions is run with
+
+.. code-block:: console
+
+    $ make test
+
+This creates a conda environment for each supported Python version in ``./.venv``, installs the QDYN package and all prerequisites into that environment, and runs ``py.test``.
+
+In order run a specific test, you may invoke ``py.test`` manually with the appropriate options, e.g.
+
+.. code-block:: console
+
+    $ ./.venv/py36/bin/py.test -s -x ./tests/algebra/test_abstract_algebra.py
+
+
+.. _pytest: https://pytest.org
+
+
 Pull Request Guidelines
 -----------------------
 

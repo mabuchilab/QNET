@@ -1,11 +1,11 @@
 import pytest
 
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.operator_algebra import (
     OperatorSymbol, ScalarTimesOperator, OperatorPlus, Operator,
     IdentityOperator, OperatorTimes)
-from qnet.algebra.abstract_algebra import (
-    no_rules, extra_rules, extra_binary_rules)
+from qnet.algebra.toolbox.core import no_rules, extra_binary_rules
+from qnet.algebra.toolbox.core import extra_rules
 from qnet.algebra.pattern_matching import wc, pattern_head, pattern
 from qnet.printing import srepr
 

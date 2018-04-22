@@ -1,12 +1,10 @@
-import pytest
-
 from sympy import Symbol, I
 
-from qnet.algebra.abstract_algebra import extra_binary_rules
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.toolbox.core import extra_binary_rules
+from qnet.algebra.core.operator_algebra import (
         Create, Destroy, LocalSigma, create_operator_pm_cc, OperatorPlus,
         OperatorPlusMinusCC, expand_operator_pm_cc)
-from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.printing import srepr
 
 

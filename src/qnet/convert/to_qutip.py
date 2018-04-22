@@ -6,32 +6,23 @@ from sympy import symbols
 from sympy.utilities.lambdify import lambdify
 from scipy.sparse import csr_matrix
 from numpy import (
-        array as np_array,
-        shape as np_shape,
-        hstack as np_hstack,
-        diag as np_diag,
-        ones as np_ones,
-        zeros as np_zeros,
-        ndarray,
-        arange,
+    diag as np_diag,
+    arange,
         cos as np_cos,
-        sin as np_sin,
-        eye as np_eye,
-        argwhere,
-        complex128, float64)
-from qnet.algebra.scalar_types import SCALAR_TYPES
-from qnet.algebra.abstract_algebra import AlgebraError
-from qnet.algebra.circuit_algebra import SLH, move_drive_to_H
-from qnet.algebra.operator_algebra import (
+        sin as np_sin)
+from qnet.algebra.core.scalar_types import SCALAR_TYPES
+from qnet.algebra.core.exceptions import AlgebraError
+from qnet.algebra.core.circuit_algebra import SLH, move_drive_to_H
+from qnet.algebra.core.operator_algebra import (
         IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz,
         Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, OperatorOperation,
         OperatorPlus, OperatorTimes, ScalarTimesOperator, Adjoint,
-        PseudoInverse, OperatorTrace, NullSpaceProjector, Operation, Operator)
-from qnet.algebra.state_algebra import (
+        PseudoInverse, OperatorTrace, NullSpaceProjector, Operation)
+from qnet.algebra.core.state_algebra import (
         Ket, BraKet, KetBra, BasisKet, CoherentStateKet, KetPlus, TensorKet,
         ScalarTimesKet, OperatorTimesKet)
-from qnet.algebra.hilbert_space_algebra import TrivialSpace
-from qnet.algebra.super_operator_algebra import (
+from qnet.algebra.core.hilbert_space_algebra import TrivialSpace
+from qnet.algebra.core.super_operator_algebra import (
         SuperOperator, IdentitySuperOperator, SuperOperatorPlus,
         SuperOperatorTimes, ScalarTimesSuperOperator, SPre, SPost,
         SuperOperatorTimesOperator, ZeroSuperOperator)

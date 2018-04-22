@@ -1,13 +1,7 @@
-"""internal implementation of circuit visualization
+"""Circuit visualization via the pyx package
 
-.. warning::
-
-    This module is currently deprecated, pending a re-implementation of drawing
-    circuit diagrams. It is not exposed through the :mod:`qnet` package.
+This requires a working LaTeX installation.
 """
-
-
-import sys
 
 try:
     import pyx
@@ -15,9 +9,9 @@ except ImportError as e:
     print("PyX is not installed. Please install PyX for circuit visualization purposes.")
     raise e
 
-import qnet.algebra.circuit_algebra as ca
+import qnet.algebra.core.circuit_algebra as ca
 from qnet.printing import latex as tex  # TODO tex -> latex
-from qnet.algebra.circuit_algebra import Component, SubComponent
+from qnet.algebra.core.circuit_algebra import Component
 
 __all__ = ['draw_circuit_canvas', 'draw_circuit']
 
@@ -86,7 +80,7 @@ def draw_circuit_canvas(circuit, hunit = HUNIT, vunit = VUNIT, rhmargin = RHMARG
         c.stroke(pyx.path.line(0, vunit/2, hunit, vunit/2))
         return c, (1, 1), (.5,), (.5,)
 
-    elif isinstance(circuit, (ca.CircuitSymbol, ca.SeriesInverse, ca.SLH, Component, SubComponent)):
+    elif isinstance(circuit, (ca.CircuitSymbol, ca.SeriesInverse, ca.SLH, Component)):
         # draw box
         b = pyx.path.rect(rhmargin * hunit, rvmargin * vunit, hunit - 2 * rhmargin * hunit, nc * vunit - 2 * rvmargin * vunit)
         c.stroke(b)

@@ -1,7 +1,6 @@
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import OperatorSymbol, OperatorPlus
-from qnet.algebra.abstract_algebra import (
-    no_instance_caching, temporary_instance_cache)
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.operator_algebra import OperatorSymbol, OperatorPlus
+from qnet.algebra.toolbox.core import no_instance_caching, temporary_instance_cache
 
 
 def test_context_instance_caching():

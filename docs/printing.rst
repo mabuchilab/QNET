@@ -66,7 +66,7 @@ expression: it is a string (possibly with indentation for the tree structure)
 that if evaluated results in the exact same expression.
 
 An alternative, specifically for interactive use, is the
-:func:`~qnet.printing.tree.print_tree` function. To generate a graphic
+:func:`~qnet.printing.treeprinting.print_tree` function. To generate a graphic
 representation of the tree structure, the :func:`~qnet.printing.dot.dotprint`
 function produces a graph in the DOT language.
 

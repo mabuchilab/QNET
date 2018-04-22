@@ -2,14 +2,16 @@ import unittest
 
 from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols, factorial
 
-from qnet.algebra.abstract_algebra import no_rules, simplify
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.abstract_algebra import simplify
+from qnet.algebra.toolbox.core import no_rules
+from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, Create, Destroy, Jplus, Jminus, Jz, Phase, Displace,
         LocalSigma, IdentityOperator, OperatorPlus)
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.state_algebra import (
-        KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
-        TrivialKet, UnequalSpaces, TensorKet, LocalKet, BasisKet, KetBra)
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.state_algebra import (
+    KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
+    TrivialKet, TensorKet, LocalKet, BasisKet, KetBra)
+from qnet.algebra.core.exceptions import UnequalSpaces
 from qnet.utils.indices import (
     IdxSym, FockIndex, IntIndex, StrLabel, SymbolicLabelBase,
     IndexOverFockSpace, IndexOverRange)

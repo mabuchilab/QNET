@@ -3,18 +3,19 @@ from sympy import I
 from numpy import array as np_array
 import pytest
 
-from qnet.algebra.circuit_algebra import (
+from qnet.algebra.core.circuit_algebra import (
     SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
     SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
-    map_signals_circuit, FB, getABCD, connect, CIdentity,
+    map_signals_circuit, FB, getABCD, CIdentity,
     pad_with_identity, move_drive_to_H, try_adiabatic_elimination)
+from qnet.algebra.toolbox.circuit_manipulation import connect
 from qnet.utils.permutations import (
     permute, full_block_perm, block_perm_and_perms_within_blocks)
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.operator_algebra import (
     Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator, LocalSigma,
     LocalProjector, IdentityOperator)
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.matrix_algebra import Matrix, identity_matrix
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.library.circuit_components import (
     CoherentDriveCC, PhaseCC, Beamsplitter)
 

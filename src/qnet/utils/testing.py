@@ -6,10 +6,11 @@ See <https://pytest.org/latest/fixture.html>
 """
 import os
 from distutils import dir_util
+
 from qnet.printing.asciiprinter import QnetAsciiPrinter
 
 __all__ = []
-__private__ = ['QnetAsciiTestPrinter', 'datadir']
+__private__ = ['QnetAsciiTestPrinter', 'datadir', 'check_idempotent_create']
 
 
 class QnetAsciiTestPrinter(QnetAsciiPrinter):
@@ -39,3 +40,17 @@ def datadir(tmpdir, request):
         dir_util.copy_tree(test_dir, str(tmpdir))
 
     return str(tmpdir)
+
+
+def check_idempotent_create(expr):
+    """Check that an expression is 'idempotent'"""
+    from qnet.algebra.core.abstract_algebra import Expression
+    print("*** CHECKING IDEMPOTENCY of %s" % expr)
+    if isinstance(expr, Expression):
+        new_expr = expr.create(*expr.args, **expr.kwargs)
+        if new_expr != expr:
+            from IPython.core.debugger import Tracer
+            Tracer()()
+            print(expr)
+            print(new_expr)
+    print("*** IDEMPOTENCY OK")

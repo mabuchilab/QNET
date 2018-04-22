@@ -3,7 +3,7 @@
 This module provides the :func:`dotprint` function that generates a `DOT`_
 diagram for a given expression. For example::
 
-    >>> from qnet.algebra.operator_algebra import OperatorSymbol, Adjoint
+    >>> from qnet.algebra.core.operator_algebra import OperatorSymbol, Adjoint
     >>> from qnet.printing import configure_printing
     >>> A = OperatorSymbol("A", hs=1)
     >>> B = OperatorSymbol("B", hs=1)
@@ -48,7 +48,7 @@ the graph's structural and visual properties.
 .. _DOT: http://www.graphviz.org
 """
 
-from ..algebra.abstract_algebra import Expression, Operation
+from qnet.algebra.core.abstract_algebra import Expression, Operation
 
 __all__ = []
 __private__ = ['dotprint', 'expr_labelfunc']

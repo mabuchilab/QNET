@@ -1,7 +1,7 @@
-from sympy import symbols, exp, I, pi, cos, sin
+from sympy import I, cos, exp, pi, sin, symbols
 
-from qnet.algebra.circuit_algebra import SLH, Component
-from qnet.algebra.matrix_algebra import Matrix
+from ..core.circuit_algebra import Component, SLH
+from ..core.matrix_algebra import Matrix
 
 __all__ = ['CoherentDriveCC', 'PhaseCC', 'Beamsplitter']
 __private__ = []

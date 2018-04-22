@@ -5,15 +5,16 @@ QNET provides a "flat" API. That is, after
 
 all submodules are directly accessible, e.g.
 
-    >>> qnet.algebra.operator_algebra.OperatorSymbol
-    <class 'qnet.algebra.operator_algebra.OperatorSymbol'>
+    >>> qnet.algebra.core.operator_algebra.OperatorSymbol
+    <class 'qnet.algebra.core.operator_algebra.OperatorSymbol'>
 
 Furthermore, every package exports the "public" symbols of any of its
 submodules/subpackages (public symbols are those listed in
 `__all__ <https://docs.python.org/3.5/tutorial/modules.html#importing-from-a-package>`_)
 
-    >>> (qnet.algebra.operator_algebra.OperatorSymbol is
-    ...  qnet.algebra.OperatorSymbol is qnet.OperatorSymbol)
+    >>> (qnet.algebra.core.operator_algebra.OperatorSymbol is
+    ...  qnet.algebra.core.OperatorSymbol is qnet.algebra.OperatorSymbol is
+    ...  qnet.OperatorSymbol)
     True
 
 In an interactive context (and only there!), a star import such as
