@@ -428,7 +428,10 @@ def substitute(expr, var_map, *, fast=False):
     """
     if isinstance(var_map, (dict, OrderedDict)):
         var_map = _HDict(var_map)
-    return _substitute(expr, var_map, fast=fast)
+    try:
+        return _substitute(expr, var_map, fast=fast)
+    except TypeError:
+        return _substitute.__wrapped__(expr, var_map, fast=fast)
 
 
 @lru_cache(maxsize=8192)

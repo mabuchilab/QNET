@@ -253,6 +253,13 @@ class Matrix(Expression):
         return self.element_wise(
             lambda o: o.expand() if isinstance(o, Operator) else o)
 
+    def _substitute(self, var_map, *, fast=False):
+        if self in var_map:
+            return var_map[self]
+        else:
+            return self.element_wise(
+                lambda o: substitute(o, var_map, fast=fast))
+
     def all_symbols(self):
         ret = set()
         for o in self.matrix.ravel():
