@@ -1296,16 +1296,6 @@ class ScalarTimesOperator(Operator, Operation):
     def __hash__(self):
         return super().__hash__()
 
-    def _substitute(self, var_map):
-        st = self.term.substitute(var_map)
-        if isinstance(self.coeff, SympyBasic):
-            svar_map = {k: v for k, v in var_map.items()
-                        if not isinstance(k, Expression)}
-            sc = self.coeff.subs(svar_map)
-        else:
-            sc = substitute(self.coeff, var_map)
-        return sc * st
-
     def _simplify_scalar(self):
         coeff, term = self.operands
         return simplify_scalar(coeff) * term.simplify_scalar()

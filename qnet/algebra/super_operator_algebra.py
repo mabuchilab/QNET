@@ -437,16 +437,6 @@ class ScalarTimesSuperOperator(SuperOperator, Operation):
             return float(self.coeff)
         return NotImplemented
 
-    def _substitute(self, var_map):
-        coeff, term = self.operands
-        st = term.substitute(var_map)
-        if isinstance(coeff, SympyBasic):
-            svar_map = {k:v for k,v in var_map.items() if not isinstance(k,Expression)}
-            sc = coeff.subs(svar_map)
-        else:
-            sc = substitute(coeff, var_map)
-        return sc * st
-
 
 class SuperAdjoint(SuperOperatorOperation):
     r"""The symbolic SuperAdjoint of a super-operator.

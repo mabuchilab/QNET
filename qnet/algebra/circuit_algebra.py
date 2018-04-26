@@ -1485,8 +1485,8 @@ class SeriesInverse(Circuit, Operation):
     def _creduce(self):
         return self.operand.creduce().series_inverse()
 
-    def _substitute(self, var_map):
-        return substitute(self, var_map).series_inverse()
+    def _substitute(self, var_map, *, fast=False):
+        return substitute(self, var_map, fast=fast).series_inverse()
 
     @property
     def space(self):

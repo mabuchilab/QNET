@@ -449,17 +449,6 @@ class CoherentStateKet(LocalKet):
     def _series_expand(self, param, about, order):
         return (self,) + (0,) * (order - 1)
 
-    def _substitute(self, var_map):
-        hs, amp = self.space, self._ampl
-        if isinstance(amp, SympyBasic):
-            svar_map = {k: v for (k, v) in var_map.items()
-                        if not isinstance(k, Expression)}
-            ampc = amp.subs(svar_map)
-        else:
-            ampc = substitute(amp, var_map)
-
-        return CoherentStateKet(ampc, hs=hs)
-
     def all_symbols(self):
         if isinstance(self.ampl, SympyBasic):
             return set([self.ampl, ])
@@ -640,16 +629,6 @@ class ScalarTimesKet(Ket, Operation):
 
         return tuple(ce[k] * te[n - k]
                      for n in range(order + 1) for k in range(n + 1))
-
-    def _substitute(self, var_map):
-        st = self.term.substitute(var_map)
-        if isinstance(self.coeff, SympyBasic):
-            svar_map = {k: v for (k, v) in var_map.items()
-                        if not isinstance(k, Expression)}
-            sc = self.coeff.subs(svar_map)
-        else:
-            sc = substitute(self.coeff, var_map)
-        return sc * st
 
 
 class OperatorTimesKet(Ket, Operation):

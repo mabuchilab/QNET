@@ -130,10 +130,11 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
     def _toABCD(self, linearize):
         return self.toSLH().toABCD(linearize)
 
-    def _substitute(self, var_map):
+    def _substitute(self, var_map, *, fast=False):
         all_names = self._parameters
-        all_namesubvals = [(n, substitute(getattr(self, n), var_map))
-                           for n in all_names]
+        all_namesubvals = [
+            (n, substitute(getattr(self, n), var_map, fast=fast))
+            for n in all_names]
         return self.__class__(self._name, **dict(all_namesubvals))
 
 
@@ -198,6 +199,6 @@ class SubComponent(Circuit, Expression, metaclass=ABCMeta):
     def space(self):
         return self.parent_component.space
 
-    def _substitute(self, var_map):
+    def _substitute(self, var_map, *, fast=False):
         raise NotImplementedError("Carry out substitution before calling "
                                   "creduce() or after converting to SLH")

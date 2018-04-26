@@ -30,7 +30,7 @@ See :ref:`abstract_algebra` for design details and usage.
 from abc import ABCMeta, abstractproperty
 from contextlib import contextmanager
 from copy import copy
-from functools import reduce
+from functools import reduce, lru_cache, wraps
 from collections import OrderedDict
 import logging
 
@@ -276,24 +276,30 @@ class Expression(metaclass=ABCMeta):
         init_printing()
         return str(self)
 
-    def substitute(self, var_map):
+    def substitute(self, var_map, *, fast=False):
         """Substitute all_symbols for other expressions.
 
         Args:
             var_map (dict): Dictionary with entries of the form
                 ``{expr: substitution}``
+            fast (bool): If True, perform only direct substitutions without
+                altering the algebraic structure of `expr`. That is, `expr`
+                will not be rebuilt with :meth:`.create`.
         """
-        return self._substitute(var_map)
+        return self._substitute(var_map, fast=fast)
 
-    def _substitute(self, var_map):
+    def _substitute(self, var_map, *, fast=False):
         if self in var_map:
             return var_map[self]
         if isinstance(self.__class__, Singleton):
             return self
-        new_args = [substitute(arg, var_map) for arg in self.args]
-        new_kwargs = {key: substitute(val, var_map)
+        new_args = [substitute(arg, var_map, fast=fast) for arg in self.args]
+        new_kwargs = {key: substitute(val, var_map, fast=fast)
                       for (key, val) in self.kwargs.items()}
-        return self.create(*new_args, **new_kwargs)
+        if fast:
+            return self.__class__(*new_args, **new_kwargs)
+        else:
+            return self.create(*new_args, **new_kwargs)
 
     def simplify(self, rules=None):
         """Recursively re-instantiate the expression, while applying all of the
@@ -396,14 +402,37 @@ def check_idempotent_create(expr):
     print("*** IDEMPOTENCY OK")
 
 
-def substitute(expr, var_map):
+class _HDict(dict):
+    """Dict wrapper that makes it immuatable (by convention only), for
+    compatiblity with lru_cache"""
+    def __key(self):
+        return (frozenset(self), frozenset(self.values()))
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other):
+        return self.__key() == other.__key()
+
+
+def substitute(expr, var_map, *, fast=False):
     """Substitute symbols or (sub-)expressions with the given replacements and
     re-evalute the result
 
     Args:
         expr: The expression in which to perform the substitution
         var_map (dict): The substitution dictionary.
+        fast (bool): If True, perform only direct substitutions without
+            altering the algebraic structure of `expr`. That is, `expr` will
+            not be rebuilt with :meth:`.create`
     """
+    if isinstance(var_map, (dict, OrderedDict)):
+        var_map = _HDict(var_map)
+    return _substitute(expr, var_map, fast=fast)
+
+
+@lru_cache(maxsize=8192)
+def _substitute(expr, var_map, *, fast=False):
     try:
         if isinstance(expr, SympyBasic):
             sympy_var_map = {
@@ -411,7 +440,7 @@ def substitute(expr, var_map):
                 if isinstance(k, SympyBasic)}
             return expr.subs(sympy_var_map)
         else:
-            return expr.substitute(var_map)
+            return expr.substitute(var_map, fast=fast)
     except AttributeError:
         if expr in var_map:
             return var_map[expr]
