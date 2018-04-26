@@ -7,3 +7,5 @@ dependencies:
   - pip:
     - better-apidoc>=0.1.4
     - pyx>=0.14.1
+    - sphinx-rtd-theme<0.3
+    - sphinx_autodoc_typehints
