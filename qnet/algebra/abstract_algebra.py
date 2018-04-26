@@ -30,7 +30,7 @@ See :ref:`abstract_algebra` for design details and usage.
 from abc import ABCMeta, abstractproperty
 from contextlib import contextmanager
 from copy import copy
-from functools import reduce, lru_cache, wraps
+from functools import reduce, lru_cache
 from collections import OrderedDict
 import logging
 
@@ -434,7 +434,7 @@ def substitute(expr, var_map, *, fast=False):
         return _substitute.__wrapped__(expr, var_map, fast=fast)
 
 
-@lru_cache(maxsize=8192)
+@lru_cache(maxsize=None)
 def _substitute(expr, var_map, *, fast=False):
     try:
         if isinstance(expr, SympyBasic):
