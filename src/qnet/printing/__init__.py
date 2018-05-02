@@ -265,7 +265,7 @@ def configure_printing(**kwargs):
     This takes the same parameters as :func:`init_printing`
 
     Example:
-        >>> from qnet.algebra import OperatorSymbol
+
         >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
         >>> with configure_printing(show_hs_label=False):
         ...     ascii(A + B)
@@ -296,7 +296,7 @@ def ascii(expr, cache=None, **settings):
             symbol
 
     Examples:
-        >>> from qnet.algebra import OperatorSymbol, LocalSigma
+
         >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
         >>> ascii(A + B)
         'A^(1) + B^(1)'
@@ -347,7 +347,7 @@ def unicode(expr, cache=None, **settings):
             operator symbols
 
     Examples:
-        >>> from qnet.algebra import OperatorSymbol, LocalSigma
+
         >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
         >>> unicode(A + B)
         'Â⁽¹⁾ + B̂⁽¹⁾'
@@ -409,7 +409,7 @@ def latex(expr, cache=None, **settings):
 
 
     Examples:
-        >>> from qnet.algebra import OperatorSymbol, LocalSigma
+
         >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
         >>> latex(A + B)
         '\\hat{A}^{(1)} + \\hat{B}^{(1)}'
@@ -431,7 +431,6 @@ def latex(expr, cache=None, **settings):
         >>> latex(CNOT, tex_textop_macro=r'\Op{{{name}}}')
         '\\Op{CNOT}^{(1)}'
 
-        >>> from qnet.algebra import SuperOperatorSymbol
         >>> A = SuperOperatorSymbol('A', hs=1)
         >>> latex(A)
         '\\mathrm{A}^{(1)}'
@@ -443,7 +442,6 @@ def latex(expr, cache=None, **settings):
         >>> latex(Lindbladian, tex_textsop_macro=r'\SOp{{{name}}}')
         '\\SOp{Lindbladian}^{(1)}'
 
-        >>> from qnet.algebra import IdentityOperator
         >>> latex(IdentityOperator)
         '\\mathbb{1}'
         >>> latex(IdentityOperator, tex_identity_sym=r'\identity')
@@ -482,7 +480,7 @@ def srepr(expr, indented=False, cache=None):
     more readable expressions.
 
     Example:
-        >>> from qnet.algebra import OperatorSymbol, OperatorPlus, LocalSpace
+
         >>> hs = LocalSpace('1')
         >>> A = OperatorSymbol('A', hs=hs); B = OperatorSymbol('B', hs=hs)
         >>> expr = A + B

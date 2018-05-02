@@ -108,7 +108,7 @@ class HilbertSpace(metaclass=ABCMeta):
 
     @property
     def basis_states(self):
-        """Yield an iterator over the states (:class:`.Ket` instances) that
+        """Yield an iterator over the states (:class:`.State` instances) that
         form the canonical basis of the Hilbert space
 
         Raises:
@@ -151,10 +151,8 @@ class HilbertSpace(metaclass=ABCMeta):
     def __mul__(self, other):
         return self.tensor(other)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         return self.remove(other)
-
-    __truediv__ = __div__
 
     def __and__(self, other):
         return self.intersect(other)
@@ -181,7 +179,7 @@ class LocalSpace(HilbertSpace, Expression):
     """A local Hilbert space, i.e., for a single degree of freedom.
 
     Args:
-        label (str): label (subscript) of the Hilbert space
+        label (str or int): label (subscript) of the Hilbert space
         basis (tuple or None): Set an explicit basis for the Hilbert space
             (tuple of labels for the basis states)
         dimension (int or None): Specify the dimension $n$ of the Hilbert

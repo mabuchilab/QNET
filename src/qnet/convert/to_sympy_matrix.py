@@ -3,11 +3,12 @@ this facilitates some analytic treatments, such as decomposition into a basis.
 """
 import sympy
 from sympy.physics.quantum import TensorProduct as tensor
+from qnet.algebra.core.abstract_algebra import Operation
 from qnet.algebra.core.operator_algebra import (
     IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz, Jplus,
-    Jminus, Phase, Displace, Squeeze, LocalSigma, OperatorOperation,
-    SingleOperatorOperation, OperatorPlus, OperatorTimes, ScalarTimesOperator,
-    Adjoint, PseudoInverse, OperatorTrace, NullSpaceProjector)
+    Jminus, Phase, Displace, Squeeze, LocalSigma, Operator,
+    OperatorPlus, OperatorTimes, ScalarTimesOperator,
+    Adjoint, PseudoInverse, NullSpaceProjector)
 
 
 __all__ = ['convert_to_sympy_matrix']
@@ -93,7 +94,7 @@ def convert_to_sympy_matrix(expr, full_space=None):
         else:
             raise ValueError("Cannot convert '%s' of type %s"
                              % (str(expr), type(expr)))
-    elif isinstance(expr, (OperatorOperation, SingleOperatorOperation)):
+    elif (isinstance(expr, Operator) and isinstance(expr, Operation)):
         if isinstance(expr, OperatorPlus):
             s = convert_to_sympy_matrix(expr.operands[0], full_space)
             for op in expr.operands[1:]:
@@ -132,22 +133,16 @@ def convert_to_sympy_matrix(expr, full_space=None):
         elif isinstance(expr, Adjoint):
             return convert_to_sympy_matrix(expr.operand, full_space).H
         elif isinstance(expr, PseudoInverse):
-            raise NotImplementedError('Cannot convert PseudoInverse to sympy '
-                    'matrix')
+            raise NotImplementedError(
+                'Cannot convert PseudoInverse to sympy matrix')
         elif isinstance(expr, NullSpaceProjector):
-            raise NotImplementedError('Cannot convert NullSpaceProjector to '
-                    'sympy')
+            raise NotImplementedError(
+                'Cannot convert NullSpaceProjector to sympy')
+        elif isinstance(expr, ScalarTimesOperator):
+            return expr.coeff * convert_to_sympy_matrix(expr.term, full_space)
         else:
-            raise ValueError("Cannot convert '%s' of type %s"
-                             % (str(expr), type(expr)))
-    elif isinstance(expr, ScalarTimesOperator):
-        return expr.coeff * convert_to_sympy_matrix(expr.term, full_space)
-    elif isinstance(expr, OperatorTrace):
-        raise NotImplementedError('Cannot convert OperatorTrace to '
-                'sympy')
-        # actually, this is perfectly doable in principle, but requires a bit
-        # of work
+            raise ValueError(
+                "Cannot convert '%s' of type %s" % (str(expr), type(expr)))
     else:
-        raise ValueError("Cannot convert '%s' of type %s"
-                         % (str(expr), type(expr)))
-
+        raise ValueError(
+            "Cannot convert '%s' of type %s" % (str(expr), type(expr)))

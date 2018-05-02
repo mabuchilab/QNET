@@ -7,7 +7,7 @@ from qnet import (
     IdentityOperator, ZeroOperator, Create, Destroy, Jz, Jplus, Jminus, Phase,
     Displace, Squeeze, LocalSigma, LocalProjector, tr, Adjoint, PseudoInverse,
     NullSpaceProjector, Commutator, LocalSpace, TrivialSpace, FullSpace,
-    Matrix, KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet,
+    Matrix, KetSymbol, ZeroKet, TrivialKet, BasisKet,
     CoherentStateKet, UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
@@ -232,7 +232,7 @@ def test_unicode_ket_symbolic_labels():
     Psi = IndexedBase('Psi')
     assert unicode(BasisKet(FockIndex(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
     assert unicode(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2 i⟩⁽⁰⁾'
-    assert unicode(LocalKet(StrLabel(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
+    assert unicode(KetSymbol(StrLabel(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
     assert (
         unicode(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Ψ_ij⟩^(0⊗1)')
     expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
@@ -254,9 +254,9 @@ def test_unicode_bra_elements():
     assert unicode(Bra(TrivialKet)) == '1'
     assert unicode(BasisKet('e', hs=hs1).adjoint()) == '⟨e|^(q₁)'
     assert unicode(BasisKet(1, hs=1).adjoint()) == '⟨1|⁽¹⁾'
-    assert unicode(CoherentStateKet(2.0, hs=1).dag) == '⟨α=2|⁽¹⁾'
-    assert unicode(CoherentStateKet(0.5j, hs=1).dag) == '⟨α=0.5j|⁽¹⁾'
-    assert unicode(CoherentStateKet(I/2, hs=1).dag) == '⟨α=ⅈ/2|⁽¹⁾'
+    assert unicode(CoherentStateKet(2.0, hs=1).dag()) == '⟨α=2|⁽¹⁾'
+    assert unicode(CoherentStateKet(0.5j, hs=1).dag()) == '⟨α=0.5j|⁽¹⁾'
+    assert unicode(CoherentStateKet(I/2, hs=1).dag()) == '⟨α=ⅈ/2|⁽¹⁾'
 
 
 def test_unicode_ket_operations():
@@ -268,10 +268,8 @@ def test_unicode_ket_operations():
     ket_g2 = BasisKet('g', hs=hs2)
     ket_e2 = BasisKet('e', hs=hs2)
     psi1 = KetSymbol("Psi_1", hs=hs1)
-    psi1_l = LocalKet("Psi_1", hs=hs1)
     psi2 = KetSymbol("Psi_2", hs=hs1)
     phi = KetSymbol("Phi", hs=hs2)
-    phi_l = LocalKet("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
     alpha = symbols('alpha')
@@ -279,7 +277,6 @@ def test_unicode_ket_operations():
     i = IdxSym('i')
     assert unicode(psi1 + psi2) == '|Ψ₁⟩^(q₁) + |Ψ₂⟩^(q₁)'
     assert unicode(psi1 * phi) == '|Ψ₁⟩^(q₁) ⊗ |Φ⟩^(q₂)'
-    assert unicode(psi1_l * phi_l) == '|Ψ₁,Φ⟩^(q₁⊗q₂)'
     assert unicode(phase * psi1) == 'exp(-ⅈ γ) |Ψ₁⟩^(q₁)'
     assert (
         unicode((alpha + 1) * KetSymbol('Psi', hs=0)) == '(α + 1) |Ψ⟩⁽⁰⁾')
@@ -287,8 +284,8 @@ def test_unicode_ket_operations():
             'A\u0302_0^(q\u2081) |\u03a8\u2081\u27e9^(q\u2081)')
     #        Â_0^(q₁) |Ψ₁⟩^(q₁)
     assert unicode(BraKet(psi1, psi2)) == '⟨Ψ₁|Ψ₂⟩^(q₁)'
-    assert unicode(ket_e1.dag * ket_e1) == '1'
-    assert unicode(ket_g1.dag * ket_e1) == '0'
+    assert unicode(ket_e1.dag() * ket_e1) == '1'
+    assert unicode(ket_g1.dag() * ket_e1) == '0'
     assert unicode(KetBra(psi1, psi2)) == '|Ψ₁⟩⟨Ψ₂|^(q₁)'
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
@@ -320,13 +317,10 @@ def test_unicode_bra_operations():
     psi2 = KetSymbol("Psi_2", hs=hs1)
     psi2 = KetSymbol("Psi_2", hs=hs1)
     phi = KetSymbol("Phi", hs=hs2)
-    bra_psi1_l = LocalKet("Psi_1", hs=hs1).dag
-    bra_phi_l = LocalKet("Phi", hs=hs2).dag
     gamma = symbols('gamma', positive=True)
     phase = exp(-I * gamma)
-    assert unicode((psi1 + psi2).dag) == '⟨Ψ₁|^(q₁) + ⟨Ψ₂|^(q₁)'
-    assert unicode((psi1 * phi).dag) == '⟨Ψ₁|^(q₁) ⊗ ⟨Φ|^(q₂)'
-    assert unicode(bra_psi1_l * bra_phi_l) == '⟨Ψ₁,Φ|^(q₁⊗q₂)'
+    assert unicode((psi1 + psi2).dag()) == '⟨Ψ₁|^(q₁) + ⟨Ψ₂|^(q₁)'
+    assert unicode((psi1 * phi).dag()) == '⟨Ψ₁|^(q₁) ⊗ ⟨Φ|^(q₂)'
     assert unicode(Bra(phase * psi1)) == 'exp(ⅈ γ) ⟨Ψ₁|^(q₁)'
 
 

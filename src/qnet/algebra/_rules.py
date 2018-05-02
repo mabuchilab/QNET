@@ -15,7 +15,7 @@ from .core.operator_algebra import (
     ZeroOperator, decompose_space, factor_for_trace, )
 from .core.scalar_types import SCALAR_TYPES
 from .core.state_algebra import (
-    BasisKet, Bra, BraKet, CoherentStateKet, Ket, KetBra, KetIndexedSum,
+    BasisKet, Bra, BraKet, CoherentStateKet, State, KetBra, KetIndexedSum,
     KetPlus, LocalKet, OperatorTimesKet, ScalarTimesKet, TensorKet, TrivialKet,
     ZeroKet, )
 from .core.super_operator_algebra import (
@@ -252,44 +252,6 @@ def _algebraic_rules_operator():
             lambda ls: Jplus(hs=ls) * Jz(hs=ls) + Jplus(hs=ls))),
     ]))
 
-    Adjoint._rules.update(check_rules_dict([
-        ('uA', (
-            pattern_head(pattern(ScalarTimesOperator, u, A)),
-            lambda u, A: u.conjugate() * A.adjoint())),
-        ('plus', (
-            pattern_head(A_plus),
-            lambda A: OperatorPlus.create(*[o.adjoint()
-                                            for o in A.operands]))),
-        ('times', (
-            pattern_head(A_times),
-            lambda A: OperatorTimes.create(*[o.adjoint()
-                                             for o in A.operands[::-1]]))),
-        ('adjoint', (
-            pattern_head(pattern(Adjoint, A)),
-            lambda A: A)),
-        ('create', (
-            pattern_head(pattern(Create, hs=ls)),
-            lambda ls: Destroy(hs=ls))),
-        ('destroy', (
-            pattern_head(pattern(Destroy, hs=ls)),
-            lambda ls: Create(hs=ls))),
-        ('jplus', (
-            pattern_head(pattern(Jplus, hs=ls)),
-            lambda ls: Jminus(hs=ls))),
-        ('jminus', (
-            pattern_head(pattern(Jminus, hs=ls)),
-            lambda ls: Jplus(hs=ls))),
-        ('jz', (
-            pattern_head(pattern(Jz, hs=ls)),
-            lambda ls: Jz(hs=ls))),
-        ('sig', (
-            pattern_head(pattern(LocalSigma, ra, rb, hs=ls)),
-            lambda ls, ra, rb: LocalSigma(rb, ra, hs=ls))),
-        ('proj', (
-            pattern_head(pattern(LocalProjector, ra, hs=ls)),
-            lambda ls, ra: LocalProjector(ra, hs=ls))),
-    ]))
-
     Displace._rules.update(check_rules_dict([
         ('zero', (
             pattern_head(0, hs=ls), lambda ls: IdentityOperator))
@@ -477,35 +439,6 @@ def _algebraic_rules_superop():
             lambda A, B: SPost.create(B*A))),
     ]))
 
-    SuperAdjoint._rules.update(check_rules_dict([
-        ('uSa', (
-            pattern_head(pattern(ScalarTimesSuperOperator, u, sA)),
-            lambda u, sA: u * sA.superadjoint())),
-        ('plus', (
-            pattern_head(sA_plus),
-            lambda sA: SuperOperatorPlus.create(
-                *[o.superadjoint() for o in sA.operands]))),
-        ('times', (
-            pattern_head(sA_times),
-            lambda sA: SuperOperatorTimes.create(
-                *[o.superadjoint() for o in sA.operands[::-1]]))),
-        ('adjoint', (
-            pattern_head(pattern(SuperAdjoint, sA)),
-            lambda sA: sA)),
-        ('spre', (
-            pattern_head(pattern(SPre, A)),
-            lambda A: SPost.create(A))),
-        ('spost', (
-            pattern_head(pattern(SPost, A)),
-            lambda A: SPre.create(A))),
-        ('identity', (
-            pattern_head(IdentitySuperOperator),
-            lambda: IdentitySuperOperator)),
-        ('rule', (
-            pattern_head(ZeroSuperOperator),
-            lambda: ZeroSuperOperator)),
-    ]))
-
     SPre._rules.update(check_rules_dict([
         ('scal', (
             pattern_head(pattern(ScalarTimesOperator, u, A)),
@@ -628,8 +561,8 @@ def _algebraic_rules_state():
 
     nsym = wc("nsym", head=(int, str, SympyBasic))
 
-    Psi = wc("Psi", head=Ket)
-    Phi = wc("Phi", head=Ket)
+    Psi = wc("Psi", head=State)
+    Phi = wc("Phi", head=State)
     Psi_local = wc("Psi", head=LocalKet)
     Psi_tensor = wc("Psi", head=TensorKet)
     Phi_tensor = wc("Phi", head=TensorKet)

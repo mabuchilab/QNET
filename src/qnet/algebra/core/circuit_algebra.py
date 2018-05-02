@@ -1398,14 +1398,14 @@ class SeriesInverse(Circuit, Operation):
     def _toSLH(self):
         return self.operand.toSLH().series_inverse()
 
-    def _toABCD(self):
+    def _toABCD(self, **kwargs):
         raise AlgebraError("SeriesInverse not well-defined in "
                            "ABCD model context")
 
     def _creduce(self):
         return self.operand.creduce().series_inverse()
 
-    def _substitute(self, var_map):
+    def _substitute(self, var_map, **kwargs):
         return substitute(self, var_map).series_inverse()
 
     @property
@@ -1529,7 +1529,7 @@ def extract_signal(k, n):
     Returns:
         tuple: Permutation image tuple
     """
-    return tuple(range(k) + [n - 1] + range(k, n - 1))
+    return tuple(list(range(k)) + [n - 1] + list(range(k, n - 1)))
 
 
 def extract_signal_circuit(k, cdim):

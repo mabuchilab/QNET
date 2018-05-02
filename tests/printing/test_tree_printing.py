@@ -7,7 +7,7 @@ from qnet import (
     Feedback, SeriesInverse, OperatorSymbol, IdentityOperator, ZeroOperator,
     Create, Destroy, Jz, Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma,
     tr, Adjoint, PseudoInverse, NullSpaceProjector, LocalSpace, TrivialSpace,
-    FullSpace, Matrix, KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet,
+    FullSpace, Matrix, KetSymbol, ZeroKet, TrivialKet, BasisKet,
     CoherentStateKet, UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,

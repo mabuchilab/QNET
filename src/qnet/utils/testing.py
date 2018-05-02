@@ -49,6 +49,7 @@ def check_idempotent_create(expr):
     if isinstance(expr, Expression):
         new_expr = expr.create(*expr.args, **expr.kwargs)
         if new_expr != expr:
+            # noinspection PyPackageRequirements
             from IPython.core.debugger import Tracer
             Tracer()()
             print(expr)

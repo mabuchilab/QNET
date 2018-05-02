@@ -7,6 +7,7 @@ from numpy import (
 from sympy import I, sympify, Symbol
 
 from .abstract_algebra import Expression, _scalar_free_symbols, substitute
+from .abstract_quantum_algebra import QuantumExpression
 from .exceptions import NonSquareMatrix
 from .hilbert_space_algebra import ProductSpace, TrivialSpace
 from .operator_algebra import Operator, simplify_scalar
@@ -96,6 +97,7 @@ class Matrix(Expression):
     @property
     def is_zero(self):
         """Are all elements of the matrix zero?"""
+        # TODO: this won't work once ZeroOperator != 0
         return (self.matrix == 0).all()
 
     @classmethod
@@ -141,13 +143,11 @@ class Matrix(Expression):
     def __neg__(self):
         return (-1) * self
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return self * (sympyOne / other)
         raise NotImplementedError("Can't divide matrix %s by %s"
                                   % (self, other))
-
-    __truediv__ = __div__
 
     #    def __pow__(self, power):
     #        return OperatorMatrix(self.matrix.__pow__(power))
@@ -157,9 +157,11 @@ class Matrix(Expression):
         return Matrix(self.matrix.T)
 
     def conjugate(self):
-        """The element-wise conjugate matrix, i.e., if an element is an
-        operator this means the adjoint operator, but no transposition of
-        matrix elements takes place.
+        """The element-wise adjoint matrix.
+
+        Any element that is a :class:`.QuantumExpression` will be replaced by
+        its adjoint, and any scalar will be replaced by its complex conjugate.
+        However, no transposition of matrix elements takes place.
         """
         return Matrix(np_conjugate(self.matrix))
 
@@ -193,16 +195,21 @@ class Matrix(Expression):
             return Matrix(item)
         return item
 
-    def element_wise(self, method):
-        """Apply a method to each matrix element and return the result in a new
-        operator matrix of the same shape.  :param method: A method taking a
-        single argument.
-        :type method: FunctionType
-        :return: Operator matrix with results of method applied element-wise.
-        :rtype: Matrix
+    def element_wise(self, func, *args, **kwargs):
+        """Apply a function to each matrix element and return the result in a
+        new operator matrix of the same shape.
+
+        Args:
+            func (FunctionType): A function to be applied to each element. It
+                must take the element as its first argument.
+            args: Additional positional arguments to be passed to `func`
+            args: Additional keyword arguments to be passed to `func`
+
+        Returns:
+            Matrix: Matrix with results of `func`, applied element-wise.
         """
         s = self.shape
-        emat = [method(o) for o in self.matrix.ravel()]
+        emat = [func(o, *args, **kwargs) for o in self.matrix.ravel()]
         return Matrix(np_array(emat).reshape(s))
 
     def series_expand(self, param: Symbol, about, order: int):
@@ -230,7 +237,7 @@ class Matrix(Expression):
             Matrix: Expanded matrix.
         """
         return self.element_wise(
-            lambda o: o.expand() if isinstance(o, Operator) else o)
+            lambda o: o.expand() if isinstance(o, QuantumExpression) else o)
 
     def _substitute(self, var_map):
         if self in var_map:

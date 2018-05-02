@@ -255,7 +255,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
             [self.doprint(op) for op in expr.operands])
 
     def _print_OperatorSymbol(self, expr, adjoint=False):
-        return self._render_op(expr.identifier, expr._hs, dagger=adjoint)
+        return self._render_op(expr.label, expr._hs, dagger=adjoint)
 
     def _print_LocalOperator(self, expr, adjoint=False):
         if adjoint:
@@ -330,7 +330,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         return self._spaced_product_sym.join(
             [self.parenthesize(op, prec, **kwargs) for op in expr.operands])
 
-    def _print_ScalarTimesExpression(self, expr, **kwargs):
+    def _print_ScalarTimesQuantumExpression(self, expr, **kwargs):
         prec = PRECEDENCE['Mul']
         coeff, term = expr.coeff, expr.term
         term_str = self.doprint(term, **kwargs)
@@ -381,7 +381,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 o.identifier, hs=o.space, dagger=dagger, args=o.args[1:])
         elif self._isinstance(o, 'OperatorSymbol'):
             return self._render_op(
-                o.identifier, hs=o.space, dagger=(not adjoint))
+                o.label, hs=o.space, dagger=(not adjoint))
         else:
             if adjoint:
                 return self.doprint(o)
@@ -436,7 +436,15 @@ class QnetAsciiPrinter(QnetBasePrinter):
         return self._print_OperatorPlus(expr, adjoint=adjoint)
 
     def _print_TensorKet(self, expr, adjoint=False):
-        if expr._label is None:
+        if all(self._isinstance(o, 'BasisKet') for o in expr.operands):
+            label = ",".join([
+                self._render_state_label(o.label) for o in expr.operands])
+            fmt = self._braket_fmt('ket')
+            if adjoint:
+                fmt = self._braket_fmt('bra')
+            space = self._render_hs_label(expr.space)
+            return fmt.format(label=label, space=space)
+        else:
             prec = precedence(expr)
             kwargs = {}
             if adjoint:
@@ -445,14 +453,6 @@ class QnetAsciiPrinter(QnetBasePrinter):
             return tensor_sym.join([
                 self.parenthesize(op, prec, **kwargs)
                 for op in expr.operands])
-        else:  # "trivial" product of LocalKets
-            fmt = self._braket_fmt('ket')
-            if adjoint:
-                fmt = self._braket_fmt('bra')
-            label = ",".join(
-                [self._render_state_label(o.label) for o in expr.operands])
-            space = self._render_hs_label(expr.space)
-            return fmt.format(label=label, space=space)
 
     def _print_OperatorTimesKet(self, expr, adjoint=False):
         prec = precedence(expr)

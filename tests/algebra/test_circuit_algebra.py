@@ -336,7 +336,9 @@ def test_feedback():
         (div * sympy.conjugate(div))
     )
 
-    assert sys_fb.expand().simplify_scalar() == fb.expand().simplify_scalar()
+    lhs = sys_fb.expand().simplify_scalar()
+    rhs = fb.expand().simplify_scalar()
+    assert lhs == rhs
 
 
 def test_ABCD():
@@ -432,8 +434,9 @@ def test_adiabatic_elimination():
         g: g * k,
     }
 
-    slh_limit = try_adiabatic_elimination(
-        slh.substitute(subst), k)
+    slh = slh.substitute(subst)
+
+    slh_limit = try_adiabatic_elimination(slh, k)
 
     expected = SLH(
         Matrix([[-1 * IdentityOperator, ZeroOperator],
@@ -443,7 +446,6 @@ def test_adiabatic_elimination():
         Delta * LocalProjector('e', hs=tls))
 
     assert slh_limit == expected
-
 
 
 def test_move_drive_to_H():
@@ -506,16 +508,16 @@ def test_move_drive_to_H():
     assert SLH2_driven_out1.L[0, 0] == SLH2.L[0,0]
     assert SLH2_driven_out1.L[1, 0] == SLH2_driven.L[1,0]
     assert (
-        SLH2_driven_out1.H - term2[0] - 2*term2[1] - 2*term2[2] -
-        term2[3] - term2[4] == 0)
+        SLH2_driven_out1.H - term2[0] - 2*term2[1] - term2[2] -
+        2*term2[3] - term2[4] == ZeroOperator)
     # ###  remove second inhomogeneity only
     SLH2_driven_out2 = move_drive_to_H(SLH2_driven, [1, ])
     assert SLH2_driven_out2.S == SLH2.S
     assert SLH2_driven_out2.L[0,0] == SLH2_driven.L[0,0]
     assert SLH2_driven_out2.L[1,0] == SLH2.L[1,0]
     assert (
-        SLH2_driven_out2.H - term2[0] - term2[1] - term2[2] -
-        2*term2[3] - 2*term2[4] == 0)
+        SLH2_driven_out2.H - term2[0] - term2[1] - 2 * term2[2] -
+        term2[3] - 2* term2[4] == ZeroOperator)
     # ###  remove both inhomogeneities (explicitly)
     SLH2_driven_out12 = move_drive_to_H(SLH2_driven, [0, 1])
     assert SLH2_driven_out12 == SLH2_driven_out

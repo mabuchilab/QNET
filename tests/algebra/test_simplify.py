@@ -24,7 +24,7 @@ def test_simplify():
     C_ = wc('C', head=Operator)
 
     def b_times_c_equal_d(B, C):
-        if (B.identifier == 'b' and C.identifier == 'c'):
+        if (B.label == 'b' and C.label == 'c'):
             return d
         else:
             raise CannotSimplify
@@ -41,7 +41,7 @@ def test_simplify():
                 pattern(
                     ScalarTimesOperator, -1, pattern(OperatorTimes, B_, A_))),
             lambda A, B: OperatorSymbol(
-                "Commut%s%s" % (A.identifier.upper(), B.identifier.upper()),
+                "Commut%s%s" % (A.label.upper(), B.label.upper()),
                 hs=A.space)
             )
     assert commutator_rule[0].match(new_expr.term)

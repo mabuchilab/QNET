@@ -6,20 +6,18 @@ from sympy import symbols
 from sympy.utilities.lambdify import lambdify
 from scipy.sparse import csr_matrix
 from numpy import (
-    diag as np_diag,
-    arange,
-        cos as np_cos,
-        sin as np_sin)
+    diag as np_diag, arange, cos as np_cos, sin as np_sin)
 from qnet.algebra.core.scalar_types import SCALAR_TYPES
 from qnet.algebra.core.exceptions import AlgebraError
 from qnet.algebra.core.circuit_algebra import SLH, move_drive_to_H
+from qnet.algebra.core.abstract_algebra import Operation
 from qnet.algebra.core.operator_algebra import (
-        IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, OperatorOperation,
-        OperatorPlus, OperatorTimes, ScalarTimesOperator, Adjoint,
-        PseudoInverse, OperatorTrace, NullSpaceProjector, Operation)
+        Operator, IdentityOperator, ZeroOperator, LocalOperator, Create,
+        Destroy, Jz, Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma,
+        OperatorPlus, OperatorTimes, ScalarTimesOperator,
+        Adjoint, PseudoInverse, OperatorTrace, NullSpaceProjector)
 from qnet.algebra.core.state_algebra import (
-        Ket, BraKet, KetBra, BasisKet, CoherentStateKet, KetPlus, TensorKet,
+        State, BraKet, KetBra, BasisKet, CoherentStateKet, KetPlus, TensorKet,
         ScalarTimesKet, OperatorTimesKet)
 from qnet.algebra.core.hilbert_space_algebra import TrivialSpace
 from qnet.algebra.core.super_operator_algebra import (
@@ -90,22 +88,14 @@ def convert_to_qutip(expr, full_space=None, mapping=None):
         )
     elif isinstance(expr, LocalOperator):
         return _convert_local_operator_to_qutip(expr, full_space, mapping)
-    elif isinstance(expr, OperatorOperation):
+    elif (isinstance(expr, Operator) and isinstance(expr, Operation)):
         return _convert_operator_operation_to_qutip(expr, full_space, mapping)
-    elif isinstance(expr, ScalarTimesOperator):
-        try:
-            coeff = complex(expr.coeff)
-        except TypeError:
-            raise TypeError("Scalar coefficient '%s' is not numerical" %
-                            expr.coeff)
-        return coeff * convert_to_qutip(expr.term, full_space=full_space,
-                                        mapping=mapping)
     elif isinstance(expr, OperatorTrace):
         raise NotImplementedError('Cannot convert OperatorTrace to '
                                   'qutip')
         # actually, this is perfectly doable in principle, but requires a bit
         # of work
-    elif isinstance(expr, Ket):
+    elif isinstance(expr, State):
         return _convert_ket_to_qutip(expr, full_space, mapping)
     elif isinstance(expr, SuperOperator):
         return _convert_superoperator_to_qutip(expr, full_space, mapping)
@@ -266,6 +256,14 @@ def _convert_operator_operation_to_qutip(expr, full_space, mapping):
     elif isinstance(expr, Adjoint):
         return convert_to_qutip(qutip.dag(expr.operands[0]), full_space,
                                 mapping=mapping)
+    elif isinstance(expr, ScalarTimesOperator):
+        try:
+            coeff = complex(expr.coeff)
+        except TypeError:
+            raise TypeError("Scalar coefficient '%s' is not numerical" %
+                            expr.coeff)
+        return coeff * convert_to_qutip(expr.term, full_space=full_space,
+                                        mapping=mapping)
     elif isinstance(expr, PseudoInverse):
         mo = convert_to_qutip(expr.operand, full_space=full_space,
                               mapping=mapping)

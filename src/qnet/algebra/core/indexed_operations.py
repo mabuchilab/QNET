@@ -3,17 +3,14 @@
 from abc import ABCMeta
 
 import attr
-from sympy import KroneckerDelta as SympyKroneckerDelta, Mul as SympyMul
 
-from .abstract_algebra import Operation, ScalarTimesExpression, all_symbols
+from .abstract_algebra import Operation, all_symbols
 from .exceptions import InfiniteSumError
 from ..pattern_matching import wc
 from ...utils.indices import (
     IdxSym, IndexRangeBase, SymbolicLabelBase, yield_from_ranges, )
-from ...utils.ordering import KeyTuple, expr_order_key
 
-__all__ = [
-    "IndexedSum", "indexed_sum_over_const", "indexed_sum_over_kronecker"]
+__all__ = ["IndexedSum"]
 
 
 class IndexedSum(Operation, metaclass=ABCMeta):
@@ -30,10 +27,6 @@ class IndexedSum(Operation, metaclass=ABCMeta):
                 # We need this type check to that we can use attr.astuple below
                 raise TypeError(
                     "Every range must be an instance of IndexRangeBase")
-
-        self._order_key = KeyTuple((
-            self.__class__.__name__, '__', 1.0, expr_order_key(term),
-            tuple([attr.astuple(r) for r in ranges])))
 
         index_symbols = set([r.index_symbol for r in ranges])
         if len(index_symbols) != len(self.ranges):
@@ -205,99 +198,3 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             return super().__rmul__(other)
         except AttributeError:
             return NotImplemented
-
-    def __add__(self, other):
-        raise NotImplementedError()
-        if isinstance(other, self.__class__):
-            # TODO: this is wrong!!!!!!
-            if set(self.variables).isdisjoint(other.variables):
-                new_ranges = self.ranges + other.ranges
-                return self.__class__.create(
-                    self.term + other.term, *new_ranges)
-        try:
-            return super().__add__(other)
-        except AttributeError:
-            return NotImplemented
-
-    def __radd__(self, other):
-        raise NotImplementedError()
-        if isinstance(other, self.__class__):
-            # TODO: this is wrong!!!!!!
-            if set(self.variables).isdisjoint(other.variables):
-                new_ranges = other.ranges + self.ranges
-                return self.__class__.create(
-                    other.term + self.term, *new_ranges)
-        try:
-            return super().__radd__(other)
-        except AttributeError:
-            return NotImplemented
-
-    def __sub__(self, other):
-        raise NotImplementedError()
-        if isinstance(other, self.__class__):
-            # TODO: this is wrong!!!!!!
-            if set(self.variables).isdisjoint(other.variables):
-                new_ranges = self.ranges + other.ranges
-                return self.__class__.create(
-                    self.term - other.term, *new_ranges)
-        try:
-            return super().__sub__(other)
-        except AttributeError:
-            return NotImplemented
-
-    def __rsub__(self, other):
-        raise NotImplementedError()
-        if isinstance(other, self.__class__):
-            # TODO: this is wrong!!!!!!
-            if set(self.variables).isdisjoint(other.variables):
-                new_ranges = other.ranges + self.ranges
-                return self.__class__.create(
-                    other.term - self.term, *new_ranges)
-        try:
-            return super().__rsub__(other)
-        except AttributeError:
-            return NotImplemented
-
-
-def indexed_sum_over_const(cls, ops, kwargs):
-    """Execute an indexed sum over a term that does not depend on the summation
-    indices
-
-    ..math::
-
-        \sum_{j=1}{N} a = N a
-    """
-    term, *ranges = ops
-    bound_symbols = set([r.index_symbol for r in ranges])
-    if len(all_symbols(term).intersection(bound_symbols)) == 0:
-        n = 1
-        for r in ranges:
-            try:
-                n *= len(r)
-            except TypeError:
-                return ops, kwargs
-        return n * term
-    else:
-        return ops, kwargs
-
-
-def indexed_sum_over_kronecker(cls, ops, kwargs):
-    """Execute sums over KroneckerDelta prefactors"""
-    term, *ranges = ops
-    correct_structure = (
-        isinstance(term, ScalarTimesExpression) and
-        isinstance(term.coeff, SympyMul) and
-        len(ranges) >= 2)
-    if correct_structure:
-        bound_symbols = set([r.index_symbol for r in ranges])
-        for factor in term.coeff.args:
-            if isinstance(factor, SympyKroneckerDelta):
-                i, j = factor.args
-                assert i in bound_symbols and j in bound_symbols
-                if i.primed > j.primed:
-                    # we prefer eliminating indices with more prime dashes
-                    i, j = j, i
-                term = term.substitute({factor: 1, j: i})
-                ranges = [r for r in ranges if r.index_symbol != j]
-        ops = (term, ) + tuple(ranges)
-    return ops, kwargs

@@ -20,7 +20,7 @@ def test_simple_cc():
     sig_p = LocalSigma('e', 'g', hs=hs_q)
     sig_m = LocalSigma('g', 'e', hs=hs_q)
     coeff = (-I / 2) * (Omega_1 * g_1 / Delta_1)
-    jc_expr= coeff * (a * sig_p  - a_dag * sig_m)
+    jc_expr= coeff * (a * sig_p - a_dag * sig_m)
 
     with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
         simplified = jc_expr.simplify()

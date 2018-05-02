@@ -124,7 +124,6 @@ class IdxSym(sympy.Symbol):
         indices in products of sums, or more generally if the same index occurs
         in an expression with potentially differnt values::
 
-            >>> from qnet.printing import ascii
             >>> ascii(IdxSym('i', primed=2))
             "i''"
             >>> IdxSym('i') == IdxSym('i', primed=1)

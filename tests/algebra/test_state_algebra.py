@@ -10,7 +10,7 @@ from qnet.algebra.core.operator_algebra import (
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.state_algebra import (
     KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
-    TrivialKet, TensorKet, LocalKet, BasisKet, KetBra)
+    TrivialKet, TensorKet, BasisKet, KetBra)
 from qnet.algebra.core.exceptions import UnequalSpaces
 from qnet.utils.indices import (
     IdxSym, FockIndex, IntIndex, StrLabel, SymbolicLabelBase,
@@ -174,8 +174,10 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
         assert Create(hs=1) * BasisKet(2, hs=1) == sqrt(3) * BasisKet(3, hs=1)
         assert Destroy(hs=1) * BasisKet(2, hs=1) == sqrt(2) * BasisKet(1, hs=1)
         assert Destroy(hs=1) * BasisKet(0, hs=1) == ZeroKet
-        lhs = Destroy(hs=1) * CoherentStateKet(10., hs=1)
-        rhs = 10 * CoherentStateKet(10., hs=1)
+        coh = CoherentStateKet(10., hs=1)
+        a = Destroy(hs=1)
+        lhs = a * coh
+        rhs = 10 * coh
         assert lhs == rhs
 
     def testSpin(self):
@@ -284,10 +286,10 @@ def test_ket_symbolic_labels():
     assert "not Mul" in str(exc_info.value)
 
     assert(
-        eval_lb(LocalKet(StrLabel(2 * i), hs=hs0), {i: 2}) ==
-        LocalKet("4", hs=hs0))
+        eval_lb(KetSymbol(StrLabel(2 * i), hs=hs0), {i: 2}) ==
+        KetSymbol("4", hs=hs0))
     with pytest.raises(TypeError) as exc_info:
-        eval_lb(LocalKet(FockIndex(2 * i), hs=hs0), {i: 2})
+        eval_lb(KetSymbol(FockIndex(2 * i), hs=hs0), {i: 2})
     assert "type of label must be str" in str(exc_info.value)
 
     assert StrLabel(Psi[i, j]).evaluate({i: 'i', j: 'j'}) == 'Psi_ij'
@@ -305,7 +307,7 @@ def test_ket_symbolic_labels():
             LocalSigma(FockIndex(i), FockIndex(j), hs=hs0), {i: 1, j: 2}) ==
         LocalSigma(1, 2, hs=hs0))
     assert (
-        BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs0).dag ==
+        BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs0).dag() ==
         LocalSigma(FockIndex(i), FockIndex(j), hs=hs0))
 
 

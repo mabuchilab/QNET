@@ -16,7 +16,7 @@ from qnet import(
     LocalSigma, tr, Adjoint, PseudoInverse, NullSpaceProjector, OperatorPlus,
     OperatorTimes, ScalarTimesOperator, OperatorTrace, Commutator,
     OperatorIndexedSum, LocalSpace, TrivialSpace, FullSpace, ProductSpace,
-    Matrix, KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet,
+    Matrix, KetSymbol, ZeroKet, TrivialKet, BasisKet,
     CoherentStateKet, UnequalSpaces, OperatorTimesKet, Bra, KetPlus,
     ScalarTimesKet, OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra,
     TensorKet, KetIndexedSum, SuperOperatorSymbol, IdentitySuperOperator,
@@ -372,27 +372,27 @@ def state_exprs():
     ket_g2 = BasisKet('g', hs=hs2)
     ket_e2 = BasisKet('e', hs=hs2)
     psi1 = KetSymbol("Psi_1", hs=hs1)
-    psi1_l = LocalKet("Psi_1", hs=hs1)
+    psi1_l = KetSymbol("Psi_1", hs=hs1)
     psi2 = KetSymbol("Psi_2", hs=hs1)
     psi2 = KetSymbol("Psi_2", hs=hs1)
     psi3 = KetSymbol("Psi_3", hs=hs1)
     phi = KetSymbol("Phi", hs=hs2)
-    phi_l = LocalKet("Phi", hs=hs2)
+    phi_l = KetSymbol("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma')
     phase = exp(-I * gamma)
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
-    bra_psi1 = KetSymbol("Psi_1", hs=hs1).dag
-    bra_psi1_l = LocalKet("Psi_1", hs=hs1).dag
-    bra_psi2 = KetSymbol("Psi_2", hs=hs1).dag
-    bra_psi2 = KetSymbol("Psi_2", hs=hs1).dag
-    bra_phi_l = LocalKet("Phi", hs=hs2).dag
+    bra_psi1 = KetSymbol("Psi_1", hs=hs1).dag()
+    bra_psi1_l = KetSymbol("Psi_1", hs=hs1).dag()
+    bra_psi2 = KetSymbol("Psi_2", hs=hs1).dag()
+    bra_psi2 = KetSymbol("Psi_2", hs=hs1).dag()
+    bra_phi_l = KetSymbol("Phi", hs=hs2).dag()
     return [
         KetSymbol('Psi', hs=hs1),
         KetSymbol('Psi', hs=1),
         KetSymbol('Psi', hs=(1, 2)),
-        LocalKet('Psi', hs=1),
+        KetSymbol('Psi', hs=1),
         ZeroKet,
         TrivialKet,
         BasisKet('e', hs=hs1),
@@ -404,12 +404,12 @@ def state_exprs():
         Bra(KetSymbol('Psi', hs=1)),
         Bra(KetSymbol('Psi', hs=(1, 2))),
         Bra(KetSymbol('Psi', hs=hs1*hs2)),
-        LocalKet('Psi', hs=1).dag,
+        KetSymbol('Psi', hs=1).dag(),
         Bra(ZeroKet),
         Bra(TrivialKet),
         BasisKet('e', hs=hs1).adjoint(),
         BasisKet(1, hs=1).adjoint(),
-        CoherentStateKet(2.0, hs=1).dag,
+        CoherentStateKet(2.0, hs=1).dag(),
         psi1 + psi2,
         psi1 - psi2 + psi3,
         psi1 * phi,
@@ -417,17 +417,17 @@ def state_exprs():
         phase * psi1,
         A * psi1,
         BraKet(psi1, psi2),
-        ket_e1.dag * ket_e1,
-        ket_g1.dag * ket_e1,
+        ket_e1.dag() * ket_e1,
+        ket_g1.dag() * ket_e1,
         KetBra(psi1, psi2),
         bell1,
         BraKet.create(bell1, bell2),
         KetBra.create(bell1, bell2),
-        (psi1 + psi2).dag,
+        (psi1 + psi2).dag(),
         bra_psi1 + bra_psi2,
         bra_psi1_l * bra_phi_l,
         Bra(phase * psi1),
-        (A * psi1).dag,
+        (A * psi1).dag(),
     ]
 
 

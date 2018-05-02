@@ -132,7 +132,6 @@ class Pattern():
 
         Consider the following nested circuit expression::
 
-            >>> from qnet.algebra.core.circuit_algebra import *
             >>> C1 = CircuitSymbol('C1', 3)
             >>> C2 = CircuitSymbol('C2', 3)
             >>> C3 = CircuitSymbol('C3', 3)

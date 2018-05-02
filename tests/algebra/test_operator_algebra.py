@@ -608,8 +608,9 @@ class TestOperatorTrace(unittest.TestCase):
 
     def testSimplificationAdjoint(self):
         M = OperatorSymbol.create("M", hs=1)
-        assert (OperatorTrace.create(M.adjoint(), over_space=1) ==
-                Adjoint(OperatorTrace.create(M, over_space=1)))
+        lhs = OperatorTrace.create(M.adjoint(), over_space=1)
+        rhs = Adjoint(OperatorTrace.create(M, over_space=1))
+        assert lhs == rhs
 
     def testLocalOps(self):
         op = OperatorTrace.create(Create(hs=1), over_space=1)
@@ -677,10 +678,10 @@ class TestOperatorMatrices(unittest.TestCase):
 
 
 def test_local_operator_init():
-    """Test that LocalOperators with different identifiers can be
+    """Test that LocalOperators with different labels can be
     distinguished"""
-    x = OperatorSymbol(identifier='x', hs=0)
-    p = OperatorSymbol(identifier='p', hs=0)
+    x = OperatorSymbol(label='x', hs=0)
+    p = OperatorSymbol(label='p', hs=0)
     assert x != p
 
 

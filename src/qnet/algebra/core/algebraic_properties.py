@@ -1,7 +1,9 @@
 import logging
 
+from sympy import Mul as SympyMul, KroneckerDelta as SympyKroneckerDelta
+
 from .abstract_algebra import (
-    ScalarTimesExpression, all_symbols, LOG, LEVEL, LOG_NO_MATCH, )
+    all_symbols, LOG, LEVEL, LOG_NO_MATCH, )
 from .exceptions import (
     CannotSimplify, UnequalSpaces,
     SpaceTooLargeError, )
@@ -15,14 +17,14 @@ __private__ = [
     'convert_to_spaces', 'empty_trivial', 'implied_local_space',
     'delegate_to_method', 'scalars_to_op', 'disjunct_hs_zero',
     'commutator_order', 'check_kets_same_space', 'check_op_ket_space',
-    'accept_bras', 'basis_ket_zero_outside_hs']
+    'accept_bras', 'basis_ket_zero_outside_hs', 'indexed_sum_over_const',
+    'indexed_sum_over_kronecker']
 
 
 def assoc(cls, ops, kwargs):
     """Associatively expand out nested arguments of the flat class.
     E.g.::
 
-        >>> from qnet import Operation
         >>> class Plus(Operation):
         ...     _simplifications = [assoc, ]
         >>> Plus.create(1,Plus(2,3))
@@ -41,11 +43,13 @@ def assoc_indexed(cls, ops, kwargs):
 
         \sum_j \left( a \sum_i \dots \right) = a \sum_{j, i} \dots
     """
+    from qnet.algebra.core.abstract_quantum_algebra import (
+        ScalarTimesQuantumExpression)
     term, *ranges = ops
 
     if isinstance(term, cls):
         coeff = 1
-    elif isinstance(term, ScalarTimesExpression):
+    elif isinstance(term, ScalarTimesQuantumExpression):
         coeff = term.coeff
         term = term.term
         if not isinstance(term, cls):
@@ -71,7 +75,6 @@ def idem(cls, ops, kwargs):
     object/function.
     E.g.::
 
-        >>> from qnet import Operation
         >>> class Set(Operation):
         ...     order_key = lambda val: val
         ...     _simplifications = [idem, ]
@@ -86,7 +89,6 @@ def orderby(cls, ops, kwargs):
     Use this for commutative operations:
     E.g.::
 
-        >>> from qnet import Operation
         >>> class Times(Operation):
         ...     order_key = lambda val: val
         ...     _simplifications = [orderby, ]
@@ -102,7 +104,6 @@ def filter_neutral(cls, ops, kwargs):
     a neutral element, which can be anything that allows for an equality check
     with each argument.  E.g.::
 
-        >>> from qnet import Operation
         >>> class X(Operation):
         ...     neutral_element = 1
         ...     _simplifications = [filter_neutral, ]
@@ -131,15 +132,12 @@ def match_replace(cls, ops, kwargs):
 
     First define an operation::
 
-        >>> from collections import OrderedDict
-        >>> from qnet import Operation, wc, pattern, pattern_head
         >>> class Invert(Operation):
         ...     _rules = OrderedDict()
         ...     _simplifications = [match_replace, ]
 
     Then some _rules::
 
-        >>> from qnet import wc
         >>> A = wc("A")
         >>> A_float = wc("A", head=float)
         >>> Invert_A = pattern(Invert, A)
@@ -150,7 +148,6 @@ def match_replace(cls, ops, kwargs):
 
     Check rule application::
 
-        >>> from qnet.printing import srepr
         >>> print(srepr(Invert.create("hallo")))  # matches no rule
         Invert('hallo')
         >>> Invert.create(Invert("hallo"))        # matches first rule
@@ -225,7 +222,6 @@ def match_replace_binary(cls, ops, kwargs):
     """Similar to func:`match_replace`, but for arbitrary length operations,
     such that each two pairs of subsequent operands are matched pairwise.
 
-        >>> from qnet import wc, Operation, pattern_head
         >>> A = wc("A")
         >>> class FilterDupes(Operation):
         ...     _binary_rules = {
@@ -389,12 +385,10 @@ def delegate_to_method(mtd):
 def scalars_to_op(cls, ops, kwargs):
     r'''Convert any scalar $\alpha$ in `ops` into an operator $\alpha
     \identity$'''
-    from qnet.algebra.core.operator_algebra import (
-        ScalarTimesOperator, IdentityOperator)
     op_ops = []
     for op in ops:
         if isinstance(op, SCALAR_TYPES):
-            op_ops.append(ScalarTimesOperator.create(op, IdentityOperator))
+            op_ops.append(op * cls._one)
         else:
             op_ops.append(op)
     return op_ops, kwargs
@@ -433,8 +427,9 @@ def commutator_order(cls, ops, kwargs):
 
 def check_kets_same_space(cls, ops, kwargs):
     """Check that all operands are from the same Hilbert space."""
-    from qnet.algebra.core.state_algebra import Ket, ZeroKet
-    if not all([isinstance(o, Ket) for o in ops]):
+    from qnet.algebra.core.state_algebra import State, ZeroKet
+    # TODO: remove (this should be in the __init__ routine
+    if not all([isinstance(o, State) for o in ops]):
         raise TypeError("All operands must be Kets")
     if not len({o.space for o in ops if o is not ZeroKet}) == 1:
         raise UnequalSpaces(str(ops))
@@ -473,4 +468,50 @@ def basis_ket_zero_outside_hs(cls, ops, kwargs):
     if isinstance(ind, int):
         if ind < 0 or (hs._dimension is not None and ind >= hs._dimension):
             return ZeroKet
+    return ops, kwargs
+
+
+def indexed_sum_over_const(cls, ops, kwargs):
+    """Execute an indexed sum over a term that does not depend on the summation
+    indices
+
+    ..math::
+
+        \sum_{j=1}{N} a = N a
+    """
+    term, *ranges = ops
+    bound_symbols = set([r.index_symbol for r in ranges])
+    if len(all_symbols(term).intersection(bound_symbols)) == 0:
+        n = 1
+        for r in ranges:
+            try:
+                n *= len(r)
+            except TypeError:
+                return ops, kwargs
+        return n * term
+    else:
+        return ops, kwargs
+
+
+def indexed_sum_over_kronecker(cls, ops, kwargs):
+    """Execute sums over KroneckerDelta prefactors"""
+    from qnet.algebra.core.abstract_quantum_algebra import (
+        ScalarTimesQuantumExpression)
+    term, *ranges = ops
+    correct_structure = (
+        isinstance(term, ScalarTimesQuantumExpression) and
+        isinstance(term.coeff, SympyMul) and
+        len(ranges) >= 2)
+    if correct_structure:
+        bound_symbols = set([r.index_symbol for r in ranges])
+        for factor in term.coeff.args:
+            if isinstance(factor, SympyKroneckerDelta):
+                i, j = factor.args
+                assert i in bound_symbols and j in bound_symbols
+                if i.primed > j.primed:
+                    # we prefer eliminating indices with more prime dashes
+                    i, j = j, i
+                term = term.substitute({factor: 1, j: i})
+                ranges = [r for r in ranges if r.index_symbol != j]
+        ops = (term,) + tuple(ranges)
     return ops, kwargs

@@ -3,8 +3,6 @@
 This module provides the :func:`dotprint` function that generates a `DOT`_
 diagram for a given expression. For example::
 
-    >>> from qnet.algebra.core.operator_algebra import OperatorSymbol, Adjoint
-    >>> from qnet.printing import configure_printing
     >>> A = OperatorSymbol("A", hs=1)
     >>> B = OperatorSymbol("B", hs=1)
     >>> expr = 2 * (A + B)

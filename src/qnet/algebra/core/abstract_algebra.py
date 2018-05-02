@@ -23,34 +23,19 @@ from ..pattern_matching import ProtoExpr, pattern
 from ...utils.singleton import Singleton
 
 __all__ = [
-    'Expression', 'Operation', 'ScalarTimesExpression', 'all_symbols',
+    'Expression', 'Operation', 'all_symbols',
     'simplify', 'simplify_by_method', 'substitute']
 
 __private__ = []  # anything not in __all__ must be in __private__
 
 LEVEL = 0  # for debugging create method
 
-LOG = True  # emit debug logging messages?
+LOG = False  # emit debug logging messages?
 LOG_NO_MATCH = False  # also log non-matching rules? (very verbose!)
-# TODO: test if `LOG = False` results in significant performance increase.
-
-
-def _trace(fn):
-    """Function decorator to receive debugging information about function calls
-    and return values.
-    """
-
-    def _tfn(*args, **kwargs):
-        print("[", "-" * 40)
-        ret = fn(*args, **kwargs)
-        print("{}({},{}) called".format(
-            fn.__name__, ", ".join(repr(a) for a in args),
-            ", ".join(str(k) + "=" + repr(v) for k, v in kwargs.items())))
-        print("-->", repr(ret))
-        print("-" * 40, "]")
-        return ret
-
-    return _tfn
+# Note: you may manually set the above variables to True for debugging. Some
+# tests (e.g. the tests for the algebraic rules) will also automatically
+# activate this logging functionality, as they rely on inspecting the debug
+# messages from object creation.
 
 
 class Expression(metaclass=ABCMeta):
@@ -95,8 +80,6 @@ class Expression(metaclass=ABCMeta):
     # At this point, match_replace_binary does not yet guarantee this
 
     def __init__(self, *args, **kwargs):
-        # hash, tex, and repr str, generated on demand (lazily) -- see also
-        # _cached_rendering class attribute
         self._hash = None
         self._instance_key = self._get_instance_key(args, kwargs)
 
@@ -569,34 +552,3 @@ class Operation(Expression, metaclass=ABCMeta):
     def args(self):
         """Alias for operands"""
         return self._operands
-
-
-class ScalarTimesExpression(Operation):
-    """Mixin class for any product of a scalar and an expression"""
-
-    def __init__(self, coeff, term):
-        super().__init__(coeff, term)
-
-    @property
-    def coeff(self):
-        return self.operands[0]
-
-    @property
-    def term(self):
-        return self.operands[1]
-
-    def _substitute(self, var_map, safe=False):
-        st = self.term.substitute(var_map)
-        if isinstance(self.coeff, SympyBasic):
-            svar_map = {k: v for k, v in var_map.items()
-                        if not isinstance(k, Expression)}
-            sc = self.coeff.subs(svar_map)
-        else:
-            sc = substitute(self.coeff, var_map)
-        if safe:
-            return self.__class__(sc, st)
-        else:
-            return sc * st
-
-    def all_symbols(self):
-        return _scalar_free_symbols(self.coeff) | self.term.all_symbols()

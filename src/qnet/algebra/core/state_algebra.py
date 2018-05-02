@@ -3,35 +3,35 @@ r"""This module implements the algebra of states in a Hilbert space
 For more details see :ref:`state_algebra`.
 """
 import re
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 from collections import OrderedDict
 from itertools import product as cartesian_product
 
 import sympy
-from sympy import (
-    Basic as SympyBasic, series as sympy_series, )
 
-from .abstract_algebra import (
-    Expression, Operation, ScalarTimesExpression, substitute, )
+from .abstract_algebra import Expression, Operation
+from .abstract_quantum_algebra import (
+    ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
+    QuantumPlus, QuantumTimes, QuantumAdjoint, QuantumIndexedSum,
+    ensure_local_space)
 from .algebraic_properties import (
     accept_bras, assoc, assoc_indexed, basis_ket_zero_outside_hs,
     check_kets_same_space, check_op_ket_space, filter_neutral, match_replace,
     match_replace_binary, orderby, )
-from .exceptions import (OverlappingSpaces, SpaceTooLargeError)
-from .hilbert_space_algebra import (
-    FullSpace, LocalSpace, ProductSpace, TrivialSpace, )
-from .indexed_operations import (
-    IndexedSum, indexed_sum_over_const, indexed_sum_over_kronecker, )
-from .operator_algebra import (
-    Operator, OperatorIndexedSum, OperatorPlus, sympyOne, )
+from .exceptions import OverlappingSpaces, UnequalSpaces
+from .hilbert_space_algebra import FullSpace, TrivialSpace
+from qnet.algebra.core.algebraic_properties import (
+    indexed_sum_over_const,
+    indexed_sum_over_kronecker)
+from .operator_algebra import Operator, OperatorPlus
 from .scalar_types import SCALAR_TYPES
 from ...utils.indices import (
     FockIndex, IdxSym, IndexOverFockSpace, IndexOverRange, SymbolicLabelBase, )
-from ...utils.ordering import FullCommutativeHSOrder, KeyTuple, expr_order_key
+from ...utils.ordering import FullCommutativeHSOrder
 from ...utils.singleton import Singleton, singleton_object
 
 __all__ = [
-    'BasisKet', 'Bra', 'BraKet', 'CoherentStateKet', 'Ket', 'KetBra',
+    'BasisKet', 'Bra', 'BraKet', 'CoherentStateKet', 'State', 'KetBra',
     'KetPlus', 'KetSymbol', 'LocalKet', 'OperatorTimesKet', 'ScalarTimesKet',
     'TensorKet', 'TrivialKet', 'ZeroKet', 'KetIndexedSum']
 
@@ -43,83 +43,74 @@ __private__ = []  # anything not in __all__ must be in __private__
 ###############################################################################
 
 
-class Ket(metaclass=ABCMeta):
-    """Basic Ket algebra class to represent Hilbert Space states"""
+class State(QuantumExpression, metaclass=ABCMeta):
+    """Basic State algebra class to represent Hilbert Space states"""
+
+    def _adjoint(self):
+        if self.isket:
+            return Bra(self)
+        else:
+            return self.ket
 
     @property
-    @abstractmethod
-    def space(self):
-        """The associated HilbertSpace"""
-        raise NotImplementedError(self.__class__.__name__)
+    def isket(self):
+        """Whether the state represents a ket"""
+        # We enforce that all sub-classes of Ket except Bra are normal
+        # Hilbert space vectors. For example, KetPlus(Bra(...), Bra(...))
+        # is disallowed, and is represented as Bra(KetPlus(.., ...)). Thus,
+        # all State instances that are not directly an instance of Bra are
+        # kets. Name of property 'isket' is taken from QuTiP
+        return not isinstance(self, Bra)
 
-    def adjoint(self):
-        """The adjoint of a Ket state, i.e., the corresponding Bra."""
-        return Bra(self)
+    @property
+    def isbra(self):
+        """Wether the state represents a bra (adjoint ket)"""
+        return isinstance(self, Bra)
 
-    dag = property(adjoint)
+    @property
+    def bra(self):
+        """The bra associated with a ket"""
+        if self.isbra:
+            return self
+        else:
+            return self._adjoint()
 
-    def expand(self):
-        """Expand out distributively all products of sums of Kets."""
-        return self._expand()
-
-    @abstractmethod
-    def _expand(self):
-        raise NotImplementedError(self.__class__.__name__)
-
-    def __add__(self, other):
-        if isinstance(other, Ket):
-            return KetPlus.create(self, other)
-        return NotImplemented
-
-    __radd__ = __add__
+    @property
+    def ket(self):
+        """The ket associated with a bra"""
+        if self.isket:
+            return self
+        else:
+            return self._adjoint()
 
     def __mul__(self, other):
-        if isinstance(other, SCALAR_TYPES):
-            return ScalarTimesKet.create(other, self)
-        elif isinstance(other, Ket):
+        if isinstance(other, State):
             if isinstance(other, KetIndexedSum):
-                return other.__class__.create(self * other.term, *other.ranges)
-            else:
-                return TensorKet.create(self, other)
-        elif isinstance(other, Bra):
-            if isinstance(other.ket, KetIndexedSum):
-                return OperatorIndexedSum.create(
-                    self * other.ket.term.dag, *other.ket.ranges)
-            else:
+                return other.__rmul__(self)
+            isket = (self.isket, other.isket)
+            if isket == (True, False):
                 return KetBra.create(self, other.ket)
+            elif isket == (False, True):
+                return BraKet.create(self.ket, other)
+            elif isket == (False, False):
+                return Bra.create(self.ket * other.ket)
+        elif isinstance(other, Operator):
+            if self.isbra:
+                return Bra.create(other * self.ket)
         try:
             return super().__mul__(other)
         except AttributeError:
             return NotImplemented
 
     def __rmul__(self, other):
-        if isinstance(other, Operator):
+        if self.isket and isinstance(other, Operator):
             return OperatorTimesKet.create(other, self)
-        elif isinstance(other, SCALAR_TYPES):
-            return ScalarTimesKet.create(other, self)
+        elif self.isbra and isinstance(other, SCALAR_TYPES):
+            return Bra(other.conjugate() * self.ket)
         try:
             return super().__rmul__(other)
         except AttributeError:
             return NotImplemented
-
-    def __sub__(self, other):
-        return self + (-1) * other
-
-    def __rsub__(self, other):
-        return (-1) * self + other
-
-    def __neg__(self):
-        return (-1) * self
-
-    def __div__(self, other):
-        if isinstance(other, SCALAR_TYPES):
-            return self * (sympyOne / other)
-        try:
-            return super().__div__(other)
-        except AttributeError:
-            return NotImplemented
-
-    __truediv__ = __div__
 
 
 ###############################################################################
@@ -127,88 +118,35 @@ class Ket(metaclass=ABCMeta):
 ###############################################################################
 
 
-class KetSymbol(Ket, Expression):
-    """Symbolic state
+class KetSymbol(QuantumSymbol, State):
+    """Symbolic state"""
+    _rx_label = re.compile('^[A-Za-z0-9]+(_[A-Za-z0-9().+-]+)?$')
 
-    Args:
-        label (str or SymbolicLabelBase): Symbol Identifier
-        hs (HilbertSpace): associated Hilbert space (may be a
-            :class:`~qnet.algebra.hilbert_space_algebra.ProductSpace`)
-    """
-    _rx_label = re.compile('^[A-Za-z0-9+-]+(_[A-Za-z0-9().,+-]+)?$')
 
-    def __init__(self, label, *, hs):
-        self._label = label
-        if isinstance(label, str):
-            if not self._rx_label.match(label):
-                raise ValueError(
-                    "label '%s' does not match pattern '%s'"
-                    % (label, self._rx_label.pattern))
-        elif isinstance(label, SymbolicLabelBase):
-            self._label = label
-        else:
-            raise TypeError(
-                "type of label must be str or SymbolicLabelBase, not %s"
-                % type(label))
-        if isinstance(hs, (str, int)):
-            hs = LocalSpace(hs)
-        elif isinstance(hs, tuple):
-            hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
+class LocalKet(State, metaclass=ABCMeta):
+    """A state that lives on a single local Hilbert space. This does
+    not include operations, even if these operations only involve states acting
+    on the same local space"""
+
+    def __init__(self, *args, hs):
+        hs = ensure_local_space(hs)
         self._hs = hs
-        self._order_key = KeyTuple((self.__class__.__name__, str(label), 1.0))
-        super().__init__(label, hs=hs)
-
-    @property
-    def args(self):
-        return (self.label, )
-
-    @property
-    def kwargs(self):
-        return {'hs': self._hs}
+        super().__init__(*args, hs=hs)
 
     @property
     def space(self):
         return self._hs
 
     @property
-    def label(self):
-        return self._label
-
-    def _expand(self):
-        return self
-
-    def _series_expand(self, param, about, order):
-        return (self, ) + (0, ) * (order - 1)
-
-    def all_symbols(self):
-        try:
-            return self.label.all_symbols()
-        except AttributeError:
-            return {self}
-
-
-class LocalKet(KetSymbol):
-    """A state that lives on a single local Hilbert space. This does
-    not include operations, even if these operations only involve states acting
-    on the same local space"""
-
-    def __init__(self, label, *, hs):
-        if isinstance(hs, (str, int)):
-            hs = LocalSpace(hs)
-        if not isinstance(hs, LocalSpace):
-            raise TypeError("hs must be a LocalSpace")
-        super().__init__(label, hs=hs)
-
-    def all_symbols(self):
-        try:
-            return self.label.all_symbols()
-        except AttributeError:
-            return set([])
+    def kwargs(self):
+        return {'hs': self._hs}
 
 
 @singleton_object
-class ZeroKet(Ket, Expression, metaclass=Singleton):
+class ZeroKet(State, Expression, metaclass=Singleton):
     """ZeroKet constant (singleton) object for the null-state."""
+
+    _order_index = 2
 
     @property
     def space(self):
@@ -218,16 +156,6 @@ class ZeroKet(Ket, Expression, metaclass=Singleton):
     def args(self):
         return tuple()
 
-    @property
-    def _order_key(self):
-        return KeyTuple(('~~', self.__class__.__name__, 1.0))
-
-    def _expand(self):
-        return self
-
-    def _series_expand(self, param, about, order):
-        return (self,) + (0,)*(order - 1)
-
     def __eq__(self, other):
         return self is other or other == 0
 
@@ -236,10 +164,12 @@ class ZeroKet(Ket, Expression, metaclass=Singleton):
 
 
 @singleton_object
-class TrivialKet(Ket, Expression, metaclass=Singleton):
+class TrivialKet(State, Expression, metaclass=Singleton):
     """TrivialKet constant (singleton) object.
     This is the neutral element under the state tensor-product.
     """
+
+    _order_index = 2
 
     @property
     def space(self):
@@ -248,19 +178,9 @@ class TrivialKet(Ket, Expression, metaclass=Singleton):
     def _adjoint(self):
         return Bra(TrivialKet)
 
-    def _expand(self):
-        return self
-
     @property
     def args(self):
         return tuple()
-
-    @property
-    def _order_key(self):
-        return KeyTuple(('~~', self.__class__.__name__, 1.0))
-
-    def _series_expand(self, param, about, order):
-        return (self,) + (0,)*(order - 1)
 
     def __eq__(self, other):
         return self is other or other == 1
@@ -269,7 +189,7 @@ class TrivialKet(Ket, Expression, metaclass=Singleton):
         return set([])
 
 
-class BasisKet(LocalKet):
+class BasisKet(LocalKet, KetSymbol):
     """Local basis state, identified by index or label.
 
     Basis kets are orthornormal, and the :meth:`next` and :meth:`prev` methods
@@ -314,10 +234,7 @@ class BasisKet(LocalKet):
     _simplifications = [basis_ket_zero_outside_hs]
 
     def __init__(self, label_or_index, *, hs):
-        if isinstance(hs, (str, int)):
-            hs = LocalSpace(hs)
-        if not isinstance(hs, LocalSpace):
-            raise TypeError("hs must be a LocalSpace")
+        hs = ensure_local_space(hs)
         hs._check_basis_label_type(label_or_index)
         if isinstance(label_or_index, str):
             label = label_or_index
@@ -410,54 +327,23 @@ class CoherentStateKet(LocalKet):
     """Local coherent state, labeled by a scalar amplitude.
 
     :param LocalSpace hs: The local Hilbert space degree of freedom.
-    :param SCALAR_TYPES amp: The coherent displacement amplitude.
+    :param SCALAR_TYPES ampl: The coherent displacement amplitude.
     """
+
     _rx_label = re.compile('^.*$')
 
     def __init__(self, ampl, *, hs):
         self._ampl = ampl
-        label = 'alpha=' + str(hash(ampl))
-        # The "label" here is something that is solely used to set the
-        # _instance_key / uniquely identify the instance. Using the hash gets
-        # around variations in str(ampl) due to printer settings
-        # TODO: is this safe against hash collisions?
-        super().__init__(label, hs=hs)
-
-    @property
-    def ampl(self):
-        return self._ampl
+        super().__init__(ampl, hs=hs)
 
     @property
     def args(self):
         return (self._ampl, )
 
-    @property
-    def label(self):
-        return 'alpha'
 
     @property
-    def kwargs(self):
-        return {'hs': self._hs}
-
-    def _series_expand(self, param, about, order):
-        return (self,) + (0,) * (order - 1)
-
-    def _substitute(self, var_map):
-        hs, amp = self.space, self._ampl
-        if isinstance(amp, SympyBasic):
-            svar_map = {k: v for (k, v) in var_map.items()
-                        if not isinstance(k, Expression)}
-            ampc = amp.subs(svar_map)
-        else:
-            ampc = substitute(amp, var_map)
-
-        return CoherentStateKet(ampc, hs=hs)
-
-    def all_symbols(self):
-        if isinstance(self.ampl, SympyBasic):
-            return {self.ampl}
-        else:
-            return set([])
+    def ampl(self):
+        return self._ampl
 
     def to_fock_representation(self, index_symbol='n', max_terms=None):
         """Return the coherent state written out as an indexed sum over Fock
@@ -482,39 +368,27 @@ class CoherentStateKet(LocalKet):
 ###############################################################################
 
 
-class KetPlus(Ket, Operation):
+class KetPlus(State, QuantumPlus):
     """A sum of states."""
     neutral_element = ZeroKet
-    _binary_rules = OrderedDict()  # see end of module
+    _binary_rules = OrderedDict()
     _simplifications = [
-        accept_bras, assoc, orderby, filter_neutral, check_kets_same_space,
-        match_replace_binary]
+        accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = FullCommutativeHSOrder
 
     def __init__(self, *operands):
-        self._order_key = KeyTuple([
-            '~'+self.__class__.__name__,
-            ", ".join([op.__class__.__name__ for op in operands]),
-            1.0, tuple([op._order_key for op in operands])])
+        if not all([o.isket for o in operands]):
+            raise TypeError("All operands must be Kets")
+        if not len({o.space for o in operands if o is not ZeroKet}) == 1:
+            raise UnequalSpaces(str(operands))
         super().__init__(*operands)
 
-    @property
-    def space(self):
-        return self.operands[0].space
 
-    def _expand(self):
-        return KetPlus.create(*[o.expand() for o in self.operands])
-
-    def _series_expand(self, param, about, order):
-        return KetPlus.create(*[o.series_expand(param, about, order)
-                                for o in self.operands])
-
-
-class TensorKet(Ket, Operation):
+class TensorKet(State, QuantumTimes):
     """A tensor product of kets each belonging to different degrees of freedom.
     """
-    _binary_rules = OrderedDict()  # see end of module
+    _binary_rules = OrderedDict()
     neutral_element = TrivialKet
     _simplifications = [
         accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
@@ -522,129 +396,45 @@ class TensorKet(Ket, Operation):
     order_key = FullCommutativeHSOrder
 
     def __init__(self, *operands):
-        self._space = None
-        self._label = None
-        if all(isinstance(o, LocalKet) for o in operands):
-            self._label = ",".join([str(o.label) for o in operands])
-        self._order_key = KeyTuple([
-            '~'+self.__class__.__name__,
-            ", ".join([op.__class__.__name__ for op in operands]),
-            1.0, tuple([op._order_key for op in operands])])
+        spc = TrivialSpace
+        for o in operands:
+            if o.space & spc > TrivialSpace:
+                raise OverlappingSpaces(str(operands))
+            spc *= o.space
         super().__init__(*operands)
 
     @classmethod
     def create(cls, *ops):
         if any(o == ZeroKet for o in ops):
             return ZeroKet
-        spc = TrivialSpace
-        for o in ops:
-            if o.space & spc > TrivialSpace:
-                raise OverlappingSpaces(str(ops))
-            spc *= o.space
         return super().create(*ops)
 
-    def factor_for_space(self, space):
-        """Factor into a Ket defined on the given `space` and a Ket on the
-        remaining Hilbert space"""
-        if not space <= self.space:
-            raise SpaceTooLargeError(str((self, space)))
-        if space == self.space:
-            return self
-        if space is TrivialSpace:
-            on_ops = [o for o in self.operands if o.space is TrivialSpace]
-            off_ops = [o for o in self.operands if o.space > TrivialSpace]
-        else:
-            on_ops = [o for o in self.operands
-                      if o.space & space > TrivialSpace]
-            off_ops = [o for o in self.operands
-                       if o.space & space is TrivialSpace]
-        return TensorKet.create(*on_ops), TensorKet.create(*off_ops)
 
-    @property
-    def space(self):
-        if self._space is None:
-            self._space = ProductSpace.create(*[o.space
-                                                for o in self.operands])
-        return self._space
-
-    def _expand(self):
-        eops = [o.expand() for o in self.operands]
-        # store tuples of summands of all expanded factors
-        eopssummands = [eo.operands if isinstance(eo, KetPlus) else (eo,)
-                        for eo in eops]
-        # iterate over a Cartesian product of all factor summands, form product
-        # of each tuple and sum over result
-        return KetPlus.create(
-                *[TensorKet.create(*combo)
-                  for combo in cartesian_product(*eopssummands)])
-
-    @property
-    def label(self):
-        """Combined label of the product state if the state is a simple product
-        of LocalKets, raise AttributeError otherwise"""
-        if self._label is None:
-            raise AttributeError("%r instance has no defined 'label'" % self)
-        else:
-            return self._label
-
-
-class ScalarTimesKet(Ket, ScalarTimesExpression):
+class ScalarTimesKet(State, ScalarTimesQuantumExpression):
     """Multiply a Ket by a scalar coefficient.
 
     Args:
         coeff (SCALAR_TYPES): coefficient
-        term (Ket): the ket that is multiplied
+        term (State): the ket that is multiplied
     """
-    _rules = OrderedDict()  # see end of module
+    _rules = OrderedDict()
     _simplifications = [match_replace, ]
 
     def __init__(self, coeff, term):
+        if not term.isket:
+            raise TypeError("term must be a ket")
         super().__init__(coeff, term)
 
-    @property
-    def _order_key(self):
-        from qnet.printing import ascii
-        t = self.term._order_key
-        try:
-            c = abs(float(self.coeff))  # smallest coefficients first
-        except (ValueError, TypeError):
-            c = float('inf')
-        return KeyTuple(t[:2] + (c, ) + t[3:] + (ascii(self.coeff), ))
 
-    @property
-    def space(self):
-        return self.operands[1].space
-
-    def _expand(self):
-        c, t = self.coeff, self.term
-        et = t.expand()
-        if isinstance(et, KetPlus):
-            return KetPlus.create(*[c * eto for eto in et.operands])
-        return c * et
-
-    def _series_expand(self, param, about, order):
-        ceg = sympy_series(self.coeff, x=param, x0=about, n=None)
-        ce = tuple(ceo for ceo, k in zip(ceg, range(order + 1)))
-        te = self.term.series_expand(param, about, order)
-
-        return tuple(
-            ce[k] * te[n - k]
-            for n in range(order + 1) for k in range(n + 1))
-
-
-class OperatorTimesKet(Ket, Operation):
+class OperatorTimesKet(State, Operation):
     """Product of an operator and a state."""
-    _rules = OrderedDict()  # see end of module
+    _rules = OrderedDict()
     _simplifications = [match_replace, check_op_ket_space]
 
     def __init__(self, operator, ket):
+        if ket.isbra:
+            raise TypeError("ket cannot be a Bra instance")
         super().__init__(operator, ket)
-
-    @property
-    def _order_key(self):
-        return KeyTuple(
-            (self.__class__.__name__, self.ket.__class__.__name__, 1.0) +
-            self.ket._order_key + self.operator._order_key)
 
     @property
     def space(self):
@@ -674,80 +464,47 @@ class OperatorTimesKet(Ket, Operation):
         return ct * et
 
     def _series_expand(self, param, about, order):
-        ce = self.coeff.series_expand(param, about, order)
-        te = self.term.series_expand(param, about, order)
+        ce = self.operator.series_expand(param, about, order)
+        te = self.ket.series_expand(param, about, order)
 
         return tuple(ce[k] * te[n - k]
                      for n in range(order + 1) for k in range(n + 1))
 
 
-class Bra(Operation):
+class Bra(State, QuantumAdjoint):
     """The associated dual/adjoint state for any `ket`"""
     def __init__(self, ket):
-        self._order_key = KeyTuple(
-                (self.__class__.__name__, ket.__class__.__name__, 1.0) +
-                ket._order_key)
+        if ket.isbra:
+            raise TypeError("ket cannot be a Bra instance")
         super().__init__(ket)
 
     @property
     def ket(self):
-        """The original :class:`Ket`"""
+        """The original :class:`State`"""
         return self.operands[0]
+
+    @property
+    def bra(self):
+        return self
 
     operand = ket
 
-    def adjoint(self):
-        """The adjoint of a :class:`Bra` is just the original :class:`Ket`
-        again"""
-        return self.ket
-
-    dag = property(adjoint)
-
-    def expand(self):
-        """Expand out distributively all products of sums of Bras."""
-        return Bra(self.ket.expand())
+    @property
+    def isket(self):
+        """False, by defintion"""
+        return False
 
     @property
-    def space(self):
-        return self.operands[0].space
+    def isbra(self):
+        """True, by definition"""
+        return True
+
+    def _adjoint(self):
+        return self.ket
 
     @property
     def label(self):
         return self.ket.label
-
-    def __mul__(self, other):
-        if isinstance(self.ket, KetIndexedSum):
-            if isinstance(other, KetIndexedSum):
-                other = other.make_disjunct_indices(self.ket)
-                assert isinstance(other, KetIndexedSum)
-                new_ranges = self.ket.ranges + other.ranges
-                new_term = BraKet.create(self.ket.term, other.term)
-                return OperatorIndexedSum.create(new_term, *new_ranges)
-            elif isinstance(other, Ket):
-                return OperatorIndexedSum(
-                    BraKet.create(self.ket.term, other), *self.ket.ranges)
-        if isinstance(other, SCALAR_TYPES):
-            return Bra.create(self.ket * other.conjugate())
-        elif isinstance(other, Operator):
-            return Bra.create(other.adjoint() * self.ket)
-        elif isinstance(other, Ket):
-            if isinstance(other, KetIndexedSum):
-                return OperatorIndexedSum(
-                    BraKet.create(self.ket, other.term), *other.ranges)
-            else:
-                return BraKet.create(self.ket, other)
-        elif isinstance(other, Bra):
-            return Bra.create(self.ket * other.ket)
-        try:
-            return super().__mul__(other)
-        except AttributeError:
-            return NotImplemented
-
-    def __rmul__(self, other):
-        if isinstance(other, SCALAR_TYPES):
-            return Bra.create(self.ket * other.conjugate())
-        else:
-            return NotImplemented
 
     def __add__(self, other):
         if isinstance(other, Bra):
@@ -759,11 +516,10 @@ class Bra(Operation):
             return Bra.create(self.ket - other.ket)
         return NotImplemented
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         if isinstance(other, SCALAR_TYPES):
             return Bra.create(self.ket/other.conjugate())
         return NotImplemented
-    __truediv__ = __div__
 
 
 class BraKet(Operator, Operation):
@@ -779,9 +535,9 @@ class BraKet(Operator, Operation):
     :math:`b`.
 
     Args:
-        bra (Ket): The anti-linear state argument. Not that this is *not* a
+        bra (State): The anti-linear state argument. Note that this is *not* a
             :class:`Bra` instance.
-        ket (Ket): The linear state argument.
+        ket (State): The linear state argument.
 
     Note:
         :class:`Braket` is an :class:`Operator` in the
@@ -791,13 +547,11 @@ class BraKet(Operator, Operation):
         owing to the :func:`~qnet.algebra.operator_algebra.scalars_to_op`
         simplification rule.
     """
-    _rules = OrderedDict()  # see end of module
+    _rules = OrderedDict()
     _space = TrivialSpace
     _simplifications = [check_kets_same_space, match_replace]
 
     def __init__(self, bra, ket):
-        self._order_key = KeyTuple((self.__class__.__name__, '__', 1.0,
-                                    expr_order_key(bra), expr_order_key(ket)))
         super().__init__(bra, ket)
 
     @property
@@ -831,17 +585,11 @@ class BraKet(Operator, Operation):
 
 
 class KetBra(Operator, Operation):
-    """A symbolic operator formed by the outer product of two states
-
-    :param Ket ket: The first state that defines the range of the operator.
-    :param Ket bra: The second state that defines the Kernel of the operator.
-    """
-    _rules = OrderedDict()  # see end of module
+    """A symbolic operator formed by the outer product of two states"""
+    _rules = OrderedDict()
     _simplifications = [check_kets_same_space, match_replace]
 
     def __init__(self, ket, bra):
-        self._order_key = KeyTuple((self.__class__.__name__, '__', 1.0,
-                                    expr_order_key(ket), expr_order_key(bra)))
         super().__init__(ket, bra)
 
     @property
@@ -876,47 +624,20 @@ class KetBra(Operator, Operation):
                      for n in range(order + 1) for k in range(n + 1))
 
 
-class KetIndexedSum(IndexedSum, Ket):
-    # Order of superclasses is important for proper mro for __add__ etc.
-    # (we're using cooperative inheritance from both superclasses,
-    # cf. https://stackoverflow.com/q/47804919)
+class KetIndexedSum(QuantumIndexedSum, State):
+    """Indexed sum over Kets"""
 
-    # TODO: documentation
-
-    _rules = OrderedDict()  # see end of module
+    _rules = OrderedDict()
     _simplifications = [
         assoc_indexed, indexed_sum_over_const, indexed_sum_over_kronecker,
         match_replace, ]
 
-    @property
-    def space(self):
-        return self.term.space
 
-    def _expand(self):
-        return self.__class__.create(self.term.expand(), *self.ranges)
-
-    def _series_expand(self, param, about, order):
-        raise NotImplementedError()
-
-    def _adjoint(self):
-        return self.__class__.create(self.term.adjoint(), *self.ranges)
-
-    def __mul__(self, other):
-        if isinstance(other, Bra):
-            if isinstance(other.ket, KetIndexedSum):
-                other_ket = other.ket.make_disjunct_indices(self)
-                assert isinstance(other_ket, KetIndexedSum)
-                new_ranges = self.ranges + other_ket.ranges
-                new_term = KetBra.create(self.term, other_ket.term)
-                return OperatorIndexedSum(new_term, *new_ranges)
-            else:
-                return OperatorIndexedSum(
-                    KetBra.create(self.term, other.ket), *self.ranges)
-        elif isinstance(other, Ket):
-            if not isinstance(other, KetIndexedSum):
-                return KetIndexedSum(self.term * other, *self.ranges)
-            # isinstance(other, KetIndexedSum) is handled by IndexedSum.__mul__
-        try:
-            return super().__mul__(other)
-        except AttributeError:
-            return NotImplemented
+State._zero = ZeroKet
+State._one = TrivialKet
+State._base_cls = State
+State._scalar_times_expr_cls = ScalarTimesKet
+State._plus_cls = KetPlus
+State._times_cls = TensorKet
+State._adjoint_cls = Bra
+State._indexed_sum_cls = KetIndexedSum

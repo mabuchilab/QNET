@@ -110,7 +110,7 @@ def test_qubit_state_bra():
     alpha_i = alpha[i]
     hs_tls = LocalSpace('tls', basis=('g', 'e'))
 
-    term = alpha_i * BasisKet(FockIndex(i), hs=hs_tls).dag
+    term = alpha_i * BasisKet(FockIndex(i), hs=hs_tls).dag()
 
     expr = KetIndexedSum.create(
         term, IndexOverFockSpace(i, hs=hs_tls))
@@ -131,8 +131,8 @@ def test_qubit_state_bra():
     expr_expand = expr.doit().substitute(
         {alpha[0]: alpha['g'], alpha[1]: alpha['e']})
     assert expr_expand == (
-        alpha['g'] * BasisKet('g', hs=hs_tls).dag +
-        alpha['e'] * BasisKet('e', hs=hs_tls).dag)
+        alpha['g'] * BasisKet('g', hs=hs_tls).dag() +
+        alpha['e'] * BasisKet('e', hs=hs_tls).dag())
     assert (
         ascii(expr_expand) == 'alpha_e * <e|^(tls) + alpha_g * <g|^(tls)')
 
@@ -354,25 +354,27 @@ def test_tensor_indexed_sum():
 
     expr = psi1 * psi2
     assert expr.space == hs1 * hs2
-    assert expr == KetIndexedSum(
+    rhs = KetIndexedSum(
         alpha[1, i] * alpha[2, i.prime] * (
             BasisKet(FockIndex(i), hs=hs1) *
             BasisKet(FockIndex(i.prime), hs=hs2)),
         IndexOverFockSpace(i, hs1), IndexOverFockSpace(i.prime, hs2))
-
+    assert expr == rhs
     psi0 = KetSymbol('Psi', hs=0)
     psi3 = KetSymbol('Psi', hs=3)
     expr2 = psi0 * psi1 * psi2 * psi3
-    assert expr2 == KetIndexedSum(
+    rhs = KetIndexedSum(
         alpha[1, i] * alpha[2, i.prime] * (
             psi0 *
             BasisKet(FockIndex(i), hs=hs1) *
             BasisKet(FockIndex(i.prime), hs=hs2) *
             psi3),
         IndexOverFockSpace(i, hs1), IndexOverFockSpace(i.prime, hs2))
+    assert expr2 == rhs
     assert TensorKet.create(psi0, psi1, psi2, psi3) == expr2
 
 
+@pytest.mark.xfail(reason="Requires ScalarAlgebra IndexedSum", strict=True)
 def test_tls_norm():
     """Test that calculating the norm of a TLS state results in 1"""
     hs = LocalSpace('tls', dimension=2)
@@ -384,6 +386,7 @@ def test_tls_norm():
     assert nrm == 1
 
 
+@pytest.mark.xfail(reason="Requires ScalarAlgebra IndexedSum", strict=True)
 def test_braket_indexed_sum():
     """Test braket product of sums"""
     i = IdxSym('i')
@@ -407,19 +410,20 @@ def test_braket_indexed_sum():
         IndexOverFockSpace(i, hs))
     assert BraKet.create(psi1, psi2) == expr
 
-    expr = psi.dag * psi2
+    expr = psi.dag() * psi2
     assert expr == OperatorIndexedSum(
         alpha[2, i] * BraKet(psi, BasisKet(FockIndex(i), hs=hs)),
         IndexOverFockSpace(i, hs))
     assert BraKet.create(psi, psi2) == expr
 
-    expr = psi1.dag * psi
+    expr = psi1.dag() * psi
     assert expr == OperatorIndexedSum(
         alpha[1, i].conjugate() * BraKet(BasisKet(FockIndex(i), hs=hs), psi),
         IndexOverFockSpace(i, hs))
     assert BraKet.create(psi1, psi) == expr
 
 
+@pytest.mark.xfail(reason="Need check for bound symbols", strict=True)
 def test_ketbra_indexed_sum():
     """Test ketbra product of sums"""
     i = IdxSym('i')
@@ -436,7 +440,7 @@ def test_ketbra_indexed_sum():
         alpha[2, i] * BasisKet(FockIndex(i), hs=hs),
         IndexOverFockSpace(i, hs))
 
-    expr = psi1 * psi2.dag
+    expr = psi1 * psi2.dag()
     assert expr.space == hs
     expected = OperatorIndexedSum(
         alpha[2, i.prime].conjugate() * alpha[1, i] * KetBra.create(
@@ -446,7 +450,7 @@ def test_ketbra_indexed_sum():
     assert expr == expected
     assert KetBra.create(psi1, psi2) == expr
 
-    expr = psi * psi2.dag
+    expr = psi * psi2.dag()
     assert expr.space == hs
     expected = OperatorIndexedSum(
         alpha[2, i].conjugate() * KetBra.create(
@@ -455,7 +459,7 @@ def test_ketbra_indexed_sum():
     assert expr == expected
     assert KetBra.create(psi, psi2) == expr
 
-    expr = psi1 * psi.dag
+    expr = psi1 * psi.dag()
     assert expr.space == hs
     expected = OperatorIndexedSum(
         alpha[1, i] * KetBra.create(

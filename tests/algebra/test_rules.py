@@ -9,6 +9,7 @@ import pytest
 import sympy
 from sympy import symbols, IndexedBase
 
+import qnet
 from qnet import (
     ScalarTimesOperator, OperatorSymbol, LocalSpace,
     no_instance_caching, ZeroOperator, OperatorPlus, KetIndexedSum,
@@ -95,6 +96,8 @@ def test_rule(cls, rule, args, kwargs, expected, caplog):
 
         py.test -s --log-cli-level DEBUG ./tests/algebra/test_rules.py
     """
+    qnet.algebra.core.abstract_algebra.LOG = True
+    qnet.algebra.core.algebraic_properties.LOG = True
     log_marker = "Rule %s.%s" % (cls.__name__, rule)
     print("\n", log_marker)
     with caplog.at_level(logging.DEBUG):
