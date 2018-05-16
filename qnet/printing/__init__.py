@@ -212,7 +212,7 @@ def _init_printing(
     # set up the __str__ and __repr__ printers
     try:
         has_unicode = "UTF-8" in sys.stdout.encoding
-    except TypeError:
+    except (TypeError, AttributeError):
         has_unicode = False
     logger.debug(
         "Terminal supports unicode: %s (autodetect)", has_unicode)
