@@ -34,6 +34,10 @@ PRECEDENCE_VALUES = {
     "SuperOperatorPlus": PRECEDENCE["Add"],
     "SuperOperatorTimes": PRECEDENCE["Mul"],
     "SuperAdjoint": PRECEDENCE["Pow"],
+    "ScalarPlus": PRECEDENCE["Add"],
+    "ScalarTimes": PRECEDENCE["Mul"],
+    "ScalarPower": PRECEDENCE["Pow"],
+    "PseudoInverse": PRECEDENCE["Atom"] + 1,
 }
 PRECEDENCE_VALUES.update(SYMPY_PRECEDENCE_VALUES)
 
@@ -69,6 +73,10 @@ def precedence_SuperOperatorTimesOperator(expr):
     return PRECEDENCE["Mul"]
 
 
+def precedence_ScalarValue(expr):
+    return precedence(expr.val)
+
+
 PRECEDENCE_FUNCTIONS = {
     "ScalarTimesOperator": precedence_ScalarTimesX,
     "ScalarTimesKet": precedence_ScalarTimesX,
@@ -76,6 +84,7 @@ PRECEDENCE_FUNCTIONS = {
     "Bra": precedence_Bra,
     "ScalarTimesSuperOperator": precedence_ScalarTimesX,
     "SuperOperatorTimesOperator": precedence_SuperOperatorTimesOperator,
+    "ScalarValue": precedence_ScalarValue,
 }
 PRECEDENCE_FUNCTIONS.update(SYMPY_PRECEDENCE_FUNCTIONS)
 

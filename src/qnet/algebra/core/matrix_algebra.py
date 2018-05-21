@@ -4,14 +4,15 @@ from numpy import (
     array as np_array, conjugate as np_conjugate, diag as np_diag,
     hstack as np_hstack, ndarray, ones as np_ones, vstack as np_vstack,
     zeros as np_zeros, )
+import sympy
 from sympy import I, sympify, Symbol
 
-from .abstract_algebra import Expression, _scalar_free_symbols, substitute
+from .abstract_algebra import Expression, substitute
 from .abstract_quantum_algebra import QuantumExpression
 from .exceptions import NonSquareMatrix
 from .hilbert_space_algebra import ProductSpace, TrivialSpace
-from .operator_algebra import Operator, simplify_scalar
-from .scalar_types import SCALAR_TYPES
+from .operator_algebra import Operator
+from .scalar_algebra import is_scalar
 from ...utils.permutations import check_permutation
 
 __all__ = [
@@ -97,8 +98,14 @@ class Matrix(Expression):
     @property
     def is_zero(self):
         """Are all elements of the matrix zero?"""
-        # TODO: this won't work once ZeroOperator != 0
-        return (self.matrix == 0).all()
+        for o in self.matrix.ravel():
+            try:
+                if not o.is_zero:
+                    return False
+            except AttributeError:
+                if not o == 0:
+                    return False
+        return True
 
     @classmethod
     def _get_instance_key(cls, args, kwargs):
@@ -144,7 +151,7 @@ class Matrix(Expression):
         return (-1) * self
 
     def __truediv__(self, other):
-        if isinstance(other, SCALAR_TYPES):
+        if is_scalar(other):
             return self * (sympyOne / other)
         raise NotImplementedError("Can't divide matrix %s by %s"
                                   % (self, other))
@@ -218,7 +225,7 @@ class Matrix(Expression):
 
         Args:
             param: Expansion parameter.
-            about (SCALAR_TYPES): Point about which to expand.
+            about (.Scalar): Point about which to expand.
             order: Maximum order of expansion >= 0
 
         Returns:
@@ -245,13 +252,14 @@ class Matrix(Expression):
         else:
             return self.element_wise(lambda o: substitute(o, var_map))
 
-    def all_symbols(self):
+    @property
+    def free_symbols(self):
         ret = set()
         for o in self.matrix.ravel():
-            if isinstance(o, Operator):
-                ret = ret | o.all_symbols()
-            else:
-                ret = ret | _scalar_free_symbols(o)
+            try:
+                ret = ret | o.free_symbols
+            except AttributeError:
+                pass
         return ret
 
     @property
@@ -264,9 +272,18 @@ class Matrix(Expression):
         else:
             return ProductSpace.create(*arg_spaces)
 
-    def simplify_scalar(self):
+    def simplify_scalar(self, func=sympy.simplify):
         """Simplify all scalar expressions appearing in the Matrix."""
-        return self.element_wise(simplify_scalar)
+
+        def element_simplify(v):
+            if isinstance(v, sympy.Basic):
+                return func(v)
+            elif isinstance(v, QuantumExpression):
+                return v.simplify_scalar(func=func)
+            else:
+                return v
+
+        return self.element_wise(element_simplify)
 
 
 def hstackm(matrices):

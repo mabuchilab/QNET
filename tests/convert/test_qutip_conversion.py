@@ -178,7 +178,7 @@ def test_time_dependent_to_qutip():
     res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
     assert len(res) == 9
     terms = sorted([term for H, term in res[1:]])
-    expected = sorted([str(op.coeff) for op in H.expand().operands
+    expected = sorted([str(op.coeff.val) for op in H.expand().operands
                        if isinstance(op, ScalarTimesOperator)])
     assert terms == expected
 

@@ -11,15 +11,11 @@ import re
 from abc import ABCMeta, abstractmethod
 from itertools import product as cartesian_product
 
-from sympy import (
-    Basic as SympyBasic, Expr as SympyExpr, Symbol, sympify, series as
-    sympy_series, diff as sympy_diff)
+import sympy
+from sympy import Symbol, sympify
 
-from .scalar_types import SCALAR_TYPES
 from .hilbert_space_algebra import ProductSpace, LocalSpace, TrivialSpace
-from .abstract_algebra import (
-    Operation, Expression,
-    substitute, _scalar_free_symbols, )
+from .abstract_algebra import Operation, Expression, substitute
 from .indexed_operations import IndexedSum
 from ...utils.ordering import (
     DisjunctCommutativeHSOrder, FullCommutativeHSOrder, KeyTuple, )
@@ -37,25 +33,6 @@ __private__ = [
 _sympyOne = sympify(1)
 
 
-def _simplify_scalar(s):
-    """Simplify all occurences of scalar expressions in s
-
-    Args:
-        s (Expression or sympy.core.basic.Basic): The expression to simplify.
-
-    Returns:
-        A simplified expression of the same type as `s`.
-    """
-    # TODO: this routine would be obsolete if we had a proper Scalar class
-    try:
-        return s.simplify_scalar()
-    except AttributeError:
-        pass
-    if isinstance(s, SympyExpr):
-        return s.simplify()
-    return s
-
-
 class QuantumExpression(Expression, metaclass=ABCMeta):
     """Common base class for any expression that is associated with a Hilbert
     space"""
@@ -69,8 +46,8 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
     _adjoint_cls = None  # class for the adjoint
     _indexed_sum_cls = None  # class for indexed sum
 
-    _order_index = 0
-    _order_coeff = 1
+    _order_index = 0  # index of "order group": things that should go together
+    _order_coeff = 1  # scalar prefactor
     _order_name = None
 
     def __init__(self, *args, **kwargs):
@@ -82,6 +59,21 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
                 key, val._order_key if hasattr(val, '_order_key') else val])
             for (key, val) in sorted(kwargs.items())])
         super().__init__(*args, **kwargs)
+
+    @property
+    def is_zero(self):
+        """Check whether the expression is equal to zero.
+
+        Specifically, this checks whether the expression is equal to the
+        neutral element for the addition within the algebra. This does not
+        generally imply equality with a scalar zero:
+
+        >>> ZeroOperator.is_zero
+        True
+        >>> ZeroOperator == 0
+        False
+        """
+        return self == self._zero
 
     @property
     def _order_key(self):
@@ -113,23 +105,23 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
         raise NotImplementedError(self.__class__.__name__)
 
     def expand(self):
-        """Expand out distributively all products of sums. Note that this does
-        not expand out sums of scalar coefficients.
+        """Expand out distributively all products of sums.
+
+        Note:
+            This does not expand out sums of scalar coefficients. You may use
+            :meth:`simplify_scalar` for this purpose.
         """
         return self._expand()
 
     def _expand(self):
         return self
 
-    def simplify_scalar(self):
-        """Simplify all scalar coefficients within the expression.
+    def simplify_scalar(self, func=sympy.simplify):
+        """Simplify all scalar symbolic (SymPy) coefficients by appyling `func`
+        to them"""
+        return self._simplify_scalar(func=func)
 
-        Returns:
-            Operator: The simplified expression.
-        """
-        return self._simplify_scalar()
-
-    def _simplify_scalar(self):
+    def _simplify_scalar(self, func):
         return self
 
     def diff(self, sym: Symbol, n: int = 1, expand_simplify: bool = True):
@@ -156,29 +148,60 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
 
     def series_expand(
             self, param: Symbol, about, order: int) -> tuple:
-        """Expand the operator expression as a truncated power series in a
+        r"""Expand the expression as a truncated power series in a
         scalar parameter.
 
+        When expanding an expr for a parameter $x$ about the point $x_0$ up to
+        order $N$, the resulting coefficients $(c_1, \dots, c_N)$ fulfill
+
+        .. math::
+
+            \text{expr} = \sum_{n=0}^{N} c_n (x - x_0)^n + O(N=1)
+
         Args:
-            param: Expansion parameter
-            about (SCALAR_TYPES): Point about which to expand
-            order: Maximum order of expansion (>= 0)
+            param: Expansion parameter $x$
+            about (Scalar): Point $x_0$ about which to expand
+            order: Maximum order $N$ of expansion (>= 0)
 
         Returns:
             tuple of length ``order + 1``, where the entries are the
-            expansion coefficients (instances of :class:`Operator`)
+            expansion coefficients, $(c_0, \dots, c_N)$.
+
+        Note:
+            The expansion coefficients are
+            "type-stable", in that they share a common base class with the
+            original expression. In particular, this applies to "zero"
+            coefficients::
+
+                >>> expr = KetSymbol("Psi", hs=0)
+                >>> t = sympy.symbols("t")
+                >>> assert expr.series_expand(t, 0, 1) == (expr, ZeroKet)
         """
-        return self._series_expand(param, about, order)
+        expansion = self._series_expand(param, about, order)
+        # _series_expand is generally not "type-stable", so we continue to
+        # ensure the type-stability
+        res = []
+        for v in expansion:
+            if v == 0 or v.is_zero:
+                v = self._zero
+            elif v == 1:
+                v = self._one
+            assert isinstance(v, self._base_cls)
+            res.append(v)
+        return tuple(res)
 
     def _series_expand(self, param, about, order):
         # Expressions are assumed constant by default.
-        return (self,) + ((0,) * order)
+        from qnet.algebra.core.scalar_algebra import Zero
+        return (self,) + ((Zero,) * order)
 
     def __add__(self, other):
-        if isinstance(other, SCALAR_TYPES):
-            return self.__class__._plus_cls.create(
-                self, other * self.__class__._one)
-        elif isinstance(other, self.__class__._base_cls):
+        if not isinstance(other, self._base_cls):
+            try:
+                other = self.__class__._one * other
+            except TypeError:
+                pass
+        if isinstance(other, self.__class__._base_cls):
             return self.__class__._plus_cls.create(self, other)
         else:
             return NotImplemented
@@ -188,9 +211,15 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
         return self.__add__(other)
 
     def __mul__(self, other):
-        if isinstance(other, SCALAR_TYPES):
-            return self.__class__._scalar_times_expr_cls.create(other, self)
-        elif isinstance(other, self.__class__._base_cls):
+        from qnet.algebra.core.scalar_algebra import is_scalar, ScalarValue
+        if not isinstance(other, self._base_cls):
+            if is_scalar(other):
+                other = ScalarValue.create(other)
+                # if other was an ScalarExpression, the conversion above leaves
+                # it unchanged
+                return self.__class__._scalar_times_expr_cls.create(
+                    other, self)
+        if isinstance(other, self.__class__._base_cls):
             return self.__class__._times_cls.create(self, other)
         else:
             return NotImplemented
@@ -198,8 +227,9 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
     def __rmul__(self, other):
         # multiplication with scalar is assumed to be commutative, but any
         # other multiplication is not
-        if isinstance(other, SCALAR_TYPES):
-            return self.__class__._scalar_times_expr_cls.create(other, self)
+        from qnet.algebra.core.scalar_algebra import is_scalar
+        if is_scalar(other):
+            return self.__mul__(other)
         else:
             return NotImplemented
 
@@ -213,19 +243,35 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
         return (-1) * self
 
     def __truediv__(self, other):
-        if isinstance(other, SCALAR_TYPES):
-            return self * (_sympyOne / other)
         try:
-            return super().__rmul__(other)
-        except AttributeError:
-            return NotImplemented
+            factor = _sympyOne / other
+            return self * factor
+        except TypeError:
+            try:
+                return super().__rmul__(other)
+            except AttributeError:
+                return NotImplemented
 
     def __pow__(self, other):
-        if isinstance(other, int):
-            return self.__class__._times_cls.create(
-                *[self for _ in range(other)])
+        if other == 0:
+            return self._one
+        elif other == 1:
+            return self
         else:
-            return NotImplemented
+            try:
+                other_is_int = (other == int(other))
+            except TypeError:
+                other_is_int = False
+            if other_is_int:
+                if other > 1:
+                    return self.__class__._times_cls.create(
+                        *[self for _ in range(other)])
+                elif other < 1:
+                    return 1 / self**(-other)
+                else:
+                    raise ValueError("Invalid exponent %r" % other)
+            else:
+                return NotImplemented
 
 
 class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
@@ -271,11 +317,12 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
     def _expand(self):
         return self
 
-    def all_symbols(self):
+    @property
+    def free_symbols(self):
         try:
-            return self.label.all_symbols()
+            return self.label.free_symbols
         except AttributeError:
-            return set([])
+            return set()
 
     def _adjoint(self):
         return self.__class__._adjoint_cls(self)
@@ -303,16 +350,29 @@ class QuantumOperation(QuantumExpression, Operation, metaclass=ABCMeta):
         """Hilbert space of the operation result"""
         return self._space
 
-    def _simplify_scalar(self):
-        return self.create(*[o.simplify_scalar() for o in self.operands])
+    def _simplify_scalar(self, func):
+        simplified_operands = []
+        operands_have_changed = False
+        for op in self.operands:
+            new_op = op.simplify_scalar(func=func)
+            simplified_operands.append(new_op)
+            if new_op is not op:
+                operands_have_changed = True
+        if operands_have_changed:
+            return self.create(*simplified_operands)
+        else:
+            return self
 
 
 class SingleQuantumOperation(QuantumOperation, metaclass=ABCMeta):
     """Base class for operations on a single quantum expression"""
 
     def __init__(self, op, **kwargs):
-        if isinstance(op, SCALAR_TYPES):
-            op = op * self.__class__._one
+        if not isinstance(op, self._base_cls):
+            try:
+                op = op * self.__class__._one
+            except TypeError:
+                pass
         super().__init__(op, **kwargs)
 
     @property
@@ -345,7 +405,13 @@ class QuantumAdjoint(SingleQuantumOperation, metaclass=ABCMeta):
 class QuantumPlus(QuantumOperation, metaclass=ABCMeta):
     """General implementation of addition of quantum expressions"""
     order_key = FullCommutativeHSOrder
-    neutral_element = None
+    _neutral_element = None
+
+    def __init__(self, *operands, **kwargs):
+        if len(operands) <= 1:
+            raise TypeError(
+                "%s requires at least two operands" % self.__class__.__name__)
+        super().__init__(*operands, **kwargs)
 
     def _expand(self):
         summands = [o.expand() for o in self.operands]
@@ -366,7 +432,13 @@ class QuantumPlus(QuantumOperation, metaclass=ABCMeta):
 class QuantumTimes(QuantumOperation, metaclass=ABCMeta):
     """General implementation of product of quantum expressions"""
     order_key = DisjunctCommutativeHSOrder
-    neutral_element = None
+    _neutral_element = None
+
+    def __init__(self, *operands, **kwargs):
+        if len(operands) <= 1:
+            raise TypeError(
+                "%s requires at least two operands" % self.__class__.__name__)
+        super().__init__(*operands, **kwargs)
 
     def factor_for_space(self, spc):
         """Return a tuple of two products, where the first product contains the
@@ -406,14 +478,15 @@ class QuantumTimes(QuantumOperation, metaclass=ABCMeta):
     def _series_expand(self, param, about, order):
         assert len(self.operands) > 1
         cfirst = self.operands[0].series_expand(param, about, order)
-        crest = (
-            self.__class__._times_cls.create(*self.operands[1:])
-            .series_expand(param, about, order))
-        res = []
-        for n in range(order + 1):
-            summands = [cfirst[k] * crest[n - k] for k in range(n + 1)]
-            res.append(self.__class__._plus_cls.create(*summands))
-        return tuple(res)
+        if len(self.operands) > 2:
+            crest = (
+                self.__class__(*self.operands[1:])
+                .series_expand(param, about, order))
+        else:
+            # a single remaining operand needs to be treated explicitly because
+            # we didn't use `create` for the `crest` above, for efficiency
+            crest = self.operands[1].series_expand(param, about, order)
+        return _series_expand_combine_prod(cfirst, crest, order)
 
     def _diff(self, sym):
         assert len(self.operands) > 1
@@ -430,7 +503,17 @@ class ScalarTimesQuantumExpression(
         QuantumExpression, Operation, metaclass=ABCMeta):
     """Product of a scalar and an expression"""
 
+    @classmethod
+    def create(cls, coeff, term):
+        from qnet.algebra.core.scalar_algebra import Scalar, ScalarValue
+        if not isinstance(coeff, Scalar):
+            coeff = ScalarValue.create(coeff)
+        return super().create(coeff, term)
+
     def __init__(self, coeff, term):
+        from qnet.algebra.core.scalar_algebra import Scalar, ScalarValue
+        if not isinstance(coeff, Scalar):
+            coeff = ScalarValue.create(coeff)
         self._order_coeff = coeff
         self._order_args = KeyTuple([term._order_key])
         super().__init__(coeff, term)
@@ -445,7 +528,7 @@ class ScalarTimesQuantumExpression(
 
     def _substitute(self, var_map, safe=False):
         st = self.term.substitute(var_map)
-        if isinstance(self.coeff, SympyBasic):
+        if isinstance(self.coeff, sympy.Basic):
             svar_map = {k: v for k, v in var_map.items()
                         if not isinstance(k, Expression)}
             sc = self.coeff.subs(svar_map)
@@ -456,8 +539,9 @@ class ScalarTimesQuantumExpression(
         else:
             return sc * st
 
-    def all_symbols(self):
-        return _scalar_free_symbols(self.coeff) | self.term.all_symbols()
+    @property
+    def free_symbols(self):
+        return self.coeff.free_symbols | self.term.free_symbols
 
     def _adjoint(self):
         return self.coeff.conjugate() * self.term.adjoint()
@@ -486,45 +570,23 @@ class ScalarTimesQuantumExpression(
         return c * et
 
     def _series_expand(self, param, about, order):
+        ce = self.coeff.series_expand(param, about, order)
         te = self.term.series_expand(param, about, order)
-        if isinstance(self.coeff, SympyBasic):
-            if about != 0:
-                c = self.coeff.subs({param: about + param})
-            else:
-                c = self.coeff
-
-            series = sympy_series(c, x=param, x0=0, n=None)
-            ce = []
-            next_order = 0
-            for term in series:
-                c, o = term.as_coeff_exponent(param)
-                if o < 0:
-                    raise ValueError(
-                        "%s is singular at expansion point %s=%s."
-                        % (self, param, about))
-                if o > order:
-                    break
-                ce.extend([0] * (o - next_order))
-                ce.append(c)
-                next_order = o + 1
-            ce.extend([0] * (order + 1 - next_order))
-
-            res = []
-            for n in range(order + 1):
-                summands = [ce[k] * te[n - k] for k in range(n + 1)]
-                res.append(self.__class__._plus_cls.create(*summands))
-            return tuple(res)
-        else:
-            return tuple(self.coeff * tek for tek in te)
+        return _series_expand_combine_prod(ce, te, order)
 
     def _diff(self, sym):
         c, t = self.operands
-        cd = sympy_diff(c, sym) if isinstance(c, SympyBasic) else 0
-        return cd * t + c * t._diff(sym)
+        return c._diff(sym) * t + c * t._diff(sym)
 
-    def _simplify_scalar(self):
+    def _simplify_scalar(self, func):
         coeff, term = self.operands
-        return _simplify_scalar(coeff) * term.simplify_scalar()
+        try:
+            if isinstance(coeff.val, sympy.Basic):
+                coeff = func(coeff)
+        except AttributeError:
+            # coeff is not a SymPy ScalarValue; leave it unchanged
+            pass
+        return coeff * term.simplify_scalar(func=func)
 
     def __complex__(self):
         if self.term is self.__class__._one:
@@ -554,6 +616,7 @@ class QuantumIndexedSum(IndexedSum, SingleQuantumOperation, metaclass=ABCMeta):
         return self.__class__.create(self.term.adjoint(), *self.ranges)
 
     def __mul__(self, other):
+        from qnet.algebra.core.scalar_algebra import is_scalar
         if isinstance(other, IndexedSum):
             other = other.make_disjunct_indices(self)
             new_ranges = self.ranges + other.ranges
@@ -561,19 +624,19 @@ class QuantumIndexedSum(IndexedSum, SingleQuantumOperation, metaclass=ABCMeta):
             # note that class may change, depending on type of new_term
             return new_term.__class__._indexed_sum_cls.create(
                 new_term, *new_ranges)
-        elif isinstance(other, SCALAR_TYPES):
+        elif is_scalar(other):
             return self._class__._scalar_times_expr_cls(other, self)
         elif isinstance(other, ScalarTimesQuantumExpression):
             return self._class__._scalar_times_expr_cls(
                 other.coeff, self * other.term)
         else:
-            # TODO: ensure other has no bound symbols that overlap with
-            # self.term
-            new_term = self.term * other
+            sum = self.make_disjunct_indices(*other.bound_symbols)
+            new_term = sum.term * other
             return new_term.__class__._indexed_sum_cls.create(
-                new_term, *self.ranges)
+                new_term, *sum.ranges)
 
     def __rmul__(self, other):
+        from qnet.algebra.core.scalar_algebra import is_scalar
         if isinstance(other, IndexedSum):
             self_new = self.make_disjunct_indices(other)
             new_ranges = other.ranges + self_new.ranges
@@ -581,15 +644,16 @@ class QuantumIndexedSum(IndexedSum, SingleQuantumOperation, metaclass=ABCMeta):
             # note that class may change, depending on type of new_term
             return new_term.__class__._indexed_sum_cls.create(
                 new_term, *new_ranges)
-        elif isinstance(other, SCALAR_TYPES):
+        elif is_scalar(other):
             return self.__class__._scalar_times_expr_cls(other, self)
         elif isinstance(other, ScalarTimesQuantumExpression):
             return self._class__._scalar_times_expr_cls(
                 other.coeff, other.term * self)
         else:
-            new_term = other * self.term
+            sum = self.make_disjunct_indices(*other.bound_symbols)
+            new_term = other * sum.term
             return new_term.__class__._indexed_sum_cls.create(
-                new_term, *self.ranges)
+                new_term, *sum.ranges)
 
     def __add__(self, other):
         raise NotImplementedError()
@@ -635,3 +699,27 @@ def ensure_local_space(hs):
     if not isinstance(hs, LocalSpace):
         raise TypeError("hs must be a LocalSpace")
     return hs
+
+
+def _series_expand_combine_prod(c1, c2, order):
+    """Given the result of the ``c1._series_expand(...)`` and
+    ``c2._series_expand(...)``, construct the result of
+    ``(c1*c2)._series_expand(...)``
+    """
+    from qnet.algebra.core.scalar_algebra import Zero
+    res = []
+    c1 = list(c1)
+    c2 = list(c2)
+    for n in range(order + 1):
+        summands = []
+        for k in range(n + 1):
+            if c1[k].is_zero or c2[n-k].is_zero:
+                summands.append(Zero)
+            else:
+                summands.append(c1[k] * c2[n - k])
+        sum = summands[0]
+        for summand in summands[1:]:
+            if summand != 0:
+                sum += summand
+        res.append(sum)
+    return tuple(res)

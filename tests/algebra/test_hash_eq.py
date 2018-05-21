@@ -30,7 +30,7 @@ def test_heis_eom():
     expressions with the same hash are considered equal"""
     import sympy as sp
     a = Destroy(hs="0")
-    assert a-a == 0 != a-2*a
+    assert (a-a).is_zero; (a-a) != a-2*a
     heis_eom = SLH([[1]], [sp.sqrt(2)*a], 0).symbolic_heisenberg_eom(a)
     assert heis_eom == -a != -2*a
 

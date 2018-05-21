@@ -10,6 +10,7 @@ from collections import OrderedDict
 from functools import reduce
 
 import numpy as np
+import sympy
 from sympy import I
 from sympy import Matrix as SympyMatrix
 from sympy import symbols, sympify
@@ -17,7 +18,8 @@ from sympy import symbols, sympify
 from .abstract_algebra import (
     Expression, Operation, substitute, )
 from .algebraic_properties import (
-    assoc, check_cdims, filter_neutral, match_replace, match_replace_binary, )
+    assoc, check_cdims, filter_neutral, filter_cid, match_replace,
+    match_replace_binary)
 from .exceptions import (
     AlgebraError, BasisNotSetError, CannotConvertToABCD, CannotConvertToSLH,
     CannotEliminateAutomatically, CannotVisualize, IncompatibleBlockStructures,
@@ -242,7 +244,7 @@ class Circuit(metaclass=ABCMeta):
 
     def toSLH(self) -> 'SLH':
         """Return the SLH representation of a circuit. This can fail if there
-        are un-substituted pure circuit all_symbols (:py:class:`CircuitSymbol`)
+        are un-substituted pure circuit symbols (:py:class:`CircuitSymbol`)
         left in the expression or if the circuit includes *non-passive* ABCD
         models (cf. [1]_)
         """
@@ -256,7 +258,7 @@ class Circuit(metaclass=ABCMeta):
         """Return the ABCD representation of a circuit expression. If
         `linearize=True` all operator expressions giving rise to non-linear
         equations of motion are dropped.  This can fail if there are
-        un-substituted pure circuit all_symbols (:py:class:`CircuitSymbol`)
+        un-substituted pure circuit symbols (:py:class:`CircuitSymbol`)
         left in the expression or if `linearize = False` and the circuit
         includes non-linear SLH models.  (cf. [1]_)
         """
@@ -380,10 +382,11 @@ class SLH(Circuit, Expression):
         args_spaces = (self.S.space, self.L.space, self.H.space)
         return ProductSpace.create(*args_spaces)
 
-    def all_symbols(self):
+    @property
+    def free_symbols(self):
         """Set of all symbols occcuring in S, L, or H"""
         return set.union(
-            self.S.all_symbols(), self.L.all_symbols(), self.H.all_symbols())
+            self.S.free_symbols, self.L.free_symbols, self.H.free_symbols)
 
     def series_with_slh(self, other):
         """Evaluate the series product with another :py:class:``SLH`` object.
@@ -428,12 +431,16 @@ class SLH(Circuit, Expression):
         """
         return SLH(self.S.expand(), self.L.expand(), self.H.expand())
 
-    def simplify_scalar(self):
+    def simplify_scalar(self, func=sympy.simplify):
         """Simplify all scalar expressions within S, L and H and return a new
         SLH object with the simplified expressions.
+
+        See also: :meth:`.QuantumExpression.simplify_scalar`
         """
-        return SLH(self.S.simplify_scalar(), self.L.simplify_scalar(),
-                   self.H.simplify_scalar())
+        return SLH(
+            self.S.simplify_scalar(func=func),
+            self.L.simplify_scalar(func=func),
+            self.H.simplify_scalar(func=func))
 
     def _series_inverse(self):
         return SLH(self.S.adjoint(), - self.S.adjoint() * self.L, -self.H)
@@ -707,9 +714,6 @@ class CircuitSymbol(Circuit, Expression):
     @property
     def args(self):
         return self._name, self._cdim
-
-    def all_symbols(self):
-        return {}
 
     @property
     def cdim(self):
@@ -1030,19 +1034,6 @@ class CIdentity(Circuit, Expression, metaclass=Singleton):
     def args(self):
         return tuple()
 
-    def __eq__(self, other):
-        if not isinstance(other, Circuit):
-            return NotImplemented
-
-        if self.cdim == other.cdim:
-            if self is other:
-                return True
-            try:
-                return self.toSLH() == other.toSLH()
-            except CannotConvertToSLH:
-                return False
-        return False
-
     def _toSLH(self):
         return SLH(Matrix([[1]]), Matrix([[0]]), 0)
 
@@ -1055,9 +1046,6 @@ class CIdentity(Circuit, Expression, metaclass=Singleton):
     def _toABCD(self, linearize):
         return ABCD(zerosm((0, 0)), zerosm((0, 2)), zerosm((2, 0)),
                     identity_matrix(2), zerosm((1, 1)), TrivialSpace)
-
-    def all_symbols(self):
-        return {self}
 
     @property
     def space(self):
@@ -1080,16 +1068,6 @@ class CircuitZero(Circuit, Expression, metaclass=Singleton):
     def args(self):
         return tuple()
 
-    def __eq__(self, other):
-        if self is other:
-            return True
-        if self.cdim == other.cdim:
-            try:
-                return self.toSLH() == other.toSLH()
-            except CannotConvertToSLH:
-                return False
-        return False
-
     def _toSLH(self):
         return SLH(Matrix([[]]), Matrix([[]]), 0)
 
@@ -1099,9 +1077,6 @@ class CircuitZero(Circuit, Expression, metaclass=Singleton):
 
     def _creduce(self):
         return self
-
-    def all_symbols(self):
-        return {}
 
     @property
     def space(self):
@@ -1121,22 +1096,15 @@ class SeriesProduct(Circuit, Operation):
     """The series product circuit operation. It can be applied to any sequence
     of circuit objects that have equal channel dimension.
     """
-    _simplifications = [assoc, filter_neutral, check_cdims,
+    _simplifications = [assoc, filter_cid, check_cdims,
                         match_replace_binary]
     _binary_rules = OrderedDict()  # see end of module
 
     _space = None  # lazily evaluated
 
-    @singleton_object
-    class neutral_element(metaclass=Singleton):
-        """Generic neutral element checker of the ``SeriesProduct``, it works
-        for any channel dimension."""
+    _neutral_element = CIdentity
 
-        def __eq__(self, other):
-            return self is other or other == cid(other.cdim)
-
-        def __ne__(self, other):
-            return not (self == other)
+    neutral_element = _neutral_element
 
     @property
     def cdim(self):
@@ -1171,11 +1139,13 @@ class Concatenation(Circuit, Operation):
     sequence of circuit objects.
     """
 
-    neutral_element = CircuitZero
-
     _simplifications = [assoc, filter_neutral, match_replace_binary]
 
     _binary_rules = OrderedDict()  # see end of module
+
+    _neutral_element = CircuitZero
+
+    neutral_element = _neutral_element
 
     def __init__(self, *operands):
         self._space = None
@@ -1677,7 +1647,6 @@ def getABCD(slh, a0=None, doubled_up=True):
         * `c`: constant coherent input vector of scattered amplitudes
             contributing to the output
     """
-
     if a0 is None:
         a0 = {}
 
@@ -2008,9 +1977,6 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
     @property
     def cdim(self):
         return self.CDIM
-
-    def _all_symbols(self):
-        return set(())
 
     @abstractmethod
     def _toSLH(self):

@@ -2,23 +2,21 @@ import logging
 
 from sympy import Mul as SympyMul, KroneckerDelta as SympyKroneckerDelta
 
-from .abstract_algebra import (
-    all_symbols, LOG, LEVEL, LOG_NO_MATCH, )
+from .abstract_algebra import LOG, LEVEL, LOG_NO_MATCH
 from .exceptions import (
     CannotSimplify, UnequalSpaces,
     SpaceTooLargeError, )
-from .scalar_types import SCALAR_TYPES
 from ..pattern_matching import ProtoExpr, match_pattern
 
 __all__ = []
 __private__ = [
     'assoc', 'assoc_indexed', 'idem', 'orderby', 'filter_neutral',
-    'match_replace', 'match_replace_binary', 'check_cdims',
+    'filter_cid', 'match_replace', 'match_replace_binary', 'check_cdims',
     'convert_to_spaces', 'empty_trivial', 'implied_local_space',
-    'delegate_to_method', 'scalars_to_op', 'disjunct_hs_zero',
-    'commutator_order', 'check_kets_same_space', 'check_op_ket_space',
-    'accept_bras', 'basis_ket_zero_outside_hs', 'indexed_sum_over_const',
-    'indexed_sum_over_kronecker']
+    'delegate_to_method', 'scalars_to_op', 'convert_to_scalars',
+    'disjunct_hs_zero', 'commutator_order', 'accept_bras',
+    'basis_ket_zero_outside_hs', 'indexed_sum_over_const',
+    'indexed_sum_over_kronecker', 'scalar_indexed_sum_over_kronecker']
 
 
 def assoc(cls, ops, kwargs):
@@ -64,7 +62,7 @@ def assoc_indexed(cls, ops, kwargs):
         return cls(term.term, *combined_ranges)
     else:
         bound_symbols = set([r.index_symbol for r in combined_ranges])
-        if len(all_symbols(coeff).intersection(bound_symbols)) == 0:
+        if len(coeff.free_symbols.intersection(bound_symbols)) == 0:
             return coeff * cls(term.term, *combined_ranges)
         else:
             return cls(coeff * term.term, *combined_ranges)
@@ -105,12 +103,12 @@ def filter_neutral(cls, ops, kwargs):
     with each argument.  E.g.::
 
         >>> class X(Operation):
-        ...     neutral_element = 1
+        ...     _neutral_element = 1
         ...     _simplifications = [filter_neutral, ]
         >>> X.create(2,1,3,1)
         X(2, 3)
     """
-    c_n = cls.neutral_element
+    c_n = cls._neutral_element
     if len(ops) == 0:
         return c_n
     fops = [op for op in ops if c_n != op]  # op != c_n does NOT work
@@ -227,7 +225,7 @@ def match_replace_binary(cls, ops, kwargs):
         ...     _binary_rules = {
         ...          'filter_dupes': (pattern_head(A,A), lambda A: A)}
         ...     _simplifications = [match_replace_binary, assoc]
-        ...     neutral_element = 0
+        ...     _neutral_element = 0
         >>> FilterDupes.create(1,2,3,4)         # No duplicates
         FilterDupes(1, 2, 3, 4)
         >>> FilterDupes.create(1,2,2,3,4)       # Some duplicates
@@ -245,14 +243,14 @@ def match_replace_binary(cls, ops, kwargs):
     """
     assert assoc in cls._simplifications, (
         cls.__name__ + " must be associative to use match_replace_binary")
-    assert hasattr(cls, 'neutral_element'), (
+    assert hasattr(cls, '_neutral_element'), (
         cls.__name__ + " must define a neutral element to use "
                        "match_replace_binary")
     fops = _match_replace_binary(cls, list(ops))
     if len(fops) == 1:
         return fops[0]
     elif len(fops) == 0:
-        return cls.neutral_element
+        return cls._neutral_element
     else:
         return fops, kwargs
 
@@ -277,7 +275,7 @@ def _match_replace_binary_combine(cls, a: list, b: list) -> list:
     r = _get_binary_replacement(a[-1], b[0], cls)
     if r is None:
         return a + b
-    if r == cls.neutral_element:
+    if r == cls._neutral_element:
         return _match_replace_binary_combine(cls, a[:-1], b[1:])
     if isinstance(r, cls):
         r = list(r.args)
@@ -294,6 +292,24 @@ def check_cdims(cls, ops, kwargs):
     if not len({o.cdim for o in ops}) == 1:
         raise ValueError("Not all operands have the same cdim:" + str(ops))
     return ops, kwargs
+
+
+def filter_cid(cls, ops, kwargs):
+    """Remove occurrences of the :func:`.circuit_identity` ``cid(n)`` for any
+    ``n``. Cf. :func:`filter_neutral`
+    """
+    from qnet.algebra.core.circuit_algebra import CircuitZero, cid
+    if len(ops) == 0:
+        return CircuitZero
+    fops = [op for op in ops if op != cid(op.cdim)]
+    if len(fops) > 1:
+        return fops, kwargs
+    elif len(fops) == 1:
+        # the remaining operand is the single non-trivial one
+        return fops[0]
+    else:
+        # the original list of operands consists only of neutral elements
+        return ops[0]
 
 
 def convert_to_spaces(cls, ops, kwargs):
@@ -385,13 +401,27 @@ def delegate_to_method(mtd):
 def scalars_to_op(cls, ops, kwargs):
     r'''Convert any scalar $\alpha$ in `ops` into an operator $\alpha
     \identity$'''
+    from qnet.algebra.core.scalar_algebra import is_scalar
     op_ops = []
     for op in ops:
-        if isinstance(op, SCALAR_TYPES):
+        if is_scalar(op):
             op_ops.append(op * cls._one)
         else:
             op_ops.append(op)
     return op_ops, kwargs
+
+
+def convert_to_scalars(cls, ops, kwargs):
+    """Convert any entry in `ops` that is not a :class:`.Scalar` instance into
+    a :class:`.ScalarValue` instance"""
+    from qnet.algebra.core.scalar_algebra import Scalar, ScalarValue
+    scalar_ops = []
+    for op in ops:
+        if not isinstance(op, Scalar):
+            scalar_ops.append(ScalarValue(op))
+        else:
+            scalar_ops.append(op)
+    return scalar_ops, kwargs
 
 
 def disjunct_hs_zero(cls, ops, kwargs):
@@ -425,25 +455,6 @@ def commutator_order(cls, ops, kwargs):
         return ops, kwargs
 
 
-def check_kets_same_space(cls, ops, kwargs):
-    """Check that all operands are from the same Hilbert space."""
-    from qnet.algebra.core.state_algebra import State, ZeroKet
-    # TODO: remove (this should be in the __init__ routine
-    if not all([isinstance(o, State) for o in ops]):
-        raise TypeError("All operands must be Kets")
-    if not len({o.space for o in ops if o is not ZeroKet}) == 1:
-        raise UnequalSpaces(str(ops))
-    return ops, kwargs
-
-
-def check_op_ket_space(cls, ops, kwargs):
-    """Check that all operands are from the same Hilbert space."""
-    op, ket = ops
-    if not op.space <= ket.space:
-        raise SpaceTooLargeError(str(op.space) + " <!= " + str(ket.space))
-    return ops, kwargs
-
-
 def accept_bras(cls, ops, kwargs):
     """Accept operands that are all bras, and turn that into to bra of the
     operation applied to all corresponding kets"""
@@ -472,16 +483,16 @@ def basis_ket_zero_outside_hs(cls, ops, kwargs):
 
 
 def indexed_sum_over_const(cls, ops, kwargs):
-    """Execute an indexed sum over a term that does not depend on the summation
-    indices
+    r'''Execute an indexed sum over a term that does not depend on the
+    summation indices
 
     ..math::
 
         \sum_{j=1}{N} a = N a
-    """
+    '''
     term, *ranges = ops
     bound_symbols = set([r.index_symbol for r in ranges])
-    if len(all_symbols(term).intersection(bound_symbols)) == 0:
+    if len(term.free_symbols.intersection(bound_symbols)) == 0:
         n = 1
         for r in ranges:
             try:
@@ -498,13 +509,50 @@ def indexed_sum_over_kronecker(cls, ops, kwargs):
     from qnet.algebra.core.abstract_quantum_algebra import (
         ScalarTimesQuantumExpression)
     term, *ranges = ops
+    try:
+        correct_structure = (
+            isinstance(term, ScalarTimesQuantumExpression) and
+            (isinstance(term.coeff.val, SympyMul) or
+                isinstance(term.coeff.val, SympyKroneckerDelta)) and
+            len(ranges) >= 2)
+    except AttributeError:
+        assert not hasattr(term.coeff, 'val')  # not a ScalarValue
+        correct_structure = False
+    if correct_structure:
+        coeff = term.coeff.val
+        bound_symbols = set([r.index_symbol for r in ranges])
+        if isinstance(coeff, SympyKroneckerDelta):
+            factors = (coeff, )
+        else:
+            factors = coeff.args
+        for factor in factors:
+            if isinstance(factor, SympyKroneckerDelta):
+                i, j = factor.args
+                assert i in bound_symbols and j in bound_symbols
+                if i.primed > j.primed:
+                    # we prefer eliminating indices with more prime dashes
+                    i, j = j, i
+                term = term.substitute({factor: 1, j: i})
+                ranges = [r for r in ranges if r.index_symbol != j]
+        ops = (term,) + tuple(ranges)
+    return ops, kwargs
+
+
+def scalar_indexed_sum_over_kronecker(cls, ops, kwargs):
+    """Execute sums over KroneckerDelta factors"""
+    from qnet.algebra.core.scalar_algebra import ScalarValue
+    term, *ranges = ops
     correct_structure = (
-        isinstance(term, ScalarTimesQuantumExpression) and
-        isinstance(term.coeff, SympyMul) and
-        len(ranges) >= 2)
+        isinstance(term, ScalarValue) and
+        (isinstance(term.val, SympyMul) or
+            isinstance(term.val, SympyKroneckerDelta)))
     if correct_structure:
         bound_symbols = set([r.index_symbol for r in ranges])
-        for factor in term.coeff.args:
+        if isinstance(term.val, SympyKroneckerDelta):
+            factors = (term.val, )
+        else:
+            factors = term.val.args
+        for factor in factors:
             if isinstance(factor, SympyKroneckerDelta):
                 i, j = factor.args
                 assert i in bound_symbols and j in bound_symbols

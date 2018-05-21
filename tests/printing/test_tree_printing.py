@@ -69,10 +69,10 @@ def test_operator_tree():
     assert tree == dedent(r'''
     . OperatorPlus(2 * A^(q_1), ...)
       +- ScalarTimesOperator(2, A^(q_1))
-      |  +- 2
+      |  +- ScalarValue(2)
       |  +- OperatorSymbol(A, hs=H_q_1)
       +- ScalarTimesOperator(-sqrt(gamma), ...)
-         +- Mul(Integer(-1), Pow(Symbol('gamma', positive=True), Rational(1, 2)))
+         +- ScalarValue(-sqrt(gamma))
          +- OperatorPlus(B^(q_1), C^(q_2))
             +- OperatorSymbol(B, hs=H_q_1)
             +- OperatorSymbol(C, hs=H_q_2)
@@ -94,14 +94,14 @@ def test_ket_tree():
     tree = tree_str(KetBra.create(bell1, bell2))
     assert tree == dedent(r'''
     . ScalarTimesOperator(1/2, ...)
-      ├─ Rational(1, 2)
+      ├─ ScalarValue(1/2)
       └─ KetBra(..., ...)
          ├─ KetPlus(|e,g⟩^(q₁⊗q₂), ...)
          │  ├─ TensorKet(|e⟩^(q₁), |g⟩^(q₂))
          │  │  ├─ BasisKet(e, hs=ℌ_q₁)
          │  │  └─ BasisKet(g, hs=ℌ_q₂)
          │  └─ ScalarTimesKet(-exp(-ⅈ γ), |g,e⟩^(q₁⊗q₂))
-         │     ├─ Mul(Integer(-1), exp(Mul(Integer(-1), I, Symbol('gamma', positive=True))))
+         │     ├─ ScalarValue(-exp(-ⅈ γ))
          │     └─ TensorKet(|g⟩^(q₁), |e⟩^(q₂))
          │        ├─ BasisKet(g, hs=ℌ_q₁)
          │        └─ BasisKet(e, hs=ℌ_q₂)
@@ -110,7 +110,7 @@ def test_ket_tree():
             │  ├─ BasisKet(e, hs=ℌ_q₁)
             │  └─ BasisKet(e, hs=ℌ_q₂)
             └─ ScalarTimesKet(-1, |g,g⟩^(q₁⊗q₂))
-               ├─ -1
+               ├─ ScalarValue(-1)
                └─ TensorKet(|g⟩^(q₁), |g⟩^(q₂))
                   ├─ BasisKet(g, hs=ℌ_q₁)
                   └─ BasisKet(g, hs=ℌ_q₂)
@@ -130,10 +130,10 @@ def test_sop_operations():
         tree == dedent(r'''
         . SuperOperatorPlus(2 A^(q₁), ...)
           ├─ ScalarTimesSuperOperator(2, A^(q₁))
-          │  ├─ 2
+          │  ├─ ScalarValue(2)
           │  └─ SuperOperatorSymbol(A, hs=ℌ_q₁)
           └─ ScalarTimesSuperOperator(-√γ, B^(q₁) + C^(q₂))
-             ├─ Mul(Integer(-1), Pow(Symbol('gamma', positive=True), Rational(1, 2)))
+             ├─ ScalarValue(-√γ)
              └─ SuperOperatorPlus(B^(q₁), C^(q₂))
                 ├─ SuperOperatorSymbol(B, hs=ℌ_q₁)
                 └─ SuperOperatorSymbol(C, hs=ℌ_q₂)

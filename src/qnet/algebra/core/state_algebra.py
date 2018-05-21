@@ -10,21 +10,21 @@ from itertools import product as cartesian_product
 import sympy
 
 from .abstract_algebra import Expression, Operation
+from .scalar_algebra import is_scalar
 from .abstract_quantum_algebra import (
     ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
     QuantumPlus, QuantumTimes, QuantumAdjoint, QuantumIndexedSum,
-    ensure_local_space)
+    ensure_local_space, _series_expand_combine_prod)
 from .algebraic_properties import (
     accept_bras, assoc, assoc_indexed, basis_ket_zero_outside_hs,
-    check_kets_same_space, check_op_ket_space, filter_neutral, match_replace,
-    match_replace_binary, orderby, )
-from .exceptions import OverlappingSpaces, UnequalSpaces
+    filter_neutral, match_replace, match_replace_binary, orderby)
+from .exceptions import OverlappingSpaces, UnequalSpaces, SpaceTooLargeError
 from .hilbert_space_algebra import FullSpace, TrivialSpace
 from qnet.algebra.core.algebraic_properties import (
     indexed_sum_over_const,
     indexed_sum_over_kronecker)
 from .operator_algebra import Operator, OperatorPlus
-from .scalar_types import SCALAR_TYPES
+from .scalar_algebra import ScalarExpression
 from ...utils.indices import (
     FockIndex, IdxSym, IndexOverFockSpace, IndexOverRange, SymbolicLabelBase, )
 from ...utils.ordering import FullCommutativeHSOrder
@@ -84,15 +84,62 @@ class State(QuantumExpression, metaclass=ABCMeta):
             return self._adjoint()
 
     def __mul__(self, other):
+        # In the State algebra, any adjoint is a Bra
+        # instance at the top level. To enforce this, we need some custom
+        # __mul__ implementations, in particular for KetIndexedSums
+
+        def check_if_sum(*args):
+            return [isinstance(arg, KetIndexedSum) for arg in args]
+
         if isinstance(other, State):
-            if isinstance(other, KetIndexedSum):
-                return other.__rmul__(self)
             isket = (self.isket, other.isket)
-            if isket == (True, False):
-                return KetBra.create(self, other.ket)
+            if isket == (True, True):
+                # Ket * Ket
+                is_sum = check_if_sum(self, other)
+                if is_sum == [True, True]:
+                    return QuantumIndexedSum.__mul__(self, other)
+                elif is_sum == [True, False]:
+                    return QuantumIndexedSum.__mul__(self, other)
+                elif is_sum == [False, True]:
+                    return QuantumIndexedSum.__rmul__(other, self)
+                elif is_sum == [False, False]:
+                    return TensorKet.create(self, other)
+            elif isket == (True, False):
+                # Ket * Bra
+                is_sum = check_if_sum(self, other.ket)
+                if is_sum == [True, True]:
+                    other_ket = other.ket.make_disjunct_indices(self)
+                    new_term = self.term * Bra(other_ket.term)
+                    new_ranges = self.ranges + other_ket.ranges
+                    return new_term.__class__._indexed_sum_cls.create(
+                        new_term, *new_ranges)
+                elif is_sum == [True, False]:
+                    return QuantumIndexedSum.__mul__(self, other)
+                elif is_sum == [False, True]:
+                    new_term = self * Bra(other.ket.term)
+                    return new_term.__class__._indexed_sum_cls.create(
+                        new_term, *other.ket.ranges)
+                elif is_sum == [False, False]:
+                    return KetBra.create(self, other.ket)
             elif isket == (False, True):
-                return BraKet.create(self.ket, other)
+                # Bra * Ket
+                is_sum = check_if_sum(self.ket, other)
+                if is_sum == [True, True]:
+                    other = other.make_disjunct_indices(self.ket)
+                    new_term = Bra(self.ket.term) * other.term
+                    new_ranges = self.ket.ranges + other.ranges
+                    return new_term.__class__._indexed_sum_cls.create(
+                        new_term, *new_ranges)
+                elif is_sum == [True, False]:
+                    new_term = Bra(self.ket.term) * other
+                    return new_term.__class__._indexed_sum_cls.create(
+                        new_term, *self.ket.ranges)
+                elif is_sum == [False, True]:
+                    return QuantumIndexedSum.__rmul__(other, self)
+                elif is_sum == [False, False]:
+                    return BraKet.create(self.ket, other)
             elif isket == (False, False):
+                # Bra * Bra
                 return Bra.create(self.ket * other.ket)
         elif isinstance(other, Operator):
             if self.isbra:
@@ -105,7 +152,7 @@ class State(QuantumExpression, metaclass=ABCMeta):
     def __rmul__(self, other):
         if self.isket and isinstance(other, Operator):
             return OperatorTimesKet.create(other, self)
-        elif self.isbra and isinstance(other, SCALAR_TYPES):
+        elif self.isbra and is_scalar(other):
             return Bra(other.conjugate() * self.ket)
         try:
             return super().__rmul__(other)
@@ -156,12 +203,6 @@ class ZeroKet(State, Expression, metaclass=Singleton):
     def args(self):
         return tuple()
 
-    def __eq__(self, other):
-        return self is other or other == 0
-
-    def all_symbols(self):
-        return set([])
-
 
 @singleton_object
 class TrivialKet(State, Expression, metaclass=Singleton):
@@ -181,12 +222,6 @@ class TrivialKet(State, Expression, metaclass=Singleton):
     @property
     def args(self):
         return tuple()
-
-    def __eq__(self, other):
-        return self is other or other == 1
-
-    def all_symbols(self):
-        return set([])
 
 
 class BasisKet(LocalKet, KetSymbol):
@@ -326,8 +361,9 @@ class BasisKet(LocalKet, KetSymbol):
 class CoherentStateKet(LocalKet):
     """Local coherent state, labeled by a scalar amplitude.
 
-    :param LocalSpace hs: The local Hilbert space degree of freedom.
-    :param SCALAR_TYPES ampl: The coherent displacement amplitude.
+    Args:
+        hs (LocalSpace): The local Hilbert space degree of freedom.
+        ampl (Scalar): The coherent displacement amplitude.
     """
 
     _rx_label = re.compile('^.*$')
@@ -339,7 +375,6 @@ class CoherentStateKet(LocalKet):
     @property
     def args(self):
         return (self._ampl, )
-
 
     @property
     def ampl(self):
@@ -370,7 +405,7 @@ class CoherentStateKet(LocalKet):
 
 class KetPlus(State, QuantumPlus):
     """A sum of states."""
-    neutral_element = ZeroKet
+    _neutral_element = ZeroKet
     _binary_rules = OrderedDict()
     _simplifications = [
         accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
@@ -378,10 +413,7 @@ class KetPlus(State, QuantumPlus):
     order_key = FullCommutativeHSOrder
 
     def __init__(self, *operands):
-        if not all([o.isket for o in operands]):
-            raise TypeError("All operands must be Kets")
-        if not len({o.space for o in operands if o is not ZeroKet}) == 1:
-            raise UnequalSpaces(str(operands))
+        _check_kets(*operands, same_space=True)
         super().__init__(*operands)
 
 
@@ -389,18 +421,14 @@ class TensorKet(State, QuantumTimes):
     """A tensor product of kets each belonging to different degrees of freedom.
     """
     _binary_rules = OrderedDict()
-    neutral_element = TrivialKet
+    _neutral_element = TrivialKet
     _simplifications = [
         accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = FullCommutativeHSOrder
 
     def __init__(self, *operands):
-        spc = TrivialSpace
-        for o in operands:
-            if o.space & spc > TrivialSpace:
-                raise OverlappingSpaces(str(operands))
-            spc *= o.space
+        _check_kets(*operands, disjunct_space=True)
         super().__init__(*operands)
 
     @classmethod
@@ -414,26 +442,34 @@ class ScalarTimesKet(State, ScalarTimesQuantumExpression):
     """Multiply a Ket by a scalar coefficient.
 
     Args:
-        coeff (SCALAR_TYPES): coefficient
+        coeff (Scalar): coefficient
         term (State): the ket that is multiplied
     """
     _rules = OrderedDict()
     _simplifications = [match_replace, ]
 
+    @classmethod
+    def create(self, coeff, term):
+        if term.isbra:
+            scalar_times_ket = coeff.conjugate() * term.ket
+            return Bra.create(scalar_times_ket)
+        return super().create(coeff, term)
+
     def __init__(self, coeff, term):
-        if not term.isket:
-            raise TypeError("term must be a ket")
+        _check_kets(term)
         super().__init__(coeff, term)
 
 
 class OperatorTimesKet(State, Operation):
     """Product of an operator and a state."""
     _rules = OrderedDict()
-    _simplifications = [match_replace, check_op_ket_space]
+    _simplifications = [match_replace]
 
     def __init__(self, operator, ket):
-        if ket.isbra:
-            raise TypeError("ket cannot be a Bra instance")
+        _check_kets(ket)
+        if not operator.space <= ket.space:
+            raise SpaceTooLargeError(
+                str(operator.space) + " <!= " + str(ket.space))
         super().__init__(operator, ket)
 
     @property
@@ -517,12 +553,12 @@ class Bra(State, QuantumAdjoint):
         return NotImplemented
 
     def __truediv__(self, other):
-        if isinstance(other, SCALAR_TYPES):
+        if is_scalar(other):
             return Bra.create(self.ket/other.conjugate())
         return NotImplemented
 
 
-class BraKet(Operator, Operation):
+class BraKet(ScalarExpression, Operation):
     r"""The symbolic inner product between two states, represented as Bra and
     Ket
 
@@ -538,20 +574,13 @@ class BraKet(Operator, Operation):
         bra (State): The anti-linear state argument. Note that this is *not* a
             :class:`Bra` instance.
         ket (State): The linear state argument.
-
-    Note:
-        :class:`Braket` is an :class:`Operator` in the
-        :class:`~qnet.algebra.hilbert_space_algebra.TrivialSpace`, that is,
-        ultimately a scalar. However, ``BraKet.create`` may return scalars
-        directly, which can be used in place of operators in most expression,
-        owing to the :func:`~qnet.algebra.operator_algebra.scalars_to_op`
-        simplification rule.
     """
     _rules = OrderedDict()
     _space = TrivialSpace
-    _simplifications = [check_kets_same_space, match_replace]
+    _simplifications = [match_replace]
 
     def __init__(self, bra, ket):
+        _check_kets(bra, ket, same_space=True)
         super().__init__(bra, ket)
 
     @property
@@ -561,10 +590,6 @@ class BraKet(Operator, Operation):
     @property
     def bra(self):
         return Bra(self.operands[0])
-
-    @property
-    def space(self):
-        return TrivialSpace
 
     def _adjoint(self):
         return BraKet.create(*reversed(self.operands))
@@ -580,16 +605,16 @@ class BraKet(Operator, Operation):
     def _series_expand(self, param, about, order):
         be = self.bra.series_expand(param, about, order)
         ke = self.ket.series_expand(param, about, order)
-        return tuple(be[k] * ke[n - k]
-                     for n in range(order + 1) for k in range(n + 1))
+        return _series_expand_combine_prod(be, ke, order)
 
 
 class KetBra(Operator, Operation):
     """A symbolic operator formed by the outer product of two states"""
     _rules = OrderedDict()
-    _simplifications = [check_kets_same_space, match_replace]
+    _simplifications = [match_replace]
 
     def __init__(self, ket, bra):
+        _check_kets(ket, bra, same_space=True)
         super().__init__(ket, bra)
 
     @property
@@ -624,13 +649,40 @@ class KetBra(Operator, Operation):
                      for n in range(order + 1) for k in range(n + 1))
 
 
-class KetIndexedSum(QuantumIndexedSum, State):
+class KetIndexedSum(State, QuantumIndexedSum):
     """Indexed sum over Kets"""
+    # Must inherit from State first, so that proper __mul__ is used
 
     _rules = OrderedDict()
     _simplifications = [
-        assoc_indexed, indexed_sum_over_const, indexed_sum_over_kronecker,
+        assoc_indexed, indexed_sum_over_kronecker, indexed_sum_over_const,
         match_replace, ]
+
+    @classmethod
+    def create(cls, term, *ranges):
+        if term.isbra:
+            return Bra.create(KetIndexedSum.create(term.ket, *ranges))
+        else:
+            return super().create(term, *ranges)
+
+    def __init__(self, term, *ranges):
+        _check_kets(term)
+        super().__init__(term, *ranges)
+
+
+def _check_kets(*ops, same_space=False, disjunct_space=False):
+    """Check that all operands are from the same Hilbert space."""
+    if not all([(isinstance(o, State) and o.isket) for o in ops]):
+        raise TypeError("All operands must be Kets")
+    if same_space:
+        if not len({o.space for o in ops if o is not ZeroKet}) == 1:
+            raise UnequalSpaces(str(ops))
+    if disjunct_space:
+        spc = TrivialSpace
+        for o in ops:
+            if o.space & spc > TrivialSpace:
+                raise OverlappingSpaces(str(ops))
+            spc *= o.space
 
 
 State._zero = ZeroKet

@@ -3,7 +3,8 @@ from collections import OrderedDict
 from sympy import Symbol
 import pytest
 
-from qnet.algebra.core.scalar_types import SCALAR_TYPES
+from qnet.algebra.core.scalar_algebra import Scalar
+from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, ScalarTimesOperator, OperatorTimes, Operator,
         LocalOperator, Create)
@@ -204,8 +205,8 @@ concat_expr2 = Concatenation(SeriesProduct(perm1, C1, C2),
 expr_fb = Feedback(C1, out_port=1, in_port=2)
 
 # test patterns and wildcards
-wc_a_int_2 = wc('a', head=int, conditions=[lambda i: i == 2, ])
-wc_a_int_3 = wc('a', head=int, conditions=[lambda i: i == 3, ])
+wc_a_int_2 = wc('a', head=(ScalarValue, int), conditions=[lambda i: i == 2, ])
+wc_a_int_3 = wc('a', head=(ScalarValue, int), conditions=[lambda i: i == 3, ])
 wc_a_int = wc('a', head=int)
 wc_name_str = wc('name', head=str)
 wc_hs = wc('space', head=HilbertSpace)
@@ -245,46 +246,49 @@ pattern_fb = wc('B', head=Feedback,
                 kwargs={'out_port': pattern(int), 'in_port': pattern(int)},
                 )
 
+SCALAR_TYPES = Scalar._val_types
 
 PATTERNS = [
-    # (pattern,             expr,      matched?,  wc_dict)
-    (wc(),                  1,             True,  {}),
-    (wc('i__', head=int),   1,             True,  {'i': [1, ]}),
-    (wc(),                  two_t,         True,  {}),
-    (wc(),                  two_O,         True,  {}),
-    (wc('a'),               two_t,         True,  {'a': two_t}),
-    (wc('a'),               two_O,         True,  {'a': two_O}),
-    (pattern(SCALAR_TYPES), two_t,         True,  {}),
-    (pattern(SCALAR_TYPES), two_O,         False, {}),
-    (pattern_two_O,         two_O,         True,  {'a': 2, 'name': 'O',
-                                                   'space': FullSpace}),
-    (pattern_two_O_head,    proto_two_O,   True,  {'a': 2, 'name': 'O',
-                                                   'space': FullSpace}),
-    (pattern_two_O_expr,    two_O,         True,  {'a': 2}),
-    (pattern_two_O,         two_t,         False, {}),
-    (pattern_kwargs,        proto_kwargs,  True,  {'i1': 1, 'i2': 2,
-                                                   'a': '3', 'b': 4}),
-    (pattern_kw_only,       proto_kw_only, True,  {}),
-    (pattern_ints,          proto_ints2,   False, {}),
-    (pattern_ints,          proto_ints3,   True,  {'i': []}),
-    (pattern_ints,          proto_ints4,   True,  {'i': [4, ]}),
-    (pattern_ints,          proto_ints5,   True,  {'i': [4, 5]}),
-    (pattern_ints5,         proto_ints5,   True,  {}),
-    (pattern_concat,        concat_expr,   True,  {'A': [C1, C2], 'B': perm1,
-                                                   'C': [C3, C4], 'D': perm2}),
-    (pattern_concat,        concat_expr2,  False, {}),
-    (pattern_concat2,       concat_expr,   False, {}),
-    (pattern_concat2,       concat_expr2,  True,  {'A': [C1, C2], 'B': perm1,
-                                                   'C': [C3, C4], 'D': perm2}),
-    (pattern_ApA,           C1+C1,         True,  {'A': C1}),
-    (pattern_fb,            expr_fb,       True,  {'A': C1, 'B': expr_fb}),
+#   (ind pattern,               expr,      matched?,  wc_dict)
+    (1,  wc(),                  1,             True,  {}),
+    (2,  wc('i__', head=int),   1,             True,  {'i': [1, ]}),
+    (3,  wc(),                  two_t,         True,  {}),
+    (4,  wc(),                  two_O,         True,  {}),
+    (5,  wc('a'),               two_t,         True,  {'a': two_t}),
+    (6,  wc('a'),               two_O,         True,  {'a': two_O}),
+    (7,  pattern(SCALAR_TYPES), two_t,         True,  {}),
+    (8,  pattern(SCALAR_TYPES), two_O,         False, {}),
+    (9,  pattern_two_O,         two_O,         True,  {'a': 2, 'name': 'O',
+                                                       'space': FullSpace}),
+    (10, pattern_two_O_head,    proto_two_O,   True,  {'a': 2, 'name': 'O',
+                                                       'space': FullSpace}),
+    (11, pattern_two_O_expr,    two_O,         True,  {'a': 2}),
+    (12, pattern_two_O,         two_t,         False, {}),
+    (13, pattern_kwargs,        proto_kwargs,  True,  {'i1': 1, 'i2': 2,
+                                                       'a': '3', 'b': 4}),
+    (14, pattern_kw_only,       proto_kw_only, True,  {}),
+    (15, pattern_ints,          proto_ints2,   False, {}),
+    (16, pattern_ints,          proto_ints3,   True,  {'i': []}),
+    (17, pattern_ints,          proto_ints4,   True,  {'i': [4, ]}),
+    (18, pattern_ints,          proto_ints5,   True,  {'i': [4, 5]}),
+    (19, pattern_ints5,         proto_ints5,   True,  {}),
+    (20, pattern_concat,        concat_expr,   True,  {
+                        'A': [C1, C2], 'B': perm1, 'C': [C3, C4], 'D': perm2}),
+    (21, pattern_concat,        concat_expr2,  False, {}),
+    (22, pattern_concat2,       concat_expr,   False, {}),
+    (23, pattern_concat2,       concat_expr2,  True,  {
+                        'A': [C1, C2], 'B': perm1, 'C': [C3, C4], 'D': perm2}),
+    (24, pattern_ApA,           C1+C1,         True,  {'A': C1}),
+    (25, pattern_fb,            expr_fb,       True,  {'A': C1, 'B': expr_fb}),
 ]
 
 
-@pytest.mark.parametrize('pat, expr, matched, wc_dict', PATTERNS)
-def test_match(pat, expr, matched, wc_dict):
+@pytest.mark.parametrize('ind, pat, expr, matched, wc_dict', PATTERNS)
+def test_match(ind, pat, expr, matched, wc_dict):
     """Test that patterns match expected expressions and produce the correct
     match dict """
+    # `ind` is just so that we can track *which* rule fails, is there is a
+    # failure
     print("%s.match(%s)" % (repr(pat), repr(expr)))
     match = pat.match(expr)
     assert bool(match) == matched

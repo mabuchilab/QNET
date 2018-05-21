@@ -29,9 +29,12 @@ def test_identity_singleton():
 
 
 def test_identity_comparisons():
-    assert IdentityOperator == 1
-    assert IdentityOperator == np_float(1.0)
-    assert IdentityOperator == sympify(1)
+    """IdentityOperator only comparse to itself"""
+    assert IdentityOperator is IdentityOperator
+    assert IdentityOperator == IdentityOperator
+    assert IdentityOperator != 1
+    assert IdentityOperator != np_float(1.0)
+    assert IdentityOperator != sympify(1)
 
     assert IdentityOperator != np_int(-3)
     assert IdentityOperator != 0.0
@@ -39,9 +42,13 @@ def test_identity_comparisons():
 
 
 def test_zero_comparisons():
-    assert ZeroOperator == np_int(0)
-    assert ZeroOperator == 0.0
-    assert ZeroOperator == sympify(0.0)
+    """ZeroOperator only comparse to itself"""
+    assert ZeroOperator is ZeroOperator
+    assert ZeroOperator == ZeroOperator
+    assert ZeroOperator.is_zero
+    assert ZeroOperator != np_int(0)
+    assert ZeroOperator != 0.0
+    assert ZeroOperator != sympify(0.0)
 
     assert ZeroOperator != -3
     assert ZeroOperator != np_float(1.0)
@@ -650,31 +657,52 @@ class TestOperatorTrace(unittest.TestCase):
         assert lhs == rhs
 
 
-class TestOperatorMatrices(unittest.TestCase):
-    def testConstruction(self):
-        h1, h2, h3 = LocalSpace("h1"), LocalSpace("h2"), LocalSpace("h3")
-        a, b, c = Destroy(hs=h1), Destroy(hs=h2), Destroy(hs=h3)
-        assert np_conjugate(a) == a.dag()
+def test_opmatrix_construction():
+    h1, h2, h3 = LocalSpace("h1"), LocalSpace("h2"), LocalSpace("h3")
+    a, b, c = Destroy(hs=h1), Destroy(hs=h2), Destroy(hs=h3)
+    assert np_conjugate(a) == a.dag()
 
-        M = Matrix([[a,b],[c,a]])
-#        self.assertEqual(M.matrix, np_array([[a,b],[b,a]]))
-        assert M == Matrix(np_array([[a,b],[c,a]]))
-        assert M.T == Matrix(np_array([[a,c],[b,a]]))
-        assert M.conjugate() == Matrix(np_array([[a.dag(),b.dag()],[c.dag(),a.dag()]]))
-        assert M.H == Matrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]]))
-        assert M.H == Matrix(np_array([[a.dag(),c.dag()],[b.dag(),a.dag()]]))
+    M = Matrix([[a, b], [c, a]])
+    assert M == Matrix(np_array([[a, b], [c, a]]))
+    assert M.T == Matrix(np_array([[a, c], [b, a]]))
+    assert (
+        M.conjugate() ==
+        Matrix(np_array([[a.dag(), b.dag()], [c.dag(), a.dag()]])))
+    assert M.H == Matrix(np_array([[a.dag(), c.dag()], [b.dag(), a.dag()]]))
+    assert M.H == Matrix(np_array([[a.dag(), c.dag()], [b.dag(), a.dag()]]))
 
-    def testMathOperations(self):
-        M = Matrix([[Create(hs="1"), 0],[0, Destroy(hs="1")]])
-        N = Matrix([[Destroy(hs="1"), Create(hs="2")],[0, Destroy(hs="1")]])
-        assert M+N == Matrix([[Create(hs="1")+Destroy(hs="1"), Create(hs="2")],[0, 2*Destroy(hs="1")]])
-        assert M*N == Matrix([[Create(hs="1")*Destroy(hs="1"), Create(hs="1")*Create(hs="2")],[0, Destroy(hs="1")*Destroy(hs="1")]])
-        assert IdentityOperator * M == M
-        assert 1 * M == M
-        assert Create(hs="1") * identity_matrix(2) == Matrix([[Create(hs="1"),0],[0,Create(hs="1")]])
 
-    def testElementExpand(self):
-        assert Matrix([[(Create(hs=1) + Create(hs=2)) * Create(hs=3)]]).expand() == Matrix([[Create(hs=1)*Create(hs=3) + Create(hs=2)*Create(hs=3)]])
+def test_opmatrix_math_operations():
+    M = Matrix([[Create(hs="1"), 0], [0, Destroy(hs="1")]])
+    N = Matrix([[Destroy(hs="1"), Create(hs="2")], [0, Destroy(hs="1")]])
+
+    sum = M + N
+    assert isinstance(sum, Matrix)
+    assert sum.shape == (2, 2)
+    assert sum[0, 0] == Create(hs="1") + Destroy(hs="1")
+    assert sum[0, 1] == Create(hs="2")
+    assert sum[1, 0] == 0
+    assert sum[1, 1] == 2 * Destroy(hs="1")
+
+    assert (
+        M * N == Matrix([
+            [Create(hs="1")*Destroy(hs="1"), Create(hs="1")*Create(hs="2")],
+            [ZeroOperator, Destroy(hs="1")*Destroy(hs="1")]]))
+    assert (
+        IdentityOperator * M == Matrix([
+            [Create(hs="1"), ZeroOperator],
+            [ZeroOperator, Destroy(hs="1")]]))
+    assert 1 * M == M
+    assert (
+        Create(hs="1") * identity_matrix(2) == Matrix([
+            [Create(hs="1"), ZeroOperator],
+            [ZeroOperator, Create(hs="1")]]))
+
+
+def test_opmatrix_element_expand():
+    assert (
+        Matrix([[(Create(hs=1) + Create(hs=2)) * Create(hs=3)]]).expand() ==
+        Matrix([[Create(hs=1)*Create(hs=3) + Create(hs=2)*Create(hs=3)]]))
 
 
 def test_local_operator_init():

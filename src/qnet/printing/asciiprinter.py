@@ -55,7 +55,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         strings"""
         try:
             name, subscript = identifier.split("_", 1)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, AttributeError):
             name = identifier
             subscript = ''
         return self._render_str(name), self._render_str(subscript)
@@ -174,7 +174,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
         `doit` renderer"""
         needs_parenths = (
             (precedence(expr) < level) or
-            ((not strict) and precedence(expr) <= level))
+            (strict and precedence(expr) == level))
         if needs_parenths:
             return (
                 self._parenth_left + self.doprint(expr, *args, **kwargs) +
@@ -298,37 +298,14 @@ class QnetAsciiPrinter(QnetBasePrinter):
     def _print_ZeroOperator(self, expr):
         return "0"
 
-    def _print_OperatorPlus(self, expr, adjoint=False, superop=False):
-        prec = precedence(expr)
-        l = []
-        kwargs = {}
-        if adjoint:
-            kwargs['adjoint'] = adjoint
-        if superop:
-            kwargs['superop'] = superop
-        for term in expr.args:
-            t = self.doprint(term, **kwargs)
-            if t.startswith('-'):
-                sign = "-"
-                t = t[1:].strip()
-            else:
-                sign = "+"
-            if precedence(term) < prec:
-                l.extend([sign, self._parenth_left + t + self._parenth_right])
-            else:
-                l.extend([sign, t])
-        try:
-            sign = l.pop(0)
-            if sign == '+':
-                sign = ""
-        except IndexError:
-            sign = ""
-        return sign + ' '.join(l)
+    def _print_ScalarValue(self, expr, **kwargs):
+        return self.doprint(expr.val, **kwargs)
 
-    def _print_OperatorTimes(self, expr, **kwargs):
-        prec = precedence(expr)
-        return self._spaced_product_sym.join(
-            [self.parenthesize(op, prec, **kwargs) for op in expr.operands])
+    def _print_Zero(self, expr, **kwargs):
+        return "0"
+
+    def _print_One(self, expr, **kwargs):
+        return "1"
 
     def _print_ScalarTimesQuantumExpression(self, expr, **kwargs):
         prec = PRECEDENCE['Mul']
@@ -358,6 +335,38 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 coeff_str = (
                     self._parenth_left + coeff_str + self._parenth_right)
             return coeff_str + self._spaced_product_sym + term_str.strip()
+
+    def _print_QuantumPlus(self, expr, adjoint=False, superop=False):
+        prec = precedence(expr)
+        l = []
+        kwargs = {}
+        if adjoint:
+            kwargs['adjoint'] = adjoint
+        if superop:
+            kwargs['superop'] = superop
+        for term in expr.args:
+            t = self.doprint(term, **kwargs)
+            if t.startswith('-'):
+                sign = "-"
+                t = t[1:].strip()
+            else:
+                sign = "+"
+            if precedence(term) < prec:
+                l.extend([sign, self._parenth_left + t + self._parenth_right])
+            else:
+                l.extend([sign, t])
+        try:
+            sign = l.pop(0)
+            if sign == '+':
+                sign = ""
+        except IndexError:
+            sign = ""
+        return sign + ' '.join(l)
+
+    def _print_QuantumTimes(self, expr, **kwargs):
+        prec = precedence(expr)
+        return self._spaced_product_sym.join(
+            [self.parenthesize(op, prec, **kwargs) for op in expr.operands])
 
     def _print_Commutator(self, expr):
         return "[" + self.doprint(expr.A) + ", " + self.doprint(expr.B) + "]"
@@ -430,10 +439,6 @@ class QnetAsciiPrinter(QnetBasePrinter):
         label = self._render_state_label('alpha=') + self.doprint(expr._ampl)
         space = self._render_hs_label(expr.space)
         return fmt.format(label=label, space=space)
-
-    def _print_KetPlus(self, expr, adjoint=False):
-        # this behaves exactly like Operators
-        return self._print_OperatorPlus(expr, adjoint=adjoint)
 
     def _print_TensorKet(self, expr, adjoint=False):
         if all(self._isinstance(o, 'BasisKet') for o in expr.operands):
@@ -645,13 +650,13 @@ class QnetAsciiPrinter(QnetBasePrinter):
         return "0"
 
     def _print_SuperOperatorPlus(self, expr, adjoint=False, superop=True):
-        return self._print_OperatorPlus(expr, adjoint=adjoint, superop=True)
+        return self._print_QuantumPlus(expr, adjoint=adjoint, superop=True)
 
     def _print_SuperOperatorTimes(self, expr, adjoint=False, superop=True):
         kwargs = {}
         if adjoint:
             kwargs['adjoint'] = True
-        return self._print_OperatorTimes(expr, superop=True, **kwargs)
+        return self._print_QuantumTimes(expr, superop=True, **kwargs)
 
     def _print_SuperAdjoint(self, expr, adjoint=False, superop=True):
         o = expr.operand

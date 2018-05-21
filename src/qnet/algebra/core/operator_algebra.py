@@ -12,7 +12,6 @@ from itertools import product as cartesian_product
 
 from sympy import Expr as SympyExpr, I, sqrt, sympify
 
-from .abstract_algebra import _scalar_free_symbols
 from .abstract_quantum_algebra import (
     ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
     QuantumOperation, QuantumPlus, QuantumTimes, SingleQuantumOperation,
@@ -25,7 +24,8 @@ from .algebraic_properties import (
 from .exceptions import CannotSimplify, BasisNotSetError
 from .hilbert_space_algebra import (
     HilbertSpace, LocalSpace, ProductSpace, TrivialSpace, )
-from .scalar_types import SCALAR_TYPES
+from .scalar_algebra import Scalar, ScalarValue, is_scalar
+from .scalar_algebra import is_scalar
 from ..pattern_matching import pattern, pattern_head, wc
 from ...utils.indices import SymbolicLabelBase
 from ...utils.ordering import FullCommutativeHSOrder
@@ -45,8 +45,8 @@ __all__ = [
     'Squeeze', 'Jmjmcoeff', 'Jpjmcoeff', 'Jzjmcoeff', 'LocalProjector', 'X',
     'Y', 'Z', 'adjoint', 'create_operator_pm_cc', 'decompose_space',
     'expand_operator_pm_cc', 'factor_coeff', 'factor_for_trace', 'get_coeffs',
-    'simplify_scalar', 'space', 'II', 'IdentityOperator', 'ZeroOperator',
-    'Commutator', 'OperatorIndexedSum', 'tr']
+    'II', 'IdentityOperator', 'ZeroOperator', 'Commutator',
+    'OperatorIndexedSum', 'tr']
 
 __private__ = []  # anything not in __all__ must be in __private__
 
@@ -114,12 +114,14 @@ class Operator(QuantumExpression, metaclass=ABCMeta):
                     else:
                         terms.append(op_ij * ketbra)
         if hermitian:
-            res = OperatorPlus(*diag_terms)
+            res = OperatorPlus.create(*diag_terms)
             if len(terms) > 0:
-                res = res + OperatorPlusMinusCC(OperatorPlus(*terms))
+                res = res + OperatorPlusMinusCC(OperatorPlus.create(*terms))
             return res
         else:
-            return OperatorPlus(*diag_terms) + OperatorPlus(*terms)
+            return (
+                OperatorPlus.create(*diag_terms) +
+                OperatorPlus.create(*terms))
 
 
 class LocalOperator(Operator, metaclass=ABCMeta):
@@ -142,9 +144,12 @@ class LocalOperator(Operator, metaclass=ABCMeta):
     _identifier = None  # must be overridden by subclasses!
     _dagger = False  # do representations include a dagger?
     _nargs = 0  # number of arguments
+    _scalar_args = True  # convert args to Scalar?
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
     def __init__(self, *args, hs):
+        if self._scalar_args:
+            args = [ScalarValue.create(arg) for arg in args]
         hs = ensure_local_space(hs)
         self._hs = hs
         if self._identifier is None:
@@ -197,9 +202,12 @@ class LocalOperator(Operator, metaclass=ABCMeta):
                 % (identifier, self._rx_identifier.pattern))
         return identifier
 
-    def all_symbols(self):
-        """Set of symbols used in the operator"""
-        return set()
+    def _simplify_scalar(self, func):
+        if self._scalar_args:
+            args = [arg.simplify_scalar(func=func) for arg in self.args]
+            return self.create(*args, hs=self.space)
+        else:
+            return super()._simplify_scalar(func=func)
 
 
 ###############################################################################
@@ -233,14 +241,6 @@ class IdentityOperator(Operator, metaclass=Singleton):
     def _pseudo_inverse(self):
         return self
 
-    def __eq__(self, other):
-        if isinstance(other, SCALAR_TYPES):
-            return other == 1
-        return self is other
-
-    def all_symbols(self):
-        return set(())
-
 
 II = IdentityOperator
 
@@ -265,14 +265,6 @@ class ZeroOperator(Operator, metaclass=Singleton):
 
     def _pseudo_inverse(self):
         return self
-
-    def __eq__(self, other):
-        if isinstance(other, SCALAR_TYPES):
-            return other == 0
-        return self is other
-
-    def all_symbols(self):
-        return set(())
 
 
 class Destroy(LocalOperator):
@@ -498,12 +490,6 @@ class Phase(LocalOperator):
     def _pseudo_inverse(self):
         return Phase.create(-self.phi, hs=self.space)
 
-    def _simplify_scalar(self):
-        return Phase.create(simplify_scalar(self.phi), hs=self.space)
-
-    def all_symbols(self):
-        return _scalar_free_symbols(self.space)
-
 
 class Displace(LocalOperator):
     r"""Unitary coherent displacement operator
@@ -548,12 +534,6 @@ class Displace(LocalOperator):
 
     _pseudo_inverse = _adjoint
 
-    def _simplify_scalar(self):
-        return Displace.create(simplify_scalar(self.alpha), hs=self.space)
-
-    def all_symbols(self):
-        return _scalar_free_symbols(self.space)
-
 
 class Squeeze(LocalOperator):
     r"""Unitary Squeezing operator
@@ -596,14 +576,6 @@ class Squeeze(LocalOperator):
 
     _pseudo_inverse = _adjoint
 
-    def _simplify_scalar(self):
-        return Squeeze(simplify_scalar(self.eta), hs=self.space)
-
-    def all_symbols(self):
-        r'''List of arguments of the operator, containing the squeezing
-        parameter $\eta$ as the only element'''
-        return _scalar_free_symbols(self.space)
-
 
 class LocalSigma(LocalOperator):
     r'''A local level flip operator operator acting on a particular
@@ -642,14 +614,13 @@ class LocalSigma(LocalOperator):
     _identifier = "sigma"
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
     _nargs = 2
+    _scalar_args = False  # args are labels, not scalar coefficients
     _rules = OrderedDict()
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
     def __init__(self, j, k, *, hs):
         if isinstance(hs, (str, int)):
             hs = LocalSpace(hs)
-        if not isinstance(hs, LocalSpace):
-            raise TypeError("hs must be a LocalSpace")
         for ind_jk in range(2):
             jk = j if ind_jk == 0 else k
             hs._check_basis_label_type(jk)
@@ -768,7 +739,7 @@ class LocalProjector(LocalSigma):
 class OperatorPlus(QuantumPlus, Operator):
     """A sum of Operators"""
 
-    neutral_element = ZeroOperator
+    _neutral_element = ZeroOperator
     _binary_rules = OrderedDict()
     _simplifications = [
         assoc, scalars_to_op, orderby, filter_neutral,
@@ -779,7 +750,7 @@ class OperatorTimes(QuantumTimes, Operator):
     """A product of Operators that serves both as a product within a Hilbert
     space as well as a tensor product."""
 
-    neutral_element = IdentityOperator
+    _neutral_element = IdentityOperator
     _binary_rules = OrderedDict()
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
@@ -805,8 +776,7 @@ class ScalarTimesOperator(Operator, ScalarTimesQuantumExpression):
 
     def __eq__(self, other):
         # TODO: review, and add this to ScalarTimesQuantumExpression
-        if (self.term is IdentityOperator and
-            isinstance(other, SCALAR_TYPES)):
+        if self.term is IdentityOperator and is_scalar(other):
             return self.coeff == other
         return super().__eq__(other)
 
@@ -933,9 +903,6 @@ class OperatorTrace(SingleQuantumOperation, Operator):
         return tuple(OperatorTrace.create(opet, over_space=self._over_space)
                      for opet in ope)
 
-    def all_symbols(self):
-        return self.operand.all_symbols()
-
     def _diff(self, sym):
         s = self._over_space
         o = self.operand
@@ -1051,8 +1018,8 @@ class OperatorIndexedSum(QuantumIndexedSum, Operator):
 
     _rules = OrderedDict()
     _simplifications = [
-        assoc_indexed, scalars_to_op, indexed_sum_over_const,
-        indexed_sum_over_kronecker, match_replace, ]
+        assoc_indexed, scalars_to_op, indexed_sum_over_kronecker,
+        indexed_sum_over_const, match_replace, ]
 
 
 ###############################################################################
@@ -1224,41 +1191,11 @@ def get_coeffs(expr, expand=False, epsilon=0.):
     return ret
 
 
-def space(obj):
-    """Gives the associated HilbertSpace with an object. Also works for
-    :obj:`SCALAR_TYPES` (returning :class:`~.TrivialSpace`)
-    """
-    try:
-        return obj.space
-    except AttributeError:
-        if isinstance(obj, SCALAR_TYPES):
-            return TrivialSpace
-        raise ValueError(str(obj))
-
-
-def simplify_scalar(s):
-    """Simplify all occurences of scalar expressions in s
-
-    Args:
-        s (Expression or sympy.core.basic.Basic): The expression to simplify.
-
-    Returns:
-        A simplified expression of the same type as `s`.
-    """
-    # TODO: remove if not used
-    try:
-        return s.simplify_scalar()
-    except AttributeError:
-        pass
-    if isinstance(s, SympyExpr):
-        return s.simplify()
-    return s
-
-
 def _coeff_term(op):
+    # TODO: remove
     if isinstance(op, ScalarTimesOperator):
         return op.coeff, op.term
-    elif isinstance(op, SCALAR_TYPES):
+    elif is_scalar(op):
         if op == 0:
             return 0, ZeroOperator
         else:
@@ -1422,8 +1359,8 @@ def create_operator_pm_cc():
     """
     A = wc("A", head=Operator)
     B = wc("B", head=Operator)
-    c = wc("c", head=SCALAR_TYPES)
-    d = wc("d", head=SCALAR_TYPES)
+    c = wc("c", head=Scalar)
+    d = wc("d", head=Scalar)
     return [
         ('pmCC1', (
             pattern_head(A, B),

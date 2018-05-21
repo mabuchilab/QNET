@@ -21,7 +21,7 @@ from .hilbert_space_algebra import TrivialSpace
 from .matrix_algebra import Matrix
 from .operator_algebra import (
     Operator, OperatorPlus, ZeroOperator, sympyOne)
-from .scalar_types import SCALAR_TYPES
+from .scalar_algebra import is_scalar
 from ...utils.ordering import DisjunctCommutativeHSOrder, KeyTuple
 from ...utils.singleton import Singleton, singleton_object
 
@@ -80,12 +80,6 @@ class IdentitySuperOperator(SuperOperator, metaclass=Singleton):
     def _expand(self):
         return self
 
-    def __eq__(self, other):
-        return self is other or other == 1
-
-    def all_symbols(self):
-        return set(())
-
 
 @singleton_object
 class ZeroSuperOperator(SuperOperator, metaclass=Singleton):
@@ -107,12 +101,6 @@ class ZeroSuperOperator(SuperOperator, metaclass=Singleton):
     def _expand(self):
         return self
 
-    def __eq__(self, other):
-        return self is other or other == 0
-
-    def all_symbols(self):
-        return set(())
-
 
 ###############################################################################
 # Algebra Operations
@@ -122,7 +110,7 @@ class ZeroSuperOperator(SuperOperator, metaclass=Singleton):
 class SuperOperatorPlus(QuantumPlus, SuperOperator):
     """A sum of super-operators."""
 
-    neutral_element = ZeroSuperOperator
+    _neutral_element = ZeroSuperOperator
     _binary_rules = OrderedDict()
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
@@ -142,7 +130,7 @@ class SuperCommutativeHSOrder(DisjunctCommutativeHSOrder):
 class SuperOperatorTimes(QuantumTimes, SuperOperator):
     """A product of super-operators that denotes order of application of
     super-operators (right to left)"""
-    neutral_element = IdentitySuperOperator
+    _neutral_element = IdentitySuperOperator
     _binary_rules = OrderedDict()  # see end of module
     _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
@@ -213,8 +201,8 @@ class SPre(SuperOperator, Operation):
             return sum(SPre.create(oet) for oet in oe.operands)
         return SPre.create(oe)
 
-    def _simplify_scalar(self):
-        return self.create(self.operands[0].simplify_scalar())
+    def _simplify_scalar(self, func):
+        return self.create(self.operands[0].simplify_scalar(func=func))
 
     def _adjoint(self):
         return SPost(self.operands[0])
@@ -244,8 +232,8 @@ class SPost(SuperOperator, Operation):
             return sum(SPost.create(oet) for oet in oe.operands)
         return SPost.create(oe)
 
-    def _simplify_scalar(self):
-        return self.create(self.operands[0].simplify_scalar())
+    def _simplify_scalar(self, func):
+        return self.create(self.operands[0].simplify_scalar(func=func))
 
     def _adjoint(self):
         return SPre(self.operands[0])
@@ -294,9 +282,9 @@ class SuperOperatorTimesOperator(Operator, Operation):
         ope = op.series_expand(param, about, order)
         return tuple(sop * opet for opet in ope)
 
-    def _simplify_scalar(self):
+    def _simplify_scalar(self, func):
         sop, op = self.sop, self.op
-        return sop.simplify_scalar() * op.simplify_scalar()
+        return sop.simplify_scalar(func=func) * op.simplify_scalar(func=func)
 
     def _adjoint(self):
         return SuperAdjoint(self)
@@ -364,7 +352,7 @@ def lindblad(C):
         SuperOperator: The Lindblad collapse generator.
 
     """
-    if isinstance(C, SCALAR_TYPES):
+    if is_scalar(C):
         return ZeroSuperOperator
     return (
         SPre(C) * SPost(C.adjoint()) -
@@ -610,4 +598,4 @@ SuperOperator._scalar_times_expr_cls = ScalarTimesSuperOperator
 SuperOperator._plus_cls = SuperOperatorPlus
 SuperOperator._times_cls = SuperOperatorTimes
 SuperOperator._adjoint_cls = SuperAdjoint
-SuperOperator._indexed_sum_cls = None
+SuperOperator._indexed_sum_cls = None  # TODO

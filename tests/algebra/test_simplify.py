@@ -51,5 +51,5 @@ def test_simplify():
                 'extra': (pattern_head(B_, C_), b_times_c_equal_d)}):
         new_expr = simplify(expr, [commutator_rule, ])
     assert (srepr(new_expr) ==
-            "ScalarTimesOperator(2, OperatorSymbol('CommutAD', "
+            "ScalarTimesOperator(ScalarValue(2), OperatorSymbol('CommutAD', "
             "hs=LocalSpace('h1')))")

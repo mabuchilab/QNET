@@ -46,6 +46,11 @@ def singleton_object(cls):
     returning the same object. Also ensures the object can be pickled, is
     hashable, and has the correct string representation (the name of the
     singleton)
+
+    If the class defines a `_hash_val` class attribute, the hash of the
+    singleton will be the hash of that value, and the singleton will compare
+    equal to that value. Otherwise, the singleton will have a unique hash and
+    compare equal only to itself.
     """
     assert isinstance(cls, Singleton), \
         cls.__name__ + " must use Singleton metaclass"
@@ -54,7 +59,12 @@ def singleton_object(cls):
         return self
 
     cls.__call__ = self_instantiate
-    cls.__hash__ = lambda self: hash(cls)
+    if hasattr(cls, '_hash_val'):
+        cls.__hash__ = lambda self: hash(cls._hash_val)
+        cls.__eq__ = lambda self, other: other == cls._hash_val
+    else:
+        cls.__hash__ = lambda self: hash(cls)
+        cls.__eq__ = lambda self, other: other is self
     cls.__repr__ = lambda self: cls.__name__
     cls.__reduce__ = lambda self: cls.__name__
     obj = cls()
@@ -82,8 +92,7 @@ class Singleton(ABCMeta):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args,
-                                                                 **kwargs)
+            cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
     @classmethod

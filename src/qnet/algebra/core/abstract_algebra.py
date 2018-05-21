@@ -2,12 +2,11 @@ r"""Base classes for all Expressions and Operations.
 
 The abstract algebra package provides the foundation for
 symbolic algebra of quantum objects or circuits. All symbolic objects are
-either scalars (see :mod:`~qnet.algebra.core.scalar_types`)  or an instance of
-:class:`Expression`. Algebraic combinations of atomic expressions are instances
-of :class:`Operation`. In this way, any symbolic expression is a tree of
-operations, with children of each node defined through the
-:attr:`Operation.operands` attribute, and the leaves being atomic expressions
-or scalars.
+an instance of :class:`Expression`. Algebraic combinations of atomic
+expressions are instances of :class:`Operation`. In this way, any symbolic
+expression is a tree of operations, with children of each node defined through
+the :attr:`Operation.operands` attribute, and the leaves being atomic
+expressions.
 
 See :ref:`abstract_algebra` for design details and usage.
 """
@@ -23,8 +22,7 @@ from ..pattern_matching import ProtoExpr, pattern
 from ...utils.singleton import Singleton
 
 __all__ = [
-    'Expression', 'Operation', 'all_symbols',
-    'simplify', 'simplify_by_method', 'substitute']
+    'Expression', 'Operation', 'simplify', 'simplify_by_method', 'substitute']
 
 __private__ = []  # anything not in __all__ must be in __private__
 
@@ -217,7 +215,7 @@ class Expression(metaclass=ABCMeta):
         return str(self)
 
     def substitute(self, var_map):
-        """Substitute all_symbols for other expressions.
+        """Substitute sub-expressions
 
         Args:
             var_map (dict): Dictionary with entries of the form
@@ -295,9 +293,17 @@ class Expression(metaclass=ABCMeta):
         # it fail explicitly
         raise SympifyError("QNET expressions cannot be converted to SymPy")
 
-    def all_symbols(self):
-        """Set of all_symbols contained within the expression."""
-        return set.union(*[all_symbols(op) for op in self.args])
+    @property
+    def free_symbols(self):
+        """Set of free SymPy symbols contained within the expression."""
+        res = set()
+        return res.union(*[_free_symbols(arg) for arg in self.args])
+
+    @property
+    def bound_symbols(self):
+        """Set of bound SymPy symbols in the expression"""
+        res = set()
+        return res.union(*[_bound_symbols(arg) for arg in self.args])
 
     def __ne__(self, other):
         """If it is well-defined (i.e. boolean), simply return
@@ -308,33 +314,6 @@ class Expression(metaclass=ABCMeta):
         if type(eq) is bool:
             return not eq
         return NotImplemented
-
-
-def _str_instance_key(key):
-    """Format the key (Expression_instance_key result) as a slightly more
-    readable string corresponding to the "create" call.
-    """
-    args_str = ", ".join([str(arg) for arg in key[1]])
-    kw_str = ''
-    if len(key[2]) > 0:
-        kw_str = ', ' + ", ".join(["%s=%s" % (k, v) for (k, v) in key[2]])
-    return key[0].__name__ + ".create(" + args_str + kw_str + ')'
-
-
-def _print_debug_cache(prefix, color, key, instance, level=0):
-    """Routine that can be useful for debugging the Expression instance cache,
-    e.g.
-
-        _print_debug_cache('HIT', 'green', key, cls._instances[key])
-        _print_debug_cache('store.b', 'red', key, simplified)
-    """
-    # noinspection PyPackageRequirements
-    import click
-    msg = (click.style("%s: %17x" % (prefix, hash(key)), fg=color) +
-           " " + _str_instance_key(key) +
-           click.style(" -> %s" % hash(instance), fg=color) +
-           " %s" % str(instance))
-    click.echo("  " * (level + 1) + msg)
 
 
 def substitute(expr, var_map):
@@ -500,33 +479,18 @@ def simplify_by_method(expr, *method_names, head=None, **kwargs):
         expr, [(pat, lambda X: apply_methods(X, method_names, **kwargs))])
 
 
-def all_symbols(expr):
-    """Return all (free) symbols featured within an expression."""
-    # TODO: consider renaming this to free_symbols property, for consistency
-    # with SymPy
-    methods = [
-        lambda expr: expr.all_symbols(),  # QNET
-        lambda expr: expr.free_symbols,   # SymPy
-        lambda expr: set(())]             # non-symbolic
-
-    for method in methods:
-        try:
-            return method(expr)
-        except AttributeError:
-            pass  # try next method
-
-
-def _scalar_free_symbols(*operands):
-    """Return all free symbols from any symbolic operand"""
-    if len(operands) > 1:
-        return set.union(*[_scalar_free_symbols(o) for o in operands])
-    elif len(operands) < 1:
+def _free_symbols(expr):
+    try:
+        return expr.free_symbols
+    except AttributeError:
         return set()
-    else:  # len(operands) == 1
-        o, = operands
-        if isinstance(o, SympyBasic):
-            return set(o.free_symbols)
-    return set()
+
+
+def _bound_symbols(expr):
+    try:
+        return expr.bound_symbols
+    except AttributeError:
+        return set()
 
 
 class Operation(Expression, metaclass=ABCMeta):

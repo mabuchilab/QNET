@@ -9,36 +9,13 @@ from ._attrs import immutable_attribs
 
 __all__ = [
     'IdxSym', 'IntIndex', 'FockIndex', 'StrLabel', 'IndexOverList',
-    'IndexOverRange', 'IndexOverFockSpace', 'KroneckerDelta']
+    'IndexOverRange', 'IndexOverFockSpace']
 
 __private__ = [
     'yield_from_ranges', 'SymbolicLabelBase', 'IndexRangeBase', 'product']
 
 
 # support routines
-
-
-def KroneckerDelta(i, j):
-    """Kronecker delta function.
-
-    If ``i == j``, return 1. Otherwise,
-    If ``i != j``, if `i` and `j` are Sympy or SymbolicLabelBase objects,
-    return an instance of :class:`sympy.KroneckerDelta`, return 0 otherwise.
-
-    Unlike in :class:`sympy.KroneckerDelta`, `i` and `j` will not be sympyfied
-    """
-    if i == j:
-        return 1
-    else:
-        if isinstance(i, sympy.Basic) and isinstance(j, sympy.Basic):
-            return sympy.KroneckerDelta(i, j)
-        elif (
-                isinstance(i, SymbolicLabelBase) and
-                isinstance(j, SymbolicLabelBase)):
-            return sympy.KroneckerDelta(i.expr, j.expr)
-
-        else:
-            return 0
 
 
 def _merge_dicts(*dicts):
@@ -205,7 +182,8 @@ class SymbolicLabelBase(metaclass=ABCMeta):
     def substitute(self, var_map):
         return self.__class__(expr=self.expr.subs(var_map))
 
-    def all_symbols(self):
+    @property
+    def free_symbols(self):
         return self.expr.free_symbols
 
 

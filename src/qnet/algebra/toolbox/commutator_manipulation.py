@@ -34,7 +34,7 @@ def expand_commutators_leibniz(expr, expand_expr=True):
     def leibniz_right(A, BC):
         """[A, BC] -> [A, B] C + B [A, C]"""
         B = BC.operands[0]
-        C = OperatorTimes(*BC.operands[1:])
+        C = OperatorTimes.create(*BC.operands[1:])
         return Commutator.create(A, B) * C + B * Commutator.create(A, C)
 
     def leibniz_left(AB, C):

@@ -40,9 +40,6 @@ class KeyTuple(tuple):
     Operations. It differs from a normal tuple in that it falls back to string
     comparison if any elements are not directly comparable"""
     def __lt__(self, other):
-        from qnet.algebra.core.scalar_types import SCALAR_TYPES
-        if isinstance(other, (SCALAR_TYPES, str)):
-            return False
         for (a, b) in zip(self, other):
             try:
                 if a < b:
@@ -127,6 +124,7 @@ class FullCommutativeHSOrder():
     """
 
     def __init__(self, op, space_order=None, op_order=None):
+        self.op = op
         self.space = op.space
         if space_order is None:
             self._space_order = self.space._order_key

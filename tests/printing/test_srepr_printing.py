@@ -22,7 +22,7 @@ from qnet import(
     TensorKet, KetIndexedSum, SuperOperatorSymbol, IdentitySuperOperator,
     ZeroSuperOperator, SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
     SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator, IdxSym,
-    FockIndex, IndexOverFockSpace, srepr)
+    FockIndex, IndexOverFockSpace, srepr, ScalarValue, ScalarTimes, One, Zero)
 
 
 def test_srepr_local_space():
@@ -131,14 +131,13 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
 
     res = srepr(matrix_expr)
     expected = (
-        "Matrix(array([[ScalarTimesOperator(exp(Mul(Integer(-1), "
-        "Rational(1, 2), I, Symbol('gamma'))), "
-        "OperatorSymbol('A', hs=LocalSpace('1'))), "
-        "OperatorSymbol('B', hs=LocalSpace('1'))], "
+        "Matrix(array([[ScalarTimesOperator(ScalarValue(exp(Mul(Integer(-1), "
+        "Rational(1, 2), I, Symbol('gamma')))), OperatorSymbol('A', "
+        "hs=LocalSpace('1'))), OperatorSymbol('B', hs=LocalSpace('1'))], "
         "[OperatorSymbol('C', hs=LocalSpace('1')), "
-        "ScalarTimesOperator(exp(Mul(Rational(1, 2), I, "
-        "conjugate(Symbol('gamma')))), "
-        "OperatorSymbol('D', hs=LocalSpace('1')))]], dtype=object))")
+        "ScalarTimesOperator(ScalarValue(exp(Mul(Rational(1, 2), I, "
+        "conjugate(Symbol('gamma'))))), OperatorSymbol('D', "
+        "hs=LocalSpace('1')))]], dtype=object))")
     assert res == expected
 
     res = srepr(matrix_expr, indented=True)
@@ -147,7 +146,8 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
         array([
             [
                 ScalarTimesOperator(
-                    exp(Mul(Integer(-1), Rational(1, 2), I, Symbol('gamma'))),
+                    ScalarValue(
+                        exp(Mul(Integer(-1), Rational(1, 2), I, Symbol('gamma')))),
                     OperatorSymbol(
                         'A',
                         hs=LocalSpace(
@@ -163,7 +163,8 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
                     hs=LocalSpace(
                         '1')),
                 ScalarTimesOperator(
-                    exp(Mul(Rational(1, 2), I, conjugate(Symbol('gamma')))),
+                    ScalarValue(
+                        exp(Mul(Rational(1, 2), I, conjugate(Symbol('gamma'))))),
                     OperatorSymbol(
                         'D',
                         hs=LocalSpace(
@@ -172,19 +173,20 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
     assert res == expected
 
     expected = (
-        "ScalarTimesKet(Mul(Rational(1, 2), Pow(Integer(2), "
-        "Rational(1, 2))), KetPlus(TensorKet(BasisKet('e', "
-        "hs=LocalSpace('q_1', basis=('g', 'e'))), "
-        "BasisKet('g', hs=LocalSpace('q_2', basis=('g', 'e')))), "
-        "ScalarTimesKet(Mul(Integer(-1), I), TensorKet(BasisKet('g', "
-        "hs=LocalSpace('q_1', basis=('g', 'e'))), "
+        "ScalarTimesKet(ScalarValue(Mul(Rational(1, 2), Pow(Integer(2), "
+        "Rational(1, 2)))), KetPlus(TensorKet(BasisKet('e', "
+        "hs=LocalSpace('q_1', basis=('g', 'e'))), BasisKet('g', "
+        "hs=LocalSpace('q_2', basis=('g', 'e')))), "
+        "ScalarTimesKet(ScalarValue(Mul(Integer(-1), I)), "
+        "TensorKet(BasisKet('g', hs=LocalSpace('q_1', basis=('g', 'e'))), "
         "BasisKet('e', hs=LocalSpace('q_2', basis=('g', 'e')))))))")
     assert srepr(bell1_expr) == expected
 
     res = srepr(bell1_expr, indented=True)
     expected = dedent(r'''
     ScalarTimesKet(
-        Mul(Rational(1, 2), Pow(Integer(2), Rational(1, 2))),
+        ScalarValue(
+            Mul(Rational(1, 2), Pow(Integer(2), Rational(1, 2)))),
         KetPlus(
             TensorKet(
                 BasisKet(
@@ -198,7 +200,8 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
                         'q_2',
                         basis=('g', 'e')))),
             ScalarTimesKet(
-                Mul(Integer(-1), I),
+                ScalarValue(
+                    Mul(Integer(-1), I)),
                 TensorKet(
                     BasisKet(
                         'g',

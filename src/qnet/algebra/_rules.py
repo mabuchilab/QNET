@@ -1,6 +1,5 @@
 from sympy import Basic as SympyBasic, I, exp, sqrt
 
-from .core.abstract_algebra import all_symbols
 from .core.circuit_algebra import (
     ABCD, CIdentity, CPermutation, Circuit, Concatenation, Feedback, SLH,
     SeriesInverse, SeriesProduct, cid, get_common_block_structure, )
@@ -13,7 +12,9 @@ from .core.operator_algebra import (
     LocalSigma, Operator, OperatorIndexedSum, OperatorPlus, OperatorTimes,
     OperatorTrace, Phase, PseudoInverse, ScalarTimesOperator, Squeeze,
     ZeroOperator, decompose_space, factor_for_trace, )
-from .core.scalar_types import SCALAR_TYPES
+from .core.scalar_algebra import (
+    Scalar, ScalarExpression, ScalarValue, ScalarPlus, ScalarTimes,
+    ScalarPower, ScalarIndexedSum, Zero, One, KroneckerDelta)
 from .core.state_algebra import (
     BasisKet, Bra, BraKet, CoherentStateKet, State, KetBra, KetIndexedSum,
     KetPlus, LocalKet, OperatorTimesKet, ScalarTimesKet, TensorKet, TrivialKet,
@@ -24,8 +25,92 @@ from .core.super_operator_algebra import (
     SuperOperatorTimesOperator, ZeroSuperOperator, )
 from .pattern_matching import pattern, pattern_head, wc
 from ..utils.check_rules import check_rules_dict
-from ..utils.indices import IndexRangeBase, KroneckerDelta, SymbolicLabelBase
+from ..utils.indices import IndexRangeBase, SymbolicLabelBase
 from ..utils.permutations import concatenate_permutations
+
+
+SCALAR_TYPES = (Scalar, ) + Scalar._val_types
+SCALAR_VAL_TYPES = (ScalarValue, ) + Scalar._val_types
+
+
+# Scalar Rules
+
+def _algebraic_rules_scalar():
+    """Set the default algebraic rules for scalars"""
+    a = wc("a", head=SCALAR_VAL_TYPES)
+    b = wc("b", head=SCALAR_VAL_TYPES)
+    x = wc("x", head=SCALAR_TYPES)
+    y = wc("y", head=SCALAR_TYPES)
+    z = wc("z", head=SCALAR_TYPES)
+
+    indranges__ = wc("indranges__", head=IndexRangeBase)
+
+    ScalarPlus._binary_rules.update(check_rules_dict([
+        ('R001', (
+            pattern_head(a, b),
+            lambda a, b: a + b)),
+        ('R002', (
+            pattern_head(x, x),
+            lambda x: 2*x)),
+        ('R003', (
+            pattern_head(x, pattern(ScalarTimes, -1, x)),
+            lambda x: Zero)),
+    ]))
+
+    ScalarTimes._binary_rules.update(check_rules_dict([
+        ('R001', (
+            pattern_head(a, b),
+            lambda a, b: a * b)),
+        ('R002', (
+            pattern_head(x, x),
+            lambda x: x**2)),
+        ('R003', (
+            pattern_head(Zero, x),
+            lambda x: Zero)),
+        ('R004', (
+            pattern_head(x, Zero),
+            lambda x: Zero)),
+        ('R005', (
+            pattern_head(
+                pattern(ScalarPower, x, y),
+                pattern(ScalarPower, x, z)),
+            lambda x, y, z: x**(y+z))),
+        ('R006', (
+            pattern_head(x, pattern(ScalarPower, x, -1)),
+            lambda x: One)),
+    ]))
+
+    ScalarPower._rules.update(check_rules_dict([
+        ('R001', (
+            pattern_head(a, b),
+            lambda a, b: a**b)),
+        ('R002', (
+            pattern_head(x, 0),
+            lambda x: One)),
+        ('R003', (
+            pattern_head(x, 1),
+            lambda x: x)),
+        ('R004', (
+            pattern_head(pattern(ScalarPower, x, y), z),
+            lambda x, y, z: x**(y*z))),
+    ]))
+
+    def pull_constfactor_from_sum(x, y, indranges):
+        bound_symbols = set([r.index_symbol for r in indranges])
+        if len(x.free_symbols.intersection(bound_symbols)) == 0:
+            return x * ScalarIndexedSum.create(y, *indranges)
+        else:
+            raise CannotSimplify()
+
+    ScalarIndexedSum._rules.update(check_rules_dict([
+        ('R001', (  # sum over zero -> zero
+            pattern_head(Zero, indranges__),
+            lambda indranges: Zero)),
+        ('R002', (  # pull constant prefactor out of sum
+            pattern_head(pattern(ScalarTimes, x, y), indranges__),
+            lambda x, y, indranges:
+                pull_constfactor_from_sum(x, y, indranges))),
+    ]))
 
 
 # Operator rules
@@ -359,7 +444,7 @@ def _algebraic_rules_operator():
 
     def pull_constfactor_from_sum(u, A, indranges):
         bound_symbols = set([r.index_symbol for r in indranges])
-        if len(all_symbols(u).intersection(bound_symbols)) == 0:
+        if len(u.free_symbols.intersection(bound_symbols)) == 0:
             return u * OperatorIndexedSum.create(A, *indranges)
         else:
             raise CannotSimplify()
@@ -807,7 +892,7 @@ def _algebraic_rules_state():
 
     def pull_constfactor_from_sum(u, Psi, indranges):
         bound_symbols = set([r.index_symbol for r in indranges])
-        if len(all_symbols(u).intersection(bound_symbols)) == 0:
+        if len(u.free_symbols.intersection(bound_symbols)) == 0:
             return u * KetIndexedSum.create(Psi, *indranges)
         else:
             raise CannotSimplify()
@@ -1099,6 +1184,7 @@ def _algebraic_rules_circuit():
 
 
 def _algebraic_rules():
+    _algebraic_rules_scalar()
     _algebraic_rules_operator()
     _algebraic_rules_superop()
     _algebraic_rules_state()

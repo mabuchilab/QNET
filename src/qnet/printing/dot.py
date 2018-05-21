@@ -47,6 +47,7 @@ the graph's structural and visual properties.
 """
 
 from qnet.algebra.core.abstract_algebra import Expression, Operation
+from collections import defaultdict
 
 __all__ = []
 __private__ = ['dotprint', 'expr_labelfunc']
@@ -90,7 +91,6 @@ def _node_id(expr, location, idfunc, repeat=True):
     res = str(idfunc(expr))
     if repeat:
         res += '_%s' % str(location)
-
     return res
 
 
@@ -213,6 +213,7 @@ def dotprint(
     edges = []
     level = 0
     pos = 0
+    pos_counter = defaultdict(int)  # level => current pos
     stack = [(level, pos, expr)]
     if styles is None:
         styles = []
@@ -228,11 +229,13 @@ def dotprint(
         nodes.append('"%s" [%s];' % (node_id, _attrprint(style)))
         if not is_leaf:
             try:
-                for (i_sub, expr_sub) in enumerate(children):
+                for expr_sub in children:
+                    i_sub = pos_counter[level+1]
                     id_sub = _node_id(
                         expr_sub, (level+1, i_sub), idfunc, repeat)
                     edges.append('"%s" -> "%s"' % (node_id, id_sub))
                     stack.append((level+1, i_sub, expr_sub))
+                    pos_counter[level+1] += 1
             except AttributeError:
                 pass
     return template % {

@@ -3,9 +3,10 @@ from textwrap import dedent
 
 import pytest
 
-from qnet.algebra.core.scalar_types import SCALAR_TYPES
+from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.core.abstract_algebra import Expression, Operation
 from qnet.algebra.core.operator_algebra import OperatorSymbol, Adjoint
+from qnet.algebra.core.abstract_quantum_algebra import QuantumSymbol
 from qnet.printing import ascii, srepr, configure_printing
 from qnet.printing.dot import dotprint, expr_labelfunc
 
@@ -162,7 +163,7 @@ def test_dot_show_args(expr):
 
     with configure_printing(str_format='unicode', repr_format='unicode'):
         dotstr = dotprint(expr, get_children=_expr_args)
-    assert dotstr.strip() == dedent(r'''
+    expected = dedent(r'''
     digraph{
 
     # Graph style
@@ -174,23 +175,25 @@ def test_dot_show_args(expr):
     #########
 
     "node_(0, 0)" ["label"="ScalarTimesOperator"];
-    "node_(1, 0)" ["label"="2"];
+    "node_(1, 0)" ["label"="ScalarValue"];
     "node_(1, 1)" ["label"="OperatorPlus"];
-    "node_(2, 0)" ["label"="OperatorSymbol(..., hs=ℌ₁)"];
+    "node_(2, 0)" ["label"="2"];
     "node_(2, 1)" ["label"="OperatorSymbol(..., hs=ℌ₁)"];
-    "node_(2, 2)" ["label"="Adjoint"];
+    "node_(2, 2)" ["label"="OperatorSymbol(..., hs=ℌ₁)"];
+    "node_(2, 3)" ["label"="Adjoint"];
     "node_(3, 0)" ["label"="A"];
-    "node_(3, 0)" ["label"="D"];
-    "node_(3, 0)" ["label"="OperatorPlus"];
+    "node_(3, 1)" ["label"="D"];
+    "node_(3, 2)" ["label"="OperatorPlus"];
     "node_(4, 0)" ["label"="OperatorSymbol(..., hs=ℌ₁)"];
     "node_(4, 1)" ["label"="ScalarTimesOperator"];
     "node_(5, 0)" ["label"="C"];
-    "node_(5, 0)" ["label"="2"];
-    "node_(5, 1)" ["label"="OperatorPlus"];
-    "node_(6, 0)" ["label"="OperatorSymbol(..., hs=ℌ₁)"];
+    "node_(5, 1)" ["label"="ScalarValue"];
+    "node_(5, 2)" ["label"="OperatorPlus"];
+    "node_(6, 0)" ["label"="2"];
     "node_(6, 1)" ["label"="OperatorSymbol(..., hs=ℌ₁)"];
+    "node_(6, 2)" ["label"="OperatorSymbol(..., hs=ℌ₁)"];
     "node_(7, 0)" ["label"="A"];
-    "node_(7, 0)" ["label"="B"];
+    "node_(7, 1)" ["label"="B"];
 
     #########
     # Edges #
@@ -198,22 +201,25 @@ def test_dot_show_args(expr):
 
     "node_(0, 0)" -> "node_(1, 0)"
     "node_(0, 0)" -> "node_(1, 1)"
-    "node_(1, 1)" -> "node_(2, 0)"
+    "node_(1, 0)" -> "node_(2, 0)"
     "node_(1, 1)" -> "node_(2, 1)"
     "node_(1, 1)" -> "node_(2, 2)"
-    "node_(2, 0)" -> "node_(3, 0)"
+    "node_(1, 1)" -> "node_(2, 3)"
     "node_(2, 1)" -> "node_(3, 0)"
-    "node_(2, 2)" -> "node_(3, 0)"
-    "node_(3, 0)" -> "node_(4, 0)"
-    "node_(3, 0)" -> "node_(4, 1)"
+    "node_(2, 2)" -> "node_(3, 1)"
+    "node_(2, 3)" -> "node_(3, 2)"
+    "node_(3, 2)" -> "node_(4, 0)"
+    "node_(3, 2)" -> "node_(4, 1)"
     "node_(4, 0)" -> "node_(5, 0)"
-    "node_(4, 1)" -> "node_(5, 0)"
     "node_(4, 1)" -> "node_(5, 1)"
+    "node_(4, 1)" -> "node_(5, 2)"
     "node_(5, 1)" -> "node_(6, 0)"
-    "node_(5, 1)" -> "node_(6, 1)"
-    "node_(6, 0)" -> "node_(7, 0)"
+    "node_(5, 2)" -> "node_(6, 1)"
+    "node_(5, 2)" -> "node_(6, 2)"
     "node_(6, 1)" -> "node_(7, 0)"
-    } ''').strip()
+    "node_(6, 2)" -> "node_(7, 1)"
+    }''').strip()
+    assert dotstr.strip() == expected
 
 
 def test_dot_no_repeat(expr):
@@ -280,7 +286,7 @@ def test_dot_custom_labelfunc(expr):
     #########
 
     "node_(0, 0)" ["label"="ScalarTimesOperator"];
-    "node_(1, 0)" ["label"="2"];
+    "node_(1, 0)" ["label"="ScalarValue(2)"];
     "node_(1, 1)" ["label"="OperatorPlus"];
     "node_(2, 0)" ["label"="OperatorSymbol('A', hs=LocalSpace('1'))"];
     "node_(2, 1)" ["label"="OperatorSymbol('D', hs=LocalSpace('1'))"];
@@ -288,7 +294,7 @@ def test_dot_custom_labelfunc(expr):
     "node_(3, 0)" ["label"="OperatorPlus"];
     "node_(4, 0)" ["label"="OperatorSymbol('C', hs=LocalSpace('1'))"];
     "node_(4, 1)" ["label"="ScalarTimesOperator"];
-    "node_(5, 0)" ["label"="2"];
+    "node_(5, 0)" ["label"="ScalarValue(2)"];
     "node_(5, 1)" ["label"="OperatorPlus"];
     "node_(6, 0)" ["label"="OperatorSymbol('A', hs=LocalSpace('1'))"];
     "node_(6, 1)" ["label"="OperatorSymbol('B', hs=LocalSpace('1'))"];
@@ -365,10 +371,10 @@ def test_dot_no_styles(expr):
 def test_dot_custom_styles(expr):
     """Test dot-representation with custom styles"""
     styles = [
-        (lambda expr: isinstance(expr, SCALAR_TYPES),
-            {'color': 'blue', 'shape': 'box', 'fontsize': 12}),
-        (lambda expr: isinstance(expr, Expression),
+        (lambda expr: isinstance(expr, QuantumSymbol),
             {'color': 'red', 'shape': 'box', 'fontsize': 12}),
+        (lambda expr: isinstance(expr, ScalarValue),
+            {'color': 'blue', 'shape': 'box', 'fontsize': 12}),
         (lambda expr: isinstance(expr, Operation),
             {'color': 'black', 'shape': 'ellipse'})]
     with configure_printing(str_format='unicode', repr_format='unicode'):
@@ -384,17 +390,17 @@ def test_dot_custom_styles(expr):
     # Nodes #
     #########
 
-    "node_(0, 0)" ["color"="black", "fontsize"="12", "label"="ScalarTimesOperator", "shape"="ellipse"];
+    "node_(0, 0)" ["color"="black", "label"="ScalarTimesOperator", "shape"="ellipse"];
     "node_(1, 0)" ["color"="blue", "fontsize"="12", "label"="2", "shape"="box"];
-    "node_(1, 1)" ["color"="black", "fontsize"="12", "label"="OperatorPlus", "shape"="ellipse"];
+    "node_(1, 1)" ["color"="black", "label"="OperatorPlus", "shape"="ellipse"];
     "node_(2, 0)" ["color"="red", "fontsize"="12", "label"="Â⁽¹⁾", "shape"="box"];
     "node_(2, 1)" ["color"="red", "fontsize"="12", "label"="D̂⁽¹⁾", "shape"="box"];
-    "node_(2, 2)" ["color"="black", "fontsize"="12", "label"="Adjoint", "shape"="ellipse"];
-    "node_(3, 0)" ["color"="black", "fontsize"="12", "label"="OperatorPlus", "shape"="ellipse"];
+    "node_(2, 2)" ["color"="black", "label"="Adjoint", "shape"="ellipse"];
+    "node_(3, 0)" ["color"="black", "label"="OperatorPlus", "shape"="ellipse"];
     "node_(4, 0)" ["color"="red", "fontsize"="12", "label"="Ĉ⁽¹⁾", "shape"="box"];
-    "node_(4, 1)" ["color"="black", "fontsize"="12", "label"="ScalarTimesOperator", "shape"="ellipse"];
+    "node_(4, 1)" ["color"="black", "label"="ScalarTimesOperator", "shape"="ellipse"];
     "node_(5, 0)" ["color"="blue", "fontsize"="12", "label"="2", "shape"="box"];
-    "node_(5, 1)" ["color"="black", "fontsize"="12", "label"="OperatorPlus", "shape"="ellipse"];
+    "node_(5, 1)" ["color"="black", "label"="OperatorPlus", "shape"="ellipse"];
     "node_(6, 0)" ["color"="red", "fontsize"="12", "label"="Â⁽¹⁾", "shape"="box"];
     "node_(6, 1)" ["color"="red", "fontsize"="12", "label"="B̂⁽¹⁾", "shape"="box"];
 

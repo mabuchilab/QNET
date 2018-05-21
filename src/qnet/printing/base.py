@@ -3,7 +3,7 @@
 from sympy.core.basic import Basic as SympyBasic
 from sympy.printing.printer import Printer as SympyPrinter
 
-from qnet.algebra.core.scalar_types import SCALAR_TYPES
+from ..algebra.core.scalar_algebra import Scalar
 from .sympy import SympyStrPrinter
 from ._render_head_repr import render_head_repr
 
@@ -186,7 +186,7 @@ class QnetBasePrinter(SympyPrinter):
         if allow_caching:
             is_cached, res = self._get_from_cache(expr)
         if not is_cached:
-            if isinstance(expr, SCALAR_TYPES):
+            if isinstance(expr, Scalar._val_types):
                 res = self._print_SCALAR_TYPES(expr, *args, **kwargs)
             elif isinstance(expr, str):
                 return self._render_str(expr)

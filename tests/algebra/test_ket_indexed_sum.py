@@ -1,7 +1,7 @@
 from qnet.printing import ascii, unicode, latex, srepr, configure_printing
-from qnet.algebra.core.abstract_algebra import all_symbols
 from qnet.algebra.core.exceptions import InfiniteSumError
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace, TrivialSpace
+from qnet.algebra.core.scalar_algebra import ScalarIndexedSum
 from qnet.algebra.core.operator_algebra import (
     Create, IdentityOperator, OperatorIndexedSum)
 from qnet.algebra.core.state_algebra import (
@@ -12,7 +12,7 @@ from qnet.utils.indices import (
     IndexOverRange)
 from qnet.algebra.toolbox.indexed_sums import expand_indexed_sum
 import sympy
-from sympy import symbols, IndexedBase
+from sympy import symbols, IndexedBase, Indexed
 
 import pytest
 
@@ -41,11 +41,11 @@ def test_qubit_state():
     assert unicode(expr1) == "∑_{i ∈ ℌ_tls} α_i |i⟩⁽ᵗˡˢ⁾"
     assert (
         srepr(expr1) ==
-        "KetIndexedSum(ScalarTimesKet(Indexed(IndexedBase(Symbol('alpha')), "
-        "IdxSym('i', integer=True)), BasisKet(FockIndex(IdxSym('i', "
-        "integer=True)), hs=LocalSpace('tls', basis=('g', 'e')))), "
-        "IndexOverFockSpace(IdxSym('i', integer=True), LocalSpace('tls', "
-        "basis=('g', 'e'))))")
+        "KetIndexedSum(ScalarTimesKet(ScalarValue("
+        "Indexed(IndexedBase(Symbol('alpha')), IdxSym('i', integer=True))), "
+        "BasisKet(FockIndex(IdxSym('i', integer=True)), hs=LocalSpace('tls', "
+        "basis=('g', 'e')))), IndexOverFockSpace(IdxSym('i', integer=True), "
+        "LocalSpace('tls', basis=('g', 'e'))))")
     with configure_printing(tex_use_braket=True):
         assert (
             latex(expr1) ==
@@ -55,10 +55,11 @@ def test_qubit_state():
     assert unicode(expr2) == '∑_{i ∈ {0,1}} α_i |i⟩⁽ᵗˡˢ⁾'
     assert (
         srepr(expr2) ==
-        "KetIndexedSum(ScalarTimesKet(Indexed(IndexedBase(Symbol('alpha')), "
-        "IdxSym('i', integer=True)), BasisKet(FockIndex(IdxSym('i', "
-        "integer=True)), hs=LocalSpace('tls', basis=('g', 'e')))), "
-        "IndexOverList(IdxSym('i', integer=True), (0, 1)))")
+        "KetIndexedSum(ScalarTimesKet(ScalarValue(Indexed(IndexedBase("
+        "Symbol('alpha')), IdxSym('i', integer=True))), "
+        "BasisKet(FockIndex(IdxSym('i', integer=True)), hs=LocalSpace('tls', "
+        "basis=('g', 'e')))), IndexOverList(IdxSym('i', integer=True), "
+        "(0, 1)))")
     with configure_printing(tex_use_braket=True):
         assert (
             latex(expr2) == r'\sum_{i \in \{0,1\}} \alpha_{i} \Ket{i}^{(tls)}')
@@ -67,18 +68,21 @@ def test_qubit_state():
     assert unicode(expr3) == '∑_{i=0}^{1} α_i |i⟩⁽ᵗˡˢ⁾'
     assert (
         srepr(expr3) ==
-        "KetIndexedSum(ScalarTimesKet(Indexed(IndexedBase(Symbol('alpha')), "
-        "IdxSym('i', integer=True)), BasisKet(FockIndex(IdxSym('i', "
-        "integer=True)), hs=LocalSpace('tls', basis=('g', 'e')))), "
-        "IndexOverRange(IdxSym('i', integer=True), 0, 1))")
+        "KetIndexedSum(ScalarTimesKet(ScalarValue(Indexed(IndexedBase("
+        "Symbol('alpha')), IdxSym('i', integer=True))), "
+        "BasisKet(FockIndex(IdxSym('i', integer=True)), hs=LocalSpace('tls', "
+        "basis=('g', 'e')))), IndexOverRange(IdxSym('i', integer=True), "
+        "0, 1))")
     with configure_printing(tex_use_braket=True):
         assert (
             latex(expr3) == r'\sum_{i=0}^{1} \alpha_{i} \Ket{i}^{(tls)}')
 
     for expr in (expr1, expr2, expr3):
-        assert all_symbols(expr.term) == set([i, symbols('alpha')])
-        assert all_symbols(expr) == set([symbols('alpha'), ])
+        assert expr.term.free_symbols == set([i, symbols('alpha')])
+        assert expr.term.bound_symbols == set()
+        assert expr.free_symbols == set([symbols('alpha'), ])
         assert expr.variables == [i]
+        assert expr.bound_symbols == set([i])
         assert len(expr) == len(expr.ranges[0]) == 2
         assert 0 in expr.ranges[0]
         assert 1 in expr.ranges[0]
@@ -115,21 +119,21 @@ def test_qubit_state_bra():
     expr = KetIndexedSum.create(
         term, IndexOverFockSpace(i, hs=hs_tls))
 
-    assert IndexOverFockSpace(i, hs=hs_tls) in expr.args
+    assert IndexOverFockSpace(i, hs=hs_tls) in expr.ket.args
 
     assert ascii(expr) == "Sum_{i in H_tls} alpha_i * <i|^(tls)"
 
-    assert all_symbols(expr.term) == set([i, symbols('alpha')])
-    assert all_symbols(expr) == set([symbols('alpha'), ])
-    assert expr.variables == [i]
+    assert expr.ket.term.free_symbols == set([i, symbols('alpha')])
+    assert expr.free_symbols == set([symbols('alpha'), ])
+    assert expr.ket.variables == [i]
     assert expr.space == hs_tls
-    assert len(expr.args) == 2
-    assert len(expr.operands) == 1
-    assert expr.args[0] == term
-    assert expr.term == term
+    assert len(expr.ket.args) == 2
+    assert len(expr.ket.operands) == 1
+    assert expr.ket.args[0] == term.ket
+    assert expr.ket.term == term.ket
     assert len(expr.kwargs) == 0
-    expr_expand = expr.doit().substitute(
-        {alpha[0]: alpha['g'], alpha[1]: alpha['e']})
+    expr_expand = Bra.create(expr.ket.doit().substitute(
+        {alpha[0]: alpha['g'], alpha[1]: alpha['e']}))
     assert expr_expand == (
         alpha['g'] * BasisKet('g', hs=hs_tls).dag() +
         alpha['e'] * BasisKet('e', hs=hs_tls).dag())
@@ -157,8 +161,8 @@ def test_coherent_state():
         assert n_val in psi_focksum_inf.term.ranges[0]
 
     assert (
-        all_symbols(psi_focksum_inf.term.term) == set([n, symbols('alpha')]))
-    assert all_symbols(psi_focksum_inf) == set([symbols('alpha'), ])
+        psi_focksum_inf.term.term.free_symbols == set([n, symbols('alpha')]))
+    assert psi_focksum_inf.free_symbols == set([symbols('alpha'), ])
     assert psi_focksum_inf.term.variables == [n]
 
     assert psi_focksum_inf.substitute({n: i}).term.variables == [i]
@@ -212,8 +216,8 @@ def test_two_hs_symbol_sum():
     expr2 = KetIndexedSum(
         term, IndexOverRange(i, 0, 2), IndexOverRange(j, 0, 2))
 
-    assert all_symbols(expr1.term) == set([i, j, symbols('a'), symbols('Psi')])
-    assert all_symbols(expr1) == set([symbols('a'), symbols('Psi')])
+    assert expr1.term.free_symbols == set([i, j, symbols('a'), symbols('Psi')])
+    assert expr1.free_symbols == set([symbols('a'), symbols('Psi')])
     assert expr1.variables == [i, j]
 
     assert (
@@ -293,25 +297,28 @@ def test_make_disjunct_indices():
     i = IdxSym('i')
     j = IdxSym('j')
     k = IdxSym('k')
-    Psi = IndexedBase('Psi')
+
+    def Psi(*args):
+        return KetSymbol(
+            StrLabel(Indexed(IndexedBase('Psi'), *args)), hs=0)
 
     def sum(term, *index_symbols):
         return KetIndexedSum(
             term, *[IndexOverRange(i, 0, 2) for i in index_symbols])
 
     with pytest.raises(ValueError):
-        sum(Psi[i, j, j], i, j, j)
+        sum(Psi(i, j, j), i, j, j)
 
-    expr = sum(Psi[i, j, k], i, j, k)
+    expr = sum(Psi(i, j, k), i, j, k)
     others = [expr, ]
     assert expr.make_disjunct_indices(*others) == expr.substitute({
             i: i.prime, j: j.prime, k: k.prime})
 
-    others = [sum(Psi[i], i), sum(Psi[j], j)]
+    others = [sum(Psi(i), i), sum(Psi(j), j)]
     assert expr.make_disjunct_indices(*others) == expr.substitute({
             i: i.prime, j: j.prime})
 
-    others = [sum(Psi[i], i), sum(Psi[i.prime], i.prime)]
+    others = [sum(Psi(i), i), sum(Psi(i.prime), i.prime)]
     assert expr.make_disjunct_indices(*others) == expr.substitute({
             i: i.prime.prime})
 
@@ -374,7 +381,6 @@ def test_tensor_indexed_sum():
     assert TensorKet.create(psi0, psi1, psi2, psi3) == expr2
 
 
-@pytest.mark.xfail(reason="Requires ScalarAlgebra IndexedSum", strict=True)
 def test_tls_norm():
     """Test that calculating the norm of a TLS state results in 1"""
     hs = LocalSpace('tls', dimension=2)
@@ -386,7 +392,6 @@ def test_tls_norm():
     assert nrm == 1
 
 
-@pytest.mark.xfail(reason="Requires ScalarAlgebra IndexedSum", strict=True)
 def test_braket_indexed_sum():
     """Test braket product of sums"""
     i = IdxSym('i')
@@ -405,25 +410,24 @@ def test_braket_indexed_sum():
 
     expr = Bra.create(psi1) * psi2
     assert expr.space == TrivialSpace
-    assert expr == OperatorIndexedSum(
-        alpha[1, i].conjugate() * alpha[2, i] * IdentityOperator,
+    assert expr == ScalarIndexedSum.create(
+        alpha[1, i].conjugate() * alpha[2, i],
         IndexOverFockSpace(i, hs))
     assert BraKet.create(psi1, psi2) == expr
 
     expr = psi.dag() * psi2
-    assert expr == OperatorIndexedSum(
+    assert expr == ScalarIndexedSum(
         alpha[2, i] * BraKet(psi, BasisKet(FockIndex(i), hs=hs)),
         IndexOverFockSpace(i, hs))
     assert BraKet.create(psi, psi2) == expr
 
     expr = psi1.dag() * psi
-    assert expr == OperatorIndexedSum(
+    assert expr == ScalarIndexedSum(
         alpha[1, i].conjugate() * BraKet(BasisKet(FockIndex(i), hs=hs), psi),
         IndexOverFockSpace(i, hs))
     assert BraKet.create(psi1, psi) == expr
 
 
-@pytest.mark.xfail(reason="Need check for bound symbols", strict=True)
 def test_ketbra_indexed_sum():
     """Test ketbra product of sums"""
     i = IdxSym('i')

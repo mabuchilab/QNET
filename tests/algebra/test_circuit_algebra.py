@@ -274,6 +274,7 @@ def test_SLH_elements():
     check(S, L, H)
 
 
+@pytest.mark.xxx # DEBUG
 def test_feedback():
     A, B, C, D, A1, A2 = get_symbols(3, 2, 1, 1, 1, 1)
     circuit_identity(1)
@@ -484,10 +485,9 @@ def test_move_drive_to_H():
     SLH_concat_driven_out = move_drive_to_H(SLH_concat_driven)
     assert SLH_concat_driven_out.S == SLH1.S
     assert SLH_concat_driven_out.L == SLH1.L
-    term = SLH_concat_driven.H.expand().operands
-    assert (
-        SLH_concat_driven_out.H - (term[0] + term[1] + 2*term[2] + 2*term[3])
-    ).expand().simplify_scalar() == 0
+    term = SLH_concat_driven.H.expand().simplify_scalar().operands
+    H = SLH_concat_driven_out.H.expand().simplify_scalar()
+    assert (H - (term[0] + term[1] + 2*term[2] + 2*term[3])).is_zero
 
     # Two Drives (two channels)
     α1 = sympy.symbols('alpha_1')

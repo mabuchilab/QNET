@@ -17,9 +17,6 @@ __doc__ += qnet._flat_api_tools.__doc__
 
 __all__ = []  # will be extended by _import_submodules
 
-__imported_data__ = {
-    'SCALAR_TYPES': ':data:`~qnet.algebra.scalar_types.SCALAR_TYPES`'}
-
 __version__ = "2.0.0-dev"
 
 

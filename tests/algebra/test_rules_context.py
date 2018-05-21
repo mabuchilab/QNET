@@ -16,31 +16,41 @@ def test_no_rules():
     h1 = LocalSpace("h1")
     a = OperatorSymbol("a", hs=h1)
     hs_repr = "LocalSpace('h1')"
-    assert (srepr(2*a*3 + 3 * (2*a*3)) ==
-            "ScalarTimesOperator(24, ""OperatorSymbol('a', hs="+hs_repr+"))")
+    assert (
+        srepr(2*a*3 + 3 * (2*a*3)) ==
+        "ScalarTimesOperator(ScalarValue(24), OperatorSymbol('a', hs=" +
+        hs_repr + "))")
     with no_rules(ScalarTimesOperator):
         expr = 2*a*3 + 3 * (2*a*3)
         print(srepr(expr))
-        assert (srepr(expr) ==
-            "ScalarTimesOperator(4, ScalarTimesOperator(3, "
-            "ScalarTimesOperator(2, OperatorSymbol('a', hs="+hs_repr+"))))")
+        assert (
+            srepr(expr) ==
+            "ScalarTimesOperator(ScalarValue(4), "
+            "ScalarTimesOperator(ScalarValue(3), "
+            "ScalarTimesOperator(ScalarValue(2), OperatorSymbol('a', hs=" +
+            hs_repr + "))))")
     with no_rules(OperatorPlus):
         expr = 2*a*3 + 3 * (2*a*3)
         print(srepr(expr))
-        assert (srepr(expr) ==
-            "OperatorPlus(ScalarTimesOperator(6, OperatorSymbol('a', hs=" +
-            hs_repr + ")), ScalarTimesOperator(18, OperatorSymbol('a', hs=" +
+        assert (
+            srepr(expr) ==
+            "OperatorPlus(ScalarTimesOperator(ScalarValue(6), "
+            "OperatorSymbol('a', hs=" +
+            hs_repr + ")), "
+            "ScalarTimesOperator(ScalarValue(18), OperatorSymbol('a', hs=" +
             hs_repr + ")))")
     with no_rules(OperatorPlus), no_rules(ScalarTimesOperator):
         expr = 2*a*3 + 3 * (2*a*3)
         print(srepr(expr))
-        summand_repr = ("ScalarTimesOperator(3, ScalarTimesOperator("
-                        "2, OperatorSymbol('a', hs="+hs_repr+")))")
-        assert (srepr(expr) == ("OperatorPlus(" + summand_repr +
-                                ", ScalarTimesOperator(3, " +
-                                summand_repr + "))"))
+        summand_repr = (
+            "ScalarTimesOperator(ScalarValue(3), ScalarTimesOperator("
+            "ScalarValue(2), OperatorSymbol('a', hs="+hs_repr+")))")
+        assert (srepr(expr) == (
+            "OperatorPlus(" + summand_repr +
+            ", ScalarTimesOperator(ScalarValue(3), " + summand_repr + "))"))
     assert (srepr(2*a*3 + 3 * (2*a*3)) ==
-            "ScalarTimesOperator(24, ""OperatorSymbol('a', hs="+hs_repr+"))")
+            "ScalarTimesOperator(ScalarValue(24), "
+            "OperatorSymbol('a', hs="+hs_repr+"))")
 
 
 def test_extra_rules():
@@ -59,7 +69,8 @@ def test_extra_rules():
         with extra_binary_rules(ScalarTimesOperator, {'extra': rule}):
             expr = 2*a*3 + 3 * (2*a*3)
     assert (srepr(2*a*3 + 3 * (2*a*3)) ==
-            "ScalarTimesOperator(24, ""OperatorSymbol('a', hs="+hs_repr+"))")
+            "ScalarTimesOperator(ScalarValue(24), "
+            "OperatorSymbol('a', hs="+hs_repr+"))")
 
 
 def test_extra_binary_rules():

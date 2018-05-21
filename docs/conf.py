@@ -178,7 +178,6 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 html_theme_options = {
     'collapse_navigation': True,
     'display_version': True,
-    'navigation_depth': 3,
 }
 
 inheritance_graph_attrs = dict(size='""')

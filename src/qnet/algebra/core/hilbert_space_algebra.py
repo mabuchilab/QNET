@@ -1,5 +1,4 @@
-r"""
-Core class hierarchy for Hilbert spaces
+r"""Core class hierarchy for Hilbert spaces
 
 This module defines some simple classes to describe simple and
 *composite/tensor* (i.e., multiple degree of freedom)
@@ -356,10 +355,6 @@ class LocalSpace(HilbertSpace, Expression):
     def minimal_kwargs(self):
         return self._minimal_kwargs
 
-    def all_symbols(self):
-        """Empty list"""
-        return {}
-
     def remove(self, other):
         if other == self:
             return TrivialSpace
@@ -474,20 +469,16 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
             return TrivialKet
         else:
             if isinstance(index_or_label, int):
-                raise IndexError("No index %d in basis for TrivialSpace"
-                                 % index_or_label)
+                raise IndexError(
+                    "No index %d in basis for TrivialSpace" % index_or_label)
             else:
-                raise KeyError("No label %d in basis for TrivialSpace"
-                                % index_or_label)
+                raise KeyError(
+                    "No label %d in basis for TrivialSpace" % index_or_label)
 
     @property
     def basis_labels(self):
         """The one-element tuple containing the label '0'"""
         return tuple(["0", ])
-
-    def all_symbols(self):
-        """Empty set (no symbols)"""
-        return set(())
 
     def remove(self, other):
         """Removing any Hilbert space from the trivial space yields the trivial
@@ -510,9 +501,6 @@ class TrivialSpace(HilbertSpace, Expression, metaclass=Singleton):
         if other is TrivialSpace:
             return False
         return True
-
-    def __eq__(self, other):
-        return self is other
 
     @property
     def label(self):
@@ -540,10 +528,6 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
     def _order_key(self):
         return KeyTuple((-1, '_'))
 
-    def all_symbols(self):
-        """Empty set (no symbols)"""
-        return set(())
-
     def remove(self, other):
         """Raise AlgebraError, as the remaining space is undefined"""
         raise AlgebraError("Cannot remove anything from FullSpace")
@@ -562,9 +546,6 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
         """False, as the full space by definition is not contained in any other
         space"""
         return False
-
-    def __eq__(self, other):
-        return self is other
 
     @property
     def label(self):
@@ -587,7 +568,7 @@ class ProductSpace(HilbertSpace, Operation):
     ('0,0', '0,1', '1,0', '1,1')
     """
 
-    neutral_element = TrivialSpace
+    _neutral_element = TrivialSpace
     _simplifications = [empty_trivial, assoc, convert_to_spaces, idem,
                         filter_neutral]
 
@@ -744,4 +725,3 @@ class ProductSpace(HilbertSpace, Operation):
         if other is FullSpace:
             return True
         return False
-

@@ -4,7 +4,7 @@ from abc import ABCMeta
 
 import attr
 
-from .abstract_algebra import Operation, all_symbols
+from .abstract_algebra import Operation
 from .exceptions import InfiniteSumError
 from ..pattern_matching import wc
 from ...utils.indices import (
@@ -48,14 +48,26 @@ class IndexedSum(Operation, metaclass=ABCMeta):
 
     @property
     def variables(self):
-        """List of the dummy (index) variable symbols"""
+        """List of the dummy (index) variable symbols
+
+        See also :property:`bound_symbols` for a set of the same symbols
+        """
         return [r.index_symbol for r in self.ranges]
 
-    def all_symbols(self):
+    @property
+    def bound_symbols(self):
+        """Set of bound variables, i.e. the index variable symbols
+
+        See also :property:`variables` for an ordered list of the same symbols
+        """
+        return set(self.variables)
+
+    @property
+    def free_symbols(self):
         """Set of all free symbols"""
-        return set(
-            [sym for sym in all_symbols(self.term)
-                if sym not in self.variables])
+        return set([
+            sym for sym in self.term.free_symbols
+            if sym not in self.bound_symbols])
 
     @property
     def kwargs(self):
@@ -64,9 +76,16 @@ class IndexedSum(Operation, metaclass=ABCMeta):
     @property
     def terms(self):
         for mapping in yield_from_ranges(self.ranges):
-            yield self.term.substitute(mapping).simplify(rules=[(
-                wc('label', head=SymbolicLabelBase),
-                lambda label: label.evaluate(mapping))])
+            term = self.term.substitute(mapping)
+            try:
+                term = term.simplify(rules=[(
+                    wc('label', head=SymbolicLabelBase),
+                    lambda label: label.evaluate(mapping))])
+            except AttributeError:
+                # for ScalarIndexedSum, term may be a scalar that doesn't have
+                # a `simplify` method
+                pass
+            yield term
 
     def __len__(self):
         length = 1
@@ -151,14 +170,20 @@ class IndexedSum(Operation, metaclass=ABCMeta):
         """Return a copy with modified indices to ensure disjunct indices with
         `others`.
 
+        Each element in `others` may be an index symbol (:class:`.IdxSym`),
+        a index-range object (:class:`.IndexRangeBase`) or list of index-range
+        objects, or an indexed operation (something with a ``ranges`` attribute)
+
         Each index symbol is primed until it does not match any index symbol in
-        `others`
+        `others`.
         """
         new = self
         other_index_symbols = set()
         for other in others:
             try:
-                if isinstance(other, IndexRangeBase):
+                if isinstance(other, IdxSym):
+                    other_index_symbols.add(other)
+                elif isinstance(other, IndexRangeBase):
                     other_index_symbols.add(other.index_symbol)
                 elif hasattr(other, 'ranges'):
                     other_index_symbols.update(
@@ -168,15 +193,19 @@ class IndexedSum(Operation, metaclass=ABCMeta):
                         [r.index_symbol for r in other])
             except AttributeError:
                 raise ValueError(
-                    "Each element of other must be an an instance of "
-                    "IndexRangeBase, and object with a `ranges` attribute "
+                    "Each element of other must be an an instance of IdxSym, "
+                    "IndexRangeBase, an object with a `ranges` attribute "
                     "with a list of IndexRangeBase instances, or a list of"
-                    "IndexRangeBase objects directly")
+                    "IndexRangeBase objects.")
         for r in self.ranges:
             index_symbol = r.index_symbol
+            modified = False
             while index_symbol in other_index_symbols:
+                modified = True
                 index_symbol = index_symbol.incr_primed()
-            new = new._substitute({r.index_symbol: index_symbol}, safe=True)
+            if modified:
+                new = new._substitute(
+                    {r.index_symbol: index_symbol}, safe=True)
         return new
 
     def __mul__(self, other):

@@ -12,23 +12,24 @@ from qnet import (
     TrivialKet, BasisKet, CoherentStateKet, UnequalSpaces, Bra,
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
-    SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, ascii)
+    SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, ascii,
+    ScalarValue)
 
 
 def test_ascii_scalar():
     """Test rendering of scalar values"""
-    assert ascii(2) == '2'
+    assert ascii(2) == ascii(ScalarValue(2)) == '2'
     ascii.printer.cache = {}
     # we always want 2.0 to be printed as '2'. Without this normalization, the
     # state of the cache might introduce non-reproducible behavior, as 2==2.0
-    assert ascii(2.0) == '2'
-    assert ascii(1j) == '1j'
+    assert ascii(2.0) == ascii(ScalarValue(2.0)) == '2'
+    assert ascii(1j) == ascii(ScalarValue(1j)) == '1j'
     assert ascii('foo') == 'foo'
 
     i = Idx('i')
     alpha = IndexedBase('alpha')
-    assert ascii(i) == 'i'
-    assert ascii(alpha[i]) == 'alpha_i'
+    assert ascii(i) == ascii(ScalarValue(i)) == 'i'
+    assert ascii(alpha[i]) == ascii(ScalarValue(alpha[i])) == 'alpha_i'
 
 
 def test_ascii_circuit_elements():
@@ -144,6 +145,7 @@ def test_ascii_operator_elements():
     assert ascii(sig_e_e, sig_as_ketbra=False) == 'Pi_e^(1)'
 
 
+@pytest.mark.xxx
 def test_ascii_operator_operations():
     """Test the ascii representation of operator algebra operations"""
     hs1 = LocalSpace('q_1', dimension=2)

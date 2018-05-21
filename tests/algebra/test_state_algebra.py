@@ -3,6 +3,7 @@ import unittest
 from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols, factorial
 
 from qnet.algebra.core.abstract_algebra import simplify
+from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.toolbox.core import no_rules
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, Create, Destroy, Jplus, Jminus, Jz, Phase, Displace,
@@ -10,7 +11,8 @@ from qnet.algebra.core.operator_algebra import (
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.state_algebra import (
     KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
-    TrivialKet, TensorKet, BasisKet, KetBra)
+    TrivialKet, TensorKet, BasisKet, KetBra, Bra, OperatorTimesKet, BraKet,
+    KetBra, KetIndexedSum)
 from qnet.algebra.core.exceptions import UnequalSpaces
 from qnet.utils.indices import (
     IdxSym, FockIndex, IntIndex, StrLabel, SymbolicLabelBase,
@@ -28,8 +30,8 @@ class TestStateAddition(unittest.TestCase):
         assert a+z == a
         assert z+a == a
         assert z+z == z
-        assert z == 0
-
+        assert z != 0
+        assert z.is_zero
 
     def testAdditionToOperator(self):
         hs = LocalSpace("hs")
@@ -57,7 +59,6 @@ class TestStateAddition(unittest.TestCase):
         with pytest.raises(UnequalSpaces):
             a.__add__(b)
 
-
     def testEquality(self):
         h1 = LocalSpace("h1")
         assert (CoherentStateKet(10., hs=h1) + CoherentStateKet(20., hs=h1) ==
@@ -81,7 +82,6 @@ class TestTensorKet(unittest.TestCase):
         assert a * b == TensorKet(a,b)
         assert a * b == b * a
 
-
     def testHilbertSpace(self):
         h1 = LocalSpace("h1")
         h2 = LocalSpace("h2")
@@ -89,7 +89,6 @@ class TestTensorKet(unittest.TestCase):
         b = KetSymbol("b", hs=h2)
         assert a.space == h1
         assert (a * b).space == h1*h2
-
 
     def testEquality(self):
         h1 = LocalSpace("h1")
@@ -120,7 +119,6 @@ class TestScalarTimesKet(unittest.TestCase):
         assert a * 0 == z
         assert 10 * z == z
 
-
     def testScalarCombination(self):
         a = KetSymbol("a", hs="h1")
         assert a+a == 2*a
@@ -150,8 +148,6 @@ class TestOperatorTimesKet(unittest.TestCase):
         assert IdentityOperator*a == a
         assert A * (Ap * a) == (A * Ap) * a
         assert (A * B) * (a * b) == (A * a) * (B * b)
-
-
 
     def testScalarCombination(self):
         a = KetSymbol("a", hs="h1")
@@ -189,7 +185,6 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
         assert (Jminus(hs=h) * BasisKet('2', hs=h) ==
                 sqrt(j*(j+1)-2*(2-1)) * BasisKet('1', hs=h))
         assert Jz(hs=h) * BasisKet('2', hs=h) == 2 * BasisKet('2', hs=h)
-
 
     def testPhase(self):
         assert (Phase(5, hs=1) * BasisKet(3, hs=1) ==
@@ -344,3 +339,80 @@ def test_coherent_state_to_fock_representation():
         assert (
             sum.term.term ==
             BasisKet(FockIndex(IdxSym('n')), hs=LocalSpace('1')))
+
+
+def test_scalar_times_bra():
+    """Test that multiplication of a scalar with a bra is handled correctly"""
+    alpha_sym = symbols('alpha')
+    alpha = ScalarValue(alpha_sym)
+    ket = KetSymbol('Psi', hs=0)
+    bra = ket.bra
+
+    # first, let's try the ket case, just to establish a working baseline
+    expr = alpha * ket
+    assert expr == ScalarTimesKet(alpha, ket)
+    assert expr == alpha_sym * ket
+    assert isinstance((alpha_sym * ket).coeff, ScalarValue)
+    assert expr == ket * alpha
+    assert expr == ket * alpha_sym
+
+    # now, the bra
+    expr = alpha * bra
+    assert expr == Bra(ScalarTimesKet(alpha.conjugate(), ket))
+    assert expr == alpha_sym * bra
+    assert isinstance((alpha_sym * bra).ket.coeff, ScalarValue)
+    assert expr == bra * alpha
+    assert expr == bra * alpha_sym
+
+
+def test_disallow_inner_bra():
+    """Test that it is not possible to instantiate a State Opereration that has
+    a Bra as an operator: we accept Bra to be at the root of the expression
+    tree"""
+    alpha = symbols('alpha')
+    A = OperatorSymbol('A', hs=0)
+    ket1 = KetSymbol('Psi_1', hs=0)
+    ket2 = KetSymbol('Psi_1', hs=0)
+    bra1 = Bra(ket1)
+    bra2 = Bra(ket2)
+    bra1_hs1 = Bra(KetSymbol('Psi_1', hs=1))
+
+    with pytest.raises(TypeError) as exc_info:
+        KetPlus(bra1, bra2)
+    assert "must be Kets" in str(exc_info.value)
+    assert isinstance(KetPlus.create(bra1, bra2), Bra)
+
+    with pytest.raises(TypeError) as exc_info:
+        TensorKet(bra1, bra1_hs1)
+    assert "must be Kets" in str(exc_info.value)
+    assert isinstance(TensorKet.create(bra1, bra1_hs1), Bra)
+
+    with pytest.raises(TypeError) as exc_info:
+        ScalarTimesKet(alpha, bra1)
+    assert "must be Kets" in str(exc_info.value)
+    assert isinstance(ScalarTimesKet.create(alpha, bra1), Bra)
+
+    with pytest.raises(TypeError) as exc_info:
+        OperatorTimesKet(A, bra1)
+    assert "must be Kets" in str(exc_info.value)
+    with pytest.raises(TypeError) as exc_info:
+        OperatorTimesKet(bra1, A)
+    assert "must be Kets" in str(exc_info.value)
+
+    with pytest.raises(TypeError) as exc_info:
+        BraKet(bra1, ket2)
+    assert "must be Kets" in str(exc_info.value)
+
+    with pytest.raises(TypeError) as exc_info:
+        KetBra(ket1, bra2)
+    assert "must be Kets" in str(exc_info.value)
+
+    i = IdxSym('i')
+    Psi = IndexedBase('Psi')
+    psi_i = KetSymbol(StrLabel(Psi[i]), hs=0)
+    with pytest.raises(TypeError) as exc_info:
+        KetIndexedSum(Bra(psi_i), IndexOverFockSpace(i, hs=0))
+    assert "must be Kets" in str(exc_info.value)
+    assert isinstance(
+        KetIndexedSum.create(Bra(psi_i), IndexOverFockSpace(i, hs=0)),
+        Bra)
