@@ -20,6 +20,41 @@ __all__ = []  # will be extended by _import_submodules
 __version__ = "2.0.0-dev"
 
 
+def _git_version():
+    """If installed with 'pip installe -e .' from inside a git repo, the
+    current git revision as a string"""
+
+    import subprocess
+    import os
+
+    def _minimal_ext_cmd(cmd):
+        # construct minimal environment
+        env = {}
+        for k in ['SYSTEMROOT', 'PATH']:
+            v = os.environ.get(k)
+            if v is not None:
+                env[k] = v
+        # LANGUAGE is used on win32
+        env['LANGUAGE'] = 'C'
+        env['LANG'] = 'C'
+        env['LC_ALL'] = 'C'
+        FNULL = open(os.devnull, 'w')
+        cwd = os.path.dirname(os.path.realpath(__file__))
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=FNULL, env=env, cwd=cwd)
+        out = proc.communicate()[0]
+        return out
+
+    try:
+        out = _minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
+        return out.strip().decode('ascii')
+    except OSError:
+        return "unknown"
+
+
+__git_version__ = _git_version()
+
+
 # dynamic initialization
 
 qnet._flat_api_tools._import_submodules(
