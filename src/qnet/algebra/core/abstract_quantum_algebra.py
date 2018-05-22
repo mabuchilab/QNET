@@ -19,13 +19,14 @@ from .abstract_algebra import Operation, Expression, substitute
 from .indexed_operations import IndexedSum
 from ...utils.ordering import (
     DisjunctCommutativeHSOrder, FullCommutativeHSOrder, KeyTuple, )
-from ...utils.indices import SymbolicLabelBase
+from ...utils.indices import (
+    SymbolicLabelBase, IndexOverList, IndexOverFockSpace, IndexOverRange)
 
 
 __all__ = [
     'ScalarTimesQuantumExpression', 'QuantumExpression', 'QuantumOperation',
     'QuantumPlus', 'QuantumTimes', 'SingleQuantumOperation', 'QuantumAdjoint',
-    'QuantumSymbol', 'QuantumIndexedSum']
+    'QuantumSymbol', 'QuantumIndexedSum', 'Sum']
 __private__ = [
     'ensure_local_space']
 
@@ -156,7 +157,7 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
 
         .. math::
 
-            \text{expr} = \sum_{n=0}^{N} c_n (x - x_0)^n + O(N=1)
+            \text{expr} = \sum_{n=0}^{N} c_n (x - x_0)^n + O(N+1)
 
         Args:
             param: Expansion parameter $x$
@@ -666,6 +667,115 @@ class QuantumIndexedSum(IndexedSum, SingleQuantumOperation, metaclass=ABCMeta):
 
     def __rsub__(self, other):
         raise NotImplementedError()
+
+
+def _sum_over_list(term, idx, values):
+    return IndexOverList(idx, values)
+
+
+def _sum_over_range(term, idx, start_from, to, step=1):
+    return IndexOverRange(idx, start_from=start_from, to=to, step=step)
+
+
+def _sum_over_fockspace(term, idx, hs=None):
+    if hs is None:
+        return IndexOverFockSpace(idx, hs=term.space)
+    else:
+        return IndexOverFockSpace(idx, hs=hs)
+
+
+def Sum(idx, *args, **kwargs):
+    """Instantiator for an arbitrary indexed sum.
+
+    This returns a function that instantiates the appropriate
+    :class:`QuantumIndexedSum` subclass for a given term expression. It is the
+    preferred way to "manually" create indexed sum expressions, closely
+    resembling the normal mathematical notation for sums.
+
+    Args:
+        idx (IdxSym): The index symbol over which the sum runs
+        args: arguments that describe the values over which `idx` runs,
+        kwargs: keyword-arguments, used in addition to `args`
+
+    Returns:
+        callable: an instantiator function that takes a
+        arbitrary `term` that should generally contain the `idx` symbol, and
+        returns an indexed sum over that `term` with the index range specified
+        by the original `args` and `kwargs`.
+
+    There is considerable flexibility to specify concise `args` for a variety
+    of index ranges.
+
+    Assume the following setup::
+
+        >>> i = IdxSym('i'); j = IdxSym('j')
+        >>> ket_i = BasisKet(FockIndex(i), hs=0)
+        >>> ket_j = BasisKet(FockIndex(j), hs=0)
+        >>> hs0 = LocalSpace('0')
+
+    Giving `i` as the only argument will sum over the indices of the basis
+    states of the Hilbert space of `term`::
+
+        >>> s = Sum(i)(ket_i)
+        >>> unicode(s)
+        '∑_{i ∈ ℌ₀} |i⟩⁽⁰⁾'
+
+    You may also specify a Hilbert space manually::
+
+        >>> Sum(i, hs0)(ket_i) == Sum(i, hs=hs0)(ket_i) == s
+        True
+
+    Note that using :func:`Sum` is vastly more readable than the equivalent
+    "manual" instantiation::
+
+        >>> s == KetIndexedSum.create(ket_i, IndexOverFockSpace(i, hs=hs0))
+        True
+
+    By nesting calls to `Sum`, you can instantiate sums running over multiple
+    indices::
+
+        >>> unicode( Sum(i)(Sum(j)(ket_i * ket_j.dag())) )
+        '∑_{i,j ∈ ℌ₀} |i⟩⟨j|⁽⁰⁾'
+
+    Giving two integers in addition to the index `i` in `args`, the index will
+    run between the two values::
+
+        >>> unicode( Sum(i, 1, 10)(ket_i) )
+        '∑_{i=1}^{10} |i⟩⁽⁰⁾'
+        >>> Sum(i, 1, 10)(ket_i) == Sum(i, 1, to=10)(ket_i)
+        True
+
+    You may also include an optional step width, either as a third integer or
+    using the `step` keyword argument.
+
+        >>> #unicode( Sum(i, 1, 10, step=2)(ket_i) ) # TODO
+
+    Lastly, by passing a tuple or list of values, the index will run over all
+    the elements in that tuple or list::
+
+        >>> unicode( Sum(i, (1, 2, 3))(ket_i))
+        '∑_{i ∈ {1,2,3}} |i⟩⁽⁰⁾'
+    """
+    dispatch_table = {
+        tuple(): _sum_over_fockspace,
+        (LocalSpace, ): _sum_over_fockspace,
+        (list, ): _sum_over_list,
+        (tuple, ): _sum_over_list,
+        (int, ): _sum_over_range,
+        (int, int): _sum_over_range,
+        (int, int, int): _sum_over_range,
+    }
+    key = tuple((type(arg) for arg in args))
+    try:
+        idx_range_func = dispatch_table[key]
+    except KeyError:
+        raise TypeError("No implementation for args of type %s" % str(key))
+
+    def sum(term):
+        idx_range = idx_range_func(term, idx, *args, **kwargs)
+        return term._indexed_sum_cls.create(term, idx_range)
+
+    return sum
 
 
 def ensure_local_space(hs):
