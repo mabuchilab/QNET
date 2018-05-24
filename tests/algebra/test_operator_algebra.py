@@ -461,6 +461,13 @@ class TestDifferentiation(unittest.TestCase):
         s = LocalSigma.create(1, 2, hs=1)
         assert s.diff(x) == ZeroOperator
 
+        alpha = symbols('alpha')
+        Ph = Phase.create(alpha, hs=1)
+        assert Ph.diff(x) == ZeroOperator
+        with pytest.raises(NotImplementedError):
+            # for now
+            Ph.diff(alpha)
+
     def testNonConstantOps(self):
         x = symbols("x", real=True)
 

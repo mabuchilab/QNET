@@ -130,7 +130,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
 
     All :class:`LocalOperator` instances have a fixed associated identifier
     (symbol) that is used when printing that operator. A custom identifier can
-    be useed through the associated :class:`.LocalSpace`'s
+    be used through the associated :class:`.LocalSpace`'s
     `local_identifiers` parameter. For example::
 
         >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
@@ -481,9 +481,6 @@ class Phase(LocalOperator):
         the only element'''
         return (self.phi,)
 
-    def _diff(self, sym):
-        raise NotImplementedError()
-
     def _adjoint(self):
         return Phase.create(-self.phi.conjugate(), hs=self.space)
 
@@ -526,9 +523,6 @@ class Displace(LocalOperator):
         amplitude $\alpha$ as the only element'''
         return (self.alpha,)
 
-    def _diff(self, sym):
-        raise NotImplementedError()
-
     def _adjoint(self):
         return Displace.create(-self.alpha, hs=self.space)
 
@@ -567,9 +561,6 @@ class Squeeze(LocalOperator):
     @property
     def args(self):
         return (self.eta,)
-
-    def _diff(self, sym):
-        raise NotImplementedError()
 
     def _adjoint(self):
         return Squeeze(-self.eta, hs=self.space)

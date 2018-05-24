@@ -144,8 +144,14 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
         return expr
 
     def _diff(self, sym):
-        # Expressions are assumed constant by default.
-        return self.__class__._zero
+        if sym.free_symbols.issubset(self.free_symbols):
+            # the "issubset" guarantees that there is neither an explicit nor
+            # an implicit dependence on sym. The derivative *may* still be
+            # zero, but we can't guarantee it
+            raise NotImplementedError()
+            # TODO: return a symbolic derivative
+        else:
+            return self.__class__._zero
 
     def series_expand(
             self, param: Symbol, about, order: int) -> tuple:
@@ -276,7 +282,7 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
 
 
 class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
-    """A symbolic expression"""
+    """A symbolic constant"""
     _rx_label = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
     def __init__(self, label, *, hs):
