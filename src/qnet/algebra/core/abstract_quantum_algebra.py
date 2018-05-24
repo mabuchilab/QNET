@@ -360,7 +360,7 @@ class QuantumOperation(QuantumExpression, Operation, metaclass=ABCMeta):
             if new_op is not op:
                 operands_have_changed = True
         if operands_have_changed:
-            return self.create(*simplified_operands)
+            return self.create(*simplified_operands, **self.kwargs)
         else:
             return self
 
