@@ -147,6 +147,7 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
             return self.__class__._zero
 
     def _diff(self, sym):
+        # TODO: abstract_method
         raise NotImplementedError()
 
     def series_expand(
@@ -399,7 +400,7 @@ class QuantumAdjoint(SingleQuantumOperation, metaclass=ABCMeta):
         return eo.adjoint()
 
     def _diff(self, sym):
-        return self.__class__.create(self.operands[0]._diff(sym))
+        return self.__class__.create(self.operands[0].diff(sym))
 
     def _adjoint(self):
         return self.operand
@@ -426,7 +427,7 @@ class QuantumPlus(QuantumOperation, metaclass=ABCMeta):
         return res
 
     def _diff(self, sym):
-        return sum([o._diff(sym) for o in self.operands], self.__class__._zero)
+        return sum([o.diff(sym) for o in self.operands], self.__class__._zero)
 
     def _adjoint(self):
         return self.__class__._plus_cls(*[o.adjoint() for o in self.operands])
@@ -495,7 +496,7 @@ class QuantumTimes(QuantumOperation, metaclass=ABCMeta):
         assert len(self.operands) > 1
         first = self.operands[0]
         rest = self.__class__._times_cls.create(*self.operands[1:])
-        return first._diff(sym) * rest + first * rest._diff(sym)
+        return first.diff(sym) * rest + first * rest.diff(sym)
 
     def _adjoint(self):
         return self.__class__._times_cls.create(
@@ -579,7 +580,7 @@ class ScalarTimesQuantumExpression(
 
     def _diff(self, sym):
         c, t = self.operands
-        return c._diff(sym) * t + c * t._diff(sym)
+        return c.diff(sym) * t + c * t.diff(sym)
 
     def _simplify_scalar(self, func):
         coeff, term = self.operands
