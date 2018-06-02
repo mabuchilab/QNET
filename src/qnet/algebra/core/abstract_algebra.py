@@ -79,6 +79,9 @@ class Expression(metaclass=ABCMeta):
 
     def __init__(self, *args, **kwargs):
         self._hash = None
+        self._free_symbols = None
+        self._bound_symbols = None
+        self._all_symbols = None
         self._instance_key = self._get_instance_key(args, kwargs)
 
     @classmethod
@@ -296,14 +299,27 @@ class Expression(metaclass=ABCMeta):
     @property
     def free_symbols(self):
         """Set of free SymPy symbols contained within the expression."""
-        res = set()
-        return res.union(*[_free_symbols(arg) for arg in self.args])
+        if self._free_symbols is None:
+            res = set()
+            self._free_symbols = res.union(
+                *[_free_symbols(arg) for arg in self.args])
+        return self._free_symbols
 
     @property
     def bound_symbols(self):
         """Set of bound SymPy symbols in the expression"""
-        res = set()
-        return res.union(*[_bound_symbols(arg) for arg in self.args])
+        if self._bound_symbols is None:
+            res = set()
+            self._bound_symbols = res.union(
+                *[_bound_symbols(arg) for arg in self.args])
+        return self._bound_symbols
+
+    @property
+    def all_symbols(self):
+        """Combination of :attr:`free_symbols` and :attr:`bound_symbols`"""
+        if self._all_symbols is None:
+            self._all_symbols = self.free_symbols | self.bound_symbols
+        return self._all_symbols
 
     def __ne__(self, other):
         """If it is well-defined (i.e. boolean), simply return
