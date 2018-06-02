@@ -136,22 +136,18 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
         Returns:
             The n-th derivative.
         """
-        expr = self
-        for k in range(n):
-            expr = expr._diff(sym)
-        if expand_simplify:
-            expr = expr.expand().simplify_scalar()
-        return expr
-
-    def _diff(self, sym):
         if sym.free_symbols.issubset(self.free_symbols):
-            # the "issubset" guarantees that there is neither an explicit nor
-            # an implicit dependence on sym. The derivative *may* still be
-            # zero, but we can't guarantee it
-            raise NotImplementedError()
-            # TODO: return a symbolic derivative
+            expr = self
+            for k in range(n):
+                expr = expr._diff(sym)
+            if expand_simplify:
+                expr = expr.expand().simplify_scalar()
+            return expr
         else:
             return self.__class__._zero
+
+    def _diff(self, sym):
+        raise NotImplementedError()
 
     def series_expand(
             self, param: Symbol, about, order: int) -> tuple:
