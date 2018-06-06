@@ -15,6 +15,11 @@ from sympy.printing.precedence import (
 # treated like they were inherited, so not every single class has to be named
 # here.
 PRECEDENCE_VALUES = {
+    "QuantumPlus": PRECEDENCE["Add"],
+    "QuantumTimes": PRECEDENCE["Mul"],
+    "ScalarTimesQuantumExpression": PRECEDENCE["Mul"],
+    "QuantumAdjoint": PRECEDENCE["Pow"],
+    "QuantumDerivative": PRECEDENCE["Mul"] - 1,
     "OperatorPlus": PRECEDENCE["Add"],
     "OperatorTimes": PRECEDENCE["Mul"],
     "ScalarTimesOperator": PRECEDENCE["Mul"],

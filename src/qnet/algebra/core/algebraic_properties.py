@@ -16,7 +16,8 @@ __private__ = [
     'delegate_to_method', 'scalars_to_op', 'convert_to_scalars',
     'disjunct_hs_zero', 'commutator_order', 'accept_bras',
     'basis_ket_zero_outside_hs', 'indexed_sum_over_const',
-    'indexed_sum_over_kronecker', 'scalar_indexed_sum_over_kronecker']
+    'indexed_sum_over_kronecker', 'scalar_indexed_sum_over_kronecker',
+    'derivative_via_diff']
 
 
 def assoc(cls, ops, kwargs):
@@ -563,3 +564,35 @@ def scalar_indexed_sum_over_kronecker(cls, ops, kwargs):
                 ranges = [r for r in ranges if r.index_symbol != j]
         ops = (term,) + tuple(ranges)
     return ops, kwargs
+
+
+def derivative_via_diff(cls, ops, kwargs):
+    """Implementation of the :meth:`QuantumDerivative.create` interface via the
+    use of :meth:`QuantumExpression._diff`.
+
+    Thus, by having :meth:`.QuantumExpression.diff` delegate to
+    :meth:`.QuantumDerivative.create`, instead of
+    :meth:`.QuantumExpression._diff` directly, we get automatic caching of
+    derivatives
+    """
+    assert len(ops) == 1
+    op = ops[0]
+    derivs = kwargs['derivs']
+    vals = kwargs['vals']
+    # both `derivs` and `vals` are guaranteed to be tuples, via the conversion
+    # that's happening in `QuantumDerivative.create`
+    for (sym, n) in derivs:
+        if sym.free_symbols.issubset(op.free_symbols):
+            for k in range(n):
+                op = op._diff(sym)
+        else:
+            return op.__class__._zero
+    if vals is not None:
+        try:
+            # for QuantumDerivative instance
+            return op.evaluate_at(vals)
+        except AttributeError:
+            # for explicit Expression
+            return op.substitute(vals)
+    else:
+        return op

@@ -1,3 +1,5 @@
+from functools import partial
+
 import pytest
 
 from sympy import symbols, sqrt, exp, I, Idx, IndexedBase
@@ -13,7 +15,7 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, ascii,
-    ScalarValue)
+    ScalarValue, ScalarExpression, QuantumDerivative, Scalar)
 
 
 def test_ascii_scalar():
@@ -401,3 +403,71 @@ def test_ascii_sop_operations():
             'L^(1)[sqrt(gamma) * A^(1)]')
     assert (ascii(SuperOperatorTimesOperator((L + 2*M), A_op)) ==
             '(L^(1) + 2 * M^(1))[A^(1)]')
+
+
+@pytest.fixture
+def MyScalarFunc():
+
+    class MyScalarDerivative(QuantumDerivative, Scalar):
+        pass
+
+    class ScalarFunc(ScalarExpression):
+
+        def __init__(self, name, *sym_args):
+            self._name = name
+            self._sym_args = sym_args
+            super().__init__(name, *sym_args)
+
+        def _adjoint(self):
+            return self
+
+        @property
+        def args(self):
+            return (self._name, *self._sym_args)
+
+        def _diff(self, sym):
+            return MyScalarDerivative(self, derivs={sym: 1})
+
+        def _ascii(self, *args, **kwargs):
+            return "%s(%s)" % (
+                self._name, ", ".join([ascii(sym) for sym in self._sym_args]))
+
+    return ScalarFunc
+
+
+def test_ascii_derivative(MyScalarFunc):
+    s, s0, t, t0 = symbols('s, s_0, t, t_0', real=True)
+
+    f = partial(MyScalarFunc, "f")
+    g = partial(MyScalarFunc, "g")
+
+    expr = f(s, t).diff(s, n=2).diff(t)
+    assert ascii(expr) == 'D_s^2 D_t f(s, t)'
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: s0})
+    assert ascii(expr) == 'D_s^2 D_t f(s, t) |_(s=s_0)'
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: s0, t: t0})
+    assert ascii(expr) == 'D_s^2 D_t f(s, t) |_(s=s_0, t=t_0)'
+
+    D = expr.__class__
+
+    expr = D(f(s, t) + g(s, t), derivs={s: 2, t: 1}, vals={s: s0, t: t0})
+    assert ascii(expr) == 'D_s^2 D_t (f(s, t) + g(s, t)) |_(s=s_0, t=t_0)'
+
+    expr = D(2 * f(s, t), derivs={s: 2, t: 1}, vals={s: s0, t: t0})
+    assert ascii(expr) == 'D_s^2 D_t (2 * f(s, t)) |_(s=s_0, t=t_0)'
+
+    expr = f(s, t).diff(t) + g(s, t)
+    assert ascii(expr) == 'D_t f(s, t) + g(s, t)'
+
+    expr = f(s, t).diff(t) * g(s, t)
+    assert ascii(expr) == '(D_t f(s, t)) * g(s, t)'
+
+    expr = (  # nested derivative
+        MyScalarFunc("f", s, t)
+        .diff(s, n=2)
+        .diff(t)
+        .evaluate_at({t: t0})
+        .diff(t0))
+    assert ascii(expr) == 'D_t_0 (D_s^2 D_t f(s, t) |_(t=t_0))'

@@ -9,7 +9,7 @@ from qnet.algebra.core.operator_algebra import (
         Displace, Create, Destroy, OperatorSymbol, IdentityOperator,
         ZeroOperator, OperatorPlus, LocalSigma, LocalProjector, OperatorTrace,
         Adjoint, X, Y, Z, ScalarTimesOperator, OperatorTimes, Jz,
-        Jplus, Jminus, Phase)
+        Jplus, Jminus, Phase, OperatorDerivative)
 from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.core.hilbert_space_algebra import (
         LocalSpace, TrivialSpace, ProductSpace)
@@ -464,9 +464,7 @@ class TestDifferentiation(unittest.TestCase):
         alpha = symbols('alpha')
         Ph = Phase.create(alpha, hs=1)
         assert Ph.diff(x) == ZeroOperator
-        with pytest.raises(NotImplementedError):
-            # for now
-            Ph.diff(alpha)
+        assert isinstance(Ph.diff(alpha), OperatorDerivative)
 
     def testNonConstantOps(self):
         x = symbols("x", real=True)

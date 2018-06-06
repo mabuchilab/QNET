@@ -12,7 +12,8 @@ from sympy import (I, Matrix as SympyMatrix, sqrt)
 from .abstract_algebra import Operation
 from .abstract_quantum_algebra import (
     ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
-    QuantumOperation, QuantumPlus, QuantumTimes, QuantumAdjoint)
+    QuantumOperation, QuantumPlus, QuantumTimes, QuantumAdjoint,
+    QuantumDerivative)
 from .algebraic_properties import (
     assoc, filter_neutral, match_replace, match_replace_binary, orderby,
     delegate_to_method)
@@ -30,7 +31,7 @@ __all__ = [
     'SuperOperator', 'SuperOperatorPlus', 'SuperOperatorSymbol',
     'SuperOperatorTimes', 'SuperOperatorTimesOperator', 'anti_commutator',
     'commutator', 'lindblad', 'liouvillian', 'liouvillian_normal_form',
-    'IdentitySuperOperator', 'ZeroSuperOperator']
+    'IdentitySuperOperator', 'ZeroSuperOperator', 'SuperOperatorDerivative']
 
 __private__ = ['SuperCommutativeHSOrder']
 # anything not in __all__ must be in __private__
@@ -74,6 +75,9 @@ class IdentitySuperOperator(SuperOperator, metaclass=Singleton):
     def args(self):
         return tuple()
 
+    def _diff(self, sym):
+        return ZeroSuperOperator
+
     def _adjoint(self):
         return self
 
@@ -94,6 +98,9 @@ class ZeroSuperOperator(SuperOperator, metaclass=Singleton):
     @property
     def args(self):
         return tuple()
+
+    def _diff(self, sym):
+        return self
 
     def _adjoint(self):
         return self
@@ -204,6 +211,9 @@ class SPre(SuperOperator, Operation):
     def _simplify_scalar(self, func):
         return self.create(self.operands[0].simplify_scalar(func=func))
 
+    def _diff(self, sym):
+        return SuperOperatorDerivative(self, {sym: 1})
+
     def _adjoint(self):
         return SPost(self.operands[0])
 
@@ -234,6 +244,9 @@ class SPost(SuperOperator, Operation):
 
     def _simplify_scalar(self, func):
         return self.create(self.operands[0].simplify_scalar(func=func))
+
+    def _diff(self, sym):
+        return SuperOperatorDerivative(self, {sym: 1})
 
     def _adjoint(self):
         return SPre(self.operands[0])
@@ -290,7 +303,11 @@ class SuperOperatorTimesOperator(Operator, Operation):
         return SuperAdjoint(self)
 
     def _diff(self, sym):
-        raise NotImplementedError()
+        return self.sop.diff(sym) * self.op + self.sop * self.op.diff(sym)
+
+
+class SuperOperatorDerivative(QuantumDerivative, SuperOperator):
+    pass
 
 
 ###############################################################################

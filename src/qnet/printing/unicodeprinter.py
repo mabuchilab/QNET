@@ -5,6 +5,7 @@ from sympy.printing.conventions import split_super_sub
 from .asciiprinter import QnetAsciiPrinter
 from .sympy import SympyUnicodePrinter
 from ._unicode_mappings import render_unicode_sub_super
+from ._precedence import precedence, PRECEDENCE
 
 __all__ = []
 __private__ = ['QnetUnicodePrinter', 'SubSupFmt', 'SubSupFmtNoUni']
@@ -171,3 +172,33 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
 
     def _print_IdentitySuperOperator(self, expr, superop=True):
         return "𝟙"
+
+    def _print_QuantumDerivative(self, expr):
+        res = ""
+        for sym, n in expr.derivs.items():
+            sym_str = self.doprint(sym)
+            if " " in sym_str:
+                sym_str = "(%s)" % sym_str
+            subs = [sym_str, ]
+            if n == 1:
+                supers = []
+            else:
+                supers = [self.doprint(n), ]
+            res += (render_unicode_sub_super(
+                '∂', subs, supers, sub_first=True, translate_symbols=True,
+                unicode_sub_super=self._settings['unicode_sub_super']) + " ")
+        res += self.parenthesize(expr.operand, PRECEDENCE['Mul'], strict=True)
+        if expr.vals:
+            evaluation_strs = []
+            for sym, val in expr.vals.items():
+                evaluation_strs.append(
+                    "%s=%s" % (self.doprint(sym), self.doprint(val)))
+            evaluation_str = ", ".join(evaluation_strs)
+            if " " in evaluation_str:
+                evaluation_str = "(%s)" % evaluation_str
+            res += (render_unicode_sub_super(
+                ' |', subs=[evaluation_str, ], supers=[],
+                sub_first=True, translate_symbols=True,
+                unicode_sub_super=self._settings['unicode_sub_super'],
+                subscript_max_len=3))
+        return res

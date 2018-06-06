@@ -9,7 +9,7 @@ from numpy import complex128
 
 from ..utils.singleton import Singleton
 from .asciiprinter import QnetAsciiPrinter
-from ._precedence import precedence
+from ._precedence import precedence, PRECEDENCE
 from .sympy import SympyLatexPrinter
 
 __all__ = []
@@ -34,6 +34,8 @@ class QnetLatexPrinter(QnetAsciiPrinter):
 
     _parenth_left = r'\left('
     _parenth_right = r'\right)'
+    _bracket_left = r'\left['
+    _bracket_right = r'\right]'
     _dagger_sym = r'\dagger'
     _tensor_sym = r'\otimes'
     _product_sym = ' '
@@ -261,6 +263,33 @@ class QnetLatexPrinter(QnetAsciiPrinter):
         cs = self.parenthesize(sop, prec)
         ct = self.doprint(op)
         return r'%s\left[%s\right]' % (cs, ct)
+
+    def _print_QuantumDerivative(self, expr):
+        res = ""
+        numerator = r'\partial'
+        if expr.n > 1:
+            numerator = r'\partial^{%s}' % expr.n
+        denominators = []
+        for sym, n in expr.derivs.items():
+            if n == 1:
+                denominators.append(
+                    r'\partial %s' % self.doprint(sym))
+            else:
+                denominators.append(
+                    r'\partial %s^{%s}' % (self.doprint(sym), n))
+        denominator = " ".join(denominators)
+        res += r'\frac{%s}{%s}' % (numerator, denominator)
+        res += " " + self.parenthesize(
+            expr.operand, PRECEDENCE['Mul'], strict=True)
+        if expr.vals:
+            res = r'\left. ' + res
+            evaluation_strs = []
+            for sym, val in expr.vals.items():
+                evaluation_strs.append(
+                    "%s=%s" % (self.doprint(sym), self.doprint(val)))
+            evaluation_str = ", ".join(evaluation_strs)
+            res += r' \right\vert_{%s}' % evaluation_str
+        return res
 
     def _print_Matrix(self, expr):
         matrix_left_sym = r'\begin{pmatrix}'

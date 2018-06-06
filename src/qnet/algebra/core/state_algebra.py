@@ -23,7 +23,7 @@ from .hilbert_space_algebra import FullSpace, TrivialSpace
 from qnet.algebra.core.algebraic_properties import (
     indexed_sum_over_const,
     indexed_sum_over_kronecker)
-from .operator_algebra import Operator, OperatorPlus
+from .operator_algebra import Operator, OperatorPlus, Create, Destroy
 from .scalar_algebra import ScalarExpression
 from ...utils.indices import (
     FockIndex, IdxSym, IndexOverFockSpace, IndexOverRange, SymbolicLabelBase, )
@@ -203,6 +203,9 @@ class ZeroKet(State, Expression, metaclass=Singleton):
     def args(self):
         return tuple()
 
+    def _diff(self, sym):
+        return self
+
 
 @singleton_object
 class TrivialKet(State, Expression, metaclass=Singleton):
@@ -222,6 +225,9 @@ class TrivialKet(State, Expression, metaclass=Singleton):
     @property
     def args(self):
         return tuple()
+
+    def _diff(self, sym):
+        return ZeroKet
 
 
 class BasisKet(LocalKet, KetSymbol):
@@ -380,6 +386,14 @@ class CoherentStateKet(LocalKet):
     def ampl(self):
         return self._ampl
 
+    def _diff(self, sym):
+        hs = self.space
+        return (
+            (self._ampl * Create(hs=hs) -
+             self._ampl.conjugate() * Destroy(hs=hs))
+            .diff(sym)
+            * self)
+
     def to_fock_representation(self, index_symbol='n', max_terms=None):
         """Return the coherent state written out as an indexed sum over Fock
         basis states"""
@@ -499,6 +513,11 @@ class OperatorTimesKet(State, Operation):
             return sum((cto * et for cto in ct.operands), ZeroKet)
         return ct * et
 
+    def _diff(self, sym):
+        return (
+            self.operator.diff(sym) * self.ket +
+            self.operator * self.ket.diff(sym))
+
     def _series_expand(self, param, about, order):
         ce = self.operator.series_expand(param, about, order)
         te = self.ket.series_expand(param, about, order)
@@ -591,6 +610,12 @@ class BraKet(ScalarExpression, Operation):
     def bra(self):
         return Bra(self.operands[0])
 
+    def _diff(self, sym):
+        bra, ket = self.operands
+        return (
+            self.__class__.create(bra.diff(sym), ket) +
+            self.__class__.create(bra, ket.diff(sym)))
+
     def _adjoint(self):
         return BraKet.create(*reversed(self.operands))
 
@@ -631,6 +656,12 @@ class KetBra(Operator, Operation):
 
     def _adjoint(self):
         return KetBra.create(*reversed(self.operands))
+
+    def _diff(self, sym):
+        ket, bra = self.operands
+        return (
+            self.__class__.create(ket.diff(sym), bra) +
+            self.__class__.create(ket, bra.diff(sym)))
 
     def _expand(self):
         k, b = self.ket, self.bra.ket

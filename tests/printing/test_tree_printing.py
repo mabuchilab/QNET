@@ -1,4 +1,7 @@
+from functools import partial
 from textwrap import dedent
+
+import pytest
 
 from sympy import symbols, sqrt, exp, I
 
@@ -11,7 +14,8 @@ from qnet import (
     CoherentStateKet, UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
-    SuperOperatorTimesOperator, tree as tree_str)
+    SuperOperatorTimesOperator, tree as tree_str,  QuantumDerivative, Scalar,
+    ScalarExpression)
 
 
 def test_circuit_tree():
@@ -137,4 +141,51 @@ def test_sop_operations():
              └─ SuperOperatorPlus(B^(q₁), C^(q₂))
                 ├─ SuperOperatorSymbol(B, hs=ℌ_q₁)
                 └─ SuperOperatorSymbol(C, hs=ℌ_q₂)
+        ''').strip())
+
+
+@pytest.fixture
+def MyScalarFunc():
+
+    class MyScalarDerivative(QuantumDerivative, Scalar):
+        pass
+
+    class ScalarFunc(ScalarExpression):
+
+        def __init__(self, name, *sym_args):
+            self._name = name
+            self._sym_args = sym_args
+            super().__init__(name, *sym_args)
+
+        def _adjoint(self):
+            return self
+
+        @property
+        def args(self):
+            return (self._name, *self._sym_args)
+
+        def _diff(self, sym):
+            return MyScalarDerivative(self, derivs={sym: 1})
+
+        def _ascii(self, *args, **kwargs):
+            return "%s(%s)" % (
+                self._name, ", ".join([ascii(sym) for sym in self._sym_args]))
+
+    return ScalarFunc
+
+
+def test_derivative_tree(MyScalarFunc):
+    s, t, t0 = symbols('s, t, t_0', real=True)
+    expr = (  # nested derivative
+        MyScalarFunc("f", s, t)
+        .diff(s, n=2)
+        .diff(t)
+        .evaluate_at({t: t0})
+        .diff(t0))
+    tree = tree_str(expr)
+    assert (
+        tree == dedent(r'''
+        . MyScalarDerivative(..., derivs=((t₀, 1)))
+          └─ MyScalarDerivative(..., derivs=..., vals=((t, t₀)))
+             └─ ScalarFunc(f, s, t)
         ''').strip())

@@ -1,3 +1,7 @@
+from functools import partial
+
+import pytest
+
 from sympy import symbols, sqrt, exp, I, Rational, Idx, IndexedBase
 
 from qnet import (
@@ -11,7 +15,7 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, latex,
-    configure_printing)
+    configure_printing, QuantumDerivative, Scalar, ScalarExpression)
 from qnet.printing.latexprinter import QnetLatexPrinter
 
 
@@ -610,3 +614,130 @@ def test_repr_latex():
     B = OperatorSymbol("B", hs=1)
     assert A._repr_latex_() == "$%s$" % latex(A)
     assert (A + B)._repr_latex_() == "$%s$" % latex(A + B)
+
+
+@pytest.fixture
+def MyScalarFunc():
+
+    class MyScalarDerivative(QuantumDerivative, Scalar):
+        pass
+
+    class ScalarFunc(ScalarExpression):
+
+        def __init__(self, name, *sym_args):
+            self._name = name
+            self._sym_args = sym_args
+            super().__init__(name, *sym_args)
+
+        def _adjoint(self):
+            return self
+
+        @property
+        def args(self):
+            return (self._name, *self._sym_args)
+
+        def _diff(self, sym):
+            return MyScalarDerivative(self, derivs={sym: 1})
+
+        def _latex(self, *args, **kwargs):
+            return "%s(%s)" % (
+                self._name, ", ".join(
+                    [latex(sym) for sym in self._sym_args]))
+
+    return ScalarFunc
+
+
+def test_tex_derivative(MyScalarFunc):
+    s, s0, t, t0, gamma = symbols('s, s_0, t, t_0, gamma', real=True)
+    m = IdxSym('m')
+    n = IdxSym('n')
+    S = IndexedBase('s')
+    T = IndexedBase('t')
+
+    f = partial(MyScalarFunc, "f")
+    g = partial(MyScalarFunc, "g")
+
+    expr = f(s, t).diff(t)
+    assert latex(expr) == r'\frac{\partial}{\partial t} f(s, t)'
+
+    expr = f(s, t).diff(s, n=2).diff(t)
+    assert latex(expr) == (
+        r'\frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t)')
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: s0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t) '
+        r'\right\vert_{s=s_{0}}')
+
+    expr = f(S[m], T[n]).diff(S[m], n=2).diff(T[n]).evaluate_at({S[m]: s0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s_{m}^{2} \partial t_{n}} '
+        r'f(s_{m}, t_{n}) \right\vert_{s_{m}=s_{0}}')
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: 0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t) '
+        r'\right\vert_{s=0}')
+
+    expr = f(gamma, t).diff(gamma, n=2).diff(t).evaluate_at({gamma: 0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial \gamma^{2} \partial t} '
+        r'f(\gamma, t) \right\vert_{\gamma=0}')
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: s0, t: t0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t) '
+        r'\right\vert_{s=s_{0}, t=t_{0}}')
+
+    D = expr.__class__
+
+    expr = D(f(s, t) + g(s, t), derivs={s: 2, t: 1}, vals={s: s0, t: t0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} '
+        r'\left(f(s, t) + g(s, t)\right) \right\vert_{s=s_{0}, t=t_{0}}')
+
+    expr = D(2 * f(s, t), derivs={s: 2, t: 1}, vals={s: s0, t: t0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} '
+        r'\left(2 f(s, t)\right) \right\vert_{s=s_{0}, t=t_{0}}')
+
+    expr = f(s, t).diff(t) * g(s, t)
+    assert latex(expr) == (
+        r'\left(\frac{\partial}{\partial t} f(s, t)\right) g(s, t)')
+
+    expr = f(s, t).diff(t).evaluate_at({t: 0}) * g(s, t)
+    assert latex(expr) == (
+        r'\left(\left. \frac{\partial}{\partial t} f(s, t) '
+        r'\right\vert_{t=0}\right) g(s, t)')
+
+    expr = f(s, t).diff(t) + g(s, t)
+    assert latex(expr) == r'\frac{\partial}{\partial t} f(s, t) + g(s, t)'
+
+    f = MyScalarFunc("f", S[m], T[n])
+    series = f.series_expand(T[n], about=0, order=3)
+    assert latex(series) == (
+        r'\left(f(s_{m}, 0), \left. \frac{\partial}{\partial t_{n}} '
+        r'f(s_{m}, t_{n}) \right\vert_{t_{n}=0}, \frac{1}{2} \left(\left. '
+        r'\frac{\partial^{2}}{\partial t_{n}^{2}} f(s_{m}, t_{n}) '
+        r'\right\vert_{t_{n}=0}\right), \frac{1}{6} \left(\left. '
+        r'\frac{\partial^{3}}{\partial t_{n}^{3}} f(s_{m}, t_{n}) '
+        r'\right\vert_{t_{n}=0}\right)\right)')
+    f = MyScalarFunc("f", s, t)
+    series = f.series_expand(t, about=0, order=2)
+    assert (
+        latex(series) ==
+        r'\left(f(s, 0), \left. \frac{\partial}{\partial t} f(s, t) '
+        r'\right\vert_{t=0}, \frac{1}{2} \left(\left. '
+        r'\frac{\partial^{2}}{\partial t^{2}} f(s, t) '
+        r'\right\vert_{t=0}\right)\right)')
+
+    expr = (  # nested derivative
+        MyScalarFunc("f", s, t)
+        .diff(s, n=2)
+        .diff(t)
+        .evaluate_at({t: t0})
+        .diff(t0))
+    assert latex(expr) == (
+        r'\frac{\partial}{\partial t_{0}} \left(\left. '
+        r'\frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t) '
+        r'\right\vert_{t=t_{0}}\right)')

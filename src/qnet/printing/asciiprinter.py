@@ -30,6 +30,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
 
     _parenth_left = '('
     _parenth_right = ')'
+    _bracket_left = '['
+    _bracket_right = ']'
     _dagger_sym = 'H'
     _tensor_sym = '*'
     _product_sym = '*'
@@ -181,6 +183,16 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 self._parenth_right)
         else:
             return self.doprint(expr, *args, **kwargs)
+
+    def _print_tuple(self, expr):
+        return (
+            self._parenth_left + ", ".join([self.doprint(c) for c in expr])
+            + self._parenth_right)
+
+    def _print_list(self, expr):
+        return (
+            self._bracket_left + ", ".join([self.doprint(c) for c in expr])
+            + self._bracket_right)
 
     def _print_CircuitSymbol(self, expr):
         return self._render_str(expr.name)
@@ -687,6 +699,25 @@ class QnetAsciiPrinter(QnetBasePrinter):
         cs = self.parenthesize(sop, prec)
         ct = self.doprint(op)
         return "%s[%s]" % (cs, ct)
+
+    def _print_QuantumDerivative(self, expr):
+        res = ""
+        for sym, n in expr.derivs.items():
+            sym_str = self.doprint(sym)
+            if " " in sym_str:
+                sym_str = "(%s)" % sym_str
+            if n == 1:
+                res += "D_%s " % sym_str
+            else:
+                res += "D_%s^%s " % (sym_str, n)
+        res += self.parenthesize(expr.operand, PRECEDENCE['Mul'], strict=True)
+        if expr.vals:
+            evaluation_strs = []
+            for sym, val in expr.vals.items():
+                evaluation_strs.append(
+                    "%s=%s" % (self.doprint(sym), self.doprint(val)))
+            res += " |_(%s)" % ", ".join(evaluation_strs)
+        return res
 
     def _print_Matrix(self, expr):
         matrix_left_sym = '['

@@ -15,7 +15,7 @@ from sympy import Expr as SympyExpr, I, sqrt, sympify
 from .abstract_quantum_algebra import (
     ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
     QuantumOperation, QuantumPlus, QuantumTimes, SingleQuantumOperation,
-    QuantumAdjoint, QuantumIndexedSum, ensure_local_space)
+    QuantumAdjoint, QuantumIndexedSum, QuantumDerivative, ensure_local_space)
 from .algebraic_properties import (
     assoc, assoc_indexed, commutator_order, delegate_to_method,
     disjunct_hs_zero, filter_neutral, implied_local_space, match_replace,
@@ -45,8 +45,8 @@ __all__ = [
     'Squeeze', 'Jmjmcoeff', 'Jpjmcoeff', 'Jzjmcoeff', 'LocalProjector', 'X',
     'Y', 'Z', 'adjoint', 'create_operator_pm_cc', 'decompose_space',
     'expand_operator_pm_cc', 'factor_coeff', 'factor_for_trace', 'get_coeffs',
-    'II', 'IdentityOperator', 'ZeroOperator', 'Commutator',
-    'OperatorIndexedSum', 'tr']
+    'II', 'IdentityOperator', 'ZeroOperator', 'OperatorDerivative',
+    'Commutator', 'OperatorIndexedSum', 'tr']
 
 __private__ = []  # anything not in __all__ must be in __private__
 
@@ -159,6 +159,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
         if len(args) != self._nargs:
             raise ValueError("expected %d arguments, gotten %d"
                              % (self._nargs, len(args)))
+        self._args = args
         super().__init__(*args, hs=hs)
 
     @property
@@ -169,7 +170,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
     @property
     def args(self):
         """The positional arguments used for instantiating the operator"""
-        return tuple()
+        return tuple(self._args)
 
     @property
     def kwargs(self):
@@ -201,6 +202,9 @@ class LocalOperator(Operator, metaclass=ABCMeta):
                 "identifier '%s' does not match pattern '%s'"
                 % (identifier, self._rx_identifier.pattern))
         return identifier
+
+    def _diff(self, sym):
+        return OperatorDerivative(self, derivs={sym: 1})
 
     def _simplify_scalar(self, func):
         if self._scalar_args:
@@ -235,6 +239,9 @@ class IdentityOperator(Operator, metaclass=Singleton):
     def args(self):
         return tuple()
 
+    def _diff(self, sym):
+        return ZeroOperator
+
     def _adjoint(self):
         return self
 
@@ -259,6 +266,9 @@ class ZeroOperator(Operator, metaclass=Singleton):
     @property
     def args(self):
         return tuple()
+
+    def _diff(self, sym):
+        return self
 
     def _adjoint(self):
         return self
@@ -475,12 +485,6 @@ class Phase(LocalOperator):
         self.phi = phi  #: Phase $\phi$
         super().__init__(phi, hs=hs)
 
-    @property
-    def args(self):
-        r'''List of arguments of the operator, containing the phase $\phi$ as
-        the only element'''
-        return (self.phi,)
-
     def _adjoint(self):
         return Phase.create(-self.phi.conjugate(), hs=self.space)
 
@@ -517,12 +521,6 @@ class Displace(LocalOperator):
         self.alpha = alpha  #: Displacement amplitude $\alpha$
         super().__init__(alpha, hs=hs)
 
-    @property
-    def args(self):
-        r'''List of arguments of the operator, containing the displacement
-        amplitude $\alpha$ as the only element'''
-        return (self.alpha,)
-
     def _adjoint(self):
         return Displace.create(-self.alpha, hs=self.space)
 
@@ -557,10 +555,6 @@ class Squeeze(LocalOperator):
     def __init__(self, eta, *, hs):
         self.eta = eta  #: sqeezing parameter $\eta$
         super().__init__(eta, hs=hs)
-
-    @property
-    def args(self):
-        return (self.eta,)
 
     def _adjoint(self):
         return Squeeze(-self.eta, hs=self.space)
@@ -777,6 +771,10 @@ class ScalarTimesOperator(Operator, ScalarTimesQuantumExpression):
 
     def _adjoint(self):
         return ScalarTimesOperator(self.coeff.conjugate(), self.term.adjoint())
+
+
+class OperatorDerivative(QuantumDerivative, Operator):
+    pass
 
 
 class Commutator(QuantumOperation, Operator):

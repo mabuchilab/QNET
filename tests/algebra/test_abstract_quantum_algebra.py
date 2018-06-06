@@ -1,10 +1,14 @@
+from collections import OrderedDict
 from qnet import (
     One, Zero, ZeroOperator, IdentityOperator, ZeroSuperOperator,
     IdentitySuperOperator, ZeroKet, TrivialKet, FullSpace, TrivialSpace,
     CIdentity, CircuitZero, IdxSym, BasisKet, OperatorSymbol, FockIndex,
     KetIndexedSum, OperatorIndexedSum, StrLabel, LocalSpace,
-    IndexOverList, IndexOverFockSpace, IndexOverRange, Sum)
-from sympy import IndexedBase
+    IndexOverList, IndexOverFockSpace, IndexOverRange, Sum, ScalarExpression,
+    QuantumDerivative, Scalar, ScalarTimes, IdxSym)
+from sympy import IndexedBase, symbols
+
+import pytest
 
 
 def test_neutral_elements():
@@ -91,3 +95,146 @@ def test_sum_instantiator():
     #assert sum == ful
 
     # TODO: sum over A_i
+
+
+@pytest.fixture
+def MyScalarFunc():
+
+    class MyScalarDerivative(QuantumDerivative, Scalar):
+        pass
+
+    class ScalarFunc(ScalarExpression):
+
+        def __init__(self, name, *sym_args):
+            self._name = name
+            self._sym_args = sym_args
+            super().__init__(name, *sym_args)
+
+        def _adjoint(self):
+            return self
+
+        @property
+        def args(self):
+            return (self._name, *self._sym_args)
+
+        def _diff(self, sym):
+            return MyScalarDerivative(self, derivs={sym: 1})
+
+    return ScalarFunc
+
+
+def test_quantum_derivative(MyScalarFunc):
+    """Test the basic properties of a QuantumDerivative"""
+    s, t, x = symbols('s, t, x', real=True)
+    f = MyScalarFunc("f", s, t)
+    assert f.diff(x) == Zero
+    fdot = f.diff(s, n=2).diff(t)
+    with pytest.raises(ValueError):
+        fdot.__class__(f, derivs={t: 0})
+    with pytest.raises(TypeError):
+        f.diff(2)
+    with pytest.raises(TypeError):
+        fdot.__class__(f, derivs={2: 1})
+    assert isinstance(fdot, QuantumDerivative)
+    assert fdot.kwargs == OrderedDict(
+        [('derivs', ((s, 2), (t, 1))), ('vals', None)])
+    assert fdot.minimal_kwargs == {'derivs': ((s, 2), (t, 1))}
+    assert fdot.derivs == {s: 2, t: 1}
+    assert isinstance(fdot.derivs, OrderedDict)
+    assert fdot.syms == {s, t}
+    assert fdot.vals == dict()
+    assert isinstance(fdot.vals, OrderedDict)
+    assert fdot.free_symbols == set([t, s])
+    assert len(fdot.bound_symbols) == 0
+    assert fdot.n == 3
+    assert fdot.adjoint() == fdot
+
+
+def test_quantum_derivative_evaluated(MyScalarFunc):
+    """Test the basic properties of a QuantumDerivative, evaluated at a
+    point"""
+    s, t, t0, x = symbols('s, t, t_0, x', real=True)
+    f = MyScalarFunc("f", s, t)
+    fdot = f.diff(s, n=2).diff(t)
+    fdot = fdot.evaluate_at({t: t0})
+    D = fdot.__class__
+    with pytest.raises(ValueError):
+        fdot.evaluate_at({x: t0})
+    assert fdot == D(f, derivs={s: 2, t: 1}, vals={t: t0})
+    assert fdot == D.create(f, derivs={s: 2, t: 1}, vals={t: t0})
+    assert fdot.kwargs == OrderedDict(
+        [('derivs', ((s, 2), (t, 1))), ('vals', ((t, t0), ))])
+    assert fdot.minimal_kwargs == fdot.kwargs
+    assert fdot.derivs == {s: 2, t: 1}
+    assert fdot.syms == {s, t}
+    assert fdot.vals == {t: t0}
+    assert isinstance(fdot.vals, OrderedDict)
+    assert fdot.free_symbols == set([s, t0])
+    assert len(fdot.bound_symbols) == 1
+    assert fdot.bound_symbols == set([t, ])
+    assert fdot.all_symbols == set([s, t, t0])
+    assert fdot.n == 3
+    assert fdot.adjoint() == fdot
+    assert fdot.diff(t0) == D(fdot, derivs={t0: 1})
+    assert fdot.diff(t) == Zero
+    assert fdot._diff(t) == Zero
+    assert fdot.diff(s) == D(f, derivs={s: 3, t: 1}, vals={t: t0})
+    with pytest.raises(TypeError):
+        fdot.diff(2)
+    with pytest.raises(TypeError):
+        fdot._diff(2)
+
+
+def test_quantum_derivative_nonatomic_free_symbols(MyScalarFunc):
+    """Test the fee_symbols of an evaluated derivative for non-atomic
+    symbols"""
+    s = IndexedBase('s')
+    t = IndexedBase('t')
+    i = IdxSym('i')
+    j = IdxSym('j')
+    t0 = symbols('t_0', real=True)
+    f = MyScalarFunc("f", s[i], t[j])
+    fdot = f.diff(s[i], n=2).diff(t[j]).evaluate_at({t[j]: t0})
+    assert fdot == fdot.__class__(
+        f, derivs={s[i]: 2, t[j]: 1}, vals={t[j]: t0})
+    assert fdot.kwargs == OrderedDict(
+        [('derivs', ((s[i], 2), (t[j], 1))), ('vals', ((t[j], t0), ))])
+    assert fdot.derivs == {s[i]: 2, t[j]: 1}
+    assert fdot.syms == {s[i], t[j]}
+    assert fdot.vals == {t[j]: t0}
+    assert fdot.free_symbols == set([s.args[0], i, t0])
+    assert fdot.bound_symbols == set([t.args[0], j])
+    assert fdot.all_symbols == set([s.args[0], t.args[0], t0, i, j])
+    assert fdot.diff(s[i]).n == 4
+    assert fdot.diff(t[j]) == Zero
+
+    f = MyScalarFunc("f", s[i], t[j], j)
+    fdot = f.diff(s[i], n=2).diff(t[j]).evaluate_at({t[j]: t0})
+    assert fdot.free_symbols == set([s.args[0], i, j, t0])
+    assert fdot.bound_symbols == set([t.args[0], j])
+
+
+def test_abstract_taylor_series(MyScalarFunc):
+    """Test a series expansion that is the abstract Taylor series only"""
+    s = IndexedBase('s')
+    t = IndexedBase('t')
+    i = IdxSym('i')
+    j = IdxSym('j')
+    t0 = symbols('t_0', real=True)
+    f = MyScalarFunc("f", s[i], t[j])
+
+    series = f.series_expand(t[j], about=0, order=3)
+    assert isinstance(series[0], MyScalarFunc)
+    assert isinstance(series[1], QuantumDerivative)
+    assert isinstance(series[2], ScalarTimes)
+    D = series[1].__class__
+    assert series[0] == MyScalarFunc("f", s[i], 0)
+    assert series[1] == D(f, derivs={t[j]: 1}, vals={t[j]: 0})
+    assert series[2] == D(f, derivs={t[j]: 2}, vals={t[j]: 0}) / 2
+    assert series[3] == D(f, derivs={t[j]: 3}, vals={t[j]: 0}) / 6
+
+    series = f.series_expand(t[j], about=t0, order=3)
+    assert series[0] == MyScalarFunc("f", s[i], t0)
+    assert series[1] == D(f, derivs={t[j]: 1}, vals={t[j]: t0})
+    assert series[2] == D(f, derivs={t[j]: 2}, vals={t[j]: t0}) / 2
+    assert series[3] == D(f, derivs={t[j]: 3}, vals={t[j]: t0}) / 6

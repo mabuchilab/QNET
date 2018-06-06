@@ -458,6 +458,9 @@ class Zero(Scalar, metaclass=Singleton):
             self._order_index, self._order_name or self.__class__.__name__,
             self._order_coeff, KeyTuple([self.val, ]), self._order_kwargs])
 
+    def _diff(self, sym):
+        return self
+
     def _adjoint(self):
         return self
 
@@ -612,6 +615,9 @@ class One(Scalar, metaclass=Singleton):
         return KeyTuple([
             self._order_index, self._order_name or self.__class__.__name__,
             self._order_coeff, KeyTuple([self.val, ]), self._order_kwargs])
+
+    def _diff(self, sym):
+        return Zero
 
     def __lt__(self, other):
         if isinstance(other, ScalarValue):

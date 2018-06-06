@@ -1,3 +1,7 @@
+from functools import partial
+
+import pytest
+
 import sympy
 from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 
@@ -11,7 +15,8 @@ from qnet import (
     CoherentStateKet, UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
-    SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, unicode)
+    SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, unicode,
+    QuantumDerivative, Scalar, ScalarExpression)
 
 
 def test_unicode_scalar():
@@ -370,3 +375,112 @@ def test_unicode_sop_operations():
             '(L\u207d\xb9\u207e + 2 M\u207d\xb9\u207e)'
             '[A\u0302\u207d\xb9\u207e]')
     #       (L⁽¹⁾ + 2 M⁽¹⁾)[Â⁽¹⁾]
+
+
+@pytest.fixture
+def MyScalarFunc():
+
+    class MyScalarDerivative(QuantumDerivative, Scalar):
+        pass
+
+    class ScalarFunc(ScalarExpression):
+
+        def __init__(self, name, *sym_args):
+            self._name = name
+            self._sym_args = sym_args
+            super().__init__(name, *sym_args)
+
+        def _adjoint(self):
+            return self
+
+        @property
+        def args(self):
+            return (self._name, *self._sym_args)
+
+        def _diff(self, sym):
+            return MyScalarDerivative(self, derivs={sym: 1})
+
+        def _unicode(self, *args, **kwargs):
+            return "%s(%s)" % (
+                self._name, ", ".join(
+                    [unicode(sym) for sym in self._sym_args]))
+
+    return ScalarFunc
+
+
+def test_unicode_derivative(MyScalarFunc):
+    s, s0, t, t0, gamma = symbols('s, s_0, t, t_0, gamma', real=True)
+    m = IdxSym('m')
+    n = IdxSym('n')
+    S = IndexedBase('s')
+    T = IndexedBase('t')
+
+    f = partial(MyScalarFunc, "f")
+    g = partial(MyScalarFunc, "g")
+
+    expr = f(s, t).diff(s, n=2).diff(t)
+    assert unicode(expr) == '∂ₛ² ∂ₜ f(s, t)'
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: s0})
+    assert unicode(expr) == '∂ₛ² ∂ₜ f(s, t) |_s=s₀'
+
+    expr = f(S[m], T[n]).diff(S[m], n=2).diff(T[n]).evaluate_at({S[m]: s0})
+    assert unicode(expr) == '∂_sₘ^2 ∂_tₙ f(sₘ, tₙ) |_sₘ=s₀'
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: 0})
+    assert unicode(expr) == '∂ₛ² ∂ₜ f(s, t) |ₛ₌₀'
+
+    expr = f(gamma, t).diff(gamma, n=2).diff(t).evaluate_at({gamma: 0})
+    assert unicode(expr) == '∂ᵧ² ∂ₜ f(γ, t) |ᵧ₌₀'
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: s0, t: t0})
+    assert unicode(expr) == '∂ₛ² ∂ₜ f(s, t) |_(s=s₀, t=t₀)'
+
+    D = expr.__class__
+
+    expr = D(f(s, t) + g(s, t), derivs={s: 2, t: 1}, vals={s: s0, t: t0})
+    assert unicode(expr) == '∂ₛ² ∂ₜ (f(s, t) + g(s, t)) |_(s=s₀, t=t₀)'
+
+    expr = D(2 * f(s, t), derivs={s: 2, t: 1}, vals={s: s0, t: t0})
+    assert unicode(expr) == '∂ₛ² ∂ₜ (2 f(s, t)) |_(s=s₀, t=t₀)'
+
+    expr = f(s, t).diff(t) + g(s, t)
+    assert unicode(expr) == '∂ₜ f(s, t) + g(s, t)'
+
+    expr = f(s, t).diff(t) * g(s, t)
+    assert unicode(expr) == '(∂ₜ f(s, t)) g(s, t)'
+
+    expr = f(s, t).diff(t).evaluate_at({t: 0}) * g(s, t)
+    assert unicode(expr) == '(∂ₜ f(s, t) |ₜ₌₀) g(s, t)'
+
+    f = MyScalarFunc("f", S[m], T[n])
+    series = f.series_expand(T[n], about=0, order=3)
+    assert unicode(series) == (
+        '('
+        'f(sₘ, 0), '
+        '∂_tₙ f(sₘ, tₙ) |_tₙ=0, '
+        '1/2 (∂_tₙ^2 f(sₘ, tₙ) |_tₙ=0), '
+        '1/6 (∂_tₙ^3 f(sₘ, tₙ) |_tₙ=0))')
+
+    f = MyScalarFunc("f", s, t)
+    series = f.series_expand(t, about=0, order=2)
+    assert (
+        unicode(series) ==
+        '(f(s, 0), ∂ₜ f(s, t) |ₜ₌₀, 1/2 (∂ₜ² f(s, t) |ₜ₌₀))')
+
+    f = MyScalarFunc("f", S[m], T[n])
+    series = f.series_expand(T[n], about=t0, order=3)
+    assert unicode(series) == (
+        '('
+        'f(sₘ, t₀), '
+        '∂_tₙ f(sₘ, tₙ) |_tₙ=t₀, '
+        '1/2 (∂_tₙ^2 f(sₘ, tₙ) |_tₙ=t₀), '
+        '1/6 (∂_tₙ^3 f(sₘ, tₙ) |_tₙ=t₀))')
+
+    expr = (  # nested derivative
+        MyScalarFunc("f", s, t)
+        .diff(s, n=2)
+        .diff(t)
+        .evaluate_at({t: t0})
+        .diff(t0))
+    assert unicode(expr) == '∂_t₀ (∂ₛ² ∂ₜ f(s, t) |_t=t₀)'

@@ -9,6 +9,7 @@ and superoperators.
 """
 import re
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict, OrderedDict
 from itertools import product as cartesian_product
 
 import sympy
@@ -16,6 +17,7 @@ from sympy import Symbol, sympify
 
 from .hilbert_space_algebra import ProductSpace, LocalSpace, TrivialSpace
 from .abstract_algebra import Operation, Expression, substitute
+from .algebraic_properties import derivative_via_diff
 from .indexed_operations import IndexedSum
 from ...utils.ordering import (
     DisjunctCommutativeHSOrder, FullCommutativeHSOrder, KeyTuple, )
@@ -26,7 +28,7 @@ from ...utils.indices import (
 __all__ = [
     'ScalarTimesQuantumExpression', 'QuantumExpression', 'QuantumOperation',
     'QuantumPlus', 'QuantumTimes', 'SingleQuantumOperation', 'QuantumAdjoint',
-    'QuantumSymbol', 'QuantumIndexedSum', 'Sum']
+    'QuantumSymbol', 'QuantumIndexedSum', 'QuantumDerivative', 'Sum']
 __private__ = [
     'ensure_local_space']
 
@@ -136,18 +138,25 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
         Returns:
             The n-th derivative.
         """
+        if not isinstance(sym, sympy.Basic):
+            raise TypeError("%s needs to be a Sympy symbol" % sym)
         if sym.free_symbols.issubset(self.free_symbols):
-            expr = self
-            for k in range(n):
-                expr = expr._diff(sym)
-            if expand_simplify:
-                expr = expr.expand().simplify_scalar()
-            return expr
+            # QuantumDerivative.create delegates internally to _diff (the
+            # explicit non-trivial derivative). Using `create` gives us free
+            # caching
+            deriv = QuantumDerivative.create(self, derivs={sym: n}, vals=None)
+            if not deriv.is_zero and expand_simplify:
+                deriv = deriv.expand().simplify_scalar()
+            return deriv
         else:
+            # the "issubset" of free symbols is a sufficient, but not a
+            # necessary condition; if `sym` is non-atomic, determining whether
+            # `self` depends on `sym` is not completely trivial (you'd have to
+            # substitute with a Dummy)
             return self.__class__._zero
 
+    @abstractmethod
     def _diff(self, sym):
-        # TODO: abstract_method
         raise NotImplementedError()
 
     def series_expand(
@@ -195,9 +204,16 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
         return tuple(res)
 
     def _series_expand(self, param, about, order):
-        # Expressions are assumed constant by default.
-        from qnet.algebra.core.scalar_algebra import Zero
-        return (self,) + ((Zero,) * order)
+        expr = self
+        result = [_evaluate_at(expr, param, about)]
+        for n in range(1, order+1):
+            if not expr.is_zero:
+                expr = expr.diff(param)
+                result.append(
+                    _evaluate_at(expr, param, about) / sympy.factorial(n))
+            else:
+                result.append(expr)
+        return tuple(result)
 
     def __add__(self, other):
         if not isinstance(other, self._base_cls):
@@ -318,13 +334,16 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
     def space(self):
         return self._hs
 
+    def _diff(self, sym):
+        return self.__class__._zero
+
     def _expand(self):
         return self
 
     @property
     def free_symbols(self):
         try:
-            return self.label.free_symbols
+            return self.label.free_symbols  # TODO: review
         except AttributeError:
             return set()
 
@@ -384,9 +403,14 @@ class SingleQuantumOperation(QuantumOperation, metaclass=ABCMeta):
         """The operator that the operation acts on"""
         return self.operands[0]
 
+    def _diff(self, sym):
+        # most single-quantum-operations are linear, i.e. they commute with the
+        # derivative. Those that are not must override _diff
+        return self.__class__.create(self.operand.diff(sym))
+
     def _series_expand(self, param, about, order):
         ope = self.operand.series_expand(param, about, order)
-        return tuple(opet.adjoint() for opet in ope)
+        return tuple(self.__class__.create(opet) for opet in ope)
 
 
 class QuantumAdjoint(SingleQuantumOperation, metaclass=ABCMeta):
@@ -603,7 +627,191 @@ class ScalarTimesQuantumExpression(
         return NotImplemented
 
 
+class QuantumDerivative(SingleQuantumOperation):
+    r"""Symbolic partial derivative
+
+    .. math::
+
+        \frac{\partial^n}{\partial x_1^{n_1} \dots \partial x_N^{n_N}}
+            A(x_1, \dots, x_N); \qquad
+        \text{with} \quad n = \sum_i n_i
+
+    Alternatively, if `vals` is given, a symbolic representation of the
+    derivative (partially) evaluated at a specific point.
+
+    .. math::
+
+        \left.\frac{\partial^n}{\partial x_1^{n_1} \dots \partial x_N^{n_N}}
+            A(x_1, \dots, x_N) \right\vert_{x_1=v_1, \dots}
+
+    Args:
+        op (QuantumExpression): the expression $A(x_1, \dots, x_N)$ that is
+            being derived
+        derivs (dict): a map of symbols $x_i$ to the order $n_i$ of the
+            derivate with respect to that symbol
+        vals (dict or None): If not ``None``,  a map of symbols $x_i$ to values
+            $v_i$ for the point at which the derivative should be evaluated.
+
+    Note:
+        :class:`QuantumDerivative` is intended to be instantiated only inside
+        the :meth:`_diff` method of a :class:`QuantumExpression`, for
+        expressions that depend on scalar arguments in an unspecified way.
+        Generally, if a derivative can be calculated explicitly, the explicit
+        form is preferred over the abstract :class:`QuantumDerivative`.
+    """
+    _simplifications = [derivative_via_diff, ]  # create -> ._diff
+    # *Any* invocations of `create` will directly return the result of
+    # `derivative_via_diff` (but with caching)
+
+    @classmethod
+    def create(cls, op, *, derivs, vals=None):
+        """Instantiate the derivative by repeatedly calling
+        the :meth:`~QuantumExpression._diff` method of `op` and evaluating the
+        result at the given `vals`.
+        """
+        if not isinstance(derivs, tuple):
+            derivs = cls._dict_to_ordered_tuple(dict(derivs))
+        if not (isinstance(vals, tuple) or vals is None):
+            vals = cls._dict_to_ordered_tuple(dict(vals))
+        # Expression._get_instance_key wouldn't work with mutable dicts
+        return super().create(op, derivs=derivs, vals=vals)
+
+    def __init__(self, op, *, derivs, vals=None):
+        self._derivs = defaultdict(int)
+        self._n = 0
+        syms = []
+        for sym, n in dict(derivs).items():
+            if not isinstance(sym, sympy.Basic):
+                raise TypeError("%s needs to be a Sympy symbol" % sym)
+            syms.append(sym)
+            n = int(n)
+            if n <= 0:
+                raise ValueError(
+                    "Derivative wrt symbol %s must be be for an order "
+                    "greater than zero, not %s" % (sym, n))
+            assert n > 0
+            self._n += n
+            self._derivs[sym] += n
+        self._syms = set(syms)
+        self._vals = {}
+        if vals is not None:
+            for sym, val in dict(vals).items():
+                if sym not in self._syms:
+                    raise ValueError(
+                        "Derivative can only be evaluated for a symbol if "
+                        "the derivative is with respect to that symbol; "
+                        "not %s" % sym)
+                self._vals[sym] = val
+
+        self._ordered_derivs = self._dict_to_ordered_tuple(self._derivs)
+        self._ordered_vals = self._dict_to_ordered_tuple(self._vals)
+        # Expression._get_instance_key wouldn't work with mutable dicts
+        super().__init__(
+            op, derivs=self._ordered_derivs, vals=self._ordered_vals)
+
+    @property
+    def kwargs(self):
+        """Keyword arguments for the instantiation of the derivative"""
+        return OrderedDict([
+            ('derivs', self._ordered_derivs),
+            ('vals', self._ordered_vals or None)])
+
+    @property
+    def minimal_kwargs(self):
+        """Minimal keyword arguments for the instantiation of the derivative
+        (excluding defaults)"""
+        if len(self._vals) == 0:
+            return {'derivs': self._ordered_derivs}
+        else:
+            return self.kwargs
+
+    @staticmethod
+    def _dict_to_ordered_tuple(d):
+        from qnet.printing.asciiprinter import QnetAsciiDefaultPrinter
+        sort_key = QnetAsciiDefaultPrinter().doprint  # arbitrary, but stable
+        return tuple([(s, d[s]) for s in sorted(d.keys(), key=sort_key)])
+
+    def evaluate_at(self, vals):
+        """Evaluate the derivative at a specific point"""
+        new_vals = self._vals.copy()
+        new_vals.update(vals)
+        return self.__class__(self.operand, derivs=self._derivs, vals=new_vals)
+
+    @property
+    def derivs(self):
+        """Mapping of symbols to the order of the derivative with respect to
+        that symbol. Keys are ordered alphanumerically."""
+        return OrderedDict(self._ordered_derivs)
+
+    @property
+    def syms(self):
+        """Set of symbols with respect to which the derivative is taken"""
+        return set(self._syms)
+
+    @property
+    def vals(self):
+        """Mapping of symbols to values for which the derivative is to be
+        evaluated. Keys are ordered alphanumerically."""
+        return OrderedDict(self._ordered_vals)
+
+    @property
+    def free_symbols(self):
+        """Set of free SymPy symbols contained within the expression."""
+        if self._free_symbols is None:
+            if len(self._vals) == 0:
+                self._free_symbols = self.operand.free_symbols
+            else:
+                dummy_map = {}
+                for sym in self._vals.keys():
+                    dummy_map[sym] = sympy.Dummy()
+                # bound symbols may not be atomic, so we have to replace them
+                # with dummies
+                self._free_symbols = {
+                    sym for sym
+                    in self.operand.substitute(dummy_map).free_symbols
+                    if not isinstance(sym, sympy.Dummy)}
+                for val in self._vals.values():
+                    self._free_symbols.update(val.free_symbols)
+        return self._free_symbols
+
+    @property
+    def bound_symbols(self):
+        """Set of Sympy symbols that are eliminated by evaluation."""
+        if self._bound_symbols is None:
+            res = set()
+            self._bound_symbols = res.union(
+                *[sym.free_symbols for sym in self._vals.keys()])
+        return self._bound_symbols
+
+    @property
+    def n(self):
+        """The total order of the derivative.
+
+        This is the sum of the order values in :attr:`derivs`
+        """
+        return self._n
+
+    def _diff(self, sym):
+        if sym in self._vals.keys():
+            return self.__class__._zero
+        else:
+            if not isinstance(sym, sympy.Basic):
+                raise TypeError("%s must be a Sympy symbol" % sym)
+            if sym in self._vals.values():
+                return self.__class__(self, derivs={sym: 1})
+            else:
+                derivs = self._derivs.copy()
+                derivs[sym] += 1
+                return self.__class__(
+                    self.operand, derivs=derivs, vals=self._vals)
+
+    def _adjoint(self):
+        return self.__class__(
+            self.operand.adjoint(), derivs=self._derivs, vals=self._vals)
+
+
 class QuantumIndexedSum(IndexedSum, SingleQuantumOperation, metaclass=ABCMeta):
+    """Base class for indexed sums"""
 
     @property
     def space(self):
@@ -613,11 +821,11 @@ class QuantumIndexedSum(IndexedSum, SingleQuantumOperation, metaclass=ABCMeta):
     def _expand(self):
         return self.__class__.create(self.term.expand(), *self.ranges)
 
-    def _series_expand(self, param, about, order):
-        raise NotImplementedError()
-
     def _adjoint(self):
         return self.__class__.create(self.term.adjoint(), *self.ranges)
+
+    def _diff(self, sym):
+        return self.__class__.create(self.term.diff(sym), *self.ranges)
 
     def __mul__(self, other):
         from qnet.algebra.core.scalar_algebra import is_scalar
@@ -836,3 +1044,12 @@ def _series_expand_combine_prod(c1, c2, order):
                 sum += summand
         res.append(sum)
     return tuple(res)
+
+
+def _evaluate_at(expr, sym, val):
+    try:
+        # for QuantumDerivative instance
+        return expr.evaluate_at({sym: val})
+    except AttributeError:
+        # for explicit Expression
+        return expr.substitute({sym: val})
