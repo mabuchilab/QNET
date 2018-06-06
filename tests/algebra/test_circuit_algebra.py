@@ -25,17 +25,13 @@ symbol_counter = 0
 
 def get_symbol(cdim):
     global symbol_counter
-    sym =  CircuitSymbol('test_%d' % symbol_counter, cdim)
-    symbol_counter +=1
+    sym = CircuitSymbol('test_%d' % symbol_counter, cdim)
+    symbol_counter += 1
     return sym
 
 
 def get_symbols(*cdim):
     return [get_symbol(n) for n in cdim]
-
-
-#qnet.algebra.abstract_algebra.CHECK_OPERANDS = True
-#qnet.algebra.abstract_algebra.PRINT_PRETTY = True
 
 
 def test_circuit_symbol_hashing():
@@ -133,7 +129,7 @@ def test_distributive_law():
     assert qtp << qtp2 == CPermutation(permute(test_perm, test_perm2))
 
 
-def test_permutation():
+def test_permutation2():
     test_perm = (0,1,2,5,6,3,4)
     qtp = CPermutation.create(test_perm)
     assert qtp.series_inverse() == CPermutation.create(invert_permutation(test_perm))
@@ -148,27 +144,32 @@ def test_permutation():
 
 
 def test_factorize_permutation():
-    assert full_block_perm((0,1,2), (1,1,1)) == (0,1,2)
-    assert full_block_perm((0,2,1), (1,1,1)) == (0,2,1)
-    assert full_block_perm((0,2,1), (1,1,2)) == (0,3,1,2)
-    assert full_block_perm((0,2,1), (1,2,3)) == (0,4,5,1,2,3)
-    assert full_block_perm((1,2,0), (1,2,3)) == (3,4,5,0,1,2)
-    assert full_block_perm((3,1,2,0), (1,2,3,4)) == (9, 4, 5, 6, 7, 8, 0, 1, 2, 3 )
-    assert block_perm_and_perms_within_blocks((9, 4, 5, 6, 7, 8, 0, 1, 2, 3 ), (1,2,3,4)) == \
-                                                                    ((3,1,2,0), [(0,),(0,1),(0,1,2),(0,1,2,3)])
+    assert full_block_perm((0, 1, 2), (1, 1, 1)) == (0, 1, 2)
+    assert full_block_perm((0, 2, 1), (1, 1, 1)) == (0, 2, 1)
+    assert full_block_perm((0, 2, 1), (1, 1, 2)) == (0, 3, 1, 2)
+    assert full_block_perm((0, 2, 1), (1, 2, 3)) == (0, 4, 5, 1, 2, 3)
+    assert full_block_perm((1, 2, 0), (1, 2, 3)) == (3, 4, 5, 0, 1, 2)
+    assert full_block_perm((3, 1, 2, 0), (1, 2, 3, 4)) == (
+        9, 4, 5, 6, 7, 8, 0, 1, 2, 3)
+    lhs = block_perm_and_perms_within_blocks(
+        (9, 4, 5, 6, 7, 8, 0, 1, 2, 3), (1, 2, 3, 4))
+    rhs = ((3, 1, 2, 0), [(0,), (0, 1), (0, 1, 2), (0, 1, 2, 3)])
+    lhs == rhs
 
-    A1,A2,A3,A4 = get_symbols(1,2,3,4)
+    A1, A2, A3, A4 = get_symbols(1, 2, 3, 4)
 
-    new_lhs, permuted_rhs, new_rhs = P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3 )._factorize_for_rhs(A1+A2+A3+A4)
+    new_lhs, permuted_rhs, new_rhs = (
+        P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3)
+        ._factorize_for_rhs(A1 + A2 + A3 + A4))
     assert new_lhs == cid(10)
     assert permuted_rhs == (A4+A2+A3+A1)
-    assert new_rhs == P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3 )
+    assert new_rhs == P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3)
 
-    p = P_sigma(0,1,4,2,3,5)
+    p = P_sigma(0, 1, 4, 2, 3, 5)
     expr = A2 + A3 + A1
     new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(expr)
     assert new_lhs == cid(6)
-    assert permuted_rhs == A2 + (P_sigma(2,0,1) << A3) + A1
+    assert permuted_rhs == A2 + (P_sigma(2, 0, 1) << A3) + A1
     assert new_rhs == cid(6)
 
     p = P_sigma(0, 3, 1, 2)
@@ -177,35 +178,44 @@ def test_factorize_permutation():
     assert p == cid(1) + p_r
     A = get_symbol(2)
 
-    new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(cid(1) + A+ cid(1))
+    new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(cid(1) + A + cid(1))
 
-    assert new_lhs == P_sigma(0,1,3,2)
-    assert permuted_rhs == (cid(1) + (P_sigma(1,0) << A)  + cid(1))
+    assert new_lhs == P_sigma(0, 1, 3, 2)
+    assert permuted_rhs == (cid(1) + (P_sigma(1, 0) << A)  + cid(1))
     assert new_rhs == cid(4)
 
     new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(cid(2) + A)
 
     assert new_lhs == cid(4)
-    assert permuted_rhs == (cid(1) + A  + cid(1))
+    assert permuted_rhs == (cid(1) + A + cid(1))
     assert new_rhs == p
 
-    assert p.series_inverse() << (cid(2) + A) == cid(1) + SeriesProduct(P_sigma(0,2,1), Concatenation(SeriesProduct(P_sigma(1,0), A), cid(1)),P_sigma(2,0,1))
+    assert p.series_inverse() << (cid(2) + A) == (
+        cid(1) +
+        SeriesProduct(
+            P_sigma(0, 2, 1),
+            Concatenation(SeriesProduct(P_sigma(1, 0), A), cid(1)),
+            P_sigma(2, 0, 1)))
 
-    assert p.series_inverse() << (cid(2) + A) << p == cid(1) + (p_r.series_inverse() << (cid(1) + A) << p_r)
+    assert p.series_inverse() << (cid(2) + A) << p == (
+        cid(1) + (p_r.series_inverse() << (cid(1) + A) << p_r))
 
-    new_lhs, permuted_rhs, new_rhs = P_sigma(4,2,1,3,0)._factorize_for_rhs((A4 + cid(1)))
+    new_lhs, permuted_rhs, new_rhs = (
+        P_sigma(4, 2, 1, 3, 0)._factorize_for_rhs((A4 + cid(1))))
     assert new_lhs == cid(5)
-    assert permuted_rhs == (cid(1) + (P_sigma(3,1,0,2) << A4))
-    assert new_rhs == map_signals_circuit({4:0}, 5)
+    assert permuted_rhs == (cid(1) + (P_sigma(3, 1, 0, 2) << A4))
+    assert new_rhs == map_signals_circuit({4: 0}, 5)
 
-    ## special test case that helped find the major permutation block structure factorization bug
+    # special test case that helped find the major permutation block structure
+    # factorization bug
     p = P_sigma(3, 4, 5, 0, 1, 6, 2)
     q = cid(3) + CircuitSymbol('NAND1', 4)
 
     new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(q)
-    assert new_lhs == P_sigma(0,1,2,6,3,4,5)
-    assert permuted_rhs == (P_sigma(0,1,3,2) << CircuitSymbol('NAND1', 4)) + cid(3)
-    assert new_rhs == P_sigma(4,5,6, 0,1,2,3)
+    assert new_lhs == P_sigma(0, 1, 2, 6, 3, 4, 5)
+    assert permuted_rhs == (
+        (P_sigma(0, 1, 3, 2) << CircuitSymbol('NAND1', 4)) + cid(3))
+    assert new_rhs == P_sigma(4, 5, 6, 0, 1, 2, 3)
 
 
 def _symbmatrix(a):
@@ -213,6 +223,7 @@ def _symbmatrix(a):
         return sympy.Matrix(a)
     except (TypeError, ValueError):
         return np_array(a)
+
 
 typelist = [lambda x: x, np_array, _symbmatrix, Matrix]
 
@@ -274,13 +285,12 @@ def test_SLH_elements():
     check(S, L, H)
 
 
-@pytest.mark.xxx # DEBUG
 def test_feedback():
     A, B, C, D, A1, A2 = get_symbols(3, 2, 1, 1, 1, 1)
     circuit_identity(1)
 
     assert FB(A+B) == A + FB(B)
-    smq = map_signals_circuit({2:1}, 3) # == 'cid(1) + X'
+    smq = map_signals_circuit({2:1}, 3)  # == 'cid(1) + X'
     assert smq == smq.series_inverse()
 
     assert ( smq << (B + C)).feedback(out_port = 2, in_port = 1) == B.feedback() + C
@@ -475,8 +485,8 @@ def test_move_drive_to_H():
     SLH_driven_out = move_drive_to_H(SLH_driven)
     assert SLH_driven_out.S == SLH1.S
     assert SLH_driven_out.L == SLH1.L
-    assert SLH_driven_out.H == (SLH1.H - I * α * L[0,0].dag() +
-                                I * α.conjugate() * L[0,0])
+    assert SLH_driven_out.H == (
+        SLH1.H - I * α * L[0, 0].dag() + I * α.conjugate() * L[0, 0])
 
     # Concatenated drives (single channel)
     β = sympy.symbols('beta')
@@ -505,19 +515,19 @@ def test_move_drive_to_H():
     # ###  remove first inhomogeneity only
     SLH2_driven_out1 = move_drive_to_H(SLH2_driven, [0, ])
     assert SLH2_driven_out1.S == SLH2.S
-    assert SLH2_driven_out1.L[0, 0] == SLH2.L[0,0]
-    assert SLH2_driven_out1.L[1, 0] == SLH2_driven.L[1,0]
+    assert SLH2_driven_out1.L[0, 0] == SLH2.L[0, 0]
+    assert SLH2_driven_out1.L[1, 0] == SLH2_driven.L[1, 0]
     assert (
         SLH2_driven_out1.H - term2[0] - 2*term2[1] - term2[2] -
         2*term2[3] - term2[4] == ZeroOperator)
     # ###  remove second inhomogeneity only
     SLH2_driven_out2 = move_drive_to_H(SLH2_driven, [1, ])
     assert SLH2_driven_out2.S == SLH2.S
-    assert SLH2_driven_out2.L[0,0] == SLH2_driven.L[0,0]
-    assert SLH2_driven_out2.L[1,0] == SLH2.L[1,0]
+    assert SLH2_driven_out2.L[0, 0] == SLH2_driven.L[0, 0]
+    assert SLH2_driven_out2.L[1, 0] == SLH2.L[1, 0]
     assert (
         SLH2_driven_out2.H - term2[0] - term2[1] - 2 * term2[2] -
-        term2[3] - 2* term2[4] == ZeroOperator)
+        term2[3] - 2 * term2[4] == ZeroOperator)
     # ###  remove both inhomogeneities (explicitly)
     SLH2_driven_out12 = move_drive_to_H(SLH2_driven, [0, 1])
     assert SLH2_driven_out12 == SLH2_driven_out
