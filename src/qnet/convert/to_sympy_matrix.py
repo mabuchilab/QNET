@@ -74,7 +74,7 @@ def convert_to_sympy_matrix(expr, full_space=None):
         elif isinstance(expr, (Destroy, Jminus)):
             return SympyCreate(n).H
         elif isinstance(expr, Phase):
-            phi = expr.phi
+            phi = expr.phase
             result = sympy.zeros(n)
             for i in range(n):
                 result[i, i] = sympy.exp(sympy.I * i * phi)

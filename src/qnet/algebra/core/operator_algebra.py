@@ -8,6 +8,7 @@ documentation for the basic :class:`Operator` class.
 import re
 from abc import ABCMeta
 from collections import OrderedDict, defaultdict
+from functools import partial
 from itertools import product as cartesian_product
 
 from sympy import Expr as SympyExpr, I, sqrt, sympify
@@ -25,7 +26,6 @@ from .exceptions import CannotSimplify, BasisNotSetError
 from .hilbert_space_algebra import (
     HilbertSpace, LocalSpace, ProductSpace, TrivialSpace, )
 from .scalar_algebra import Scalar, ScalarValue, is_scalar
-from .scalar_algebra import is_scalar
 from ..pattern_matching import pattern, pattern_head, wc
 from ...utils.indices import SymbolicLabelBase
 from ...utils.ordering import FullCommutativeHSOrder
@@ -48,7 +48,8 @@ __all__ = [
     'II', 'IdentityOperator', 'ZeroOperator', 'OperatorDerivative',
     'Commutator', 'OperatorIndexedSum', 'tr']
 
-__private__ = []  # anything not in __all__ must be in __private__
+__private__ = ['properties_for_args']
+# anything not in __all__ must be in __private__
 
 
 ###############################################################################
@@ -137,28 +138,35 @@ class LocalOperator(Operator, metaclass=ABCMeta):
         >>> b = Destroy(hs=hs1_custom)
         >>> ascii(b)
         'b^(1)'
+
+    Note:
+        It is recommended that subclasses use the :func:`properties_for_args`
+        class decorator if they define any position arguments (via the
+        :attr:`_arg_names` class attribute)
     """
 
     _simplifications = [implied_local_space(keys=['hs', ]), ]
 
     _identifier = None  # must be overridden by subclasses!
     _dagger = False  # do representations include a dagger?
-    _nargs = 0  # number of arguments
+    _arg_names = ()  # names of args that can be passed to __init__
     _scalar_args = True  # convert args to Scalar?
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
     def __init__(self, *args, hs):
+        if len(args) != len(self._arg_names):
+            raise ValueError("expected %d arguments, gotten %d"
+                             % (len(self._arg_names), len(args)))
         if self._scalar_args:
             args = [ScalarValue.create(arg) for arg in args]
+        for i, arg_name in enumerate(self._arg_names):
+            self.__dict__['_%s' % arg_name] = args[i]
         hs = ensure_local_space(hs)
         self._hs = hs
         if self._identifier is None:
             raise TypeError(
                 r"Can't instantiate abstract class %s with undefined "
                 r"_identifier" % self.__class__.__name__)
-        if len(args) != self._nargs:
-            raise ValueError("expected %d arguments, gotten %d"
-                             % (self._nargs, len(args)))
         self._args = args
         super().__init__(*args, hs=hs)
 
@@ -212,6 +220,31 @@ class LocalOperator(Operator, metaclass=ABCMeta):
             return self.create(*args, hs=self.space)
         else:
             return super()._simplify_scalar(func=func)
+
+
+def properties_for_args(cls):
+    """For a class that defines an `_arg_names` property list, add a property
+    for every `arg_name` in the list.
+
+    It is assumed that there is an instance attribute  ``self._<arg_name>``,
+    which is returned by the `arg_name` poperty.
+    """
+    from qnet.algebra.core.scalar_algebra import Scalar
+    for arg_name in cls._arg_names:
+        def get_arg(self, name):
+            val = getattr(self, "_%s" % name)
+            if cls._scalar_args:
+                assert isinstance(val, Scalar)
+            return val
+        prop = property(partial(get_arg, name=arg_name))
+        doc = "The `%s` argument" % arg_name
+        if cls._scalar_args:
+            doc += ", as a :class:`.Scalar` instance."
+        else:
+            doc += "."
+        prop.__doc__ = doc
+        setattr(cls, arg_name, prop)
+    return cls
 
 
 ###############################################################################
@@ -457,6 +490,7 @@ class Jminus(LocalOperator):
         return Jplus(hs=self.space)
 
 
+@properties_for_args
 class Phase(LocalOperator):
     r"""Unitary "phase" operator
 
@@ -468,6 +502,11 @@ class Phase(LocalOperator):
     where :math:`a_{\rm hs}` is the annihilation operator acting on the
     :class:`.LocalSpace` `hs`.
 
+    Args:
+        phase (Scalar): the phase $\phi$
+        hs (HilbertSpace or int or str): The Hilbert space on which the
+            operator acts
+
     Printers should represent this operator with the default identifier::
 
         >>> Phase._identifier
@@ -477,21 +516,18 @@ class Phase(LocalOperator):
     argument.
     """
     _identifier = 'Phase'
-    _nargs = 1
+    _arg_names = ('phase', )
     _rules = OrderedDict()
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
-    def __init__(self, phi, *, hs):
-        self.phi = phi  #: Phase $\phi$
-        super().__init__(phi, hs=hs)
-
     def _adjoint(self):
-        return Phase.create(-self.phi.conjugate(), hs=self.space)
+        return Phase.create(-self.phase.conjugate(), hs=self.space)
 
     def _pseudo_inverse(self):
-        return Phase.create(-self.phi, hs=self.space)
+        return Phase.create(-self.phase, hs=self.space)
 
 
+@properties_for_args
 class Displace(LocalOperator):
     r"""Unitary coherent displacement operator
 
@@ -504,6 +540,11 @@ class Displace(LocalOperator):
     where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
     :class:`.LocalSpace` `hs`.
 
+    Args:
+        displacement (Scalar): the displacement amplitude $\alpha$
+        hs (HilbertSpace or int or str): The Hilbert space on which the
+            operator acts
+
     Printers should represent this operator with the default identifier::
 
         >>> Displace._identifier
@@ -514,19 +555,17 @@ class Displace(LocalOperator):
     """
     _identifier = 'D'
     _nargs = 1
+    _arg_names = ('displacement', )
     _rules = OrderedDict()
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
-    def __init__(self, alpha, *, hs):
-        self.alpha = alpha  #: Displacement amplitude $\alpha$
-        super().__init__(alpha, hs=hs)
-
     def _adjoint(self):
-        return Displace.create(-self.alpha, hs=self.space)
+        return Displace.create(-self.displacement, hs=self.space)
 
     _pseudo_inverse = _adjoint
 
 
+@properties_for_args
 class Squeeze(LocalOperator):
     r"""Unitary Squeezing operator
 
@@ -539,6 +578,11 @@ class Squeeze(LocalOperator):
     where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
     :class:`.LocalSpace` `hs`.
 
+    Args:
+        squeezing_factor (Scalar): the squeezing factor $\eta$
+        hs (HilbertSpace or int or str): The Hilbert space on which the
+            operator acts
+
     Printers should represent this operator with the default identifier::
 
         >>> Squeeze._identifier
@@ -548,20 +592,17 @@ class Squeeze(LocalOperator):
     argument.
     """
     _identifier = "Squeeze"
-    _nargs = 1
+    _arg_names = ('squeezing_factor', )
     _rules = OrderedDict()
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
-    def __init__(self, eta, *, hs):
-        self.eta = eta  #: sqeezing parameter $\eta$
-        super().__init__(eta, hs=hs)
-
     def _adjoint(self):
-        return Squeeze(-self.eta, hs=self.space)
+        return Squeeze(-self.squeezing_factor, hs=self.space)
 
     _pseudo_inverse = _adjoint
 
 
+@properties_for_args
 class LocalSigma(LocalOperator):
     r'''A local level flip operator operator acting on a particular
     :class:`.LocalSpace` `hs`.
@@ -598,7 +639,7 @@ class LocalSigma(LocalOperator):
 
     _identifier = "sigma"
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
-    _nargs = 2
+    _arg_names = ('j', 'k')
     _scalar_args = False  # args are labels, not scalar coefficients
     _rules = OrderedDict()
     _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
@@ -631,8 +672,6 @@ class LocalSigma(LocalOperator):
             else:
                 # Interal error: mismatch with hs._basis_label_types
                 raise NotImplementedError()
-        self.j = j  #: label/index of eigenstate  $\ket{j}$
-        self.k = k  #: label/index of eigenstate  $\ket{k}$
         super().__init__(j, k, hs=hs)
 
     @property
@@ -701,7 +740,7 @@ class LocalProjector(LocalSigma):
         hs (HilbertSpace): The Hilbert space on which the operator acts
     """
     _identifier = "Pi"
-    _nargs = 2  # must be 2 because that's how we call super().__init__
+    _arg_names = ('j', 'k')  # necessary for super().__init__
 
     def __init__(self, j, *, hs):
         super().__init__(j=j, k=j, hs=hs)
