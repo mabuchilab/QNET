@@ -8,8 +8,8 @@ from sympy.core.cache import cacheit as sympy_cacheit
 from ._attrs import immutable_attribs
 
 __all__ = [
-    'IdxSym', 'IntIndex', 'FockIndex', 'StrLabel', 'IndexOverList',
-    'IndexOverRange', 'IndexOverFockSpace']
+    'IdxSym', 'IntIndex', 'FockIndex', 'StrLabel', 'SpinIndex',
+    'IndexOverList', 'IndexOverRange', 'IndexOverFockSpace']
 
 __private__ = [
     'yield_from_ranges', 'SymbolicLabelBase', 'IndexRangeBase', 'product']
@@ -188,6 +188,7 @@ class IdxSym(sympy.Symbol):
 
 @immutable_attribs
 class SymbolicLabelBase(metaclass=ABCMeta):
+    """Base class for symbolic labels"""
     expr = attr.ib(validator=attr.validators.instance_of(sympy.Basic))
 
     @abstractmethod
@@ -208,6 +209,7 @@ class SymbolicLabelBase(metaclass=ABCMeta):
 
 
 class IntIndex(SymbolicLabelBase):
+    """A symbolic label that evaluates to an integer"""
 
     def __mul__(self, other):
         return other * self.expr
@@ -220,14 +222,40 @@ class IntIndex(SymbolicLabelBase):
 
 
 class FockIndex(IntIndex):
+    """A symbolic index labeling a basis state in a :class:`.FockSpace`"""
     pass
 
 
 class StrLabel(SymbolicLabelBase):
+    """A symbolic label that evaluates to a string"""
 
     def evaluate(self, mapping):
         from qnet.printing.sympy import SympyStrPrinter
         return SympyStrPrinter().doprint(self.expr.subs(mapping))
+
+
+class SpinIndex(StrLabel):
+    """A symbolic label that evaluates to a string representation of an
+    integer or half-integer"""
+
+    def evaluate(self, mapping):
+        sym = self.expr.subs(mapping)
+        if sym.is_integer:
+            int_val = int(sym)
+            if int_val > 0:
+                return "+" + str(int_val)
+            else:
+                return str(int_val)
+        else:  # half-integer
+            numer, denom = sym.as_numer_denom()
+            if not (numer.is_integer and denom == 2):
+                raise ValueError(
+                    "SpinIndex must evaluate to an integer or half-integer, "
+                    "not %s" % str(sym))
+            if numer > 0:
+                return "+%d/%d" % (int(numer), int(denom))
+            else:
+                return "%d/%d" % (int(numer), int(denom))
 
 
 # Index Ranges

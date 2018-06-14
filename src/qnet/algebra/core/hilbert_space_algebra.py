@@ -18,7 +18,7 @@ from .abstract_algebra import (
 from .algebraic_properties import (
     assoc, idem, filter_neutral, convert_to_spaces, empty_trivial, )
 from .exceptions import AlgebraError, BasisNotSetError
-from ...utils.indices import FockIndex, SymbolicLabelBase
+from ...utils.indices import SymbolicLabelBase, FockIndex
 from ...utils.ordering import KeyTuple
 from ...utils.singleton import Singleton, singleton_object
 
@@ -197,6 +197,7 @@ class LocalSpace(HilbertSpace, Expression):
     _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
 
     _basis_label_types = (int, str, FockIndex)  # acceptable types for labels
+    # TODO: remove FockIndex from the above list
 
     def __init__(
             self, label, *, basis=None, dimension=None, local_identifiers=None,
@@ -324,7 +325,7 @@ class LocalSpace(HilbertSpace, Expression):
 
     @property
     def basis_labels(self):
-        """Tuple of basis labels.
+        """Tuple of basis labels (strings).
 
         Raises:
             .BasisNotSetError: if the Hilbert space has no defined basis
