@@ -698,8 +698,6 @@ class One(Scalar, metaclass=Singleton):
         else:
             return other
 
-    __rmul__ = __mul__
-
     def __floordiv__(self, other):
         if isinstance(other, ScalarValue):
             return ScalarValue.create(1 // other.val)

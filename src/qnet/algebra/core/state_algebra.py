@@ -466,7 +466,7 @@ class ScalarTimesKet(State, ScalarTimesQuantumExpression):
     _simplifications = [match_replace, ]
 
     @classmethod
-    def create(self, coeff, term):
+    def create(cls, coeff, term):
         if term.isbra:
             scalar_times_ket = coeff.conjugate() * term.ket
             return Bra.create(scalar_times_ket)
