@@ -1,9 +1,11 @@
 import pytest
 
+import sympy
 from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 from sympy.core import S
 from qnet.utils.indices import IdxSym
 
+import qnet
 from qnet.printing.sympy import (
     SympyUnicodePrinter, SympyLatexPrinter, SympyStrPrinter,
     derationalize_denom)
@@ -23,6 +25,20 @@ def test_derationalize_denom():
     assert str(exc_info.value) == 'Cannot derationalize'
     with pytest.raises(ValueError):
         derationalize_denom(sqrt(3)/sqrt(2))
+
+
+def test_primed_IdxSym():
+    """Test that primed IdxSym are rendered correctly not just in QNET's
+    printing system, but also in SymPy's printing system"""
+    ipp = IdxSym('i').prime.prime
+    assert qnet.ascii(ipp) == "i''"
+    assert qnet.latex(ipp) == r'{i^{\prime\prime}}'
+    assert qnet.srepr(ipp) == "IdxSym('i', integer=True, primed=2)"
+    assert qnet.unicode(ipp) == "i''"
+    assert sympy.printing.sstr(ipp) == qnet.ascii(ipp)
+    assert sympy.printing.latex(ipp) == qnet.latex(ipp)
+    assert sympy.printing.srepr(ipp) == qnet.srepr(ipp)
+    assert sympy.printing.pretty(ipp) == qnet.unicode(ipp)
 
 
 @pytest.mark.parametrize("expr,expected_str", [

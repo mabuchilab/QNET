@@ -44,7 +44,7 @@ __private__ = [
     'SympyReprPrinter', 'derationalize_denom']
 
 
-delattr(sympy.Indexed, '_sympystr')
+delattr(sympy.Indexed, '_sympystr')  # not sure how else to override printer
 
 
 def derationalize_denom(expr):
@@ -115,6 +115,8 @@ class SympyStrPrinter(StrPrinter):
         "conjg_style": 'func',
     }
 
+    # _print_IdxSym(self, expr) is implemented in IdxSym._sympystr
+
     def _print_Mul(self, expr):
 
         prec = precedence(expr)
@@ -140,9 +142,6 @@ class SympyStrPrinter(StrPrinter):
         if all([len(i.replace("'", '')) == 1 for i in indices]):
             sep = ''
         return self._print(expr.base)+'_%s' % sep.join(indices)
-
-    def _print_IdxSym(self, expr):
-        return self._print_Symbol(expr) + "'" * expr.primed
 
     def _print_factorial(self, expr, exp=None):
         res = r"%s!" % self.parenthesize(expr.args[0], PRECEDENCE["Func"])
@@ -202,6 +201,8 @@ class SympyLatexPrinter(LatexPrinter):
         "conjg_style": 'overline',
     }
 
+    # _print_IdxSym(self, expr) is implemented in IdxSym._latex
+
     def _print_Mul(self, expr):
 
         prec = precedence(expr)
@@ -220,12 +221,6 @@ class SympyLatexPrinter(LatexPrinter):
                         self.parenthesize(post_factor, prec))
         except ValueError:
             return super()._print_Mul(expr)
-
-    def _print_IdxSym(self, expr):
-        res = self._print_Symbol(expr)
-        if expr.primed > 0:
-            res = r'{%s^{%s}}' % (res, r'\prime' * expr.primed)
-        return res
 
     def _print_conjugate(self, expr, exp=None):
         if self._settings['conjg_style'] == 'overline':
@@ -471,6 +466,8 @@ class SympyReprPrinter(ReprPrinter):
     """Representation printer with support for
     :class:`.IdxSym`"""
 
+    # _print_IdxSym(self, expr) is implemented in IdxSym._sympyrepr
+
     def _print_Symbol(self, expr):
         d = expr._assumptions.generator
 
@@ -490,7 +487,6 @@ class SympyReprPrinter(ReprPrinter):
             return "%s(%s, %s)" % (expr.__class__.__name__,
                                    self._print(expr.name), ', '.join(attr))
 
-    def _print_IdxSym(self, expr):
         res = self._print_Symbol(expr)
         if expr.primed > 0:
             res = res[:-1] + ", primed=%d)" % expr.primed

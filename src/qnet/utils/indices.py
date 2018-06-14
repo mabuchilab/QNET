@@ -162,6 +162,26 @@ class IdxSym(sympy.Symbol):
         """equivalent to :meth:`inc_primed` with ``incr=1``"""
         return self.incr_primed(incr=1)
 
+    def _sympystr(self, printer, *args):
+        return printer._print_Symbol(self) + "'" * self.primed
+
+    def _sympyrepr(self, printer, *args):
+        res = printer._print_Symbol(self)
+        if self.primed > 0:
+            res = res[:-1] + ", primed=%d)" % self.primed
+        return res
+
+    def _pretty(self, printer, *args):
+        res = printer._print_Symbol(self)
+        return res.__class__(
+            res.s + "'" * self.primed, res.baseline, res.binding)
+
+    def _latex(self, printer, *args):
+        res = printer._print_Symbol(self)
+        if self.primed > 0:
+            res = r'{%s^{%s}}' % (res, r'\prime' * self.primed)
+        return res
+
 
 # Classes for symbolic labels
 
