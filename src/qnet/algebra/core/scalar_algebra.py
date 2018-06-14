@@ -179,12 +179,28 @@ class ScalarValue(Scalar):
 
         >>> 5 * ScalarValue.create(2)
         10
+
+    Any unknown attributes or methods will be forwarded to the wrapped value
+    to ensure complete "duck-typing"::
+
+        >>> alpha = ScalarValue(sympy.symbols('alpha', positive=True))
+        >>> alpha.is_positive   # same as alpha.val.is_positive
+        True
+        >>> ScalarValue(5).is_positive
+        Traceback (most recent call last):
+          ...
+        AttributeError: 'int' object has no attribute 'is_positive'
     """
 
     @classmethod
     def create(cls, val):
         """Instatiate the :class:`ScalarValue` while recognizing :class:`Zero`
         and :class:`One`.
+
+        :class:`Scalar` instances as `val` (including
+        :class:`ScalarExpression` instances) are left unchanged. This makes
+        :meth:`ScalarValue.create` a safe method for converting unknown objects
+        to :class:`Scalar`.
         """
         if val in cls._invalid:
             raise ValueError("Invalid value %r" % val)
@@ -207,6 +223,9 @@ class ScalarValue(Scalar):
                 "val must be one of " +
                 ", ".join(["%s" % t for t in self._val_types]))
         super().__init__(val)
+
+    def __getattr__(self, name):
+        return getattr(self.val, name)
 
     def _diff(self, sym):
         if isinstance(self.val, sympy.Basic):
@@ -961,6 +980,10 @@ class ScalarPower(QuantumOperation, Scalar):
 
 
 class ScalarDerivative(QuantumDerivative, Scalar):
+    """Symbolic partial derivative of a scalar.
+
+    See :class:`.QuantumDerivative`.
+    """
     pass
 
 
@@ -1006,7 +1029,7 @@ def KroneckerDelta(i, j):
 def sqrt(scalar):
     """Square root of a :class:`Scalar` or scalar value.
 
-    This always returns a :class:`Scalar`, and uses a symbolic sqare root if
+    This always returns a :class:`Scalar`, and uses a symbolic square root if
     possible (i.e., for non-floats)::
 
         >>> sqrt(2)

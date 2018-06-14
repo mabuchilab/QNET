@@ -836,3 +836,22 @@ def test_series_expand(braket):
     expr = (1 + t * braket)**(sympify(1)/2)
     with pytest.raises(ValueError):
         expr.series_expand(t, 0, 2)
+
+
+def test_forwarded_attributes():
+    """Test that ScalarValues forward unknown properties/methods to the wrapped
+    value"""
+    alpha_sym = symbols('alpha', positive=True)
+    alpha = ScalarValue(alpha_sym)
+    assert alpha.is_positive
+    assert alpha.compare(-1) == alpha_sym.compare(-1)
+    assert alpha.as_numer_denom() == (alpha_sym, 1)
+    with pytest.raises(AttributeError):
+        alpha.to_bytes(2, byteorder='big')
+
+    five = ScalarValue(5)
+    assert five.to_bytes(2, byteorder='big') == b'\x00\x05'
+    with pytest.raises(AttributeError):
+        five.is_positive
+    with pytest.raises(AttributeError):
+        five.as_numer_denom()
