@@ -3,8 +3,8 @@
 
 __all__ = [
     'AlgebraException', 'AlgebraError', 'InfiniteSumError', 'CannotSimplify',
-    'WrongSignatureError', 'CannotConvertToSLH', 'CannotConvertToABCD',
-    'CannotVisualize', 'WrongCDimError', 'IncompatibleBlockStructures',
+    'WrongSignatureError', 'CannotConvertToSLH', 'CannotVisualize',
+    'WrongCDimError', 'IncompatibleBlockStructures',
     'CannotEliminateAutomatically', 'BasisNotSetError', 'UnequalSpaces',
     'OverlappingSpaces', 'SpaceTooLargeError', 'CannotSymbolicallyDiagonalize',
     'BadLiouvillianError', 'NonSquareMatrix']
@@ -41,11 +41,6 @@ class WrongSignatureError(AlgebraError):
 class CannotConvertToSLH(AlgebraException):
     """Is raised when a circuit algebra object cannot be converted to a
     concrete SLH object."""
-
-
-class CannotConvertToABCD(AlgebraException):
-    """Is raised when a circuit algebra object cannot be converted to a
-    concrete ABCD object."""
 
 
 class CannotVisualize(AlgebraException):

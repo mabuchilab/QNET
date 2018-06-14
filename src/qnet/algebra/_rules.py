@@ -1,7 +1,7 @@
 from sympy import Basic as SympyBasic, I, exp, sqrt
 
 from .core.circuit_algebra import (
-    ABCD, CIdentity, CPermutation, Circuit, Concatenation, Feedback, SLH,
+    CIdentity, CPermutation, Circuit, Concatenation, Feedback, SLH,
     SeriesInverse, SeriesProduct, cid, get_common_block_structure, )
 from .core.exceptions import CannotSimplify
 from .core.hilbert_space_algebra import (
@@ -1088,9 +1088,6 @@ def _algebraic_rules_circuit():
     A_SLH = wc("A", head=SLH)
     B_SLH = wc("B", head=SLH)
 
-    A_ABCD = wc("A", head=ABCD)
-    B_ABCD = wc("B", head=ABCD)
-
     j_int = wc("j", head=int)
     k_int = wc("k", head=int)
 
@@ -1101,9 +1098,6 @@ def _algebraic_rules_circuit():
         ('slh', (
             pattern_head(A_SLH, B_SLH),
             lambda A, B: A.series_with_slh(B))),
-        ('abcd', (
-            pattern_head(A_ABCD, B_ABCD),
-            lambda A, B: A.series_with_abcd(B))),
         ('circuit', (
             pattern_head(A_Circuit, B_Circuit),
             lambda A, B: _tensor_decompose_series(A, B))),
@@ -1122,9 +1116,6 @@ def _algebraic_rules_circuit():
         ('slh', (
             pattern_head(A_SLH, B_SLH),
             lambda A, B: A.concatenate_slh(B))),
-        ('abcd', (
-            pattern_head(A_ABCD, B_ABCD),
-            lambda A, B: A.concatenate_abcd(B))),
         ('perm', (
             pattern_head(A_CPermutation, B_CPermutation),
             lambda A, B: CPermutation.create(

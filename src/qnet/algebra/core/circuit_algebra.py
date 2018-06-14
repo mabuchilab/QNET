@@ -21,7 +21,7 @@ from .algebraic_properties import (
     assoc, check_cdims, filter_neutral, filter_cid, match_replace,
     match_replace_binary)
 from .exceptions import (
-    AlgebraError, BasisNotSetError, CannotConvertToABCD, CannotConvertToSLH,
+    AlgebraError, BasisNotSetError, CannotConvertToSLH,
     CannotEliminateAutomatically, CannotVisualize, IncompatibleBlockStructures,
     WrongCDimError, )
 from .hilbert_space_algebra import (
@@ -39,7 +39,7 @@ from ...utils.permutations import (
 from ...utils.singleton import Singleton, singleton_object
 
 __all__ = [
-    'ABCD', 'CPermutation', 'CircuitSymbol', 'Concatenation', 'Feedback',
+    'CPermutation', 'CircuitSymbol', 'Concatenation', 'Feedback',
     'Circuit', 'SLH', 'SeriesInverse', 'SeriesProduct', 'FB', 'P_sigma',
     'circuit_identity', 'cid', 'cid_1', 'eval_adiabatic_limit',
     'extract_signal', 'extract_signal_circuit', 'getABCD',
@@ -245,27 +245,11 @@ class Circuit(metaclass=ABCMeta):
     def toSLH(self) -> 'SLH':
         """Return the SLH representation of a circuit. This can fail if there
         are un-substituted pure circuit symbols (:py:class:`CircuitSymbol`)
-        left in the expression or if the circuit includes *non-passive* ABCD
-        models (cf. [1]_)
-        """
+        left in the expression"""
         return self._toSLH()
 
     @abstractmethod
     def _toSLH(self) -> 'SLH':
-        raise NotImplementedError(self.__class__.__name__)
-
-    def toABCD(self, linearize=False) -> 'ABCD':
-        """Return the ABCD representation of a circuit expression. If
-        `linearize=True` all operator expressions giving rise to non-linear
-        equations of motion are dropped.  This can fail if there are
-        un-substituted pure circuit symbols (:py:class:`CircuitSymbol`)
-        left in the expression or if `linearize = False` and the circuit
-        includes non-linear SLH models.  (cf. [1]_)
-        """
-        return self._toABCD(linearize)
-
-    @abstractmethod
-    def _toABCD(self, linearize):
         raise NotImplementedError(self.__class__.__name__)
 
     def coherent_input(self, *input_amps) -> 'Circuit':
@@ -572,118 +556,8 @@ class SLH(Circuit, Expression):
     def __len__(self):
         return 3
 
-    def _toABCD(self, linearize):
-        raise NotImplementedError()
-
     def _coherent_input(self, *input_amps):
         return super(SLH, self)._coherent_input(*input_amps).toSLH()
-
-
-###############################################################################
-# ABCD
-###############################################################################
-
-
-class ABCD(Circuit, Expression):
-    r"""ABCD model class in amplitude representation.
-
-        ``ABCD(A, B, C, D, w, space)``
-
-    I.e. for a doubled up vector a = (a_1, ..., a_n, a_1^*, ... a_n^*)^T =
-    double_up((a_1, ..., a_n)^T) and doubled up noises dA = (dA_1, ..., dA_m,
-    dA_1^*, ..., dA_m^*)^T = double_up((dA_1, ..., dA_n)^T) The equation of
-    motion for a is
-
-    .. math::
-        da = A a dt + B (dA + double_up(w) dt)
-
-    The output field dA' is given by
-
-    .. math::
-        dA' = C a dt + D (dA + double_up(w) dt)
-
-    Args:
-        A (Matrix): Coupling matrix; internal to internal, scalar valued
-            elements, ``shape = (2*n,2*n)``
-        B (Matrix): Coupling matrix external input to internal, scalar valued
-            elements, ``shape = (2*n,2*m)``
-        C (Matrix): Coupling matrix internal to external output, scalar valued
-            elements, ``shape = (2*m,2*n)``
-        D (Matrix): Coupling matrix external input to output, scalar valued
-            elements, ``shape = (2*m,2*m)``
-        w (Matrix): Coherent input amplitude vector, **NOT DOUBLED UP**, scalar
-            valued elements, ``shape = (m,1)``
-        space (HilbertSpace): Hilbert space with exactly n local factor spaces
-            corresponding to the n internal degrees of freedom.
-    """
-    def __init__(self, A, B, C, D, w, space):
-        n2, m2 = B.shape
-        if not n2 % 2:
-            raise ValueError()
-        if not m2 % 2:
-            raise ValueError()
-        n, m = n2 / 2, m2 / 2
-        if not A.shape == (n2, n2):
-            raise ValueError()
-        if not C.shape == (m2, n2):
-            raise ValueError()
-        if not D.shape == (m2, m2):
-            raise ValueError()
-        if not w.shape == (m, 1):
-            raise ValueError()
-        if not len(space.local_factors) == n:
-            raise AlgebraError(str(space) + " != " + str(n))
-        self.A = A
-        self.B = B
-        self.C = C
-        self.D = D
-        self.w = w
-        self._space = space
-        super.__init__(A, B, C, D, w, space)
-
-    @property
-    def space(self):
-        """Total Hilbert space"""
-        return self._space
-
-    def _creduce(self):
-        return self
-
-    @property
-    def args(self):
-        return self.A, self.B, self.C, self.D, self.w, self._space
-
-    @property
-    def n(self):
-        """The number of oscillators (int)."""
-        return len(self.space.local_factors)
-
-    @property
-    def m(self):
-        """The number of external fields (int)"""
-        return self.D.shape[0] / 2
-
-    @property
-    def cdim(self):
-        """Dimension of circuit"""
-        return self.m
-
-    def _get_blocks(self, block_structure):
-        return self,
-
-    @property
-    def _block_structure(self):
-        return self.cdim,
-
-    def _toABCD(self, linearize):
-        return self
-
-    def _toSLH(self):
-        # TODO IMPLEMENT ABCD._toSLH()
-        vstackm((
-            Matrix([[Destroy(hs=spc) for spc in self.space.local_factors]]).T,
-            Matrix([[Create(hs=spc) for spc in self.space.local_factors]]).T
-        ))
 
 
 ###############################################################################
@@ -719,9 +593,6 @@ class CircuitSymbol(Circuit, Expression):
     def cdim(self):
         """Dimension of circuit"""
         return self._cdim
-
-    def _toABCD(self, linearize):
-        raise CannotConvertToABCD()
 
     def _toSLH(self):
         raise CannotConvertToSLH()
@@ -801,9 +672,6 @@ class CPermutation(Circuit, Expression):
     def _toSLH(self):
         return SLH(permutation_matrix(self.permutation),
                    zerosm((self.cdim, 1)), 0)
-
-    def _toABCD(self, linearize):
-        return self.toSLH().toABCD()
 
     @property
     def cdim(self):
@@ -1043,10 +911,6 @@ class CIdentity(Circuit, Expression, metaclass=Singleton):
     def _series_inverse(self):
         return self
 
-    def _toABCD(self, linearize):
-        return ABCD(zerosm((0, 0)), zerosm((0, 2)), zerosm((2, 0)),
-                    identity_matrix(2), zerosm((1, 1)), TrivialSpace)
-
     @property
     def space(self):
         """TrivialSpace"""
@@ -1070,10 +934,6 @@ class CircuitZero(Circuit, Expression, metaclass=Singleton):
 
     def _toSLH(self):
         return SLH(Matrix([[]]), Matrix([[]]), 0)
-
-    def _toABCD(self, linearize):
-        return ABCD(zerosm((0, 0)), zerosm((0, 0)), zerosm((0, 0)),
-                    zerosm((0, 0)), zerosm((0, 0)), TrivialSpace)
 
     def _creduce(self):
         return self
@@ -1120,9 +980,6 @@ class SeriesProduct(Circuit, Operation):
     def _series_inverse(self):
         factors = [o.series_inverse() for o in reversed(self.operands)]
         return SeriesProduct.create(*factors)
-
-    def _toABCD(self, linearize):
-        raise NotImplementedError()
 
     @property
     def space(self):
@@ -1234,10 +1091,6 @@ class Concatenation(Circuit, Operation):
                     map_signals_circuit({out_port: in_port - 1}, n - 1) <<
                     (b1 + circuit_identity(b2.cdim - 1)))
 
-    def _toABCD(self, linearize):
-        raise NotImplementedError("ABCD representation of Concatenation not "
-                                  "implemented")
-
     @property
     def space(self):
         """Hilbert space of the Concatenation (Product space of all
@@ -1310,9 +1163,6 @@ class Feedback(Circuit, Operation):
         return self.operand.toSLH().feedback(
                 out_port=self.out_port, in_port=self.in_port)
 
-    def _toABCD(self, linearize):
-        raise NotImplementedError(self.__class__)
-
     def _creduce(self):
         return self.operand.creduce().feedback(
                 out_port=self.out_port, in_port=self.in_port)
@@ -1367,10 +1217,6 @@ class SeriesInverse(Circuit, Operation):
 
     def _toSLH(self):
         return self.operand.toSLH().series_inverse()
-
-    def _toABCD(self, **kwargs):
-        raise AlgebraError("SeriesInverse not well-defined in "
-                           "ABCD model context")
 
     def _creduce(self):
         return self.operand.creduce().series_inverse()
@@ -1988,9 +1834,6 @@ class Component(Circuit, Expression, metaclass=ABCMeta):
 
     def _creduce(self):
         return self
-
-    def _toABCD(self, linearize):
-        return self.toSLH().toABCD(linearize)
 
     def _substitute(self, var_map):
         all_names = self._parameters
