@@ -1013,7 +1013,7 @@ def sqrt(scalar):
         sqrt(2)
 
         >>> sqrt(2.0)
-        1.4142135623730951
+        1.414213...
 
     For a :class:`ScalarExpression` argument, it returns a
     :class:`ScalarPower` instance::
