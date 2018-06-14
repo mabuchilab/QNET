@@ -15,14 +15,68 @@ from qnet import(
     ZeroOperator, Create, Destroy, Jz, Jplus, Jminus, Phase, Displace, Squeeze,
     LocalSigma, tr, Adjoint, PseudoInverse, NullSpaceProjector, OperatorPlus,
     OperatorTimes, ScalarTimesOperator, OperatorTrace, Commutator,
-    OperatorIndexedSum, LocalSpace, TrivialSpace, FullSpace, ProductSpace,
-    Matrix, KetSymbol, ZeroKet, TrivialKet, BasisKet,
+    OperatorIndexedSum, OperatorDerivative, LocalSpace, TrivialSpace,
+    FullSpace, ProductSpace, Matrix, KetSymbol, ZeroKet, TrivialKet, BasisKet,
     CoherentStateKet, UnequalSpaces, OperatorTimesKet, Bra, KetPlus,
     ScalarTimesKet, OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra,
     TensorKet, KetIndexedSum, SuperOperatorSymbol, IdentitySuperOperator,
     ZeroSuperOperator, SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
     SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator, IdxSym,
     FockIndex, IndexOverFockSpace, srepr, ScalarValue, ScalarTimes, One, Zero)
+from qnet.printing._render_head_repr import render_head_repr
+
+
+def test_render_head_repr_tuple_list():
+    """Test that render_head_repr works for lists and tuples"""
+    a, b = symbols('a, b')
+    A = OperatorSymbol('A', hs=0)
+    B = OperatorSymbol('B', hs=0)
+
+    expr = ((a, 2), (b, 1))
+    assert render_head_repr(expr) == "((Symbol('a'), 2), (Symbol('b'), 1))"
+
+    expr = [[a, 2], [b, 1]]
+    assert render_head_repr(expr) == "[[Symbol('a'), 2], [Symbol('b'), 1]]"
+
+    expr = [(a, 2), (b, 1)]
+    assert render_head_repr(expr) == "[(Symbol('a'), 2), (Symbol('b'), 1)]"
+
+    expr = ([a, 2], [b, 1])
+    assert render_head_repr(expr) == "([Symbol('a'), 2], [Symbol('b'), 1])"
+
+    expr = (A, (b, 1))
+    assert (
+        render_head_repr(expr) ==
+        "(OperatorSymbol('A', hs=LocalSpace('0')), (Symbol('b'), 1))")
+
+    expr = [(a, 2), (A, B)]
+    assert (
+        render_head_repr(expr) ==
+        "[(Symbol('a'), 2), (OperatorSymbol('A', hs=LocalSpace('0')), "
+        "OperatorSymbol('B', hs=LocalSpace('0')))]")
+
+
+def test_indented_srepr_tuple_list():
+    """Test that indendented srepr of a list or tuple is same as unindented
+
+    Because these occur as kwargs values, they are always printed unindented.
+    """
+    a, b = symbols('a, b')
+    A = OperatorSymbol('A', hs=0)
+    B = OperatorSymbol('B', hs=0)
+    exprs = [
+        ((a, 2), (b, 1)),
+        [[a, 2], [b, 1]],
+        [(a, 2), (b, 1)],
+        ([a, 2], [b, 1]),
+        (A, (b, 1)),
+        [(a, 2), (A, B)],
+    ]
+    for expr in exprs:
+        assert (
+            srepr(expr, indented=True) ==
+            srepr(expr) ==
+            render_head_repr(expr))
 
 
 def test_srepr_local_space():
@@ -325,10 +379,15 @@ def operator_exprs():
     A = OperatorSymbol("A", hs=hs1)
     B = OperatorSymbol("B", hs=hs1)
     C = OperatorSymbol("C", hs=hs2)
+    a, b = symbols('a, b')
+    A_ab = OperatorSymbol("A", a, b, hs=0)
     gamma = symbols('gamma')
     return [
         OperatorSymbol("A", hs=hs1),
         OperatorSymbol("A_1", hs=hs1*hs2),
+        OperatorSymbol("A_1", symbols('alpha'), symbols('beta'), hs=hs1*hs2),
+        A_ab.diff(a, n=2).diff(b),
+        A_ab.diff(a, n=2).diff(b).evaluate_at({a: 0}),
         OperatorSymbol("Xi_2", hs=(r'q1', 'q2')),
         OperatorSymbol("Xi_full", hs=1),
         IdentityOperator,
@@ -395,6 +454,7 @@ def state_exprs():
         KetSymbol('Psi', hs=hs1),
         KetSymbol('Psi', hs=1),
         KetSymbol('Psi', hs=(1, 2)),
+        KetSymbol('Psi', symbols('alpha'), symbols('beta'), hs=(1, 2)),
         KetSymbol('Psi', hs=1),
         ZeroKet,
         TrivialKet,
@@ -448,6 +508,7 @@ def sop_exprs():
     return [
         SuperOperatorSymbol("A", hs=hs1),
         SuperOperatorSymbol("A_1", hs=hs1*hs2),
+        SuperOperatorSymbol("A", symbols('alpha'), symbols('beta'), hs=hs1),
         IdentitySuperOperator,
         ZeroSuperOperator,
         A + B,

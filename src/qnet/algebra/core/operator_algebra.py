@@ -253,7 +253,10 @@ def properties_for_args(cls):
 
 
 class OperatorSymbol(QuantumSymbol, Operator):
-    """Symbolic operator"""
+    """Symbolic operator
+
+    See :class:`.QuantumSymbol`.
+    """
     pass
 
 
@@ -813,6 +816,10 @@ class ScalarTimesOperator(Operator, ScalarTimesQuantumExpression):
 
 
 class OperatorDerivative(QuantumDerivative, Operator):
+    """Symbolic partial derivative of an operator.
+
+    See :class:`.QuantumDerivative`.
+    """
     pass
 
 
@@ -1430,3 +1437,4 @@ Operator._plus_cls = OperatorPlus
 Operator._times_cls = OperatorTimes
 Operator._adjoint_cls = Adjoint
 Operator._indexed_sum_cls = OperatorIndexedSum
+Operator._derivative_cls = OperatorDerivative

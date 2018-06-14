@@ -35,16 +35,25 @@ def render_head_repr(
         keys = expr.minimal_kwargs.keys()
         kwargs = ''
         if len(keys) > 0:
-            kwargs = ", ".join(
-                        ["%s=%s" % (key, key_sub_render(expr.kwargs[key]))
-                            for key in keys])
+            kwargs = ", ".join([
+                "%s=%s" % (key, key_sub_render(expr.kwargs[key]))
+                for key in keys])
             if len(args) > 0:
                 kwargs = ", " + kwargs
         return head_repr_fmt.format(
             head=expr.__class__.__name__,
             args=", ".join([sub_render(arg) for arg in args]),
             kwargs=kwargs)
-    elif isinstance(expr, SympyBasic):
-        return sympy_srepr(expr)
+    elif isinstance(expr, (tuple, list)):
+        delims = ("(", ")") if isinstance(expr, tuple) else ("[", "]")
+        if len(expr) == 1:
+            delims = (delims[0], "," + delims[1])
+        return (
+            delims[0] +
+            ", ".join([
+                render_head_repr(
+                    v, sub_render=sub_render, key_sub_render=key_sub_render)
+                for v in expr]) +
+            delims[1])
     else:
-        return repr(expr)
+        return sympy_srepr(expr)

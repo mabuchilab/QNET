@@ -110,6 +110,7 @@ def test_ascii_operator_elements():
     """Test the ascii representation of "atomic" operator algebra elements"""
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
+    alpha, beta = symbols('alpha, beta')
     assert ascii(OperatorSymbol("A", hs=hs1)) == 'A^(q1)'
     A_1 = OperatorSymbol("A_1", hs=1)
     assert ascii(A_1, show_hs_label='subscript') == 'A_1,(1)'
@@ -117,8 +118,10 @@ def test_ascii_operator_elements():
     assert ascii(OperatorSymbol("A_1", hs=hs1*hs2)) == 'A_1^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_2", hs=('q1', 'q2'))) == 'Xi_2^(q1*q2)'
     assert ascii(OperatorSymbol("Xi_full", hs=1)) == 'Xi_full^(1)'
+    assert ascii(OperatorSymbol("Xi", alpha, beta, hs=1)) == (
+        'Xi^(1)(alpha, beta)')
     with pytest.raises(ValueError):
-       OperatorSymbol(r'\Xi^2', hs='a')
+        OperatorSymbol(r'\Xi^2', hs='a')
     assert ascii(IdentityOperator) == "1"
     assert ascii(ZeroOperator) == "0"
     assert ascii(Create(hs=1)) == "a^(1)H"
@@ -147,7 +150,6 @@ def test_ascii_operator_elements():
     assert ascii(sig_e_e, sig_as_ketbra=False) == 'Pi_e^(1)'
 
 
-@pytest.mark.xxx
 def test_ascii_operator_operations():
     """Test the ascii representation of operator algebra operations"""
     hs1 = LocalSpace('q_1', dimension=2)
@@ -195,9 +197,12 @@ def test_ascii_ket_elements():
     """Test the ascii representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
+    alpha, beta = symbols('alpha, beta')
     assert ascii(KetSymbol('Psi', hs=hs1)) == '|Psi>^(q1)'
     psi = KetSymbol('Psi', hs=1)
     assert ascii(psi) == '|Psi>^(1)'
+    assert ascii(KetSymbol('Psi', alpha, beta, hs=1)) == (
+        '|Psi(alpha, beta)>^(1)')
     assert ascii(psi, show_hs_label='subscript') == '|Psi>_(1)'
     assert ascii(psi, show_hs_label=False) == '|Psi>'
     assert ascii(KetSymbol('Psi', hs=(1, 2))) == '|Psi>^(1*2)'
@@ -247,10 +252,13 @@ def test_ascii_bra_elements():
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
     bra = Bra(KetSymbol('Psi', hs=1))
+    alpha, beta = symbols('alpha, beta')
     assert ascii(Bra(KetSymbol('Psi', hs=hs1))) == '<Psi|^(q1)'
     assert ascii(bra) == '<Psi|^(1)'
     assert ascii(bra, show_hs_label=False) == '<Psi|'
     assert ascii(bra, show_hs_label='subscript') == '<Psi|_(1)'
+    assert ascii(Bra(KetSymbol('Psi', alpha, beta, hs=hs1))) == (
+        '<Psi(alpha, beta)|^(q1)')
     assert ascii(Bra(KetSymbol('Psi', hs=(1, 2)))) == '<Psi|^(1*2)'
     assert ascii(Bra(KetSymbol('Psi', hs=hs1*hs2))) == '<Psi|^(q1*q2)'
     assert ascii(KetSymbol('Psi', hs=1).dag()) == '<Psi|^(1)'
@@ -279,6 +287,7 @@ def test_ascii_ket_operations():
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
     alpha = symbols('alpha')
+    beta = symbols('beta')
     phase = exp(-I * gamma)
     i = IdxSym('i')
     assert ascii(psi1 + psi2) == '|Psi_1>^(q_1) + |Psi_2>^(q_1)'
@@ -299,10 +308,16 @@ def test_ascii_ket_operations():
     with pytest.raises(SpaceTooLargeError):
         A * phi
     assert ascii(BraKet(psi1, psi2)) == '<Psi_1|Psi_2>^(q_1)'
+    expr = BraKet(
+        KetSymbol('Psi_1', alpha, hs=hs1), KetSymbol('Psi_2', beta, hs=hs1))
+    assert ascii(expr) == '<Psi_1(alpha)|Psi_2(beta)>^(q_1)'
     assert ascii(psi1.dag() * psi2) == '<Psi_1|Psi_2>^(q_1)'
     assert ascii(ket_e1.dag() * ket_e1) == '1'
     assert ascii(ket_g1.dag() * ket_e1) == '0'
     assert ascii(KetBra(psi1, psi2)) == '|Psi_1><Psi_2|^(q_1)'
+    expr = KetBra(
+        KetSymbol('Psi_1', alpha, hs=hs1), KetSymbol('Psi_2', beta, hs=hs1))
+    assert ascii(expr) == '|Psi_1(alpha)><Psi_2(beta)|^(q_1)'
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (ascii(bell1) ==
@@ -360,10 +375,13 @@ def test_ascii_sop_elements():
     """Test the ascii representation of "atomic" Superoperators"""
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
+    alpha, beta = symbols('alpha, beta')
     assert ascii(SuperOperatorSymbol("A", hs=hs1)) == 'A^(q1)'
     assert ascii(SuperOperatorSymbol("A_1", hs=hs1*hs2)) == 'A_1^(q1*q2)'
     assert (ascii(SuperOperatorSymbol("Xi_2", hs=('q1', 'q2'))) ==
             'Xi_2^(q1*q2)')
+    assert (ascii(SuperOperatorSymbol("Xi", alpha, beta, hs=hs1)) ==
+            'Xi^(q1)(alpha, beta)')
     assert ascii(SuperOperatorSymbol("Xi_full", hs=1)) == 'Xi_full^(1)'
     with pytest.raises(ValueError):
         SuperOperatorSymbol(r'\Xi^2', hs='a')

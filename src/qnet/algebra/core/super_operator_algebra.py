@@ -57,7 +57,10 @@ class SuperOperator(QuantumExpression, metaclass=ABCMeta):
 
 
 class SuperOperatorSymbol(QuantumSymbol, SuperOperator):
-    """Symbolic super-operator"""
+    """Symbolic super-operator.
+
+    See :class:`.QuantumSymbol`.
+    """
     pass
 
 
@@ -307,6 +310,10 @@ class SuperOperatorTimesOperator(Operator, Operation):
 
 
 class SuperOperatorDerivative(QuantumDerivative, SuperOperator):
+    """Symbolic partial derivative of a super-operator.
+
+    See :class:`.QuantumDerivative`.
+    """
     pass
 
 
@@ -616,3 +623,5 @@ SuperOperator._plus_cls = SuperOperatorPlus
 SuperOperator._times_cls = SuperOperatorTimes
 SuperOperator._adjoint_cls = SuperAdjoint
 SuperOperator._indexed_sum_cls = None  # TODO
+SuperOperator._indexed_sum_cls = None  # TODO
+SuperOperator._derivative_cls = SuperOperatorDerivative

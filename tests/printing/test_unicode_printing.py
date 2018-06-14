@@ -117,6 +117,7 @@ def test_unicode_operator_elements():
     """Test the unicode representation of "atomic" operator algebra elements"""
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
+    alpha, beta = symbols('alpha, beta')
     assert unicode(OperatorSymbol("A", hs=hs1)) == 'A\u0302^(q\u2081)'
     #                                               Â^(q₁)
     assert(
@@ -129,6 +130,8 @@ def test_unicode_operator_elements():
             'A\u0302_1^(q\u2081\u2297q\u2082)')  # Â_1^(q₁⊗q₂)
     assert (unicode(OperatorSymbol("Xi_2", hs=('q1', 'q2'))) ==
             '\u039e\u0302_2^(q\u2081\u2297q\u2082)')  # Ξ̂_2^(q₁⊗q₂)
+    assert unicode(OperatorSymbol("Xi", alpha, beta, hs=1)) == (
+        'Ξ̂⁽¹⁾(α, β)')
     assert unicode(IdentityOperator) == "𝟙"
     assert unicode(ZeroOperator) == "0"
     assert unicode(Create(hs=1)) == 'a\u0302^(1)\u2020'  # â^(1)†
@@ -210,10 +213,12 @@ def test_unicode_ket_elements():
     """Test the unicode representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
+    alpha, beta = symbols('alpha, beta')
     psi_hs1 = KetSymbol('Psi', hs=hs1)
     assert unicode(psi_hs1) == '|Ψ⟩^(q₁)'
     assert unicode(psi_hs1, unicode_sub_super=False) == '|Ψ⟩^(q_1)'
     assert unicode(KetSymbol('Psi', hs=1)) == '|Ψ⟩⁽¹⁾'
+    assert unicode(KetSymbol('Psi', alpha, beta, hs=1)) == '|Ψ(α, β)⟩⁽¹⁾'
     assert unicode(KetSymbol('Psi', hs=(1, 2))) == '|Ψ⟩^(1⊗2)'
     assert unicode(KetSymbol('Psi', hs=hs1*hs2)) == '|Ψ⟩^(q₁⊗q₂)'
     assert unicode(ZeroKet) == '0'
@@ -252,8 +257,11 @@ def test_unicode_ket_symbolic_labels():
 def test_unicode_bra_elements():
     """Test the unicode representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
+    alpha, beta = symbols('alpha, beta')
     assert unicode(Bra(KetSymbol('Psi', hs=hs1))) == '⟨Ψ|^(q₁)'
     assert unicode(Bra(KetSymbol('Psi', hs=1))) == '⟨Ψ|⁽¹⁾'
+    assert unicode(Bra(KetSymbol('Psi', alpha, beta, hs=hs1))) == (
+        '⟨Ψ(α, β)|^(q₁)')
     assert unicode(Bra(KetSymbol('Psi', hs=(1, 2)))) == '⟨Ψ|^(1⊗2)'
     assert unicode(Bra(ZeroKet)) == '0'
     assert unicode(Bra(TrivialKet)) == '1'
@@ -278,6 +286,7 @@ def test_unicode_ket_operations():
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
     alpha = symbols('alpha')
+    beta = symbols('beta')
     phase = exp(-I * gamma)
     i = IdxSym('i')
     assert unicode(psi1 + psi2) == '|Ψ₁⟩^(q₁) + |Ψ₂⟩^(q₁)'
@@ -289,9 +298,15 @@ def test_unicode_ket_operations():
             'A\u0302_0^(q\u2081) |\u03a8\u2081\u27e9^(q\u2081)')
     #        Â_0^(q₁) |Ψ₁⟩^(q₁)
     assert unicode(BraKet(psi1, psi2)) == '⟨Ψ₁|Ψ₂⟩^(q₁)'
+    expr = BraKet(
+        KetSymbol('Psi_1', alpha, hs=hs1), KetSymbol('Psi_2', beta, hs=hs1))
+    assert unicode(expr) == '⟨Ψ₁(α)|Ψ₂(β)⟩^(q₁)'
     assert unicode(ket_e1.dag() * ket_e1) == '1'
     assert unicode(ket_g1.dag() * ket_e1) == '0'
     assert unicode(KetBra(psi1, psi2)) == '|Ψ₁⟩⟨Ψ₂|^(q₁)'
+    expr = KetBra(
+        KetSymbol('Psi_1', alpha, hs=hs1), KetSymbol('Psi_2', beta, hs=hs1))
+    assert unicode(expr) == '|Ψ₁(α)⟩⟨Ψ₂(β)|^(q₁)'
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (unicode(bell1) ==
@@ -332,9 +347,12 @@ def test_unicode_bra_operations():
 def test_unicode_sop_elements():
     """Test the unicode representation of "atomic" Superoperators"""
     hs1 = LocalSpace('q1', dimension=2)
+    alpha, beta = symbols('alpha, beta')
     assert unicode(SuperOperatorSymbol("A", hs=hs1)) == 'A^(q₁)'
     assert (unicode(SuperOperatorSymbol("Xi_2", hs=('q1', 'q2'))) ==
             'Ξ_2^(q₁⊗q₂)')
+    assert (unicode(SuperOperatorSymbol("Xi", alpha, beta, hs=hs1)) ==
+            'Ξ^(q₁)(α, β)')
     assert unicode(IdentitySuperOperator) == "𝟙"
     assert unicode(ZeroSuperOperator) == "0"
 

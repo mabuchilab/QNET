@@ -97,10 +97,16 @@ class IndentedSReprPrinter(QnetBasePrinter):
             if len(args) > 0 or len(keys) > 0:
                 lines[-1] = lines[-1][:-1]  # drop trailing comma for last arg
             lines[-1] += ")"
-        elif isinstance(expr, SympyBasic):
-            lines.append(indent_str + SympyReprPrinter().doprint(expr))
+        elif isinstance(expr, (tuple, list)):
+            delims = ("(", ")") if isinstance(expr, tuple) else ("[", "]")
+            if len(expr) == 1:
+                delims = (delims[0], "," + delims[1])
+            lines.append(
+                indent_str + delims[0] +
+                ", ".join([render_head_repr(v) for v in expr]) +
+                delims[1])
         else:
-            lines.append(indent_str + repr(expr))
+            lines.append(indent_str + SympyReprPrinter().doprint(expr))
         return "\n".join(lines)
 
     def _print_ndarray(self, expr):

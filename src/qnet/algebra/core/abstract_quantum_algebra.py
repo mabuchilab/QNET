@@ -295,11 +295,25 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
 
 
 class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
-    """A symbolic constant"""
+    """A symbolic element of the algebra.
+
+    Args:
+        label (str or SymbolicLabelBase): Label for the symbol
+        sym_args (Scalar): optional scalar arguments. With zero `sym_args`, the
+            resulting symbol is a constant. With one or more `sym_args`, it
+            becomes a function.
+        hs (HilbertSpace, str, int, tuple): the Hilbert space associated with
+            the symbol. If a `str` or an `int`, and :class:`LocalSpace` with a
+            corresponding label will be created, or, for a tuple of `str` or
+            `int`, a :class:`ProducSpace.
+    """
     _rx_label = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
-    def __init__(self, label, *, hs):
+    def __init__(self, label, *sym_args, hs):
+        from qnet.algebra.core.scalar_algebra import ScalarValue
         self._label = label
+        sym_args = [ScalarValue.create(arg) for arg in sym_args]
+        self._sym_args = tuple(sym_args)
         if isinstance(label, str):
             if not self._rx_label.match(label):
                 raise ValueError(
@@ -316,26 +330,51 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
         elif isinstance(hs, tuple):
             hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
         self._hs = hs
-        super().__init__(label, hs=hs)
+        super().__init__(label, *sym_args, hs=hs)
 
     @property
     def label(self):
+        """Label of the symbol"""
         return self._label
 
     @property
     def args(self):
-        return (self.label, )
+        """Tuple of positional arguments, consisting of the label and possible
+        `sym_args`"""
+        return (self.label, ) + self._sym_args
 
     @property
     def kwargs(self):
+        """Dict of keyword arguments, containing only `hs`"""
         return {'hs': self._hs}
+
+    @property
+    def sym_args(self):
+        """Tuple of scalar arguments of the symbol"""
+        return self._sym_args
 
     @property
     def space(self):
         return self._hs
 
     def _diff(self, sym):
-        return self.__class__._zero
+        if all([arg.diff(sym).is_zero for arg in self.sym_args]):
+            # This includes the case where sym_args is empty
+            return self.__class__._zero
+        else:
+            return self.__class__._derivative_cls(self, derivs={sym: 1})
+
+    def _series_expand(self, param, about, order):
+        if len(self._sym_args) == 0:
+            return (self, ) + (0, ) * order
+        else:
+            # QuantumExpression._series_expand will return the abstract Taylor
+            # series
+            return super()._series_expand(param, about, order)
+
+    def _simplify_scalar(self, func):
+        simplified_sym_args = [func(sym) for sym in self._sym_args]
+        return self.create(self.label, *simplified_sym_args, hs=self.space)
 
     def _expand(self):
         return self
@@ -343,9 +382,12 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
     @property
     def free_symbols(self):
         try:
-            return self.label.free_symbols  # TODO: review
+            res = self.label.free_symbols
+            # TODO: anywhere else there are symbolic labels, symbols from the
+            # labels should be included in the free_symbols, too
         except AttributeError:
-            return set()
+            res = set()
+        return res.union(*[sym.free_symbols for sym in self.sym_args])
 
     def _adjoint(self):
         return self.__class__._adjoint_cls(self)
@@ -669,11 +711,12 @@ class QuantumDerivative(SingleQuantumOperation):
         the :meth:`~QuantumExpression._diff` method of `op` and evaluating the
         result at the given `vals`.
         """
+        # Expression._get_instance_key won't work with mutable dicts, so we
+        # must convert `derivs` and `vals` to a tuple structure
         if not isinstance(derivs, tuple):
             derivs = cls._dict_to_ordered_tuple(dict(derivs))
         if not (isinstance(vals, tuple) or vals is None):
             vals = cls._dict_to_ordered_tuple(dict(vals))
-        # Expression._get_instance_key wouldn't work with mutable dicts
         return super().create(op, derivs=derivs, vals=vals)
 
     def __init__(self, op, *, derivs, vals=None):

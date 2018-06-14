@@ -14,7 +14,7 @@ from .scalar_algebra import is_scalar
 from .abstract_quantum_algebra import (
     ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
     QuantumPlus, QuantumTimes, QuantumAdjoint, QuantumIndexedSum,
-    ensure_local_space, _series_expand_combine_prod)
+    QuantumDerivative, ensure_local_space, _series_expand_combine_prod)
 from .algebraic_properties import (
     accept_bras, assoc, assoc_indexed, basis_ket_zero_outside_hs,
     filter_neutral, match_replace, match_replace_binary, orderby)
@@ -33,7 +33,7 @@ from ...utils.singleton import Singleton, singleton_object
 __all__ = [
     'BasisKet', 'Bra', 'BraKet', 'CoherentStateKet', 'State', 'KetBra',
     'KetPlus', 'KetSymbol', 'LocalKet', 'OperatorTimesKet', 'ScalarTimesKet',
-    'TensorKet', 'TrivialKet', 'ZeroKet', 'KetIndexedSum']
+    'TensorKet', 'TrivialKet', 'ZeroKet', 'KetIndexedSum', 'StateDerivative']
 
 __private__ = []  # anything not in __all__ must be in __private__
 
@@ -166,7 +166,10 @@ class State(QuantumExpression, metaclass=ABCMeta):
 
 
 class KetSymbol(QuantumSymbol, State):
-    """Symbolic state"""
+    """Symbolic state.
+
+    See :class:`.QuantumSymbol`.
+    """
     _rx_label = re.compile('^[A-Za-z0-9]+(_[A-Za-z0-9().+-]+)?$')
 
 
@@ -526,6 +529,14 @@ class OperatorTimesKet(State, Operation):
                      for n in range(order + 1) for k in range(n + 1))
 
 
+class StateDerivative(QuantumDerivative, State):
+    """Symbolic partial derivative of a state.
+
+    See :class:`.QuantumDerivative`.
+    """
+    pass
+
+
 class Bra(State, QuantumAdjoint):
     """The associated dual/adjoint state for any `ket`"""
     def __init__(self, ket):
@@ -604,10 +615,12 @@ class BraKet(ScalarExpression, Operation):
 
     @property
     def ket(self):
+        """The ket of the braket"""
         return self.operands[1]
 
     @property
     def bra(self):
+        """The bra of the braket (:class:`Bra` instance)"""
         return Bra(self.operands[0])
 
     def _diff(self, sym):
@@ -724,3 +737,4 @@ State._plus_cls = KetPlus
 State._times_cls = TensorKet
 State._adjoint_cls = Bra
 State._indexed_sum_cls = KetIndexedSum
+State._derivative_cls = StateDerivative

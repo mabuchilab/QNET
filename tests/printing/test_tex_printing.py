@@ -168,6 +168,7 @@ def test_tex_operator_elements():
     """Test the tex representation of "atomic" operator algebra elements"""
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
+    alpha, beta = symbols('alpha, beta')
     hs_custom = LocalSpace(1, local_identifiers={
         'Create': 'b', 'Destroy': 'b', 'Jz': 'Z', 'Jplus': 'Jp',
         'Jminus': 'Jm', 'Phase': 'Phi'})
@@ -178,6 +179,8 @@ def test_tex_operator_elements():
             r'\hat{\Xi}_{2}^{(q_{1} \otimes q_{2})}')
     assert (latex(OperatorSymbol("Xi_full", hs=1)) ==
             r'\hat{\Xi}_{\text{full}}^{(1)}')
+    assert latex(OperatorSymbol("Xi", alpha, beta, hs=1)) == (
+        r'\hat{\Xi}^{(1)}\left(\alpha, \beta\right)')
     assert latex(IdentityOperator) == r'\mathbb{1}'
     assert latex(IdentityOperator, tex_identity_sym='I') == 'I'
     assert latex(ZeroOperator) == r'\mathbb{0}'
@@ -288,13 +291,18 @@ def test_tex_ket_elements():
     """Test the tex representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
+    alpha, beta = symbols('alpha, beta')
     psi = KetSymbol('Psi', hs=hs1)
     assert (latex(psi) == r'\left\lvert \Psi \right\rangle^{(q_{1})}')
+    assert (
+        latex(KetSymbol('Psi', alpha, beta, hs=1)) ==
+        r'\left\lvert \Psi\left(\alpha, \beta\right) \right\rangle^{(1)}')
     assert (latex(psi, tex_use_braket=True) == r'\Ket{\Psi}^{(q_{1})}')
     assert (
         latex(psi, tex_use_braket=True, show_hs_label='subscript') ==
         r'\Ket{\Psi}_{(q_{1})}')
-    assert (latex(psi, tex_use_braket=True, show_hs_label=False) == r'\Ket{\Psi}')
+    assert (
+        latex(psi, tex_use_braket=True, show_hs_label=False) == r'\Ket{\Psi}')
     assert (latex(KetSymbol('Psi', hs=1)) ==
             r'\left\lvert \Psi \right\rangle^{(1)}')
     assert (latex(KetSymbol('Psi', hs=(1, 2))) ==
@@ -363,8 +371,11 @@ def test_tex_bra_elements():
     """Test the tex representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
+    alpha, beta = symbols('alpha, beta')
     bra = Bra(KetSymbol('Psi', hs=hs1))
     assert (latex(bra) == r'\left\langle \Psi \right\rvert^{(q_{1})}')
+    assert latex(Bra(KetSymbol('Psi', alpha, beta, hs=hs1))) == (
+        r'\left\langle \Psi\left(\alpha, \beta\right) \right\rvert^{(q_{1})}')
     assert (latex(bra, tex_use_braket=True) == r'\Bra{\Psi}^{(q_{1})}')
     assert (
         latex(bra, tex_use_braket=True, show_hs_label='subscript') ==
@@ -413,6 +424,7 @@ def test_tex_ket_operations():
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
     alpha = symbols('alpha')
+    beta = symbols('beta')
     phase = exp(-I * gamma)
     i = IdxSym('i')
     assert (
@@ -444,6 +456,12 @@ def test_tex_ket_operations():
     assert (
         latex(braket, show_hs_label=False) ==
         r'\left\langle \Psi_{1} \middle\vert \Psi_{2} \right\rangle')
+    expr = BraKet(
+        KetSymbol('Psi_1', alpha, hs=hs1), KetSymbol('Psi_2', beta, hs=hs1))
+    assert (
+        latex(expr) ==
+        r'\left\langle \Psi_{1}\left(\alpha\right) \middle\vert '
+        r'\Psi_{2}\left(\beta\right) \right\rangle^{(q_{1})}')
     assert (
         latex(ket_e1 * ket_e2) ==
         r'\left\lvert e,e \right\rangle^{(q_{1} \otimes q_{2})}')
@@ -462,6 +480,12 @@ def test_tex_ket_operations():
         latex(ketbra, show_hs_label=False) ==
         r'\left\lvert \Psi_{1} \middle\rangle\!'
         r'\middle\langle \Psi_{2} \right\rvert')
+    expr = KetBra(
+        KetSymbol('Psi_1', alpha, hs=hs1), KetSymbol('Psi_2', beta, hs=hs1))
+    assert (
+        latex(expr) ==
+        r'\left\lvert \Psi_{1}\left(\alpha\right) \middle\rangle\!'
+        r'\middle\langle \Psi_{2}\left(\beta\right) \right\rvert^{(q_{1})}')
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (
@@ -555,9 +579,12 @@ def test_tex_sop_elements():
     """Test the tex representation of "atomic" Superoperators"""
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
+    alpha, beta = symbols('alpha, beta')
     assert latex(SuperOperatorSymbol("A", hs=hs1)) == r'\mathrm{A}^{(q_{1})}'
     assert (latex(SuperOperatorSymbol("A_1", hs=hs1*hs2)) ==
             r'\mathrm{A}_{1}^{(q_{1} \otimes q_{2})}')
+    assert (latex(SuperOperatorSymbol("Xi", alpha, beta, hs=hs1)) ==
+            r'\mathrm{\Xi}^{(q_{1})}\left(\alpha, \beta\right)')
     assert (latex(SuperOperatorSymbol("Xi_2", hs=('q1', 'q2'))) ==
             r'\mathrm{\Xi}_{2}^{(q_{1} \otimes q_{2})}')
     assert (latex(SuperOperatorSymbol("Xi_full", hs=1)) ==

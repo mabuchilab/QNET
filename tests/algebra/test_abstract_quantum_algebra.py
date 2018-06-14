@@ -5,7 +5,8 @@ from qnet import (
     CIdentity, CircuitZero, IdxSym, BasisKet, OperatorSymbol, FockIndex,
     KetIndexedSum, OperatorIndexedSum, StrLabel, LocalSpace,
     IndexOverList, IndexOverFockSpace, IndexOverRange, Sum, ScalarExpression,
-    QuantumDerivative, Scalar, ScalarTimes, IdxSym)
+    QuantumDerivative, OperatorDerivative, Scalar, ScalarTimes)
+import sympy
 from sympy import IndexedBase, symbols
 
 import pytest
@@ -238,3 +239,37 @@ def test_abstract_taylor_series(MyScalarFunc):
     assert series[1] == D(f, derivs={t[j]: 1}, vals={t[j]: t0})
     assert series[2] == D(f, derivs={t[j]: 2}, vals={t[j]: t0}) / 2
     assert series[3] == D(f, derivs={t[j]: 3}, vals={t[j]: t0}) / 6
+
+
+def test_quantum_symbols_with_symargs():
+    """Test properties and behavior of symbols with scalar arguments,
+    through the example of an OperatorSymbol"""
+    t = IndexedBase('t')
+    i = IdxSym('i')
+    j = IdxSym('j')
+    alpha, beta = symbols('alpha, beta')
+    A = OperatorSymbol("A", t[i], (alpha + 1)**2, hs=0)
+    assert A.label == 'A'
+    assert len(A.args) == 3
+    assert A.kwargs == {'hs': LocalSpace('0')}
+    assert A._get_instance_key(A.args, A.kwargs) == (
+        OperatorSymbol, 'A', t[i], (alpha + 1)**2, ('hs', A.space))
+    A_beta = OperatorSymbol("A", beta, (alpha + 1)**2, hs=0)
+    assert A != A_beta
+    assert A.substitute({t[i]: beta}) == A_beta
+    half = sympy.sympify(1) / 2
+    assert A.sym_args == (t[i], (alpha + 1)**2)
+    assert A.free_symbols == {symbols('t'), i, alpha}
+    assert len(A.bound_symbols) == 0
+    assert A.simplify_scalar(sympy.expand) == OperatorSymbol(
+        "A", t[i], alpha**2 + 2*alpha + 1, hs=0)
+    assert A.diff(beta) == ZeroOperator
+    assert A.diff(t[j]) == ZeroOperator
+    assert OperatorSymbol("A", t[i], i, j, hs=0).diff(t[j]) == ZeroOperator
+    assert A.diff(alpha) == OperatorDerivative(A, derivs=((alpha, 1),))
+    assert A.expand() == A
+    series = A.series_expand(t[i], about=beta, order=2)
+    assert len(series) == 3
+    assert series[0] == OperatorSymbol("A", beta, (alpha + 1)**2, hs=0)
+    assert series[2] == half * OperatorDerivative(
+        A, derivs=((t[i], 2),), vals=((t[i], beta),))

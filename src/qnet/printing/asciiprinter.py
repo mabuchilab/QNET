@@ -267,7 +267,13 @@ class QnetAsciiPrinter(QnetBasePrinter):
             [self.doprint(op) for op in expr.operands])
 
     def _print_OperatorSymbol(self, expr, adjoint=False):
-        return self._render_op(expr.label, expr._hs, dagger=adjoint)
+        res = self._render_op(expr.label, expr._hs, dagger=adjoint)
+        if len(expr.sym_args) > 0:
+            res += (
+                self._parenth_left +
+                ", ".join([self.doprint(arg) for arg in expr.sym_args]) +
+                self._parenth_right)
+        return res
 
     def _print_LocalOperator(self, expr, adjoint=False):
         if adjoint:
@@ -433,9 +439,14 @@ class QnetAsciiPrinter(QnetBasePrinter):
             fmt = self._braket_fmt('bra')
         else:
             fmt = self._braket_fmt('ket')
+        label = self._render_state_label(expr.label)
+        if len(expr.sym_args) > 0:
+            label += (
+                self._parenth_left +
+                ", ".join([self.doprint(arg) for arg in expr.sym_args]) +
+                self._parenth_right)
         return fmt.format(
-            label=self._render_state_label(expr.label),
-            space=self._render_hs_label(expr.space))
+            label=label, space=self._render_hs_label(expr.space))
 
     def _print_ZeroKet(self, expr, adjoint=False):
         return "0"
@@ -597,10 +608,22 @@ class QnetAsciiPrinter(QnetBasePrinter):
         trivial = True
         try:
             bra_label = self._render_state_label(expr.bra.label)
+            bra = expr.bra.ket
+            if hasattr(bra, 'sym_args') and len(bra.sym_args) > 0:
+                bra_label += (
+                    self._parenth_left +
+                    ", ".join([self.doprint(arg) for arg in bra.sym_args]) +
+                    self._parenth_right)
         except AttributeError:
             trivial = False
         try:
             ket_label = self._render_state_label(expr.ket.label)
+            if hasattr(expr.ket, 'sym_args') and len(expr.ket.sym_args) > 0:
+                ket_label += (
+                    self._parenth_left +
+                    ", ".join(
+                        [self.doprint(arg) for arg in expr.ket.sym_args]) +
+                    self._parenth_right)
         except AttributeError:
             trivial = False
         if trivial:
@@ -626,10 +649,22 @@ class QnetAsciiPrinter(QnetBasePrinter):
         trivial = True
         try:
             bra_label = self._render_state_label(expr.bra.label)
+            bra = expr.bra.ket
+            if hasattr(bra, 'sym_args') and len(bra.sym_args) > 0:
+                bra_label += (
+                    self._parenth_left +
+                    ", ".join([self.doprint(arg) for arg in bra.sym_args]) +
+                    self._parenth_right)
         except AttributeError:
             trivial = False
         try:
             ket_label = self._render_state_label(expr.ket.label)
+            if hasattr(expr.ket, 'sym_args') and len(expr.ket.sym_args) > 0:
+                ket_label += (
+                    self._parenth_left +
+                    ", ".join(
+                        [self.doprint(arg) for arg in expr.ket.sym_args]) +
+                    self._parenth_right)
         except AttributeError:
             trivial = False
         if trivial:
@@ -652,8 +687,14 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 return rendered_ket + rendered_bra
 
     def _print_SuperOperatorSymbol(self, expr, adjoint=False, superop=True):
-        return self._render_op(
+        res = self._render_op(
             expr.label, expr._hs, dagger=adjoint, superop=True)
+        if len(expr.sym_args) > 0:
+            res += (
+                self._parenth_left +
+                ", ".join([self.doprint(arg) for arg in expr.sym_args]) +
+                self._parenth_right)
+        return res
 
     def _print_IdentitySuperOperator(self, expr, superop=True):
         return "1"

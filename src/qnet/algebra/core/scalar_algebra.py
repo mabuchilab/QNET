@@ -9,7 +9,7 @@ from numpy import complex128, float64, int64
 
 from .abstract_quantum_algebra import (
     QuantumExpression, QuantumIndexedSum, QuantumOperation, QuantumPlus,
-    QuantumTimes)
+    QuantumTimes, QuantumDerivative)
 from .algebraic_properties import (
     assoc, assoc_indexed, convert_to_scalars, filter_neutral,
     indexed_sum_over_const, scalar_indexed_sum_over_kronecker, match_replace,
@@ -21,7 +21,8 @@ from ...utils.indices import SymbolicLabelBase
 
 __all__ = [
     'Scalar', 'ScalarValue', 'ScalarExpression', 'Zero', 'One', 'ScalarPlus',
-    'ScalarTimes', 'ScalarIndexedSum', 'ScalarPower', 'sqrt', 'KroneckerDelta']
+    'ScalarTimes', 'ScalarIndexedSum', 'ScalarPower', 'ScalarDerivative',
+    'sqrt', 'KroneckerDelta']
 
 __private__ = ['is_scalar']
 
@@ -959,6 +960,10 @@ class ScalarPower(QuantumOperation, Scalar):
                 "as a bug." % (self, param, about))
 
 
+class ScalarDerivative(QuantumDerivative, Scalar):
+    pass
+
+
 def KroneckerDelta(i, j):
     """Kronecker delta symbol.
 
@@ -1076,3 +1081,4 @@ Scalar._times_cls = ScalarTimes
 Scalar._adjoint_cls = lambda scalar: scalar.conjugate()
 Scalar._adjoint_cls.create = Scalar._adjoint_cls  # mock Expression
 Scalar._indexed_sum_cls = ScalarIndexedSum
+Scalar._derivative_cls = ScalarDerivative
