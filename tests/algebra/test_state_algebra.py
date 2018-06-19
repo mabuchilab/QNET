@@ -197,6 +197,16 @@ class TestLocalOperatorKetRelations(unittest.TestCase):
                 sqrt(j*(j+1)-2*(2-1)) * BasisKet('+1', hs=h))
         assert Jz(hs=h) * BasisKet('+2', hs=h) == 2 * BasisKet('+2', hs=h)
 
+        tls = SpinSpace('tls', spin='1/2', basis=('-', '+'))
+        assert (
+            Jplus(hs=tls) * BasisKet('-', hs=tls) == BasisKet('+', hs=tls))
+        assert (
+            Jminus(hs=tls) * BasisKet('+', hs=tls) == BasisKet('-', hs=tls))
+        assert (
+            Jz(hs=tls) * BasisKet('+', hs=tls) == BasisKet('+', hs=tls) / 2)
+        assert (
+            Jz(hs=tls) * BasisKet('-', hs=tls) == -BasisKet('-', hs=tls) / 2)
+
     def testPhase(self):
         hs1 = LocalSpace(1)
         assert (Phase(5, hs=hs1) * BasisKet(3, hs=hs1) ==

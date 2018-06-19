@@ -46,6 +46,12 @@ class SpinSpace(LocalSpace):
         >>> hs = SpinSpace(label=0, spin='3/2')
         >>> assert hs == SpinSpace(label=0, spin=(3, 2))
 
+    You may use custom labels, e.g.::
+
+        >>> hs = SpinSpace(label='s', spin='1/2', basis=('-', '+'))
+        >>> hs.basis_labels
+        ('-', '+')
+
     Raises:
 
         ValueError: if `spin` is not an integer or half-integer greater than
@@ -54,7 +60,8 @@ class SpinSpace(LocalSpace):
     _basis_label_types = (str, SpinIndex)  # acceptable types for labels
 
     def __init__(
-            self, label, *, spin, local_identifiers=None, order_index=None):
+            self, label, *, spin, basis=None, local_identifiers=None,
+            order_index=None):
         if isinstance(spin, tuple):
             spin = sympy.sympify(spin[0]) / spin[1]
         else:
@@ -71,8 +78,9 @@ class SpinSpace(LocalSpace):
         if dimension <= 1:
             raise ValueError("spin %s must be greater than zero" % spin)
         bottom = -spin
-        basis = tuple([
-            SpinIndex(bottom + n).evaluate({}) for n in range(dimension)])
+        if basis is None:
+            basis = tuple([
+                SpinIndex(bottom + n).evaluate({}) for n in range(dimension)])
 
         super().__init__(
             label=label, basis=basis, dimension=dimension,

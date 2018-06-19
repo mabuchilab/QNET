@@ -518,6 +518,15 @@ class TestLocalOperatorRelations(unittest.TestCase):
 
         assert LocalProjector('-3', hs=h)*jz == -3*LocalProjector('-3', hs=h)
 
+        tls = SpinSpace('tls', spin='1/2', basis=('-', '+'))
+        sz = Jz(hs=tls)
+        sp = Jplus(hs=tls)
+        sm = Jminus(hs=tls)
+
+        assert (sp*sm-sm*sp).expand() == 2*sz
+        assert (sz*sm-sm*sz).expand() == -sm
+        assert (sz*sp-sp*sz).expand() == sp
+
     def testPhase(self):
         assert Phase.create(5, hs=1).adjoint() == Phase.create(-5, hs=1)
         assert (Phase.create(5, hs=1) * Phase.create(-5, hs=1) ==
