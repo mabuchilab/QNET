@@ -133,7 +133,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
     be used through the associated :class:`.LocalSpace`'s
     `local_identifiers` parameter. For example::
 
-        >>> hs1_custom = FockSpace(1, local_identifiers={'Destroy': 'b'})
+        >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
         >>> b = Destroy(hs=hs1_custom)
         >>> ascii(b)
         'b^(1)'
@@ -195,7 +195,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
             >>> a = Destroy(hs=1)
             >>> a.identifier
             'a'
-            >>> hs1_custom = FockSpace(1, local_identifiers={'Destroy': 'b'})
+            >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
             >>> b = Destroy(hs=hs1_custom)
             >>> b.identifier
             'b'

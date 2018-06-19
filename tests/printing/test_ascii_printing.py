@@ -15,7 +15,7 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, ascii,
-    ScalarValue, ScalarExpression, QuantumDerivative, Scalar, FockSpace,
+    ScalarValue, ScalarExpression, QuantumDerivative, Scalar,
     SpinSpace)
 
 
@@ -129,7 +129,7 @@ def test_ascii_operator_elements():
     assert ascii(Create(hs=1), show_hs_label=False) == "a^H"
     assert ascii(Create(hs=1), show_hs_label='subscript') == "a_(1)^H"
     assert ascii(Destroy(hs=1)) == "a^(1)"
-    fock1 = FockSpace(
+    fock1 = LocalSpace(
        1, local_identifiers={'Create': 'b', 'Destroy': 'b', 'Phase': 'Ph'})
     spin1 = SpinSpace(
        1, spin=1, local_identifiers={'Jz': 'Z', 'Jplus': 'Jp', 'Jminus': 'Jm'})

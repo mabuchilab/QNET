@@ -3,9 +3,9 @@ import pytest
 from sympy import Rational
 
 from qnet.algebra.core.hilbert_space_algebra import (
-        LocalSpace, ProductSpace, TrivialSpace, FullSpace)
+    LocalSpace, ProductSpace, TrivialSpace, FullSpace)
 from qnet.algebra.core.exceptions import BasisNotSetError
-from qnet.algebra.library.fock_operators import Destroy, FockSpace
+from qnet.algebra.library.fock_operators import Destroy
 from qnet.algebra.library.spin_algebra import SpinSpace, SpinBasisKet
 from qnet.algebra.core.state_algebra import (
     KetSymbol, BasisKet, TrivialKet)
@@ -25,9 +25,9 @@ def test_basis_change():
     """Test that we can change the basis of an Expression's Hilbert space
     through substitution"""
     a = Destroy(hs=1)
-    assert a.space == FockSpace('1')
+    assert a.space == LocalSpace('1')
     assert not a.space.has_basis
-    subs = {FockSpace('1'): FockSpace('1', basis=(-1, 0, 1))}
+    subs = {LocalSpace('1'): LocalSpace('1', basis=(-1, 0, 1))}
     b = a.substitute(subs)
     assert str(a) == str(b)
     assert a != b
@@ -40,25 +40,25 @@ def test_op_product_space():
     a = Destroy(hs=1)
     b = Destroy(hs=2)
     p = a * b
-    assert p.space == ProductSpace(FockSpace(1), FockSpace(2))
+    assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
     assert not p.space.has_basis
 
-    hs1 = FockSpace(1, dimension=3)
-    a = a.substitute({FockSpace(1): hs1})
+    hs1 = LocalSpace(1, dimension=3)
+    a = a.substitute({LocalSpace(1): hs1})
     p = a * b
-    assert p.space == ProductSpace(hs1, FockSpace(2))
+    assert p.space == ProductSpace(hs1, LocalSpace(2))
     assert not p.space.has_basis
 
-    hs2 = FockSpace(2, dimension=2)
-    b = b.substitute({FockSpace(2): hs2})
+    hs2 = LocalSpace(2, dimension=2)
+    b = b.substitute({LocalSpace(2): hs2})
     p = a * b
     ps = ProductSpace(hs1, hs2)
     assert p.space == ps
     assert p.space.dimension == 6
     assert p.space.basis_labels == ('0,0', '0,1', '1,0', '1,1', '2,0', '2,1')
 
-    hs1_2 = FockSpace(1, basis=('g', 'e'))
-    hs2_2 = FockSpace(2, basis=('g', 'e'))
+    hs1_2 = LocalSpace(1, basis=('g', 'e'))
+    hs2_2 = LocalSpace(2, basis=('g', 'e'))
     p = p.substitute({hs1: hs1_2, hs2: hs2_2})
     assert p.space.dimension == 4
     assert p.space.basis_labels == ('g,g', 'g,e', 'e,g', 'e,e')
@@ -75,17 +75,17 @@ def test_ket_product_space():
     a = KetSymbol('0', hs=1)
     b = KetSymbol('0', hs=2)
     p = a * b
-    assert p.space == ProductSpace(FockSpace(1), FockSpace(2))
+    assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
     assert not p.space.has_basis
 
-    hs1 = FockSpace(1, dimension=3)
-    a = a.substitute({FockSpace(1): hs1})
+    hs1 = LocalSpace(1, dimension=3)
+    a = a.substitute({LocalSpace(1): hs1})
     p = a * b
-    assert p.space == ProductSpace(hs1, FockSpace(2))
+    assert p.space == ProductSpace(hs1, LocalSpace(2))
     assert not p.space.has_basis
 
-    hs2 = FockSpace(2, dimension=2)
-    b = b.substitute({FockSpace(2): hs2})
+    hs2 = LocalSpace(2, dimension=2)
+    b = b.substitute({LocalSpace(2): hs2})
     p = a * b
     ps = ProductSpace(hs1, hs2)
     assert p.space == ps
@@ -96,9 +96,9 @@ def test_ket_product_space():
 def test_product_space():
 
     # create HilbertSpaces
-    h1 = FockSpace("h1")
-    h2 = FockSpace("h2")
-    h3 = FockSpace("h3")
+    h1 = LocalSpace("h1")
+    h2 = LocalSpace("h2")
+    h3 = LocalSpace("h3")
 
     # productspace
     assert h1 * h2 == ProductSpace(h1, h2)
@@ -116,10 +116,10 @@ def test_product_space():
 
 
 def test_dimension():
-    h1 = FockSpace("h1", dimension = 10)
-    h2 = FockSpace("h2", dimension = 20)
-    h3 = FockSpace("h3")
-    h4 = FockSpace("h4", dimension = 100)
+    h1 = LocalSpace("h1", dimension = 10)
+    h2 = LocalSpace("h2", dimension = 20)
+    h3 = LocalSpace("h3")
+    h4 = LocalSpace("h4", dimension = 100)
 
     assert (h1*h2).dimension == h1.dimension * h2.dimension
     with pytest.raises(BasisNotSetError):
@@ -160,11 +160,11 @@ def test_operations():
 
 def test_hs_basis_states():
     """Test that we can obtain the basis states of a Hilbert space"""
-    hs0 = FockSpace('0')
-    hs1 = FockSpace('1', basis=['g', 'e'])
-    hs2 = FockSpace('2', dimension=2)
-    hs3 = FockSpace('3', dimension=2)
-    hs4 = FockSpace('4', dimension=2)
+    hs0 = LocalSpace('0')
+    hs1 = LocalSpace('1', basis=['g', 'e'])
+    hs2 = LocalSpace('2', dimension=2)
+    hs3 = LocalSpace('3', dimension=2)
+    hs4 = LocalSpace('4', dimension=2)
     spin = SpinSpace('s', spin=Rational(3/2))
 
     assert isinstance(hs0.basis_state(0), BasisKet)

@@ -5,7 +5,7 @@ from qnet.algebra.core.operator_algebra import (
     OperatorSymbol, Commutator, ZeroOperator, LocalSigma,
     LocalProjector, IdentityOperator)
 from qnet.algebra.library.spin_algebra import Jz, Jplus, SpinSpace
-from qnet.algebra.library.fock_operators import Destroy, Create, FockSpace
+from qnet.algebra.library.fock_operators import Destroy, Create
 from qnet.algebra.toolbox.commutator_manipulation import (
     expand_commutators_leibniz, evaluate_commutators)
 
@@ -109,7 +109,7 @@ def test_series_expand():
 
 def test_commutator_oder():
     """Test anti-commutativity of commutators"""
-    hs = FockSpace("0")
+    hs = LocalSpace("0")
     A = OperatorSymbol('A', hs=hs)
     B = OperatorSymbol('B', hs=hs)
     assert Commutator.create(B, A) == -Commutator(A, B)
@@ -120,7 +120,7 @@ def test_commutator_oder():
 
 def test_known_commutators():
     """Test that well-known commutators are recognized"""
-    fock = FockSpace("0")
+    fock = LocalSpace("0")
     spin = SpinSpace("0", spin=1)
     a = Destroy(hs=fock)
     a_dag = Create(hs=fock)
@@ -148,7 +148,7 @@ def test_known_commutators():
 
 def test_commutator_expand_evaluate():
     """Test expansion and evaluation of commutators"""
-    hs = FockSpace("0")
+    hs = LocalSpace("0")
     A = OperatorSymbol('A', hs=hs)
     B = OperatorSymbol('B', hs=hs)
     C = OperatorSymbol('C', hs=hs)

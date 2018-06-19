@@ -1,4 +1,4 @@
-"""Collection of operators that act on a :class:`.FockSpace`"""
+"""Collection of operators that act on a bosonic Fock space"""
 import re
 from abc import ABCMeta
 from collections import OrderedDict
@@ -6,51 +6,14 @@ from collections import OrderedDict
 from ..core.hilbert_space_algebra import LocalSpace
 from ..core.algebraic_properties import implied_local_space, match_replace
 from ..core.operator_algebra import LocalOperator, properties_for_args
-from ...utils.indices import FockIndex
 
 __all__ = [
-    'FockSpace', 'FockOperator', 'Destroy', 'Create', 'Phase', 'Displace',
-    'Squeeze']
+    'Destroy', 'Create', 'Phase', 'Displace', 'Squeeze']
 
 
-class FockSpace(LocalSpace):
-    """A Hilbert space whose basis states correspond to an "excitation" (in the
-    most abstract sense). A Fock space can be infinite, with levels labeled by
-    integers 0, 1, ...::
-
-        >>> hs = FockSpace(label=0)
-
-    or truncated to a finite dimension::
-
-        >>> hs = FockSpace(0, dimension=5)
-        >>> hs.basis_labels
-        ('0', '1', '2', '3', '4')
-
-    For finite-dimensional (truncated) Fock spaces, we also allow an arbitrary
-    alternative labeling of the canonical basis::
-
-        >>> hs = FockSpace('rydberg', dimension=3, basis=('g', 'e', 'r'))
-
-    A :class:`.BasisKet` associated with a :class:`FockSpace` may use a
-    :class:`.FockIndex` symbolic label.
-    """
-    _basis_label_types = (int, str, FockIndex)  # acceptable types for labels
-
-
-class FockOperator(LocalOperator, metaclass=ABCMeta):
-    """Base class for Operators in a Fock space"""
-    _hs_cls = FockSpace
-
-    def __init__(self, *args, hs):
-        super().__init__(*args, hs=hs)
-        if not isinstance(self.space, FockSpace):
-            raise TypeError(
-                "hs %s must be an instance of FockSpace" % self.space)
-
-
-class Destroy(FockOperator):
+class Destroy(LocalOperator):
     """Bosonic annihilation operator acting on a particular
-    :class:`.FockSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     It obeys the bosonic commutation relation::
 
@@ -78,7 +41,7 @@ class Destroy(FockOperator):
         set through the `local_identifiers` parameter of the associated Hilbert
         space::
 
-            >>> hs_custom = FockSpace(0, local_identifiers={'Destroy': 'b'})
+            >>> hs_custom = LocalSpace(0, local_identifiers={'Destroy': 'b'})
             >>> Create(hs=hs_custom).identifier
             'b'
             >>> Destroy(hs=hs_custom).identifier
@@ -94,8 +57,8 @@ class Destroy(FockOperator):
         return identifier
 
 
-class Create(FockOperator):
-    """Bosonic creation operator acting on a particular :class:`.FockSpace`
+class Create(LocalOperator):
+    """Bosonic creation operator acting on a particular :class:`.LocalSpace`
     `hs`. It is the adjoint of :class:`Destroy`.
     """
 
@@ -124,7 +87,7 @@ class Create(FockOperator):
 
 
 @properties_for_args
-class Phase(FockOperator):
+class Phase(LocalOperator):
     r"""Unitary "phase" operator
 
     .. math::
@@ -133,7 +96,7 @@ class Phase(FockOperator):
         \exp\left(i \phi \Op{a}_{\rm hs}^\dagger \Op{a}_{\rm hs}\right)
 
     where :math:`a_{\rm hs}` is the annihilation operator acting on the
-    :class:`.FockSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     Args:
         phase (Scalar): the phase $\phi$
@@ -161,7 +124,7 @@ class Phase(FockOperator):
 
 
 @properties_for_args
-class Displace(FockOperator):
+class Displace(LocalOperator):
     r"""Unitary coherent displacement operator
 
     .. math::
@@ -171,7 +134,7 @@ class Displace(FockOperator):
                    \alpha^* \Op{a}_{\rm hs}}\right)
 
     where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
-    :class:`.FockSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     Args:
         displacement (Scalar): the displacement amplitude $\alpha$
@@ -199,7 +162,7 @@ class Displace(FockOperator):
 
 
 @properties_for_args
-class Squeeze(FockOperator):
+class Squeeze(LocalOperator):
     r"""Unitary Squeezing operator
 
     .. math::
@@ -209,7 +172,7 @@ class Squeeze(FockOperator):
                      \frac{\eta^*}{2} {\Op{a}_{\rm hs}}^2 \right)}
 
     where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
-    :class:`.FockSpace` `hs`.
+    :class:`.LocalSpace` `hs`.
 
     Args:
         squeezing_factor (Scalar): the squeezing factor $\eta$

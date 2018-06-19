@@ -241,7 +241,7 @@ class SpinOperator(LocalOperator, metaclass=ABCMeta):
 
 class Jz(SpinOperator):
     """$\Op{J}_z$ is the $z$ component of a general spin operator acting
-    on a particular :class:`.LocalSpace` `hs` of freedom with well defined spin
+    on a particular :class:`SpinSpace` `hs` of freedom with well defined spin
     quantum number $s$.  It is Hermitian::
 
         >>> hs = SpinSpace(1, spin=(1, 2))
@@ -287,7 +287,7 @@ class Jz(SpinOperator):
 
 class Jplus(SpinOperator):
     """ $\Op{J}_{+} = \Op{J}_x + i \op{J}_y$ is the raising ladder operator
-    of a general spin operator acting on a particular :class:`.LocalSpace` `hs`
+    of a general spin operator acting on a particular :class:`SpinSpace` `hs`
     with well defined spin quantum number $s$.  It's adjoint is the
     lowering operator::
 
@@ -318,7 +318,7 @@ class Jplus(SpinOperator):
 
 class Jminus(SpinOperator):
     """$\Op{J}_{-} = \Op{J}_x - i \op{J}_y$ is lowering ladder operator of a
-    general spin operator acting on a particular :class:`.LocalSpace` `hs`
+    general spin operator acting on a particular :class:`SpinSpace` `hs`
     with well defined spin quantum number $s$.  It's adjoint is the raising
     operator::
 

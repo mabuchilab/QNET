@@ -193,11 +193,28 @@ class LocalSpace(HilbertSpace, Expression):
             e.g. sums or products of Operators. Hilbert spaces will be ordered
             from left to right be increasing `order_index`; Hilbert spaces
             without an explicit `order_index` are sorted by their label
+
+    A :class:`LocalSpace` fundamentally has a Fock-space like structure,
+    in that its basis states may be understood as an "excitation".
+    The spectrum can be infinite, with levels labeled by integers 0, 1, ...::
+
+        >>> hs = LocalSpace(label=0)
+
+    or truncated to a finite dimension::
+
+        >>> hs = LocalSpace(0, dimension=5)
+        >>> hs.basis_labels
+        ('0', '1', '2', '3', '4')
+
+    For finite-dimensional (truncated) Hilbert spaces, we also allow an
+    arbitrary alternative labeling of the canonical basis::
+
+        >>> hs = LocalSpace('rydberg', dimension=3, basis=('g', 'e', 'r'))
+
     """
     _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
 
     _basis_label_types = (int, str, FockIndex)  # acceptable types for labels
-    # TODO: remove FockIndex from the above list
 
     def __init__(
             self, label, *, basis=None, dimension=None, local_identifiers=None,

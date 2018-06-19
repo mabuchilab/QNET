@@ -23,7 +23,7 @@ from qnet import(
     ZeroSuperOperator, SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
     SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator, IdxSym,
     FockIndex, IndexOverFockSpace, srepr, ScalarValue, ScalarTimes, One, Zero,
-    FockSpace, SpinSpace)
+    SpinSpace)
 from qnet.printing._render_head_repr import render_head_repr
 
 
@@ -48,13 +48,13 @@ def test_render_head_repr_tuple_list():
     expr = (A, (b, 1))
     assert (
         render_head_repr(expr) ==
-        "(OperatorSymbol('A', hs=FockSpace('0')), (Symbol('b'), 1))")
+        "(OperatorSymbol('A', hs=LocalSpace('0')), (Symbol('b'), 1))")
 
     expr = [(a, 2), (A, B)]
     assert (
         render_head_repr(expr) ==
-        "[(Symbol('a'), 2), (OperatorSymbol('A', hs=FockSpace('0')), "
-        "OperatorSymbol('B', hs=FockSpace('0')))]")
+        "[(Symbol('a'), 2), (OperatorSymbol('A', hs=LocalSpace('0')), "
+        "OperatorSymbol('B', hs=LocalSpace('0')))]")
 
 
 def test_indented_srepr_tuple_list():
@@ -134,11 +134,11 @@ def test_srepr_idx_sym():
 
 
 def test_indented_srepr():
-    hs1 = FockSpace('q_1', basis=('g', 'e'))
+    hs1 = LocalSpace('q_1', basis=('g', 'e'))
     A = OperatorSymbol("A", hs=1)
     res = srepr(hs1, indented=True)
     expected = dedent(r'''
-        FockSpace(
+        LocalSpace(
             'q_1',
             basis=('g', 'e'))''').strip()
     assert res == expected
@@ -150,11 +150,11 @@ def test_indented_srepr():
     OperatorPlus(
         OperatorSymbol(
             'A',
-            hs=FockSpace(
+            hs=LocalSpace(
                 '1')),
         OperatorSymbol(
             'A',
-            hs=FockSpace(
+            hs=LocalSpace(
                 '1')))''').strip()
     assert res == expected
 
@@ -172,8 +172,8 @@ def matrix_expr():
 
 @pytest.fixture
 def bell1_expr():
-    hs1 = FockSpace('q_1', basis=('g', 'e'))
-    hs2 = FockSpace('q_2', basis=('g', 'e'))
+    hs1 = LocalSpace('q_1', basis=('g', 'e'))
+    hs2 = LocalSpace('q_2', basis=('g', 'e'))
     ket_g1 = BasisKet('g', hs=hs1)
     ket_e1 = BasisKet('e', hs=hs1)
     ket_g2 = BasisKet('g', hs=hs2)
@@ -188,11 +188,11 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
     expected = (
         "Matrix(array([[ScalarTimesOperator(ScalarValue(exp(Mul(Integer(-1), "
         "Rational(1, 2), I, Symbol('gamma')))), OperatorSymbol('A', "
-        "hs=FockSpace('1'))), OperatorSymbol('B', hs=FockSpace('1'))], "
-        "[OperatorSymbol('C', hs=FockSpace('1')), "
+        "hs=LocalSpace('1'))), OperatorSymbol('B', hs=LocalSpace('1'))], "
+        "[OperatorSymbol('C', hs=LocalSpace('1')), "
         "ScalarTimesOperator(ScalarValue(exp(Mul(Rational(1, 2), I, "
         "conjugate(Symbol('gamma'))))), OperatorSymbol('D', "
-        "hs=FockSpace('1')))]], dtype=object))")
+        "hs=LocalSpace('1')))]], dtype=object))")
     assert res == expected
 
     res = srepr(matrix_expr, indented=True)
@@ -205,24 +205,24 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
                         exp(Mul(Integer(-1), Rational(1, 2), I, Symbol('gamma')))),
                     OperatorSymbol(
                         'A',
-                        hs=FockSpace(
+                        hs=LocalSpace(
                             '1'))),
                 OperatorSymbol(
                     'B',
-                    hs=FockSpace(
+                    hs=LocalSpace(
                         '1'))
             ],
             [
                 OperatorSymbol(
                     'C',
-                    hs=FockSpace(
+                    hs=LocalSpace(
                         '1')),
                 ScalarTimesOperator(
                     ScalarValue(
                         exp(Mul(Rational(1, 2), I, conjugate(Symbol('gamma'))))),
                     OperatorSymbol(
                         'D',
-                        hs=FockSpace(
+                        hs=LocalSpace(
                             '1')))
             ]], dtype=object))''').strip()
     assert res == expected
@@ -230,11 +230,11 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
     expected = (
         "ScalarTimesKet(ScalarValue(Mul(Rational(1, 2), Pow(Integer(2), "
         "Rational(1, 2)))), KetPlus(TensorKet(BasisKet('e', "
-        "hs=FockSpace('q_1', basis=('g', 'e'))), BasisKet('g', "
-        "hs=FockSpace('q_2', basis=('g', 'e')))), "
+        "hs=LocalSpace('q_1', basis=('g', 'e'))), BasisKet('g', "
+        "hs=LocalSpace('q_2', basis=('g', 'e')))), "
         "ScalarTimesKet(ScalarValue(Mul(Integer(-1), I)), "
-        "TensorKet(BasisKet('g', hs=FockSpace('q_1', basis=('g', 'e'))), "
-        "BasisKet('e', hs=FockSpace('q_2', basis=('g', 'e')))))))")
+        "TensorKet(BasisKet('g', hs=LocalSpace('q_1', basis=('g', 'e'))), "
+        "BasisKet('e', hs=LocalSpace('q_2', basis=('g', 'e')))))))")
     assert srepr(bell1_expr) == expected
 
     res = srepr(bell1_expr, indented=True)
@@ -246,12 +246,12 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
             TensorKet(
                 BasisKet(
                     'e',
-                    hs=FockSpace(
+                    hs=LocalSpace(
                         'q_1',
                         basis=('g', 'e'))),
                 BasisKet(
                     'g',
-                    hs=FockSpace(
+                    hs=LocalSpace(
                         'q_2',
                         basis=('g', 'e')))),
             ScalarTimesKet(
@@ -260,12 +260,12 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
                 TensorKet(
                     BasisKet(
                         'g',
-                        hs=FockSpace(
+                        hs=LocalSpace(
                             'q_1',
                             basis=('g', 'e'))),
                     BasisKet(
                         'e',
-                        hs=FockSpace(
+                        hs=LocalSpace(
                             'q_2',
                             basis=('g', 'e')))))))''').strip()
     assert res == expected
@@ -274,8 +274,8 @@ def test_foreign_srepr(matrix_expr, bell1_expr):
 def test_cached_srepr(bell1_expr):
     """Test that we can get simplified expressions by passing a cache, and that
     the cache is updated appropriately while printing"""
-    hs1 = FockSpace('q_1', basis=('g', 'e'))
-    hs2 = FockSpace('q_2', basis=('g', 'e'))
+    hs1 = LocalSpace('q_1', basis=('g', 'e'))
+    hs2 = LocalSpace('q_2', basis=('g', 'e'))
     ket_g1 = BasisKet('g', hs=hs1)
 
     cache = {hs1: 'hs1', hs2: 'hs2', 1/sqrt(2): '1/sqrt(2)', -I: '-I'}
@@ -375,8 +375,8 @@ def matrix_exprs():
 
 def operator_exprs():
     """Prepare a list of operator algebra expressions"""
-    hs1 = FockSpace('q1', dimension=2)
-    hs2 = FockSpace('q2', dimension=2)
+    hs1 = LocalSpace('q1', dimension=2)
+    hs2 = LocalSpace('q2', dimension=2)
     A = OperatorSymbol("A", hs=hs1)
     B = OperatorSymbol("B", hs=hs1)
     C = OperatorSymbol("C", hs=hs2)
@@ -394,19 +394,19 @@ def operator_exprs():
         IdentityOperator,
         ZeroOperator,
         Create(hs=1),
-        Create(hs=FockSpace(1, local_identifiers={'Create': 'b'})),
+        Create(hs=LocalSpace(1, local_identifiers={'Create': 'b'})),
         Destroy(hs=1),
-        Destroy(hs=FockSpace(1, local_identifiers={'Destroy': 'b'})),
+        Destroy(hs=LocalSpace(1, local_identifiers={'Destroy': 'b'})),
         Jz(hs=SpinSpace(1, spin=1)),
         Jz(hs=SpinSpace(1, spin=1, local_identifiers={'Jz': 'Z'})),
         Jplus(hs=SpinSpace(1, spin=1, local_identifiers={'Jplus': 'Jp'})),
         Jminus(hs=SpinSpace(1, spin=1, local_identifiers={'Jminus': 'Jm'})),
         Phase(0.5, hs=1),
-        Phase(0.5, hs=FockSpace(1, local_identifiers={'PhaseCC': 'Ph'})),
+        Phase(0.5, hs=LocalSpace(1, local_identifiers={'PhaseCC': 'Ph'})),
         Displace(0.5, hs=1),
         Squeeze(0.5, hs=1),
-        LocalSigma('e', 'g', hs=FockSpace(1, basis=('g', 'e'))),
-        LocalSigma('e', 'e', hs=FockSpace(1, basis=('g', 'e'))),
+        LocalSigma('e', 'g', hs=LocalSpace(1, basis=('g', 'e'))),
+        LocalSigma('e', 'e', hs=LocalSpace(1, basis=('g', 'e'))),
         A + B,
         A * B,
         A * C,
@@ -428,8 +428,8 @@ def operator_exprs():
 
 def state_exprs():
     """Prepare a list of state algebra expressions"""
-    hs1 = FockSpace('q1', basis=('g', 'e'))
-    hs2 = FockSpace('q2', basis=('g', 'e'))
+    hs1 = LocalSpace('q1', basis=('g', 'e'))
+    hs2 = LocalSpace('q2', basis=('g', 'e'))
     ket_g1 = BasisKet('g', hs=hs1)
     ket_e1 = BasisKet('e', hs=hs1)
     ket_g2 = BasisKet('g', hs=hs2)
@@ -460,7 +460,7 @@ def state_exprs():
         ZeroKet,
         TrivialKet,
         BasisKet('e', hs=hs1),
-        BasisKet('excited', hs=FockSpace(1, basis=('ground', 'excited'))),
+        BasisKet('excited', hs=LocalSpace(1, basis=('ground', 'excited'))),
         BasisKet(1, hs=1),
         CoherentStateKet(2.0, hs=1),
         CoherentStateKet(2.0, hs=1).to_fock_representation(),
@@ -497,8 +497,8 @@ def state_exprs():
 
 def sop_exprs():
     """Prepare a list of super operator algebra expressions"""
-    hs1 = FockSpace('q1', dimension=2)
-    hs2 = FockSpace('q2', dimension=2)
+    hs1 = LocalSpace('q1', dimension=2)
+    hs2 = LocalSpace('q2', dimension=2)
     A = SuperOperatorSymbol("A", hs=hs1)
     B = SuperOperatorSymbol("B", hs=hs1)
     C = SuperOperatorSymbol("C", hs=hs2)

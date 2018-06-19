@@ -15,7 +15,7 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, latex,
-    configure_printing, QuantumDerivative, Scalar, ScalarExpression, FockSpace,
+    configure_printing, QuantumDerivative, Scalar, ScalarExpression,
     SpinSpace, SpinBasisKet)
 from qnet.printing.latexprinter import QnetLatexPrinter
 
@@ -170,7 +170,7 @@ def test_tex_operator_elements():
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
     alpha, beta = symbols('alpha, beta')
-    fock1 = FockSpace(
+    fock1 = LocalSpace(
        1, local_identifiers={'Create': 'b', 'Destroy': 'b', 'Phase': 'Phi'})
     spin1 = SpinSpace(
        1, spin=1, local_identifiers={'Jz': 'Z', 'Jplus': 'Jp', 'Jminus': 'Jm'})

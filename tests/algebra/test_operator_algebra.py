@@ -10,7 +10,7 @@ from qnet import (
     LocalProjector, OperatorTrace, Adjoint, X, Y, Z, ScalarTimesOperator,
     OperatorTimes, OperatorDerivative, Jz, Jplus, Jminus, Destroy, Create,
     Phase, Displace, Matrix, identity_matrix, LocalSpace, TrivialSpace,
-    ProductSpace, FockIndex, FockSpace, SpinSpace, ascii)
+    ProductSpace, FockIndex, SpinSpace, ascii)
 
 
 def test_identity_singleton():
@@ -201,7 +201,7 @@ def test_proj_create_destroy_product():
     projectors, as they typically occur during adiabatic eliminiation"""
     a = Destroy(hs="1")
     a_dag = a.dag()
-    P1 = LocalProjector(1, hs=FockSpace("1"))
+    P1 = LocalProjector(1, hs=LocalSpace("1"))
 
     rhs = IdentityOperator + OperatorTimes(a_dag, a)
     lhs = a * a_dag
@@ -215,7 +215,7 @@ def test_proj_create_destroy_product():
     lhs = OperatorTimes.create(a_dag, a)
     assert lhs == rhs
 
-    rhs = LocalSigma(1, 0, hs=FockSpace("1"))
+    rhs = LocalSigma(1, 0, hs=LocalSpace("1"))
     lhs = P1 * a_dag
     assert lhs == rhs
     lhs = OperatorTimes.create(P1, a_dag)
@@ -252,8 +252,8 @@ class TestOperatorCreation(unittest.TestCase):
                 OperatorSymbol.create("a", hs=1))
 
     def testImplicitHilbertSpaceCreation(self):
-        hs = FockSpace("hs")
-        h2 = FockSpace("h2")
+        hs = LocalSpace("hs")
+        h2 = LocalSpace("h2")
         aa = OperatorSymbol.create("aa", hs=hs)
         bb = OperatorSymbol.create("aa", hs=hs*h2)
         a = Destroy(hs=hs)
@@ -268,7 +268,7 @@ class TestOperatorCreation(unittest.TestCase):
 class TestOperatorAddition(unittest.TestCase):
 
     def testAdditionToScalar(self):
-        hs = FockSpace("hs")
+        hs = LocalSpace("hs")
         a = OperatorSymbol.create("a", hs=hs)
         id_ = IdentityOperator
         assert a+0 == a
@@ -480,7 +480,7 @@ class TestDifferentiation(unittest.TestCase):
 
 class TestLocalOperatorRelations(unittest.TestCase):
     def testCommutatorAAdag(self):
-        h = FockSpace("h")
+        h = LocalSpace("h")
         ii = IdentityOperator
         dc = Destroy(hs=h) * Create(hs=h)
         cd = Create(hs=h) * Destroy(hs=h)
@@ -549,7 +549,7 @@ class TestLocalOperatorRelations(unittest.TestCase):
         assert LocalSigma.create(0, 0, hs=h) == LocalProjector(0, hs=h)
 
     def testAnnihilation(self):
-        h = FockSpace("h")
+        h = LocalSpace("h")
         z = ZeroOperator
         assert Destroy(hs=h) * LocalSigma.create(0, 1, hs=h) == z
         assert LocalSigma.create(1, 0, hs=h) * Create(hs=h) == z
@@ -614,7 +614,7 @@ class TestOperatorTrace(unittest.TestCase):
                 ))
 
     def testSimplificationScalarTimesOperator(self):
-        M = OperatorSymbol.create("M", hs=FockSpace(1))
+        M = OperatorSymbol.create("M", hs=LocalSpace(1))
         assert (OperatorTrace.create(10 * M, over_space=1) ==
                 10 * OperatorTrace.create(M, over_space=1))
 
@@ -641,8 +641,8 @@ class TestOperatorTrace(unittest.TestCase):
 
     def testSimplificationMaxwellBloch(self):
 
-        a = FockSpace("a", basis=('h','g'))
-        f = FockSpace("f")
+        a = LocalSpace("a", basis=('h','g'))
+        f = LocalSpace("f")
         x,y,z = symbols("x,y,z", real = True)
         alpha = symbols("alpha")
         rho_a = (IdentityOperator + x * X(a) + y * Y(a) + z * Z(a)) / 2
@@ -663,7 +663,7 @@ class TestOperatorTrace(unittest.TestCase):
 
 
 def test_opmatrix_construction():
-    h1, h2, h3 = FockSpace("h1"), FockSpace("h2"), FockSpace("h3")
+    h1, h2, h3 = LocalSpace("h1"), LocalSpace("h2"), LocalSpace("h3")
     a, b, c = Destroy(hs=h1), Destroy(hs=h2), Destroy(hs=h3)
     assert np_conjugate(a) == a.dag()
 
@@ -722,12 +722,12 @@ def test_custom_identifier():
     """Test that rule application preserves custom local identifiers, and that
     'Create' and 'Destroy' share the same identifier"""
     hilbert_spaces = [
-        FockSpace(0, local_identifiers={'Create': 'b', 'Destroy': 'b'}),
-        FockSpace(0, local_identifiers={'Create': 'b'}),
-        FockSpace(0, local_identifiers={'Destroy': 'b'})]
+        LocalSpace(0, local_identifiers={'Create': 'b', 'Destroy': 'b'}),
+        LocalSpace(0, local_identifiers={'Create': 'b'}),
+        LocalSpace(0, local_identifiers={'Destroy': 'b'})]
     for hs in hilbert_spaces:
         b = Destroy(hs=hs)
         expr = b * b.dag()
         assert ascii(expr) == '1 + b^(0)H * b^(0)'
-        expr = expr.substitute({hs: FockSpace(0)})
+        expr = expr.substitute({hs: LocalSpace(0)})
         assert ascii(expr) == '1 + a^(0)H * a^(0)'

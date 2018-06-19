@@ -4,7 +4,7 @@ from qnet import (
     OperatorIndexedSum, Create, KetPlus, ScalarTimesKet,
     KetIndexedSum, BasisKet, CoherentStateKet, KetSymbol, Bra, TensorKet,
     BraKet, KetBra, IdxSym, StrLabel, FockIndex, IndexOverFockSpace,
-    IndexOverList, IndexOverRange, expand_indexed_sum, FockSpace)
+    IndexOverList, IndexOverRange, expand_indexed_sum)
 import sympy
 from sympy import symbols, IndexedBase, Indexed
 
@@ -321,7 +321,7 @@ def test_create_on_fock_expansion():
     """Test ``Create * sum_i alpha_i |i> = sqrt(i+1) * alpha_i * |i+1>``"""
     i = IdxSym('i')
     alpha = IndexedBase('alpha')
-    hs = FockSpace('0', dimension=3)
+    hs = LocalSpace('0', dimension=3)
 
     expr = (
         Create(hs=hs) *

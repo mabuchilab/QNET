@@ -14,7 +14,7 @@ from qnet.utils.permutations import (
 from qnet.algebra.core.operator_algebra import (
     Operator, OperatorSymbol, sympyOne, ZeroOperator, LocalSigma,
     LocalProjector, IdentityOperator)
-from qnet.algebra.library.fock_operators import Destroy, FockSpace
+from qnet.algebra.library.fock_operators import Destroy
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.library.circuit_components import (
@@ -417,8 +417,8 @@ def test_connect(components, connections, expected):
 
 
 def test_adiabatic_elimination():
-    fock = FockSpace('fock')
-    tls = FockSpace('tls', basis=('e', 'g'))
+    fock = LocalSpace('fock')
+    tls = LocalSpace('tls', basis=('e', 'g'))
 
     Delta, Theta, g = sympy.symbols('Delta, Theta, g', real=True)
     kappa, gamma = sympy.symbols('kappa, gamma', positive=True)

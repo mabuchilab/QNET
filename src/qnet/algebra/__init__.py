@@ -4,7 +4,7 @@ import importlib
 __all__ = ['init_algebra']
 
 
-def init_algebra(*, default_hs_cls='FockSpace'):
+def init_algebra(*, default_hs_cls='LocalSpace'):
     """Initialize the algebra system
 
     Args:

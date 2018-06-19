@@ -2,16 +2,16 @@ import sympy
 
 import qnet.algebra.core.operator_algebra
 import qnet.algebra.library.fock_operators
-from qnet.algebra.library.fock_operators import FockSpace
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.convert.to_sympy_matrix import convert_to_sympy_matrix
 
 
 def test_convert_to_sympy_matrix():
     N = 4
-    Hil = FockSpace('full', basis=range(N))
+    Hil = LocalSpace('full', basis=range(N))
 
-    Hil_q1 = FockSpace('Q1', basis=range(2))
-    Hil_q2 = FockSpace('Q2', basis=range(2))
+    Hil_q1 = LocalSpace('Q1', basis=range(2))
+    Hil_q2 = LocalSpace('Q2', basis=range(2))
 
     expr =  qnet.algebra.core.operator_algebra.IdentityOperator
     assert convert_to_sympy_matrix(expr, Hil) == sympy.eye(N)

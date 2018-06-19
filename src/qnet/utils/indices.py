@@ -222,7 +222,7 @@ class IntIndex(SymbolicLabelBase):
 
 
 class FockIndex(IntIndex):
-    """A symbolic index labeling a basis state in a :class:`.FockSpace`"""
+    """A symbolic index labeling a basis state in a :class:`.LocalSpace`"""
     pass
 
 
@@ -339,7 +339,7 @@ class IndexOverRange(IndexRangeBase):
 @immutable_attribs
 class IndexOverFockSpace(IndexRangeBase):
     hs = attr.ib()
-    # TODO: assert that hs is indeed a FockSpace
+    # TODO: assert that hs is indeed a LocalSpace
 
     def iter(self):
         if self.hs._dimension is None:

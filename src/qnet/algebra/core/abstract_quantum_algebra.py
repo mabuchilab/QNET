@@ -968,7 +968,7 @@ def Sum(idx, *args, **kwargs):
         >>> i = IdxSym('i'); j = IdxSym('j')
         >>> ket_i = BasisKet(FockIndex(i), hs=0)
         >>> ket_j = BasisKet(FockIndex(j), hs=0)
-        >>> hs0 = FockSpace('0')
+        >>> hs0 = LocalSpace('0')
 
     Giving `i` as the only argument will sum over the indices of the basis
     states of the Hilbert space of `term`::
@@ -1013,10 +1013,10 @@ def Sum(idx, *args, **kwargs):
         >>> unicode( Sum(i, (1, 2, 3))(ket_i))
         '∑_{i ∈ {1,2,3}} |i⟩⁽⁰⁾'
     """
-    from qnet.algebra.library.fock_operators import FockSpace
+    from qnet.algebra.core.hilbert_space_algebra import LocalSpace
     dispatch_table = {
         tuple(): _sum_over_fockspace,
-        (FockSpace, ): _sum_over_fockspace,
+        (LocalSpace, ): _sum_over_fockspace,
         (list, ): _sum_over_list,
         (tuple, ): _sum_over_list,
         (int, ): _sum_over_range,
@@ -1061,12 +1061,12 @@ def ensure_local_space(hs, cls=LocalSpace):
         "LocalSpace('0')"
         >>> srepr(ensure_local_space('tls'))
         "LocalSpace('tls')"
-        >>> srepr(ensure_local_space(0, cls=FockSpace))
-        "FockSpace('0')"
+        >>> srepr(ensure_local_space(0, cls=LocalSpace))
+        "LocalSpace('0')"
         >>> srepr(ensure_local_space(LocalSpace(0)))
         "LocalSpace('0')"
-        >>> srepr(ensure_local_space(FockSpace(0)))
-        "FockSpace('0')"
+        >>> srepr(ensure_local_space(LocalSpace(0)))
+        "LocalSpace('0')"
         >>> srepr(ensure_local_space(LocalSpace(0) * LocalSpace(1)))
         Traceback (most recent call last):
            ...
