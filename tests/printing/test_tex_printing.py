@@ -15,7 +15,8 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, latex,
-    configure_printing, QuantumDerivative, Scalar, ScalarExpression)
+    configure_printing, QuantumDerivative, Scalar, ScalarExpression, FockSpace,
+    SpinSpace, SpinBasisKet)
 from qnet.printing.latexprinter import QnetLatexPrinter
 
 
@@ -169,9 +170,10 @@ def test_tex_operator_elements():
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
     alpha, beta = symbols('alpha, beta')
-    hs_custom = LocalSpace(1, local_identifiers={
-        'Create': 'b', 'Destroy': 'b', 'Jz': 'Z', 'Jplus': 'Jp',
-        'Jminus': 'Jm', 'Phase': 'Phi'})
+    fock1 = FockSpace(
+       1, local_identifiers={'Create': 'b', 'Destroy': 'b', 'Phase': 'Phi'})
+    spin1 = SpinSpace(
+       1, spin=1, local_identifiers={'Jz': 'Z', 'Jplus': 'Jp', 'Jminus': 'Jm'})
     assert latex(OperatorSymbol("A", hs=hs1)) == r'\hat{A}^{(q_{1})}'
     assert (latex(OperatorSymbol("A_1", hs=hs1*hs2)) ==
             r'\hat{A}_{1}^{(q_{1} \otimes q_{2})}')
@@ -185,20 +187,20 @@ def test_tex_operator_elements():
     assert latex(IdentityOperator, tex_identity_sym='I') == 'I'
     assert latex(ZeroOperator) == r'\mathbb{0}'
     assert latex(Create(hs=1)) == r'\hat{a}^{(1)\dagger}'
-    assert latex(Create(hs=hs_custom)) == r'\hat{b}^{(1)\dagger}'
+    assert latex(Create(hs=fock1)) == r'\hat{b}^{(1)\dagger}'
     assert latex(Destroy(hs=1)) == r'\hat{a}^{(1)}'
-    assert latex(Destroy(hs=hs_custom)) == r'\hat{b}^{(1)}'
-    assert latex(Jz(hs=1)) == r'\hat{J}_{z}^{(1)}'
-    assert latex(Jz(hs=hs_custom)) == r'\hat{Z}^{(1)}'
-    assert latex(Jplus(hs=1)) == r'\hat{J}_{+}^{(1)}'
-    assert latex(Jplus(hs=hs_custom)) == r'\text{Jp}^{(1)}'
-    assert latex(Jminus(hs=1)) == r'\hat{J}_{-}^{(1)}'
-    assert latex(Jminus(hs=hs_custom)) == r'\text{Jm}^{(1)}'
+    assert latex(Destroy(hs=fock1)) == r'\hat{b}^{(1)}'
+    assert latex(Jz(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{z}^{(1)}'
+    assert latex(Jz(hs=spin1)) == r'\hat{Z}^{(1)}'
+    assert latex(Jplus(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{+}^{(1)}'
+    assert latex(Jplus(hs=spin1)) == r'\text{Jp}^{(1)}'
+    assert latex(Jminus(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{-}^{(1)}'
+    assert latex(Jminus(hs=spin1)) == r'\text{Jm}^{(1)}'
     assert (latex(Phase(Rational(1, 2), hs=1)) ==
             r'\text{Phase}^{(1)}\left(\frac{1}{2}\right)')
     assert (latex(Phase(0.5, hs=1)) ==
             r'\text{Phase}^{(1)}\left(0.5\right)')
-    assert (latex(Phase(0.5, hs=hs_custom)) ==
+    assert (latex(Phase(0.5, hs=fock1)) ==
             r'\hat{\Phi}^{(1)}\left(0.5\right)')
     assert (latex(Displace(0.5, hs=1)) ==
             r'\hat{D}^{(1)}\left(0.5\right)')
@@ -320,6 +322,19 @@ def test_tex_ket_elements():
             r'\left\lvert \text{excited} \right\rangle^{(1)}')
     assert (latex(BasisKet(1, hs=1)) ==
             r'\left\lvert 1 \right\rangle^{(1)}')
+    spin = SpinSpace('s', spin=(3, 2))
+    assert (
+        latex(SpinBasisKet(-3, 2, hs=spin)) ==
+        r'\left\lvert -3/2 \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(1, 2, hs=spin)) ==
+        r'\left\lvert +1/2 \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(-3, 2, hs=spin), tex_frac_for_spin_labels=True) ==
+        r'\left\lvert -\frac{3}{2} \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(1, 2, hs=spin), tex_frac_for_spin_labels=True) ==
+        r'\left\lvert +\frac{1}{2} \right\rangle^{(s)}')
     assert (latex(CoherentStateKet(2.0, hs=1)) ==
             r'\left\lvert \alpha=2 \right\rangle^{(1)}')
 

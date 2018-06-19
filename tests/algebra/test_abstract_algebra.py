@@ -15,14 +15,16 @@ from qnet.utils.indices import IndexOverRange, IdxSym
 from qnet.utils.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
 from qnet.algebra.core.operator_algebra import (
-    LocalProjector, OperatorTimes, Displace)
+    LocalProjector, OperatorTimes)
+from qnet.algebra.library.fock_operators import Displace
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.library.hilbert_spaces import FockSpace
 
 
 def test_match_replace_binary_complete():
     """Test that replace_binary works correctly for a non-trivial case"""
     x, y, z, alpha = symbols('x y z alpha')
-    hs = LocalSpace('f')
+    hs = FockSpace('f')
     ops = [LocalProjector(0, hs=hs),
            Displace(-alpha, hs=hs),
            Displace(alpha, hs=hs),

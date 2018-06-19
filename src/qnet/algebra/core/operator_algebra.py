@@ -11,7 +11,7 @@ from collections import OrderedDict, defaultdict
 from functools import partial
 from itertools import product as cartesian_product
 
-from sympy import Expr as SympyExpr, I, sqrt, sympify
+from sympy import I, sympify
 
 from .abstract_quantum_algebra import (
     ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
@@ -22,7 +22,7 @@ from .algebraic_properties import (
     disjunct_hs_zero, filter_neutral, implied_local_space, match_replace,
     match_replace_binary, orderby, scalars_to_op, indexed_sum_over_const,
     indexed_sum_over_kronecker)
-from .exceptions import CannotSimplify, BasisNotSetError
+from .exceptions import CannotSimplify
 from .hilbert_space_algebra import (
     HilbertSpace, LocalSpace, ProductSpace, TrivialSpace, )
 from .scalar_algebra import Scalar, ScalarValue, is_scalar
@@ -38,15 +38,14 @@ sympyOne = sympify(1)
 DENSE_DIMENSION_LIMIT = 1000
 
 __all__ = [
-    'Adjoint', 'Create', 'Destroy', 'Displace', 'Jminus', 'Jplus',
-    'Jz', 'LocalOperator', 'LocalSigma', 'NullSpaceProjector', 'Operator',
+    'Adjoint', 'LocalOperator', 'LocalSigma', 'NullSpaceProjector', 'Operator',
     'OperatorPlus', 'OperatorPlusMinusCC', 'OperatorSymbol', 'OperatorTimes',
-    'OperatorTrace', 'Phase', 'PseudoInverse', 'ScalarTimesOperator',
-    'Squeeze', 'Jmjmcoeff', 'Jpjmcoeff', 'Jzjmcoeff', 'LocalProjector', 'X',
-    'Y', 'Z', 'adjoint', 'create_operator_pm_cc', 'decompose_space',
-    'expand_operator_pm_cc', 'factor_coeff', 'factor_for_trace', 'get_coeffs',
-    'II', 'IdentityOperator', 'ZeroOperator', 'OperatorDerivative',
-    'Commutator', 'OperatorIndexedSum', 'tr']
+    'OperatorTrace', 'PseudoInverse', 'ScalarTimesOperator',
+    'LocalProjector', 'X', 'Y', 'Z', 'adjoint', 'create_operator_pm_cc',
+    'decompose_space', 'expand_operator_pm_cc', 'factor_coeff',
+    'factor_for_trace', 'get_coeffs', 'II', 'IdentityOperator',
+    'ZeroOperator', 'OperatorDerivative', 'Commutator', 'OperatorIndexedSum',
+    'tr']
 
 __private__ = ['properties_for_args']
 # anything not in __all__ must be in __private__
@@ -134,7 +133,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
     be used through the associated :class:`.LocalSpace`'s
     `local_identifiers` parameter. For example::
 
-        >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
+        >>> hs1_custom = FockSpace(1, local_identifiers={'Destroy': 'b'})
         >>> b = Destroy(hs=hs1_custom)
         >>> ascii(b)
         'b^(1)'
@@ -151,6 +150,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
     _dagger = False  # do representations include a dagger?
     _arg_names = ()  # names of args that can be passed to __init__
     _scalar_args = True  # convert args to Scalar?
+    _hs_cls = LocalSpace  # allowed type of `hs`
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
     def __init__(self, *args, hs):
@@ -161,7 +161,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
             args = [ScalarValue.create(arg) for arg in args]
         for i, arg_name in enumerate(self._arg_names):
             self.__dict__['_%s' % arg_name] = args[i]
-        hs = ensure_local_space(hs)
+        hs = ensure_local_space(hs, cls=self._hs_cls)
         self._hs = hs
         if self._identifier is None:
             raise TypeError(
@@ -195,7 +195,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
             >>> a = Destroy(hs=1)
             >>> a.identifier
             'a'
-            >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
+            >>> hs1_custom = FockSpace(1, local_identifiers={'Destroy': 'b'})
             >>> b = Destroy(hs=hs1_custom)
             >>> b.identifier
             'b'
@@ -313,298 +313,6 @@ class ZeroOperator(Operator, metaclass=Singleton):
         return self
 
 
-class Destroy(LocalOperator):
-    """Bosonic annihilation operator acting on a particular
-    :class:`.LocalSpace` `hs`.
-
-    It obeys the bosonic commutation relation::
-
-        >>> Destroy(hs=1) * Create(hs=1) - Create(hs=1) * Destroy(hs=1)
-        IdentityOperator
-        >>> Destroy(hs=1) * Create(hs=2) - Create(hs=2) * Destroy(hs=1)
-        ZeroOperator
-    """
-
-    _identifier = 'a'
-    _dagger = False
-    _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
-
-    def __init__(self, *, hs):
-        super().__init__(hs=hs)
-
-    def _adjoint(self):
-        return Create(hs=self.space)
-
-    @property
-    def identifier(self):
-        """The identifier (symbols) that is used when printing the annihilation
-        operator. This is identical to the identifier of :class:`Create`. A
-        custom identifier for both :class:`Destroy` and :class:`Create` can be
-        set through the `local_identifiers` parameter of the associated Hilbert
-        space::
-
-            >>> hs_custom = LocalSpace(0, local_identifiers={'Destroy': 'b'})
-            >>> Create(hs=hs_custom).identifier
-            'b'
-            >>> Destroy(hs=hs_custom).identifier
-            'b'
-        """
-        identifier = self._hs._local_identifiers.get(
-            self.__class__.__name__, self._hs._local_identifiers.get(
-                'Create', self._identifier))
-        if not self._rx_identifier.match(identifier):
-            raise ValueError(
-                "identifier '%s' does not match pattern '%s'"
-                % (identifier, self._rx_identifier.pattern))
-        return identifier
-
-
-class Create(LocalOperator):
-    """Bosonic creation operator acting on a particular :class:`.LocalSpace`
-    `hs`. It is the adjoint of :class:`Destroy`.
-    """
-
-    _identifier = 'a'
-    _dagger = True
-    _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
-
-    def __init__(self, *, hs):
-        super().__init__(hs=hs)
-
-    def _adjoint(self):
-        return Destroy(hs=self.space)
-
-    @property
-    def identifier(self):
-        """The identifier (symbols) that is used when printing the creation
-        operator. This is identical to the identifier of :class:`Destroy`"""
-        identifier = self._hs._local_identifiers.get(
-            self.__class__.__name__, self._hs._local_identifiers.get(
-                'Destroy', self._identifier))
-        if not self._rx_identifier.match(identifier):
-            raise ValueError(
-                "identifier '%s' does not match pattern '%s'"
-                % (identifier, self._rx_identifier.pattern))
-        return identifier
-
-
-class Jz(LocalOperator):
-    """$\Op{J}_z$ is the $z$ component of a general spin operator acting
-    on a particular :class:`.LocalSpace` `hs` of freedom with well defined spin
-    quantum number $s$.  It is Hermitian::
-
-        >>> print(ascii(Jz(hs=1).adjoint()))
-        J_z^(1)
-
-    :class:`Jz`, :class:`Jplus` and :class:`Jminus` satisfy the angular
-    momentum commutator algebra::
-
-        >>> print(ascii((Jz(hs=1) * Jplus(hs=1) -
-        ...              Jplus(hs=1)*Jz(hs=1)).expand()))
-        J_+^(1)
-
-        >>> print(ascii((Jz(hs=1) * Jminus(hs=1) -
-        ...              Jminus(hs=1)*Jz(hs=1)).expand()))
-        -J_-^(1)
-
-        >>> print(ascii((Jplus(hs=1) * Jminus(hs=1)
-        ...              - Jminus(hs=1)*Jplus(hs=1)).expand()))
-        2 * J_z^(1)
-        >>> Jplus(hs=1).dag() == Jminus(hs=1)
-        True
-        >>> Jminus(hs=1).dag() == Jplus(hs=1)
-        True
-
-    Printers should represent this operator with the default identifier::
-
-        >>> Jz._identifier
-        'J_z'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
-    """
-
-    _identifier = 'J_z'
-
-    def __init__(self, *, hs):
-        super().__init__(hs=hs)
-
-    def _adjoint(self):
-        return self
-
-
-class Jplus(LocalOperator):
-    """ $\Op{J}_{+} = \Op{J}_x + i \op{J}_y$ is the raising ladder operator
-    of a general spin operator acting on a particular :class:`.LocalSpace` `hs`
-    with well defined spin quantum number $s$.  It's adjoint is the
-    lowering operator::
-
-        >>> print(ascii(Jplus(hs=1).adjoint()))
-        J_-^(1)
-
-    :class:`Jz`, :class:`Jplus` and :class:`Jminus` satisfy that angular
-    momentum commutator algebra, see :class:`Jz`
-
-    Printers should represent this operator with the default identifier::
-
-        >>> Jplus._identifier
-        'J_+'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
-    """
-
-    _identifier = 'J_+'
-
-    def __init__(self, *, hs):
-        super().__init__(hs=hs)
-
-    def _adjoint(self):
-        return Jminus(hs=self.space)
-
-
-class Jminus(LocalOperator):
-    """$\Op{J}_{-} = \Op{J}_x - i \op{J}_y$ is lowering ladder operator of a
-    general spin operator acting on a particular :class:`.LocalSpace` `hs`
-    with well defined spin quantum number $s$.  It's adjoint is the raising
-    operator::
-
-        >>> print(ascii(Jminus(hs=1).adjoint()))
-        J_+^(1)
-
-    :class:`Jz`, :class:`Jplus` and :class:`Jminus` satisfy that angular
-    momentum commutator algebra, see :class:`Jz`.
-
-    Printers should represent this operator with the default identifier::
-
-        >>> Jminus._identifier
-        'J_-'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
-    """
-
-    _identifier = 'J_-'
-
-    def __init__(self, *, hs):
-        super().__init__(hs=hs)
-
-    def _adjoint(self):
-        return Jplus(hs=self.space)
-
-
-@properties_for_args
-class Phase(LocalOperator):
-    r"""Unitary "phase" operator
-
-    .. math::
-
-        \op{P}_{\rm hs}(\phi) =
-        \exp\left(i \phi \Op{a}_{\rm hs}^\dagger \Op{a}_{\rm hs}\right)
-
-    where :math:`a_{\rm hs}` is the annihilation operator acting on the
-    :class:`.LocalSpace` `hs`.
-
-    Args:
-        phase (Scalar): the phase $\phi$
-        hs (HilbertSpace or int or str): The Hilbert space on which the
-            operator acts
-
-    Printers should represent this operator with the default identifier::
-
-        >>> Phase._identifier
-        'Phase'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
-    """
-    _identifier = 'Phase'
-    _arg_names = ('phase', )
-    _rules = OrderedDict()
-    _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
-
-    def _adjoint(self):
-        return Phase.create(-self.phase.conjugate(), hs=self.space)
-
-    def _pseudo_inverse(self):
-        return Phase.create(-self.phase, hs=self.space)
-
-
-@properties_for_args
-class Displace(LocalOperator):
-    r"""Unitary coherent displacement operator
-
-    .. math::
-
-        \op{D}_{\rm hs}(\alpha) =
-        \exp\left({\alpha \Op{a}_{\rm hs}^\dagger -
-                   \alpha^* \Op{a}_{\rm hs}}\right)
-
-    where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
-    :class:`.LocalSpace` `hs`.
-
-    Args:
-        displacement (Scalar): the displacement amplitude $\alpha$
-        hs (HilbertSpace or int or str): The Hilbert space on which the
-            operator acts
-
-    Printers should represent this operator with the default identifier::
-
-        >>> Displace._identifier
-        'D'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
-    """
-    _identifier = 'D'
-    _nargs = 1
-    _arg_names = ('displacement', )
-    _rules = OrderedDict()
-    _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
-
-    def _adjoint(self):
-        return Displace.create(-self.displacement, hs=self.space)
-
-    _pseudo_inverse = _adjoint
-
-
-@properties_for_args
-class Squeeze(LocalOperator):
-    r"""Unitary Squeezing operator
-
-    .. math::
-
-        \Op{S}_{\rm hs}(\eta) =
-        \exp {\left( \frac{\eta}{2} {\Op{a}_{\rm hs}^\dagger}^2 -
-                     \frac{\eta^*}{2} {\Op{a}_{\rm hs}}^2 \right)}
-
-    where :math:`\Op{a}_{\rm hs}` is the annihilation operator acting on the
-    :class:`.LocalSpace` `hs`.
-
-    Args:
-        squeezing_factor (Scalar): the squeezing factor $\eta$
-        hs (HilbertSpace or int or str): The Hilbert space on which the
-            operator acts
-
-    Printers should represent this operator with the default identifier::
-
-        >>> Squeeze._identifier
-        'Squeeze'
-
-    A custom identifier may be define using `hs`'s `local_identifiers`
-    argument.
-    """
-    _identifier = "Squeeze"
-    _arg_names = ('squeezing_factor', )
-    _rules = OrderedDict()
-    _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
-
-    def _adjoint(self):
-        return Squeeze(-self.squeezing_factor, hs=self.space)
-
-    _pseudo_inverse = _adjoint
-
-
 @properties_for_args
 class LocalSigma(LocalOperator):
     r'''A local level flip operator operator acting on a particular
@@ -622,7 +330,9 @@ class LocalSigma(LocalOperator):
         j (int or str): The label or index identifying $\ket{j}$
         k (int or str):  The label or index identifying $\ket{k}$
         hs (HilbertSpace or int or str): The Hilbert space on which the
-            operator acts
+            operator acts. If an :class:`int` or a :class:`str`, an implicit
+            Hilbert space will be constructed as a subclass of
+            :class:`LocalSpace`, as configured by :func:`init_algebra`.
 
     Note:
         The parameters `j` or `k` may be an integer or a string. A string
@@ -649,7 +359,7 @@ class LocalSigma(LocalOperator):
 
     def __init__(self, j, k, *, hs):
         if isinstance(hs, (str, int)):
-            hs = LocalSpace(hs)
+            hs = self._default_hs_cls(hs)
         for ind_jk in range(2):
             jk = j if ind_jk == 0 else k
             hs._check_basis_label_type(jk)
@@ -688,7 +398,12 @@ class LocalSigma(LocalOperator):
         if isinstance(self.j, (int, SymbolicLabelBase)):
             return self.j
         else:
-            return self.space.basis_labels.index(self.j)
+            try:
+                return self.space.basis_labels.index(self.j)
+            except ValueError:
+                raise ValueError(
+                    "%r is not one of the basis labels %r"
+                    % (self.j, self.space.basis_labels))
 
     @property
     def index_k(self):
@@ -696,7 +411,12 @@ class LocalSigma(LocalOperator):
         if isinstance(self.k, (int, SymbolicLabelBase)):
             return self.k
         else:
-            return self.space.basis_labels.index(self.k)
+            try:
+                return self.space.basis_labels.index(self.k)
+            except ValueError:
+                raise ValueError(
+                    "%r is not one of the basis labels %r"
+                    % (self.k, self.space.basis_labels))
 
     def raise_jk(self, j_incr=0, k_incr=0):
         r'''Return a new :class:`LocalSigma` instance with incremented `j`,
@@ -908,7 +628,7 @@ class OperatorTrace(SingleQuantumOperation, Operator):
 
     def __init__(self, op, *, over_space):
         if isinstance(over_space, (int, str)):
-            over_space = LocalSpace(over_space)
+            over_space = self._default_hs_cls(over_space)
         assert isinstance(over_space, HilbertSpace)
         self._over_space = over_space
         super().__init__(op, over_space=over_space)
@@ -1007,8 +727,6 @@ class PseudoInverse(SingleQuantumOperation, Operator):
         (X X^+)^\dagger = X X^+
     """
     _rules = OrderedDict()
-    _delegate_to_method = (ScalarTimesOperator, Squeeze, Displace,
-                           ZeroOperator.__class__, IdentityOperator.__class__)
     _simplifications = [
         scalars_to_op, match_replace, delegate_to_method('_pseudo_inverse')]
 
@@ -1257,94 +975,6 @@ def adjoint(obj):
         return obj.adjoint()
     except AttributeError:
         return obj.conjugate()
-
-
-def Jpjmcoeff(ls, m, shift=False):
-    r'''Eigenvalue of the $\Op{J}_{+}$ (:class:`Jplus`) operator, as a Sympy
-    expression.
-
-    .. math::
-
-        \Op{J}_{+} \ket{s, m} = \sqrt{s (s+1) - m (m+1)} \ket{s, m}
-
-    where the multiplicity $s$ is implied by the size of the Hilbert space
-    `ls`: there are $2s+1$ eigenstates with $m = -s, -s+1, \dots, s$.
-
-    Args:
-        ls (LocalSpace): The Hilbert space in which the $\Op{J}_{+}$ operator
-            acts.
-        m (str or int): If str, the label of the basis state of `hs` to which
-            the operator is applied. If integer together with ``shift=True``,
-            the zero-based index of the basis state. Otherwise, directly the
-            quantum number $m$.
-        shift (bool): If True for a integer value of `m`, treat `m` as the
-            zero-based index of the basis state (i.e., shift `m` down by $s$ to
-            obtain the quantum number $m$)
-    '''
-    try:
-        n = ls.dimension
-        s = sympify(n - 1) / 2
-        assert n == int(2 * s + 1)
-        if isinstance(m, str):
-            m = ls.basis_labels.index(m) - s  # m is now Sympy expression
-        elif isinstance(m, int):
-            if shift:
-                assert 0 <= m < n
-                m = m - s
-        return sqrt(s * (s + 1) - m * (m + 1))
-    except BasisNotSetError:
-        raise CannotSimplify()
-
-
-def Jzjmcoeff(ls, m, shift):
-    r'''Eigenvalue of the $\Op{J}_z$ (:class:`Jz`) operator, as a Sympy
-    expression.
-
-    .. math::
-
-        \Op{J}_{z} \ket{s, m} = m \ket{s, m}
-
-    See also :func:`Jpjmcoeff`.
-    '''
-    try:
-        n = ls.dimension
-        s = sympify(n - 1) / 2
-        assert n == int(2 * s + 1)
-        if isinstance(m, str):
-            return ls.basis.index(m) - s
-        elif isinstance(m, int):
-            if shift:
-                assert 0 <= m < n
-                return m - s
-        else:
-            return sympify(m)
-    except BasisNotSetError:
-        raise CannotSimplify()
-
-
-def Jmjmcoeff(ls, m, shift):
-    r'''Eigenvalue of the $\Op{J}_{-}$ (:class:`Jminus`) operator, as a Sympy
-    expression
-
-    .. math::
-
-        \Op{J}_{-} \ket{s, m} = \sqrt{s (s+1) - m (m-1)} \ket{s, m}
-
-    See also :func:`Jpjmcoeff`.
-    '''
-    try:
-        n = ls.dimension
-        s = sympify(n - 1) / 2
-        assert n == int(2 * s + 1)
-        if isinstance(m, str):
-            m = ls.basis.index(m) - s  # m is now Sympy expression
-        elif isinstance(m, int):
-            if shift:
-                assert 0 <= m < n
-                m = m - s
-        return sqrt(s * (s + 1) - m * (m - 1))
-    except BasisNotSetError:
-        raise CannotSimplify()
 
 
 ###############################################################################

@@ -12,10 +12,13 @@ from qnet.algebra.core.exceptions import AlgebraError
 from qnet.algebra.core.circuit_algebra import SLH, move_drive_to_H
 from qnet.algebra.core.abstract_algebra import Operation
 from qnet.algebra.core.operator_algebra import (
-        Operator, IdentityOperator, ZeroOperator, LocalOperator, Create,
-        Destroy, Jz, Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma,
+        Operator, IdentityOperator, ZeroOperator, LocalOperator, LocalSigma,
         OperatorPlus, OperatorTimes, ScalarTimesOperator,
         Adjoint, PseudoInverse, OperatorTrace, NullSpaceProjector)
+from qnet.algebra.library.spin_operators import Jz, Jplus, Jminus
+from qnet.algebra.library.fock_operators import (
+    Destroy, Create, Phase,
+    Displace, Squeeze)
 from qnet.algebra.core.state_algebra import (
         State, BraKet, KetBra, BasisKet, CoherentStateKet, KetPlus, TensorKet,
         ScalarTimesKet, OperatorTimesKet)

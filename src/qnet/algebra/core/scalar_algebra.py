@@ -782,11 +782,11 @@ class ScalarPlus(QuantumPlus, Scalar):
             BraKet(
                 KetSymbol(
                     'Psi',
-                    hs=LocalSpace(
+                    hs=FockSpace(
                         '0')),
                 KetSymbol(
                     'Phi',
-                    hs=LocalSpace(
+                    hs=FockSpace(
                         '0'))))
     """
     _neutral_element = Zero
@@ -819,11 +819,11 @@ class ScalarTimes(QuantumTimes, Scalar):
             BraKet(
                 KetSymbol(
                     'Psi',
-                    hs=LocalSpace(
+                    hs=FockSpace(
                         '0')),
                 KetSymbol(
                     'Phi',
-                    hs=LocalSpace(
+                    hs=FockSpace(
                         '0'))))
     """
     _neutral_element = One
@@ -1047,20 +1047,20 @@ def sqrt(scalar):
                 BraKet(
                     KetSymbol(
                         'Phi',
-                        hs=LocalSpace(
+                        hs=FockSpace(
                             '0')),
                     KetSymbol(
                         'Psi',
-                        hs=LocalSpace(
+                        hs=FockSpace(
                             '0'))),
                 BraKet(
                     KetSymbol(
                         'Psi',
-                        hs=LocalSpace(
+                        hs=FockSpace(
                             '0')),
                     KetSymbol(
                         'Phi',
-                        hs=LocalSpace(
+                        hs=FockSpace(
                             '0')))),
             ScalarValue(
                 Rational(1, 2)))

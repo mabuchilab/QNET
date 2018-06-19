@@ -2,17 +2,18 @@ from sympy import symbols
 import pytest
 
 from qnet.algebra.core.abstract_algebra import substitute
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.exceptions import BasisNotSetError
 from qnet.algebra.core.matrix_algebra import Matrix
 from qnet.algebra.core.operator_algebra import (
-    IdentityOperator, Destroy, II, OperatorSymbol)
+    IdentityOperator, II, OperatorSymbol)
+from qnet.algebra.library.fock_operators import Destroy
+from qnet.algebra.library.hilbert_spaces import FockSpace
 
 
 @pytest.fixture
 def H_JC():
-    hil_a = LocalSpace('A')
-    hil_b = LocalSpace('B')
+    hil_a = FockSpace('A')
+    hil_b = FockSpace('B')
     a = Destroy(hs=hil_a)
     a_dag = a.dag()
     b = Destroy(hs=hil_b)
@@ -30,8 +31,8 @@ def test_substitute_basis(H_JC):
         H.space.dimension
 
     hs_mapping = {
-        LocalSpace('A'): LocalSpace('A', basis=('g', 'e')),
-        LocalSpace('B'): LocalSpace('B', dimension=10),
+        FockSpace('A'): FockSpace('A', basis=('g', 'e')),
+        FockSpace('B'): FockSpace('B', dimension=10),
     }
 
     H2 = H.substitute(hs_mapping)
@@ -51,8 +52,8 @@ def test_substitute_numvals(H_JC):
         g: 1,
     }
 
-    hil_a = LocalSpace('A')
-    hil_b = LocalSpace('B')
+    hil_a = FockSpace('A')
+    hil_b = FockSpace('B')
     a = Destroy(hs=hil_a)
     a_dag = a.dag()
     b = Destroy(hs=hil_b)
@@ -70,8 +71,8 @@ def test_substitute_str(H_JC):
     """Test that we can substitute e.g. label strings"""
     H2 = H_JC.substitute({'A': '1', 'B': '2'})
     hs_mapping = {
-        LocalSpace('A'): LocalSpace('1'),
-        LocalSpace('B'): LocalSpace('2'),
+        FockSpace('A'): FockSpace('1'),
+        FockSpace('B'): FockSpace('2'),
     }
     assert H2 == H_JC.substitute(hs_mapping)
 
@@ -80,8 +81,8 @@ def test_substitute_sympy_formula(H_JC):
     """Test that we can replace sympy symbols with other sympy formulas"""
     omega_a, omega_b, g = symbols('omega_a, omega_b, g')
     Delta_a, Delta_b, delta, kappa = symbols('Delta_a, Delta_b, delta, kappa')
-    hil_a = LocalSpace('A')
-    hil_b = LocalSpace('B')
+    hil_a = FockSpace('A')
+    hil_b = FockSpace('B')
     a = Destroy(hs=hil_a)
     a_dag = a.dag()
     b = Destroy(hs=hil_b)
@@ -119,8 +120,8 @@ def test_substitute_symbol_not_in_expr(H_JC):
 
 def test_substitute_sub_expr(H_JC):
     """Test that we can replace non-atomic sub-expressions"""
-    hil_a = LocalSpace('A')
-    hil_b = LocalSpace('B')
+    hil_a = FockSpace('A')
+    hil_b = FockSpace('B')
     omega_a, omega_b, g = symbols('omega_a, omega_b, g')
     a = Destroy(hs=hil_a)
     a_dag = a.dag()

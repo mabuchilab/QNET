@@ -406,6 +406,8 @@ def latex(expr, cache=None, **settings):
             <https://ctan.org/tex-archive/macros/latex/contrib/braket>`_. Note
             that this will not automatically render in IPython Notebooks, but
             it is recommended when generating latex for a document.
+        tex_frac_for_spin_labels (bool): Whether to use '\frac' when printing
+            basis state labels for spin Hilbert spaces
 
 
     Examples:
@@ -448,6 +450,13 @@ def latex(expr, cache=None, **settings):
         '\\identity'
         >>> latex(LocalSigma(0, 1, hs=1), tex_use_braket=True)
         '\\Ket{0}\\!\\Bra{1}^{(1)}'
+
+        >>> spin = SpinSpace('s', spin=(1, 2))
+        >>> up = SpinBasisKet(1, 2, hs=spin)
+        >>> latex(up)
+        '\\left\\lvert +1/2 \\right\\rangle^{(s)}'
+        >>> latex(up, tex_frac_for_spin_labels=True)
+        '\\left\\lvert +\\frac{1}{2} \\right\\rangle^{(s)}'
 
     Note that the accepted parameters and their default values may be changed
     through :func:`init_printing` or :func:`configure_printing`

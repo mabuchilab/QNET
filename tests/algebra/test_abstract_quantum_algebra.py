@@ -3,7 +3,7 @@ from qnet import (
     One, Zero, ZeroOperator, IdentityOperator, ZeroSuperOperator,
     IdentitySuperOperator, ZeroKet, TrivialKet, FullSpace, TrivialSpace,
     CIdentity, CircuitZero, IdxSym, BasisKet, OperatorSymbol, FockIndex,
-    KetIndexedSum, OperatorIndexedSum, StrLabel, LocalSpace,
+    KetIndexedSum, OperatorIndexedSum, StrLabel, LocalSpace, FockSpace,
     IndexOverList, IndexOverFockSpace, IndexOverRange, Sum, ScalarExpression,
     QuantumDerivative, OperatorDerivative, Scalar, ScalarTimes)
 import sympy
@@ -66,7 +66,7 @@ def test_sum_instantiator():
     ket_i = BasisKet(FockIndex(i), hs=0)
     ket_j = BasisKet(FockIndex(j), hs=0)
     A_i = OperatorSymbol(StrLabel(IndexedBase('A')[i]), hs=0)
-    hs0 = LocalSpace('0')
+    hs0 = FockSpace('0')
 
     sum = Sum(i)(ket_i)
     ful = KetIndexedSum(ket_i, IndexOverFockSpace(i, hs=hs0))
@@ -251,7 +251,7 @@ def test_quantum_symbols_with_symargs():
     A = OperatorSymbol("A", t[i], (alpha + 1)**2, hs=0)
     assert A.label == 'A'
     assert len(A.args) == 3
-    assert A.kwargs == {'hs': LocalSpace('0')}
+    assert A.kwargs == {'hs': FockSpace('0')}
     assert A._get_instance_key(A.args, A.kwargs) == (
         OperatorSymbol, 'A', t[i], (alpha + 1)**2, ('hs', A.space))
     A_beta = OperatorSymbol("A", beta, (alpha + 1)**2, hs=0)

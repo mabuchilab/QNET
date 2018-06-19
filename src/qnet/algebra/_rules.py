@@ -7,11 +7,16 @@ from .core.exceptions import CannotSimplify
 from .core.hilbert_space_algebra import (
     HilbertSpace, LocalSpace, ProductSpace, TrivialSpace, )
 from .core.operator_algebra import (
-    Adjoint, Commutator, Create, Destroy, Displace, IdentityOperator, Jminus,
-    Jmjmcoeff, Jpjmcoeff, Jplus, Jz, Jzjmcoeff, LocalOperator, LocalProjector,
+    Adjoint, Commutator, IdentityOperator, LocalOperator, LocalProjector,
     LocalSigma, Operator, OperatorIndexedSum, OperatorPlus, OperatorTimes,
-    OperatorTrace, Phase, PseudoInverse, ScalarTimesOperator, Squeeze,
-    ZeroOperator, decompose_space, factor_for_trace, )
+    OperatorTrace, PseudoInverse, ScalarTimesOperator, ZeroOperator,
+    decompose_space, factor_for_trace, )
+from .library.spin_operators import (
+    Jz, Jplus, Jminus, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff)
+
+from qnet.algebra.library.fock_operators import (
+    Destroy, Create, Phase,
+    Displace, Squeeze)
 from .core.scalar_algebra import (
     Scalar, ScalarExpression, ScalarValue, ScalarPlus, ScalarTimes,
     ScalarPower, ScalarIndexedSum, Zero, One, KroneckerDelta)
@@ -118,8 +123,6 @@ def _algebraic_rules_scalar():
 def _algebraic_rules_operator():
     """Set the default algebraic rules for the operations defined in this
     module"""
-    PseudoInverse._delegate_to_method += (PseudoInverse,)
-
     u = wc("u", head=SCALAR_TYPES)
     v = wc("v", head=SCALAR_TYPES)
 

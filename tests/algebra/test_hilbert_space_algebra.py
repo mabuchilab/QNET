@@ -1,9 +1,13 @@
 import pytest
 
+from sympy import Rational
+
 from qnet.algebra.core.hilbert_space_algebra import (
         LocalSpace, ProductSpace, TrivialSpace, FullSpace)
 from qnet.algebra.core.exceptions import BasisNotSetError
-from qnet.algebra.core.operator_algebra import Destroy
+from qnet.algebra.library.fock_operators import Destroy
+from qnet.algebra.library.hilbert_spaces import (
+    FockSpace, SpinSpace, SpinBasisKet)
 from qnet.algebra.core.state_algebra import (
     KetSymbol, BasisKet, TrivialKet)
 
@@ -22,9 +26,9 @@ def test_basis_change():
     """Test that we can change the basis of an Expression's Hilbert space
     through substitution"""
     a = Destroy(hs=1)
-    assert a.space == LocalSpace('1')
+    assert a.space == FockSpace('1')
     assert not a.space.has_basis
-    subs = {LocalSpace('1'): LocalSpace('1', basis=(-1, 0, 1))}
+    subs = {FockSpace('1'): FockSpace('1', basis=(-1, 0, 1))}
     b = a.substitute(subs)
     assert str(a) == str(b)
     assert a != b
@@ -37,25 +41,25 @@ def test_op_product_space():
     a = Destroy(hs=1)
     b = Destroy(hs=2)
     p = a * b
-    assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
+    assert p.space == ProductSpace(FockSpace(1), FockSpace(2))
     assert not p.space.has_basis
 
-    hs1 = LocalSpace(1, dimension=3)
-    a = a.substitute({LocalSpace(1): hs1})
+    hs1 = FockSpace(1, dimension=3)
+    a = a.substitute({FockSpace(1): hs1})
     p = a * b
-    assert p.space == ProductSpace(hs1, LocalSpace(2))
+    assert p.space == ProductSpace(hs1, FockSpace(2))
     assert not p.space.has_basis
 
-    hs2 = LocalSpace(2, dimension=2)
-    b = b.substitute({LocalSpace(2): hs2})
+    hs2 = FockSpace(2, dimension=2)
+    b = b.substitute({FockSpace(2): hs2})
     p = a * b
     ps = ProductSpace(hs1, hs2)
     assert p.space == ps
     assert p.space.dimension == 6
     assert p.space.basis_labels == ('0,0', '0,1', '1,0', '1,1', '2,0', '2,1')
 
-    hs1_2 = LocalSpace(1, basis=('g', 'e'))
-    hs2_2 = LocalSpace(2, basis=('g', 'e'))
+    hs1_2 = FockSpace(1, basis=('g', 'e'))
+    hs2_2 = FockSpace(2, basis=('g', 'e'))
     p = p.substitute({hs1: hs1_2, hs2: hs2_2})
     assert p.space.dimension == 4
     assert p.space.basis_labels == ('g,g', 'g,e', 'e,g', 'e,e')
@@ -72,17 +76,17 @@ def test_ket_product_space():
     a = KetSymbol('0', hs=1)
     b = KetSymbol('0', hs=2)
     p = a * b
-    assert p.space == ProductSpace(LocalSpace(1), LocalSpace(2))
+    assert p.space == ProductSpace(FockSpace(1), FockSpace(2))
     assert not p.space.has_basis
 
-    hs1 = LocalSpace(1, dimension=3)
-    a = a.substitute({LocalSpace(1): hs1})
+    hs1 = FockSpace(1, dimension=3)
+    a = a.substitute({FockSpace(1): hs1})
     p = a * b
-    assert p.space == ProductSpace(hs1, LocalSpace(2))
+    assert p.space == ProductSpace(hs1, FockSpace(2))
     assert not p.space.has_basis
 
-    hs2 = LocalSpace(2, dimension=2)
-    b = b.substitute({LocalSpace(2): hs2})
+    hs2 = FockSpace(2, dimension=2)
+    b = b.substitute({FockSpace(2): hs2})
     p = a * b
     ps = ProductSpace(hs1, hs2)
     assert p.space == ps
@@ -93,9 +97,9 @@ def test_ket_product_space():
 def test_product_space():
 
     # create HilbertSpaces
-    h1 = LocalSpace("h1")
-    h2 = LocalSpace("h2")
-    h3 = LocalSpace("h3")
+    h1 = FockSpace("h1")
+    h2 = FockSpace("h2")
+    h3 = FockSpace("h3")
 
     # productspace
     assert h1 * h2 == ProductSpace(h1, h2)
@@ -113,10 +117,10 @@ def test_product_space():
 
 
 def test_dimension():
-    h1 = LocalSpace("h1", dimension = 10)
-    h2 = LocalSpace("h2", dimension = 20)
-    h3 = LocalSpace("h3")
-    h4 = LocalSpace("h4", dimension = 100)
+    h1 = FockSpace("h1", dimension = 10)
+    h2 = FockSpace("h2", dimension = 20)
+    h3 = FockSpace("h3")
+    h4 = FockSpace("h4", dimension = 100)
 
     assert (h1*h2).dimension == h1.dimension * h2.dimension
     with pytest.raises(BasisNotSetError):
@@ -157,11 +161,12 @@ def test_operations():
 
 def test_hs_basis_states():
     """Test that we can obtain the basis states of a Hilbert space"""
-    hs0 = LocalSpace('0')
-    hs1 = LocalSpace('1', basis=['g', 'e'])
-    hs2 = LocalSpace('2', dimension=2)
-    hs3 = LocalSpace('3', dimension=2)
-    hs4 = LocalSpace('4', dimension=2)
+    hs0 = FockSpace('0')
+    hs1 = FockSpace('1', basis=['g', 'e'])
+    hs2 = FockSpace('2', dimension=2)
+    hs3 = FockSpace('3', dimension=2)
+    hs4 = FockSpace('4', dimension=2)
+    spin = SpinSpace('s', spin=Rational(3/2))
 
     assert isinstance(hs0.basis_state(0), BasisKet)
     assert isinstance(hs0.basis_state(1), BasisKet)
@@ -179,9 +184,9 @@ def test_hs_basis_states():
     assert g_1 == hs1.basis_state(0)
     assert e_1 == hs1.basis_state(1)
     with pytest.raises(IndexError):
-        _ = hs1.basis_state(2)
+        hs1.basis_state(2)
     with pytest.raises(KeyError):
-        _ = hs1.basis_state('r')
+        hs1.basis_state('r')
 
     zero_2, one_2 = hs2.basis_states
     assert zero_2 == BasisKet(0, hs=hs2)
@@ -198,9 +203,9 @@ def test_hs_basis_states():
     assert e1 == hs_prod.basis_state('e,1')
     assert hs_prod.basis_labels == ('g,0', 'g,1', 'e,0', 'e,1')
     with pytest.raises(IndexError):
-        _ = hs_prod.basis_state(4)
+        hs_prod.basis_state(4)
     with pytest.raises(KeyError):
-        _ = hs_prod.basis_state('g0')
+        hs_prod.basis_state('g0')
 
     hs_prod4 = hs1 * hs2 * hs3 * hs4
     basis = hs_prod4.basis_states
@@ -215,7 +220,16 @@ def test_hs_basis_states():
     assert list(TrivialSpace.basis_states) == [TrivialKet, ]
     assert TrivialSpace.basis_state(0) == TrivialKet
 
+    basis = spin.basis_states
+    ket = next(basis)
+    assert ket == BasisKet('-3/2', hs=spin)
+    with pytest.raises(TypeError):
+        ket == BasisKet(0, hs=spin)
+    assert next(basis) == SpinBasisKet(-1, 2, hs=spin)
+    assert next(basis) == SpinBasisKet(+1, 2, hs=spin)
+    assert next(basis) == SpinBasisKet(+3, 2, hs=spin)
+
     with pytest.raises(BasisNotSetError):
-        _ = FullSpace.dimension
+        FullSpace.dimension
     with pytest.raises(BasisNotSetError):
-        _ = FullSpace.basis_states
+        FullSpace.basis_states

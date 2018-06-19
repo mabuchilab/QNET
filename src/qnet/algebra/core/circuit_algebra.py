@@ -30,9 +30,10 @@ from .matrix_algebra import (
     Im, ImAdjoint, Matrix, block_matrix, identity_matrix, permutation_matrix,
     vstackm, zerosm, )
 from .operator_algebra import (
-    Create, Destroy, IdentityOperator, LocalProjector, LocalSigma, Operator,
+    IdentityOperator, LocalProjector, LocalSigma, Operator,
     OperatorPlus, OperatorSymbol, ScalarTimesOperator, ZeroOperator, adjoint,
     get_coeffs, )
+from qnet.algebra.library.fock_operators import Destroy, Create
 from ...utils.permutations import (
     BadPermutationError, block_perm_and_perms_within_blocks, check_permutation,
     full_block_perm, invert_permutation, permutation_to_block_permutations, )

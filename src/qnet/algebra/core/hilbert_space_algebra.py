@@ -225,7 +225,7 @@ class LocalSpace(HilbertSpace, Expression):
         try:
             # we want to normalize the local_identifiers to an arbitrary stable
             # order
-            sorted_local_identifiers = tuple(
+            self._sorted_local_identifiers = tuple(
                 sorted(tuple(local_identifiers.items())))
         except TypeError:
             # this will happen e.g. if the keys in local_identifier are types
@@ -250,14 +250,14 @@ class LocalSpace(HilbertSpace, Expression):
         self._label = label
         self._order_key = KeyTuple((
             order_index, label, str(dimension), basis,
-            sorted_local_identifiers))
+            self._sorted_local_identifiers))
         self._basis = basis
         self._dimension = dimension
         self._local_identifiers = local_identifiers
         self._order_index = order_index
         self._kwargs = OrderedDict([
             ('basis', self._basis), ('dimension', self._dimension),
-            ('local_identifiers', sorted_local_identifiers),
+            ('local_identifiers', self._sorted_local_identifiers),
             ('order_index', self._order_index)])
         self._minimal_kwargs = self._kwargs.copy()
         for key in default_args:
@@ -265,7 +265,7 @@ class LocalSpace(HilbertSpace, Expression):
 
         super().__init__(
             label, basis=basis, dimension=dimension,
-            local_identifiers=sorted_local_identifiers,
+            local_identifiers=self._sorted_local_identifiers,
             order_index=order_index)
 
     @classmethod
@@ -398,7 +398,8 @@ class LocalSpace(HilbertSpace, Expression):
             ValueError: If `label` is not a label for any basis state in the
                 Hilbert space
             .BasisNotSetError: If the Hilbert space has no defined basis
-            TypeError: if `label_or_index` is neither a `str` nor an `int`
+            TypeError: if `label_or_index` is neither a :class:`str` nor an
+                :class:`int`, nor a :class:`SymbolicLabelBase`
         """
         if isinstance(label_or_index, int):
             new_index = label_or_index + n
@@ -418,6 +419,10 @@ class LocalSpace(HilbertSpace, Expression):
             return self._basis[new_index]
         elif isinstance(label_or_index, SymbolicLabelBase):
             return label_or_index.__class__(expr=label_or_index.expr + n)
+        else:
+            raise TypeError(
+                "Invalid type for label_or_index: %s"
+                % label_or_index.__class__.__name__)
 
 
 @singleton_object

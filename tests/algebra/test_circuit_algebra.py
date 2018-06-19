@@ -12,12 +12,14 @@ from qnet.algebra.toolbox.circuit_manipulation import connect
 from qnet.utils.permutations import (
     permute, full_block_perm, block_perm_and_perms_within_blocks)
 from qnet.algebra.core.operator_algebra import (
-    Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator, LocalSigma,
+    Operator, OperatorSymbol, sympyOne, ZeroOperator, LocalSigma,
     LocalProjector, IdentityOperator)
+from qnet.algebra.library.fock_operators import Destroy
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.library.circuit_components import (
     CoherentDriveCC, PhaseCC, Beamsplitter)
+from qnet.algebra.library.hilbert_spaces import FockSpace
 
 
 symbol_counter = 0
@@ -417,8 +419,8 @@ def test_connect(components, connections, expected):
 
 
 def test_adiabatic_elimination():
-    fock = LocalSpace('fock')
-    tls = LocalSpace('tls', basis=('e', 'g'))
+    fock = FockSpace('fock')
+    tls = FockSpace('tls', basis=('e', 'g'))
 
     Delta, Theta, g = sympy.symbols('Delta, Theta, g', real=True)
     kappa, gamma = sympy.symbols('kappa, gamma', positive=True)

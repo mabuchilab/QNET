@@ -2,11 +2,13 @@ from sympy import symbols, sqrt
 
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.operator_algebra import (
-    OperatorSymbol, Commutator, ZeroOperator, Create, Destroy, LocalSigma,
-    LocalProjector, IdentityOperator, Jplus, Jz)
-from qnet.algebra.toolbox.commutator_manipulation import \
-    (
-    expand_commutators_leibniz, evaluate_commutators, )
+    OperatorSymbol, Commutator, ZeroOperator, LocalSigma,
+    LocalProjector, IdentityOperator)
+from qnet.algebra.library.spin_operators import Jz, Jplus
+from qnet.algebra.library.fock_operators import Destroy, Create
+from qnet.algebra.library.hilbert_spaces import FockSpace, SpinSpace
+from qnet.algebra.toolbox.commutator_manipulation import (
+    expand_commutators_leibniz, evaluate_commutators)
 
 
 def test_disjunct_hs():
@@ -108,7 +110,7 @@ def test_series_expand():
 
 def test_commutator_oder():
     """Test anti-commutativity of commutators"""
-    hs = LocalSpace("0")
+    hs = FockSpace("0")
     A = OperatorSymbol('A', hs=hs)
     B = OperatorSymbol('B', hs=hs)
     assert Commutator.create(B, A) == -Commutator(A, B)
@@ -119,30 +121,35 @@ def test_commutator_oder():
 
 def test_known_commutators():
     """Test that well-known commutators are recognized"""
-    hs = LocalSpace("0")
-    a = Destroy(hs=hs)
-    a_dag = Create(hs=hs)
+    fock = FockSpace("0")
+    spin = SpinSpace("0", spin=1)
+    a = Destroy(hs=fock)
+    a_dag = Create(hs=fock)
     assert Commutator.create(a, a_dag) == IdentityOperator
     assert Commutator.create(a_dag, a) == -IdentityOperator
 
     assert (
-        Commutator.create(LocalSigma(1, 0, hs=hs), LocalSigma(0, 1, hs=hs)) ==
-        LocalProjector(1, hs=hs) - LocalProjector(0, hs=hs))
+        Commutator.create(
+            LocalSigma(1, 0, hs=fock), LocalSigma(0, 1, hs=fock)) ==
+        LocalProjector(1, hs=fock) - LocalProjector(0, hs=fock))
     assert (
-        Commutator.create(LocalSigma(1, 0, hs=hs), LocalProjector(1, hs=hs)) ==
-        (-1 * LocalSigma(1, 0, hs=hs)))
+        Commutator.create(
+            LocalSigma(1, 0, hs=fock), LocalProjector(1, hs=fock)) ==
+        (-1 * LocalSigma(1, 0, hs=fock)))
     assert (
-        Commutator.create(LocalSigma(1, 0, hs=hs), LocalProjector(0, hs=hs)) ==
-        LocalSigma(1, 0, hs=hs))
+        Commutator.create(
+            LocalSigma(1, 0, hs=fock), LocalProjector(0, hs=fock)) ==
+        LocalSigma(1, 0, hs=fock))
     assert (
-        Commutator.create(LocalSigma(1, 0, hs=hs), Create(hs=hs)) ==
-        (-sqrt(2) * LocalSigma(2, 0, hs=hs)))
-    assert Commutator.create(Jplus(hs=hs), Jz(hs=hs)) == -Jplus(hs=hs)
+        Commutator.create(
+            LocalSigma(1, 0, hs=fock), Create(hs=fock)) ==
+        (-sqrt(2) * LocalSigma(2, 0, hs=fock)))
+    assert Commutator.create(Jplus(hs=spin), Jz(hs=spin)) == -Jplus(hs=spin)
 
 
 def test_commutator_expand_evaluate():
     """Test expansion and evaluation of commutators"""
-    hs = LocalSpace("0")
+    hs = FockSpace("0")
     A = OperatorSymbol('A', hs=hs)
     B = OperatorSymbol('B', hs=hs)
     C = OperatorSymbol('C', hs=hs)

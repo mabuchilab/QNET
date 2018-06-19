@@ -15,7 +15,8 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, ascii,
-    ScalarValue, ScalarExpression, QuantumDerivative, Scalar)
+    ScalarValue, ScalarExpression, QuantumDerivative, Scalar, FockSpace,
+    SpinSpace)
 
 
 def test_ascii_scalar():
@@ -128,18 +129,18 @@ def test_ascii_operator_elements():
     assert ascii(Create(hs=1), show_hs_label=False) == "a^H"
     assert ascii(Create(hs=1), show_hs_label='subscript') == "a_(1)^H"
     assert ascii(Destroy(hs=1)) == "a^(1)"
-    hs1_custom = LocalSpace(
-       1, local_identifiers={
-           'Create': 'b', 'Destroy': 'b', 'Jz': 'Z', 'Jplus': 'Jp',
-           'Jminus': 'Jm', 'Phase': 'Ph'})
-    assert ascii(Create(hs=hs1_custom)) == "b^(1)H"
-    assert ascii(Destroy(hs=hs1_custom)) == "b^(1)"
-    assert ascii(Jz(hs=1)) == "J_z^(1)"
-    assert ascii(Jz(hs=hs1_custom)) == "Z^(1)"
-    assert ascii(Jplus(hs=hs1_custom)) == "Jp^(1)"
-    assert ascii(Jminus(hs=hs1_custom)) == "Jm^(1)"
+    fock1 = FockSpace(
+       1, local_identifiers={'Create': 'b', 'Destroy': 'b', 'Phase': 'Ph'})
+    spin1 = SpinSpace(
+       1, spin=1, local_identifiers={'Jz': 'Z', 'Jplus': 'Jp', 'Jminus': 'Jm'})
+    assert ascii(Create(hs=fock1)) == "b^(1)H"
+    assert ascii(Destroy(hs=fock1)) == "b^(1)"
+    assert ascii(Jz(hs=SpinSpace(1, spin=1))) == "J_z^(1)"
+    assert ascii(Jz(hs=spin1)) == "Z^(1)"
+    assert ascii(Jplus(hs=spin1)) == "Jp^(1)"
+    assert ascii(Jminus(hs=spin1)) == "Jm^(1)"
     assert ascii(Phase(0.5, hs=1)) == 'Phase^(1)(0.5)'
-    assert ascii(Phase(0.5, hs=hs1_custom)) == 'Ph^(1)(0.5)'
+    assert ascii(Phase(0.5, hs=fock1)) == 'Ph^(1)(0.5)'
     assert ascii(Displace(0.5, hs=1)) == 'D^(1)(0.5)'
     assert ascii(Squeeze(0.5, hs=1)) == 'Squeeze^(1)(0.5)'
     hs_tls = LocalSpace('1', basis=('g', 'e'))

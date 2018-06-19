@@ -7,9 +7,11 @@ from qnet.algebra.core.scalar_algebra import Scalar
 from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, ScalarTimesOperator, OperatorTimes, Operator,
-        LocalOperator, Create)
+        LocalOperator)
+from qnet.algebra.library.fock_operators import Create
 from qnet.algebra.core.hilbert_space_algebra import (
         FullSpace, HilbertSpace, LocalSpace)
+from qnet.algebra.library.hilbert_spaces import FockSpace
 from qnet.algebra.core.circuit_algebra import (
         Circuit, CPermutation, Concatenation, SeriesProduct, CircuitSymbol,
         Feedback)
@@ -368,11 +370,11 @@ def test_pattern_str():
 
 
 def test_findall():
-    h1 = LocalSpace("h1")
+    h1 = FockSpace("h1")
     a = OperatorSymbol("a", hs=h1)
     b = OperatorSymbol("b", hs=h1)
     c = OperatorSymbol("c", hs=h1)
-    h1_custom = LocalSpace("h1", local_identifiers={'Create': 'c'})
+    h1_custom = FockSpace("h1", local_identifiers={'Create': 'c'})
     c_local = Create(hs=h1_custom)
 
     expr = 2 * (a * b * c - b * c * a + a * b)

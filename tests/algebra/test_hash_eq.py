@@ -1,8 +1,8 @@
 """Test hash and equality implementation of Expressions"""
 
-from qnet.algebra.core.operator_algebra import Destroy
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.circuit_algebra import SLH
+from qnet.algebra.library.fock_operators import Destroy
+from qnet.algebra.library.hilbert_spaces import FockSpace
 
 
 def test_equal_hash():
@@ -38,8 +38,8 @@ def test_heis_eom():
 def test_custom_localspace_identifier_hash():
     """Test hashes for expressions with different local_identifiers for their
     Hilbert spaces have different hashes"""
-    hs1 = LocalSpace(1)
-    hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
+    hs1 = FockSpace(1)
+    hs1_custom = FockSpace(1, local_identifiers={'Destroy': 'b'})
     assert hash(hs1) != hash(hs1_custom)
     a = Destroy(hs=hs1)
     b = Destroy(hs=hs1_custom)

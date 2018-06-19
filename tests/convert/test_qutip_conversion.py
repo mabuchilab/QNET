@@ -6,13 +6,14 @@ import qutip
 import pytest
 
 from qnet.algebra.core.operator_algebra import (
-    Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol,
+    LocalSigma, LocalProjector, OperatorSymbol,
     ScalarTimesOperator, ZeroOperator)
+from qnet.algebra.library.fock_operators import Destroy, Create
 from qnet.algebra.core.circuit_algebra import SLH
 from qnet.algebra.core.matrix_algebra import identity_matrix, Matrix
 from qnet.convert.to_qutip import (
     _time_dependent_to_qutip, convert_to_qutip, SLH_to_qutip)
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.library.hilbert_spaces import FockSpace
 
 _hs_counter = 0
 
@@ -24,7 +25,7 @@ def hs_name():
 
 
 def test_create_destoy():
-    H = LocalSpace(hs_name(), dimension=5)
+    H = FockSpace(hs_name(), dimension=5)
     ad = Create(hs=H)
     a = Create(hs=H).adjoint()
     aq = convert_to_qutip(a)
@@ -34,7 +35,7 @@ def test_create_destoy():
 
 
 def test_N():
-    H = LocalSpace(hs_name(), dimension=5)
+    H = FockSpace(hs_name(), dimension=5)
     ad = Create(hs=H)
     a = Create(hs=H).adjoint()
     aq = qutip.dag(convert_to_qutip(a))
@@ -46,7 +47,7 @@ def test_N():
 
 
 def test_sigma():
-    H = LocalSpace(hs_name(), basis=("e","g","h"))
+    H = FockSpace(hs_name(), basis=("e","g","h"))
     sigma = LocalSigma('g', 'e', hs=H)
     sq = convert_to_qutip(sigma)
     assert sq[1, 0] == 1
@@ -54,16 +55,16 @@ def test_sigma():
 
 
 def test_Pi():
-    H = LocalSpace(hs_name(), basis=("e", "g", "h"))
+    H = FockSpace(hs_name(), basis=("e", "g", "h"))
     Pi_h = LocalProjector('h', hs=H)
     assert convert_to_qutip(Pi_h).tr() == 1
     assert convert_to_qutip(Pi_h)**2 == convert_to_qutip(Pi_h)
 
 
 def test_tensor_product():
-    H = LocalSpace(hs_name(), dimension=5)
+    H = FockSpace(hs_name(), dimension=5)
     a = Create(hs=H).adjoint()
-    H2 = LocalSpace(hs_name(), basis=("e", "g", "h"))
+    H2 = FockSpace(hs_name(), basis=("e", "g", "h"))
     sigma = LocalSigma('g', 'e', hs=H2)
     assert convert_to_qutip(sigma * a) == \
                         qutip.tensor(convert_to_qutip(a),
@@ -71,7 +72,7 @@ def test_tensor_product():
 
 
 def test_local_sum():
-    H = LocalSpace(hs_name(), dimension=5)
+    H = FockSpace(hs_name(), dimension=5)
     ad = Create(hs=H)
     a = Create(hs=H).adjoint()
     assert convert_to_qutip(a + ad) == \
@@ -79,23 +80,23 @@ def test_local_sum():
 
 
 def test_nonlocal_sum():
-    H = LocalSpace(hs_name(), dimension=5)
+    H = FockSpace(hs_name(), dimension=5)
     a = Create(hs=H).adjoint()
-    H2 = LocalSpace(hs_name(), basis=("e", "g", "h"))
+    H2 = FockSpace(hs_name(), basis=("e", "g", "h"))
     sigma = LocalSigma('g', 'e', hs=H2)
     assert convert_to_qutip(a + sigma)**2 == \
                         convert_to_qutip((a + sigma)*(a + sigma))
 
 
 def test_scalar_coeffs():
-    H = LocalSpace(hs_name(), dimension=5)
+    H = FockSpace(hs_name(), dimension=5)
     a = Create(hs=H).adjoint()
     assert 2 * convert_to_qutip(a) == convert_to_qutip(2 * a)
 
 
 def test_tensor_key():
-    hs_mech = LocalSpace('m', dimension=5)
-    hs_opt = LocalSpace('o', dimension=5)
+    hs_mech = FockSpace('m', dimension=5)
+    hs_opt = FockSpace('o', dimension=5)
     hs = hs_mech * hs_opt
     ket00 = hs.basis_state(0)
     ket0m = hs_mech.basis_state(0)
@@ -109,8 +110,8 @@ def test_tensor_key():
 
 def test_symbol():
     expN = OperatorSymbol("expN", hs=1)
-    hs1 = LocalSpace("sym1", dimension=10)
-    hs2 = LocalSpace("sym2", dimension=5)
+    hs1 = FockSpace("sym1", dimension=10)
+    hs2 = FockSpace("sym2", dimension=5)
     N = Create(hs=hs1)*Destroy(hs=hs1)
 
     M = Create(hs=hs2)*Destroy(hs=hs2)
@@ -146,7 +147,7 @@ def test_symbol():
 
 def test_time_dependent_to_qutip():
     """Test conversion of a time-dependent Hamiltonian"""
-    Hil = LocalSpace(hs_name(), dimension=5)
+    Hil = FockSpace(hs_name(), dimension=5)
     ad = Create(hs=Hil)
     a = Create(hs=Hil).adjoint()
 
@@ -191,7 +192,7 @@ def test_non_herm_lindblad_conversion():
     """
     slh = SLH(
         identity_matrix(1),
-        Matrix([[Create(hs=LocalSpace('1', dimension=3)), ]]),
+        Matrix([[Create(hs=FockSpace('1', dimension=3)), ]]),
         ZeroOperator)
     H, Ls = SLH_to_qutip(slh)
     assert H.shape == (3, 3)
@@ -209,7 +210,6 @@ def test_trivial_space_conversion():
     """
     from qnet.convert.to_qutip import convert_to_qutip, SLH_to_qutip
     from qnet.algebra.core.operator_algebra import ZeroOperator
-    from qnet.algebra.core.hilbert_space_algebra import LocalSpace
     from qnet.algebra.library.circuit_components import Beamsplitter
     from qnet.algebra.core.exceptions import AlgebraError
 
@@ -217,7 +217,7 @@ def test_trivial_space_conversion():
         O = convert_to_qutip(ZeroOperator)
     assert "Cannot convert object in TrivialSpace" in str(excinfo.value)
 
-    O = convert_to_qutip(ZeroOperator, full_space=LocalSpace(0, dimension=10))
+    O = convert_to_qutip(ZeroOperator, full_space=FockSpace(0, dimension=10))
     assert np.linalg.norm((O.data.todense() - np.zeros((10, 10)))) == 0.0
 
     bs = Beamsplitter("BS", theta=0)
@@ -227,6 +227,6 @@ def test_trivial_space_conversion():
         H, Ls = SLH_to_qutip(slh)
     assert "Cannot convert SLH object in TrivialSpace" in str(excinfo.value)
 
-    H, Ls = SLH_to_qutip(slh, full_space=LocalSpace(0, dimension=10))
+    H, Ls = SLH_to_qutip(slh, full_space=FockSpace(0, dimension=10))
     assert np.linalg.norm((H.data.todense() - np.zeros((10, 10)))) == 0.0
     assert len(Ls) == 0

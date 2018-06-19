@@ -17,11 +17,14 @@ __private__ = ['QnetLatexPrinter', 'render_latex_sub_super']
 
 
 class QnetLatexPrinter(QnetAsciiPrinter):
-    """Printer for a LaTeX representation."""
+    """Printer for a LaTeX representation.
+
+    See :func:`qnet.printing.latex` for documentation of `settings`.
+    """
     sympy_printer_cls = SympyLatexPrinter
     printmethod = '_latex'
 
-    _default_settings = {
+    _default_settings = {  # documented in :func:`latex`
         'show_hs_label': True,  # alternatively: False, 'subscript'
         'sig_as_ketbra': True,
         'tex_op_macro': r'\hat{{{name}}}',
@@ -30,6 +33,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
         'tex_textsop_macro': r'\mathrm{{{name}}}',
         'tex_identity_sym': r'\mathbb{1}',
         'tex_use_braket': False,  # use the braket package?
+        'tex_frac_for_spin_labels': False,
     }
 
     _parenth_left = r'\left('
@@ -180,6 +184,20 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             translate_symbols=True)
         res += args_str
         return res
+
+    def _render_state_label(self, label):
+        if self._isinstance(label, 'SymbolicLabelBase'):
+            return self._print_SCALAR_TYPES(label.expr)
+        else:
+            label = self._render_str(label)
+            if "/" in label and self._settings['tex_frac_for_spin_labels']:
+                numer, denom = label.split("/", 1)
+                sign = '+'
+                if numer.startswith('-') or numer.startswith('+'):
+                    sign, numer = numer[0], numer[1:]
+                return r'%s\frac{%s}{%s}' % (sign, numer, denom)
+            else:
+                return label
 
     def _print_Commutator(self, expr):
         return (

@@ -288,16 +288,16 @@ def test_dot_custom_labelfunc(expr):
     "node_(0, 0)" ["label"="ScalarTimesOperator"];
     "node_(1, 0)" ["label"="ScalarValue(2)"];
     "node_(1, 1)" ["label"="OperatorPlus"];
-    "node_(2, 0)" ["label"="OperatorSymbol('A', hs=LocalSpace('1'))"];
-    "node_(2, 1)" ["label"="OperatorSymbol('D', hs=LocalSpace('1'))"];
+    "node_(2, 0)" ["label"="OperatorSymbol('A', hs=FockSpace('1'))"];
+    "node_(2, 1)" ["label"="OperatorSymbol('D', hs=FockSpace('1'))"];
     "node_(2, 2)" ["label"="Adjoint"];
     "node_(3, 0)" ["label"="OperatorPlus"];
-    "node_(4, 0)" ["label"="OperatorSymbol('C', hs=LocalSpace('1'))"];
+    "node_(4, 0)" ["label"="OperatorSymbol('C', hs=FockSpace('1'))"];
     "node_(4, 1)" ["label"="ScalarTimesOperator"];
     "node_(5, 0)" ["label"="ScalarValue(2)"];
     "node_(5, 1)" ["label"="OperatorPlus"];
-    "node_(6, 0)" ["label"="OperatorSymbol('A', hs=LocalSpace('1'))"];
-    "node_(6, 1)" ["label"="OperatorSymbol('B', hs=LocalSpace('1'))"];
+    "node_(6, 0)" ["label"="OperatorSymbol('A', hs=FockSpace('1'))"];
+    "node_(6, 1)" ["label"="OperatorSymbol('B', hs=FockSpace('1'))"];
 
     #########
     # Edges #
