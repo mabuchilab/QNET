@@ -5,9 +5,8 @@ from sympy import Rational
 from qnet.algebra.core.hilbert_space_algebra import (
         LocalSpace, ProductSpace, TrivialSpace, FullSpace)
 from qnet.algebra.core.exceptions import BasisNotSetError
-from qnet.algebra.library.fock_operators import Destroy
-from qnet.algebra.library.hilbert_spaces import (
-    FockSpace, SpinSpace, SpinBasisKet)
+from qnet.algebra.library.fock_operators import Destroy, FockSpace
+from qnet.algebra.library.spin_algebra import SpinSpace, SpinBasisKet
 from qnet.algebra.core.state_algebra import (
     KetSymbol, BasisKet, TrivialKet)
 

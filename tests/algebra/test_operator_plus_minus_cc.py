@@ -4,8 +4,7 @@ from qnet.algebra.toolbox.core import extra_binary_rules
 from qnet.algebra.core.operator_algebra import (
     LocalSigma, create_operator_pm_cc, OperatorPlus,
     OperatorPlusMinusCC, expand_operator_pm_cc)
-from qnet.algebra.library.hilbert_spaces import FockSpace
-from qnet.algebra.library.fock_operators import Destroy, Create
+from qnet.algebra.library.fock_operators import Destroy, Create, FockSpace
 from qnet.printing import srepr
 
 

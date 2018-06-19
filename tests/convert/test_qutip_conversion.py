@@ -8,12 +8,11 @@ import pytest
 from qnet.algebra.core.operator_algebra import (
     LocalSigma, LocalProjector, OperatorSymbol,
     ScalarTimesOperator, ZeroOperator)
-from qnet.algebra.library.fock_operators import Destroy, Create
+from qnet.algebra.library.fock_operators import Destroy, Create, FockSpace
 from qnet.algebra.core.circuit_algebra import SLH
 from qnet.algebra.core.matrix_algebra import identity_matrix, Matrix
 from qnet.convert.to_qutip import (
     _time_dependent_to_qutip, convert_to_qutip, SLH_to_qutip)
-from qnet.algebra.library.hilbert_spaces import FockSpace
 
 _hs_counter = 0
 

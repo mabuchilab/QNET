@@ -3,12 +3,38 @@ import re
 from abc import ABCMeta
 from collections import OrderedDict
 
-from .hilbert_spaces import FockSpace
+from ..core.hilbert_space_algebra import LocalSpace
 from ..core.algebraic_properties import implied_local_space, match_replace
 from ..core.operator_algebra import LocalOperator, properties_for_args
+from ...utils.indices import FockIndex
 
 __all__ = [
-    'FockOperator', 'Destroy', 'Create', 'Phase', 'Displace', 'Squeeze']
+    'FockSpace', 'FockOperator', 'Destroy', 'Create', 'Phase', 'Displace',
+    'Squeeze']
+
+
+class FockSpace(LocalSpace):
+    """A Hilbert space whose basis states correspond to an "excitation" (in the
+    most abstract sense). A Fock space can be infinite, with levels labeled by
+    integers 0, 1, ...::
+
+        >>> hs = FockSpace(label=0)
+
+    or truncated to a finite dimension::
+
+        >>> hs = FockSpace(0, dimension=5)
+        >>> hs.basis_labels
+        ('0', '1', '2', '3', '4')
+
+    For finite-dimensional (truncated) Fock spaces, we also allow an arbitrary
+    alternative labeling of the canonical basis::
+
+        >>> hs = FockSpace('rydberg', dimension=3, basis=('g', 'e', 'r'))
+
+    A :class:`.BasisKet` associated with a :class:`FockSpace` may use a
+    :class:`.FockIndex` symbolic label.
+    """
+    _basis_label_types = (int, str, FockIndex)  # acceptable types for labels
 
 
 class FockOperator(LocalOperator, metaclass=ABCMeta):

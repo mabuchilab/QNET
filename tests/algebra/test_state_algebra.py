@@ -7,13 +7,13 @@ from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.toolbox.core import no_rules
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, LocalSigma, IdentityOperator, OperatorPlus)
-from qnet.algebra.library.spin_operators import Jz, Jplus, Jminus
-from qnet.algebra.library.hilbert_spaces import (
-    FockSpace, SpinSpace, SpinBasisKet)
+from qnet.algebra.library.spin_algebra import (
+    Jz, Jplus, Jminus, SpinSpace,
+    SpinBasisKet)
 
 from qnet.algebra.library.fock_operators import (
     Destroy, Create, Phase,
-    Displace)
+    Displace, FockSpace)
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.state_algebra import (
     KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,

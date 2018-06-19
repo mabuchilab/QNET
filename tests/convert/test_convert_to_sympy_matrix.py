@@ -2,7 +2,7 @@ import sympy
 
 import qnet.algebra.core.operator_algebra
 import qnet.algebra.library.fock_operators
-from qnet.algebra.library.hilbert_spaces import FockSpace
+from qnet.algebra.library.fock_operators import FockSpace
 from qnet.convert.to_sympy_matrix import convert_to_sympy_matrix
 
 

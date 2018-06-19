@@ -8,10 +8,9 @@ from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, ScalarTimesOperator, OperatorTimes, Operator,
         LocalOperator)
-from qnet.algebra.library.fock_operators import Create
+from qnet.algebra.library.fock_operators import Create, FockSpace
 from qnet.algebra.core.hilbert_space_algebra import (
         FullSpace, HilbertSpace, LocalSpace)
-from qnet.algebra.library.hilbert_spaces import FockSpace
 from qnet.algebra.core.circuit_algebra import (
         Circuit, CPermutation, Concatenation, SeriesProduct, CircuitSymbol,
         Feedback)

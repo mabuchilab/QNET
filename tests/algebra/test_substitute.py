@@ -6,8 +6,7 @@ from qnet.algebra.core.exceptions import BasisNotSetError
 from qnet.algebra.core.matrix_algebra import Matrix
 from qnet.algebra.core.operator_algebra import (
     IdentityOperator, II, OperatorSymbol)
-from qnet.algebra.library.fock_operators import Destroy
-from qnet.algebra.library.hilbert_spaces import FockSpace
+from qnet.algebra.library.fock_operators import Destroy, FockSpace
 
 
 @pytest.fixture

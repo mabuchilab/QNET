@@ -16,9 +16,8 @@ from qnet.utils.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
 from qnet.algebra.core.operator_algebra import (
     LocalProjector, OperatorTimes)
-from qnet.algebra.library.fock_operators import Displace
+from qnet.algebra.library.fock_operators import Displace, FockSpace
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
-from qnet.algebra.library.hilbert_spaces import FockSpace
 
 
 def test_match_replace_binary_complete():

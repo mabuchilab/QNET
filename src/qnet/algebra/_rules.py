@@ -11,10 +11,9 @@ from .core.operator_algebra import (
     LocalSigma, Operator, OperatorIndexedSum, OperatorPlus, OperatorTimes,
     OperatorTrace, PseudoInverse, ScalarTimesOperator, ZeroOperator,
     decompose_space, factor_for_trace, )
-from .library.spin_operators import (
+from .library.spin_algebra import (
     Jz, Jplus, Jminus, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff)
-
-from qnet.algebra.library.fock_operators import (
+from .library.fock_operators import (
     Destroy, Create, Phase,
     Displace, Squeeze)
 from .core.scalar_algebra import (

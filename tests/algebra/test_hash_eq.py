@@ -1,8 +1,7 @@
 """Test hash and equality implementation of Expressions"""
 
 from qnet.algebra.core.circuit_algebra import SLH
-from qnet.algebra.library.fock_operators import Destroy
-from qnet.algebra.library.hilbert_spaces import FockSpace
+from qnet.algebra.library.fock_operators import Destroy, FockSpace
 
 
 def test_equal_hash():

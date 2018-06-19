@@ -1013,7 +1013,7 @@ def Sum(idx, *args, **kwargs):
         >>> unicode( Sum(i, (1, 2, 3))(ket_i))
         '∑_{i ∈ {1,2,3}} |i⟩⁽⁰⁾'
     """
-    from qnet.algebra.library.hilbert_spaces import FockSpace
+    from qnet.algebra.library.fock_operators import FockSpace
     dispatch_table = {
         tuple(): _sum_over_fockspace,
         (FockSpace, ): _sum_over_fockspace,

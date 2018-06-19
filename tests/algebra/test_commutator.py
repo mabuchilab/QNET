@@ -4,9 +4,8 @@ from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.operator_algebra import (
     OperatorSymbol, Commutator, ZeroOperator, LocalSigma,
     LocalProjector, IdentityOperator)
-from qnet.algebra.library.spin_operators import Jz, Jplus
-from qnet.algebra.library.fock_operators import Destroy, Create
-from qnet.algebra.library.hilbert_spaces import FockSpace, SpinSpace
+from qnet.algebra.library.spin_algebra import Jz, Jplus, SpinSpace
+from qnet.algebra.library.fock_operators import Destroy, Create, FockSpace
 from qnet.algebra.toolbox.commutator_manipulation import (
     expand_commutators_leibniz, evaluate_commutators)
 
