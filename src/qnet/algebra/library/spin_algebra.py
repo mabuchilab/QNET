@@ -39,10 +39,12 @@ class SpinSpace(LocalSpace):
         >>> hs.basis_labels
         ('-3/2', '-1/2', '+1/2', '+3/2')
 
-    For convenience, you may also give `spin` as a tuple::
+    For convenience, you may also give `spin` as a tuple or a string::
 
         >>> hs = SpinSpace(label=0, spin=(3, 2))
         >>> assert hs == SpinSpace(label=0, spin=sympy.Rational(3, 2))
+        >>> hs = SpinSpace(label=0, spin='3/2')
+        >>> assert hs == SpinSpace(label=0, spin=(3, 2))
 
     Raises:
 
@@ -52,7 +54,7 @@ class SpinSpace(LocalSpace):
     _basis_label_types = (str, SpinIndex)  # acceptable types for labels
 
     def __init__(
-        self, label, *, spin, local_identifiers=None, order_index=None):
+            self, label, *, spin, local_identifiers=None, order_index=None):
         if isinstance(spin, tuple):
             spin = sympy.sympify(spin[0]) / spin[1]
         else:
