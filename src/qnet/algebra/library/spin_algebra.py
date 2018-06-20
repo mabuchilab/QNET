@@ -52,6 +52,15 @@ class SpinSpace(LocalSpace):
         >>> hs.basis_labels
         ('-', '+')
 
+    The labels "up" and "down" are recognized and printed as the appropritate
+    arrow symbols::
+
+        >>> hs = SpinSpace(label='s', spin='1/2', basis=('down', 'up'))
+        >>> unicode(BasisKet('up', hs=hs))
+        '|↑⟩⁽ˢ⁾'
+        >>> unicode(BasisKet('down', hs=hs))
+        '|↓⟩⁽ˢ⁾'
+
     Raises:
 
         ValueError: if `spin` is not an integer or half-integer greater than
@@ -81,7 +90,12 @@ class SpinSpace(LocalSpace):
         if basis is None:
             basis = tuple([
                 SpinIndex(bottom + n).evaluate({}) for n in range(dimension)])
-
+        else:
+            # sometimes people don't think and use some of the "canonical" TLS
+            # labels in the wrong order. We can catch it, so why not?
+            if basis == ('up', 'down') or basis == ('+', '-'):
+                raise ValueError(
+                    "Invalid basis: you've switched %s and %s" % basis)
         super().__init__(
             label=label, basis=basis, dimension=dimension,
             local_identifiers=local_identifiers, order_index=order_index)

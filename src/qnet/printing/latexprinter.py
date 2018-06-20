@@ -66,6 +66,10 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             res = res.replace('j', 'i')
         return res
 
+    @classmethod
+    def _is_single_letter(cls, label):
+        return (len(label) == 1 or label in _TEX_SINGLE_LETTER_SYMBOLS)
+
     def _render_str(self, string):
         """Returned a texified version of the string"""
         string = str(string)
@@ -168,7 +172,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             = self._split_op(identifier, hs_label, dagger, args)
         if name.startswith(r'\text{'):
             name = name[6:-1]
-        if len(name) == 1 or name in _TEX_SINGLE_LETTER_SYMBOLS:
+        if self._is_single_letter(name):
             if superop:
                 name_fmt = self._settings['tex_sop_macro']
             else:
@@ -343,7 +347,8 @@ _TEX_GREEK_DICTIONARY = {
     'lamda': r'\lambda', 'Lamda': r'\Lambda', 'khi': r'\chi',
     'Khi': r'X', 'varepsilon': r'\varepsilon', 'varkappa': r'\varkappa',
     'varphi': r'\varphi', 'varpi': r'\varpi', 'varrho': r'\varrho',
-    'varsigma': r'\varsigma', 'vartheta': r'\vartheta',
+    'varsigma': r'\varsigma', 'vartheta': r'\vartheta', 'up': r'\uparrow',
+    'down': r'\downarrow', 'uparrow': r'\uparrow', 'downarrow': r'\downarrow',
 }
 
 
@@ -353,7 +358,7 @@ _TEX_SINGLE_LETTER_SYMBOLS = [
     r'\delta', r'\epsilon', r'\eta', r'\gamma', r'\iota', r'\kappa',
     r'\lambda', r'\mu', r'\nu', r'\omega', r'\phi', r'\pi', r'\psi', r'\rho',
     r'\sigma', r'\tau', r'\theta', r'\upsilon', r'\varepsilon', r'\varphi',
-    r'\varrho', r'\vartheta', r'\xi', r'\zeta']
+    r'\varrho', r'\vartheta', r'\xi', r'\zeta', r'\uparrow', r'\downarrow']
 
 
 def _translate_symbols(string):

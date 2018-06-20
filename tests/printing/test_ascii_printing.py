@@ -149,6 +149,17 @@ def test_ascii_operator_elements():
     assert ascii(sig_e_g, sig_as_ketbra=False) == 'sigma_e,g^(1)'
     sig_e_e = LocalProjector('e', hs=hs_tls)
     assert ascii(sig_e_e, sig_as_ketbra=False) == 'Pi_e^(1)'
+    assert (
+        ascii(BasisKet(0, hs=1) * BasisKet(0, hs=2) * BasisKet(0, hs=3)) ==
+        '|0,0,0>^(1*2*3)')
+    assert (
+        ascii(BasisKet(0, hs=hs1) * BasisKet(0, hs=hs2)) ==
+        '|00>^(q1*q2)')
+    assert (
+        ascii(
+            BasisKet(0, hs=LocalSpace(0, dimension=20)) *
+            BasisKet(0, hs=LocalSpace(1, dimension=20))) ==
+        '|0,0>^(0*1)')
 
 
 def test_ascii_operator_operations():
@@ -322,17 +333,17 @@ def test_ascii_ket_operations():
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (ascii(bell1) ==
-            '1/sqrt(2) * (|e,g>^(q_1*q_2) - I * |g,e>^(q_1*q_2))')
+            '1/sqrt(2) * (|eg>^(q_1*q_2) - I * |ge>^(q_1*q_2))')
     assert (ascii(bell2) ==
-            '1/sqrt(2) * (|e,e>^(q_1*q_2) - |g,g>^(q_1*q_2))')
+            '1/sqrt(2) * (|ee>^(q_1*q_2) - |gg>^(q_1*q_2))')
     expr = BraKet.create(bell1, bell2)
     expected = (
-        r'1/2 * (<e,g|^(q_1*q_2) + I * <g,e|^(q_1*q_2)) * (|e,e>^(q_1*q_2) '
-        r'- |g,g>^(q_1*q_2))')
+        r'1/2 * (<eg|^(q_1*q_2) + I * <ge|^(q_1*q_2)) * (|ee>^(q_1*q_2) '
+        r'- |gg>^(q_1*q_2))')
     assert ascii(expr) == expected
     assert (ascii(KetBra.create(bell1, bell2)) ==
-            '1/2 * (|e,g>^(q_1*q_2) - I * |g,e>^(q_1*q_2))(<e,e|^(q_1*q_2) '
-            '- <g,g|^(q_1*q_2))')
+            '1/2 * (|eg>^(q_1*q_2) - I * |ge>^(q_1*q_2))(<ee|^(q_1*q_2) '
+            '- <gg|^(q_1*q_2))')
     expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
     assert ascii(expr) == "|Psi><i|^(0)"
     expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))

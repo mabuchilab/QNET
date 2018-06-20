@@ -1,5 +1,6 @@
 """ASCII Printer"""
 from ..utils.singleton import Singleton
+from ..algebra.core.exceptions import BasisNotSetError
 from .base import QnetBasePrinter
 from .sympy import SympyStrPrinter
 from ._precedence import precedence, PRECEDENCE
@@ -100,6 +101,10 @@ class QnetAsciiPrinter(QnetBasePrinter):
                         ",".join([self.doprint(arg) for arg in args]) +
                         self._parenth_right)
         return name, total_subscript, total_superscript, args_str
+
+    @classmethod
+    def _is_single_letter(cls, label):
+        return len(label) == 1
 
     def _render_hs_label(self, hs):
         """Return the label of the given Hilbert space as a string"""
@@ -465,8 +470,18 @@ class QnetAsciiPrinter(QnetBasePrinter):
 
     def _print_TensorKet(self, expr, adjoint=False):
         if all(self._isinstance(o, 'BasisKet') for o in expr.operands):
-            label = ",".join([
-                self._render_state_label(o.label) for o in expr.operands])
+            labels = [self._render_state_label(o.label) for o in expr.operands]
+            single_letters = all([self._is_single_letter(l) for l in labels])
+            try:
+                small_hs = all(
+                    [(o.space.dimension < 10) for o in expr.operands])
+            except BasisNotSetError:
+                small_hs = False
+            if small_hs and single_letters:
+                joiner = ""
+            else:
+                joiner = ","
+            label = joiner.join(labels)
             fmt = self._braket_fmt('ket')
             if adjoint:
                 fmt = self._braket_fmt('bra')

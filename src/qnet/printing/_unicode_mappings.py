@@ -14,7 +14,8 @@ _GREEK_DICTIONARY = {
     'ypsilon': r'υ', 'phi': r'φ', 'chi': 'χ', 'psi': r'Ψ', 'omega': r'ω',
     'khi': r'χ', 'Khi': r'Χ', 'varepsilon': r'ε', 'varkappa': r'κ',
     'varphi': r'φ', 'varpi': r'π', 'varrho': r'ρ', 'varsigma': r'ς',
-    'vartheta': r'θ',
+    'vartheta': r'θ', 'up': r'↑', 'down': r'↓', 'uparrow': r'↑',
+    'downarrow': r'↓',
 }
 
 _SUBSCRIPT_MAPPING = {
