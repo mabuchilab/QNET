@@ -8,8 +8,7 @@ from qnet.algebra.toolbox.core import no_rules
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, LocalSigma, IdentityOperator, OperatorPlus)
 from qnet.algebra.library.spin_algebra import (
-    Jz, Jplus, Jminus, SpinSpace,
-    SpinBasisKet)
+    Jz, Jplus, Jminus, SpinSpace)
 
 from qnet.algebra.library.fock_operators import (
     Destroy, Create, Phase,
@@ -446,16 +445,3 @@ def test_disallow_inner_bra():
     assert isinstance(
         KetIndexedSum.create(Bra(psi_i), IndexOverFockSpace(i, hs=0)),
         Bra)
-
-
-def test_spin_basis_ket():
-    """Test the properties of BasisKet for the example of a spin system"""
-    hs = SpinSpace('s', spin=(3, 2))
-    ket_lowest = SpinBasisKet(-3, 2, hs=hs)
-    assert ket_lowest.index == 0
-    assert ket_lowest.next() == SpinBasisKet(-1, 2, hs=hs)
-    assert ket_lowest.next().prev() == ket_lowest
-    assert ket_lowest.next(n=2).prev(n=2) == ket_lowest
-    assert ket_lowest.prev().is_zero
-    assert SpinBasisKet(3, 2, hs=hs).next().is_zero
-    assert SpinBasisKet(3, 2, hs=hs).index == 3
