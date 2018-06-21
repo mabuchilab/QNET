@@ -23,7 +23,7 @@ from .hilbert_space_algebra import FullSpace, TrivialSpace
 from qnet.algebra.core.algebraic_properties import (
     indexed_sum_over_const,
     indexed_sum_over_kronecker)
-from .operator_algebra import Operator, OperatorPlus, Create, Destroy
+from .operator_algebra import Operator, OperatorPlus
 from .scalar_algebra import ScalarExpression
 from ...utils.indices import (
     FockIndex, IdxSym, IndexOverFockSpace, IndexOverRange, SymbolicLabelBase, )
@@ -170,7 +170,9 @@ class KetSymbol(QuantumSymbol, State):
 
     See :class:`.QuantumSymbol`.
     """
-    _rx_label = re.compile('^[A-Za-z0-9]+(_[A-Za-z0-9().+-]+)?$')
+    _rx_label = re.compile(
+        r'(^[+-]?\d+(/\d+)?$|'
+        r'^[A-Za-z0-9+-]+(_[A-Za-z0-9().+-]+)?$)')
 
 
 class LocalKet(State, metaclass=ABCMeta):
@@ -179,7 +181,7 @@ class LocalKet(State, metaclass=ABCMeta):
     on the same local space"""
 
     def __init__(self, *args, hs):
-        hs = ensure_local_space(hs)
+        hs = ensure_local_space(hs, cls=self._default_hs_cls)
         self._hs = hs
         super().__init__(*args, hs=hs)
 
@@ -278,11 +280,19 @@ class BasisKet(LocalKet, KetSymbol):
     _simplifications = [basis_ket_zero_outside_hs]
 
     def __init__(self, label_or_index, *, hs):
-        hs = ensure_local_space(hs)
+        hs = ensure_local_space(hs, cls=self._default_hs_cls)
         hs._check_basis_label_type(label_or_index)
         if isinstance(label_or_index, str):
             label = label_or_index
-            ind = hs.basis_labels.index(label)  # raises BasisNotSetError
+            try:
+                ind = hs.basis_labels.index(label)
+                # the above line may also raise BasisNotSetError, which we
+                # don't want to catch here
+            except ValueError:
+                # a less confusing error message:
+                raise ValueError(
+                    "%r is not one of the basis labels %r"
+                    % (label, hs.basis_labels))
         elif isinstance(label_or_index, int):
             if hs.has_basis:
                 label = hs.basis_labels[label_or_index]
@@ -390,6 +400,7 @@ class CoherentStateKet(LocalKet):
         return self._ampl
 
     def _diff(self, sym):
+        from qnet.algebra.library.fock_operators import Destroy, Create
         hs = self.space
         return (
             (self._ampl * Create(hs=hs) -

@@ -12,13 +12,13 @@ from qnet.algebra.toolbox.circuit_manipulation import connect
 from qnet.utils.permutations import (
     permute, full_block_perm, block_perm_and_perms_within_blocks)
 from qnet.algebra.core.operator_algebra import (
-    Operator, OperatorSymbol, sympyOne, Destroy, ZeroOperator, LocalSigma,
+    Operator, OperatorSymbol, sympyOne, ZeroOperator, LocalSigma,
     LocalProjector, IdentityOperator)
+from qnet.algebra.library.fock_operators import Destroy
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
 from qnet.algebra.library.circuit_components import (
     CoherentDriveCC, PhaseCC, Beamsplitter)
-
 
 symbol_counter = 0
 

@@ -5,17 +5,12 @@ from numpy import (array as np_array, conjugate as np_conjugate,
                    int_ as np_int, float_ as np_float)
 from sympy import symbols, sqrt, I, exp, sympify, Idx
 
-from qnet.algebra.core.operator_algebra import (
-        Displace, Create, Destroy, OperatorSymbol, IdentityOperator,
-        ZeroOperator, OperatorPlus, LocalSigma, LocalProjector, OperatorTrace,
-        Adjoint, X, Y, Z, ScalarTimesOperator, OperatorTimes, Jz,
-        Jplus, Jminus, Phase, OperatorDerivative)
-from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
-from qnet.algebra.core.hilbert_space_algebra import (
-        LocalSpace, TrivialSpace, ProductSpace)
-from qnet.utils.indices import (
-    FockIndex)
-from qnet.printing import ascii
+from qnet import (
+    OperatorSymbol, IdentityOperator, ZeroOperator, OperatorPlus, LocalSigma,
+    LocalProjector, OperatorTrace, Adjoint, X, Y, Z, ScalarTimesOperator,
+    OperatorTimes, OperatorDerivative, Jz, Jplus, Jminus, Destroy, Create,
+    Phase, Displace, Matrix, identity_matrix, LocalSpace, TrivialSpace,
+    ProductSpace, FockIndex, SpinSpace, ascii)
 
 
 def test_identity_singleton():
@@ -206,7 +201,7 @@ def test_proj_create_destroy_product():
     projectors, as they typically occur during adiabatic eliminiation"""
     a = Destroy(hs="1")
     a_dag = a.dag()
-    P1 = LocalProjector(1, hs="1")
+    P1 = LocalProjector(1, hs=LocalSpace("1"))
 
     rhs = IdentityOperator + OperatorTimes(a_dag, a)
     lhs = a * a_dag
@@ -220,7 +215,7 @@ def test_proj_create_destroy_product():
     lhs = OperatorTimes.create(a_dag, a)
     assert lhs == rhs
 
-    rhs = LocalSigma(1, 0, hs="1")
+    rhs = LocalSigma(1, 0, hs=LocalSpace("1"))
     lhs = P1 * a_dag
     assert lhs == rhs
     lhs = OperatorTimes.create(P1, a_dag)
@@ -492,11 +487,9 @@ class TestLocalOperatorRelations(unittest.TestCase):
         lhs = dc - cd
         assert lhs == ii
 
-
-
     def testSpin(self):
         j = 3
-        h = LocalSpace("h", basis=range(-j, j+1))
+        h = SpinSpace('h', spin=j)
         jz = Jz(hs=h)
         jp = Jplus(hs=h)
         jm = Jminus(hs=h)
@@ -505,9 +498,9 @@ class TestLocalOperatorRelations(unittest.TestCase):
         assert (jz*jm-jm*jz).expand() == -jm
         assert (jz*jp-jp*jz).expand() == jp
 
-        assert jp*LocalProjector('3', hs=h) == ZeroOperator
-        assert (jp*LocalProjector('2', hs=h) ==
-                sqrt(j*(j+1)-2*(2+1)) * LocalSigma.create('3', '2', hs=h))
+        assert jp*LocalProjector('+3', hs=h) == ZeroOperator
+        assert (jp*LocalProjector('+2', hs=h) ==
+                sqrt(j*(j+1)-2*(2+1)) * LocalSigma.create('+3', '+2', hs=h))
 
         assert jm*LocalProjector('-3', hs=h) == ZeroOperator
         assert (jm*LocalProjector('-2', hs=h) ==
@@ -515,15 +508,24 @@ class TestLocalOperatorRelations(unittest.TestCase):
 
         assert jz*LocalProjector('-3', hs=h) == -3*LocalProjector('-3', hs=h)
 
-        assert LocalProjector('3', hs=h)*jm == ZeroOperator
-        assert (LocalProjector('2', hs=h)*jm ==
-                sqrt(j*(j+1)-2*(2+1))*LocalSigma.create('2', '3', hs=h))
+        assert LocalProjector('+3', hs=h)*jm == ZeroOperator
+        assert (LocalProjector('+2', hs=h)*jm ==
+                sqrt(j*(j+1)-2*(2+1))*LocalSigma.create('+2', '+3', hs=h))
 
         assert LocalProjector('-3', hs=h)*jp == ZeroOperator
         assert (LocalProjector('-2', hs=h)*jp ==
                 sqrt(j*(j+1)-2*(2+1))*LocalSigma.create('-2', '-3', hs=h))
 
         assert LocalProjector('-3', hs=h)*jz == -3*LocalProjector('-3', hs=h)
+
+        tls = SpinSpace('tls', spin='1/2', basis=('-', '+'))
+        sz = Jz(hs=tls)
+        sp = Jplus(hs=tls)
+        sm = Jminus(hs=tls)
+
+        assert (sp*sm-sm*sp).expand() == 2*sz
+        assert (sz*sm-sm*sz).expand() == -sm
+        assert (sz*sp-sp*sz).expand() == sp
 
     def testPhase(self):
         assert Phase.create(5, hs=1).adjoint() == Phase.create(-5, hs=1)
@@ -550,8 +552,9 @@ class TestLocalOperatorRelations(unittest.TestCase):
 
     def testLocalSigmaPi(self):
         h = LocalSpace("h")
-        assert (LocalSigma.create(0, 1, hs=h) * LocalSigma.create(1, 2, hs=h) ==
-                LocalSigma.create(0, 2, hs=h))
+        assert (
+            LocalSigma.create(0, 1, hs=h) * LocalSigma.create(1, 2, hs=h) ==
+            LocalSigma.create(0, 2, hs=h))
         assert LocalSigma.create(0, 0, hs=h) == LocalProjector(0, hs=h)
 
     def testAnnihilation(self):
@@ -564,13 +567,18 @@ class TestLocalOperatorRelations(unittest.TestCase):
 class TestOperatorTrace(unittest.TestCase):
 
     def testConstruction(self):
-        M = OperatorSymbol.create("M", hs=1)
+        M = OperatorSymbol.create("M", hs=LocalSpace(1))
         N = OperatorSymbol.create("N", hs=ProductSpace(LocalSpace(1),
                                                        LocalSpace(2)))
-        assert (OperatorTrace.create(M, over_space=1) ==
-                OperatorTrace(M, over_space=1))
-        assert OperatorTrace.create(M, over_space=1).space == TrivialSpace
-        assert OperatorTrace.create(N, over_space=1).space == LocalSpace(2)
+        assert (
+            OperatorTrace.create(M, over_space=LocalSpace(1)) ==
+            OperatorTrace(M, over_space=LocalSpace(1)))
+        assert (
+            OperatorTrace.create(M, over_space=LocalSpace(1)).space ==
+            TrivialSpace)
+        assert (
+            OperatorTrace.create(N, over_space=LocalSpace(1)).space ==
+            LocalSpace(2))
 
     def testSimplificationPlus(self):
         M = OperatorSymbol.create("M", hs=1)
@@ -585,36 +593,37 @@ class TestOperatorTrace(unittest.TestCase):
                  OperatorTrace.create(N*O, over_space=1)))
 
     def testSimplificationTimes(self):
-        M = OperatorSymbol.create("M", hs=1)
-        N = OperatorSymbol.create("N", hs=2)
-        O = OperatorSymbol.create("O", hs=ProductSpace(LocalSpace(1),
-                                                       LocalSpace(2),
-                                                       LocalSpace(3)))
-        assert (OperatorTrace.create(M * N, over_space=1) ==
-                OperatorTrace.create(M, over_space=1) * N)
+        hs1 = LocalSpace(1)
+        hs2 = LocalSpace(2)
+        hs3 = LocalSpace(3)
+        hs_123 = hs1 * hs2 * hs3
+        M = OperatorSymbol.create("M", hs=hs1)
+        N = OperatorSymbol.create("N", hs=hs2)
+        O = OperatorSymbol.create("O", hs=hs_123)
+        assert (OperatorTrace.create(M * N, over_space=hs1) ==
+                OperatorTrace.create(M, over_space=hs1) * N)
         lhs = OperatorTrace.create(
-                     M*N*O, over_space=ProductSpace(LocalSpace(2),
-                                                    LocalSpace(3)))
+                     M*N*O, over_space=ProductSpace(hs2, hs3))
         rhs = M * OperatorTrace.create(
-            N * OperatorTrace.create(O, over_space=3), over_space=2)
+            N * OperatorTrace.create(O, over_space=hs3), over_space=hs2)
         assert lhs == rhs
         assert (OperatorTrace.create(
-                    OperatorTrace.create(N, over_space=2) * M,
-                    over_space=1
+                    OperatorTrace.create(N, over_space=hs2) * M,
+                    over_space=hs1
                 ) == (
-                    OperatorTrace.create(M, over_space=1) *
-                    OperatorTrace.create(N, over_space=2)
+                    OperatorTrace.create(M, over_space=hs1) *
+                    OperatorTrace.create(N, over_space=hs2)
                 ))
         assert (OperatorTrace.create(
                     M * N,
-                    over_space=ProductSpace(LocalSpace(1),LocalSpace(2))
+                    over_space=ProductSpace(hs1, hs2)
                 ) == (
-                    (OperatorTrace.create(M, over_space=1) *
-                     OperatorTrace.create(N, over_space=2))
+                    (OperatorTrace.create(M, over_space=hs1) *
+                     OperatorTrace.create(N, over_space=hs2))
                 ))
 
     def testSimplificationScalarTimesOperator(self):
-        M = OperatorSymbol.create("M", hs=1)
+        M = OperatorSymbol.create("M", hs=LocalSpace(1))
         assert (OperatorTrace.create(10 * M, over_space=1) ==
                 10 * OperatorTrace.create(M, over_space=1))
 

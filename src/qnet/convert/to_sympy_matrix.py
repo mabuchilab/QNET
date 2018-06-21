@@ -3,13 +3,14 @@ this facilitates some analytic treatments, such as decomposition into a basis.
 """
 import sympy
 from sympy.physics.quantum import TensorProduct as tensor
-from qnet.algebra.core.abstract_algebra import Operation
-from qnet.algebra.core.operator_algebra import (
-    IdentityOperator, ZeroOperator, LocalOperator, Create, Destroy, Jz, Jplus,
-    Jminus, Phase, Displace, Squeeze, LocalSigma, Operator,
+from ..algebra.core.abstract_algebra import Operation
+from ..algebra.core.operator_algebra import (
+    IdentityOperator, ZeroOperator, LocalOperator, LocalSigma, Operator,
     OperatorPlus, OperatorTimes, ScalarTimesOperator,
     Adjoint, PseudoInverse, NullSpaceProjector)
-
+from ..algebra.library.spin_algebra import Jz, Jplus, Jminus
+from ..algebra.library.fock_operators import (
+    Destroy, Create, Phase, Displace, Squeeze)
 
 __all__ = ['convert_to_sympy_matrix']
 __private__ = ['SympyCreate', 'basis_state']

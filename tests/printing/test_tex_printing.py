@@ -15,7 +15,8 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, latex,
-    configure_printing, QuantumDerivative, Scalar, ScalarExpression)
+    configure_printing, QuantumDerivative, Scalar, ScalarExpression,
+    SpinSpace, SpinBasisKet)
 from qnet.printing.latexprinter import QnetLatexPrinter
 
 
@@ -169,9 +170,10 @@ def test_tex_operator_elements():
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
     alpha, beta = symbols('alpha, beta')
-    hs_custom = LocalSpace(1, local_identifiers={
-        'Create': 'b', 'Destroy': 'b', 'Jz': 'Z', 'Jplus': 'Jp',
-        'Jminus': 'Jm', 'Phase': 'Phi'})
+    fock1 = LocalSpace(
+       1, local_identifiers={'Create': 'b', 'Destroy': 'b', 'Phase': 'Phi'})
+    spin1 = SpinSpace(
+       1, spin=1, local_identifiers={'Jz': 'Z', 'Jplus': 'Jp', 'Jminus': 'Jm'})
     assert latex(OperatorSymbol("A", hs=hs1)) == r'\hat{A}^{(q_{1})}'
     assert (latex(OperatorSymbol("A_1", hs=hs1*hs2)) ==
             r'\hat{A}_{1}^{(q_{1} \otimes q_{2})}')
@@ -185,20 +187,20 @@ def test_tex_operator_elements():
     assert latex(IdentityOperator, tex_identity_sym='I') == 'I'
     assert latex(ZeroOperator) == r'\mathbb{0}'
     assert latex(Create(hs=1)) == r'\hat{a}^{(1)\dagger}'
-    assert latex(Create(hs=hs_custom)) == r'\hat{b}^{(1)\dagger}'
+    assert latex(Create(hs=fock1)) == r'\hat{b}^{(1)\dagger}'
     assert latex(Destroy(hs=1)) == r'\hat{a}^{(1)}'
-    assert latex(Destroy(hs=hs_custom)) == r'\hat{b}^{(1)}'
-    assert latex(Jz(hs=1)) == r'\hat{J}_{z}^{(1)}'
-    assert latex(Jz(hs=hs_custom)) == r'\hat{Z}^{(1)}'
-    assert latex(Jplus(hs=1)) == r'\hat{J}_{+}^{(1)}'
-    assert latex(Jplus(hs=hs_custom)) == r'\text{Jp}^{(1)}'
-    assert latex(Jminus(hs=1)) == r'\hat{J}_{-}^{(1)}'
-    assert latex(Jminus(hs=hs_custom)) == r'\text{Jm}^{(1)}'
+    assert latex(Destroy(hs=fock1)) == r'\hat{b}^{(1)}'
+    assert latex(Jz(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{z}^{(1)}'
+    assert latex(Jz(hs=spin1)) == r'\hat{Z}^{(1)}'
+    assert latex(Jplus(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{+}^{(1)}'
+    assert latex(Jplus(hs=spin1)) == r'\text{Jp}^{(1)}'
+    assert latex(Jminus(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{-}^{(1)}'
+    assert latex(Jminus(hs=spin1)) == r'\text{Jm}^{(1)}'
     assert (latex(Phase(Rational(1, 2), hs=1)) ==
             r'\text{Phase}^{(1)}\left(\frac{1}{2}\right)')
     assert (latex(Phase(0.5, hs=1)) ==
             r'\text{Phase}^{(1)}\left(0.5\right)')
-    assert (latex(Phase(0.5, hs=hs_custom)) ==
+    assert (latex(Phase(0.5, hs=fock1)) ==
             r'\hat{\Phi}^{(1)}\left(0.5\right)')
     assert (latex(Displace(0.5, hs=1)) ==
             r'\hat{D}^{(1)}\left(0.5\right)')
@@ -320,6 +322,19 @@ def test_tex_ket_elements():
             r'\left\lvert \text{excited} \right\rangle^{(1)}')
     assert (latex(BasisKet(1, hs=1)) ==
             r'\left\lvert 1 \right\rangle^{(1)}')
+    spin = SpinSpace('s', spin=(3, 2))
+    assert (
+        latex(SpinBasisKet(-3, 2, hs=spin)) ==
+        r'\left\lvert -3/2 \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(1, 2, hs=spin)) ==
+        r'\left\lvert +1/2 \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(-3, 2, hs=spin), tex_frac_for_spin_labels=True) ==
+        r'\left\lvert -\frac{3}{2} \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(1, 2, hs=spin), tex_frac_for_spin_labels=True) ==
+        r'\left\lvert +\frac{1}{2} \right\rangle^{(s)}')
     assert (latex(CoherentStateKet(2.0, hs=1)) ==
             r'\left\lvert \alpha=2 \right\rangle^{(1)}')
 
@@ -464,7 +479,7 @@ def test_tex_ket_operations():
         r'\Psi_{2}\left(\beta\right) \right\rangle^{(q_{1})}')
     assert (
         latex(ket_e1 * ket_e2) ==
-        r'\left\lvert e,e \right\rangle^{(q_{1} \otimes q_{2})}')
+        r'\left\lvert ee \right\rangle^{(q_{1} \otimes q_{2})}')
     assert latex(ket_e1.dag() * ket_e1) == r'1'
     assert latex(ket_g1.dag() * ket_e1) == r'0'
     ketbra = KetBra(psi1, psi2)
@@ -490,32 +505,32 @@ def test_tex_ket_operations():
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (
         latex(bell1) ==
-        r'\frac{1}{\sqrt{2}} \left(\left\lvert e,g \right\rangle^{(q_{1} '
-        r'\otimes q_{2})} - i \left\lvert g,e \right\rangle'
+        r'\frac{1}{\sqrt{2}} \left(\left\lvert eg \right\rangle^{(q_{1} '
+        r'\otimes q_{2})} - i \left\lvert ge \right\rangle'
         r'^{(q_{1} \otimes q_{2})}\right)')
     assert (
         latex(bell2) ==
-        r'\frac{1}{\sqrt{2}} \left(\left\lvert e,e \right\rangle^{(q_{1} '
-        r'\otimes q_{2})} - \left\lvert g,g \right\rangle'
+        r'\frac{1}{\sqrt{2}} \left(\left\lvert ee \right\rangle^{(q_{1} '
+        r'\otimes q_{2})} - \left\lvert gg \right\rangle'
         r'^{(q_{1} \otimes q_{2})}\right)')
     assert (
         latex(bell2, show_hs_label=False) ==
-        r'\frac{1}{\sqrt{2}} \left(\left\lvert e,e \right\rangle - '
-        r'\left\lvert g,g \right\rangle\right)')
+        r'\frac{1}{\sqrt{2}} \left(\left\lvert ee \right\rangle - '
+        r'\left\lvert gg \right\rangle\right)')
     assert BraKet.create(bell1, bell2).expand() == 0
     assert (
         latex(BraKet.create(bell1, bell2)) ==
-        r'\frac{1}{2} \left(\left\langle e,g \right\rvert'
-        r'^{(q_{1} \otimes q_{2})} + i \left\langle g,e \right\rvert'
+        r'\frac{1}{2} \left(\left\langle eg \right\rvert'
+        r'^{(q_{1} \otimes q_{2})} + i \left\langle ge \right\rvert'
         r'^{(q_{1} \otimes q_{2})}\right) '
-        r'\left(\left\lvert e,e \right\rangle^{(q_{1} \otimes q_{2})} '
-        r'- \left\lvert g,g \right\rangle^{(q_{1} \otimes q_{2})}\right)')
+        r'\left(\left\lvert ee \right\rangle^{(q_{1} \otimes q_{2})} '
+        r'- \left\lvert gg \right\rangle^{(q_{1} \otimes q_{2})}\right)')
     assert (
         latex(KetBra.create(bell1, bell2)) ==
-        r'\frac{1}{2} \left(\left\lvert e,g \right\rangle'
-        r'^{(q_{1} \otimes q_{2})} - i \left\lvert g,e \right\rangle'
-        r'^{(q_{1} \otimes q_{2})}\right)\left(\left\langle e,e \right\rvert'
-        r'^{(q_{1} \otimes q_{2})} - \left\langle g,g \right\rvert'
+        r'\frac{1}{2} \left(\left\lvert eg \right\rangle'
+        r'^{(q_{1} \otimes q_{2})} - i \left\lvert ge \right\rangle'
+        r'^{(q_{1} \otimes q_{2})}\right)\left(\left\langle ee \right\rvert'
+        r'^{(q_{1} \otimes q_{2})} - \left\langle gg \right\rvert'
         r'^{(q_{1} \otimes q_{2})}\right)')
     with configure_printing(tex_use_braket=True):
         expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
@@ -633,6 +648,42 @@ def test_tex_sop_operations():
     assert (latex(SuperOperatorTimesOperator((L + 2*M), A_op)) ==
             r'\left(\mathrm{L}^{(1)} + 2 \mathrm{M}^{(1)}\right)'
             r'\left[\hat{A}^{(1)}\right]')
+
+
+def test_tex_spin_arrows():
+    """Test the representation of spin-1/2 spaces with special labels "down",
+    "up" as arrows"""
+    tls1 = SpinSpace('1', spin='1/2', basis=("down", "up"))
+    tls2 = SpinSpace('2', spin='1/2', basis=("down", "up"))
+    tls3 = SpinSpace('3', spin='1/2', basis=("down", "up"))
+    down1 = BasisKet('down', hs=tls1)
+    up1 = BasisKet('up', hs=tls1)
+    down2 = BasisKet('down', hs=tls2)
+    up3 = BasisKet('up', hs=tls3)
+    assert latex(down1) == r'\left\lvert \downarrow \right\rangle^{(1)}'
+    assert latex(up1) == r'\left\lvert \uparrow \right\rangle^{(1)}'
+    ket = down1 * down2 * up3
+    assert (
+        latex(ket) ==
+        r'\left\lvert \downarrow\downarrow\uparrow \right\rangle'
+        r'^{(1 \otimes 2 \otimes 3)}')
+    sig = LocalSigma("up", "down", hs=tls1)
+    assert (
+        latex(sig) ==
+        r'\left\lvert \uparrow \middle\rangle\!'
+        r'\middle\langle \downarrow \right\rvert^{(1)}')
+
+
+@pytest.mark.xfail
+def test_tex_spin_arrows_multi_sigma():
+    # when fixed, combine with test_tex_spin_arrows
+    tls1 = SpinSpace('1', spin='1/2', basis=("down", "up"))
+    tls2 = SpinSpace('2', spin='1/2', basis=("down", "up"))
+    tls3 = SpinSpace('3', spin='1/2', basis=("down", "up"))
+    sig1 = LocalSigma("up", "down", hs=tls1)
+    sig2 = LocalSigma("up", "up", hs=tls2)
+    sig3 = LocalSigma("down", "down", hs=tls3)
+    assert latex(sig1 * sig2 * sig3) == r''
 
 
 def test_repr_latex():

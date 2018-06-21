@@ -16,7 +16,7 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, unicode,
-    QuantumDerivative, Scalar, ScalarExpression)
+    QuantumDerivative, Scalar, ScalarExpression, SpinSpace)
 
 
 def test_unicode_scalar():
@@ -160,6 +160,12 @@ def test_unicode_operator_elements():
     assert (
         unicode(sig_e_e, sig_as_ketbra=False) ==
         '\u03a0\u0302\u2091\u207d\xb9\u207e')  # Π̂ₑ⁽¹⁾
+    assert (
+        unicode(BasisKet(0, hs=1) * BasisKet(0, hs=2) * BasisKet(0, hs=3)) ==
+        '|0,0,0⟩^(1⊗2⊗3)')
+    assert (
+        unicode(BasisKet(0, hs=hs1) * BasisKet(0, hs=hs2)) ==
+        '|00⟩^(q₁⊗q₂)')
 
 
 def test_unicode_operator_operations():
@@ -310,15 +316,15 @@ def test_unicode_ket_operations():
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (unicode(bell1) ==
-            '1/√2 (|e,g⟩^(q₁⊗q₂) - ⅈ |g,e⟩^(q₁⊗q₂))')
+            '1/√2 (|eg⟩^(q₁⊗q₂) - ⅈ |ge⟩^(q₁⊗q₂))')
     assert (unicode(BraKet.create(bell1, bell2)) ==
-            r'1/2 (⟨e,g|^(q₁⊗q₂) + ⅈ ⟨g,e|^(q₁⊗q₂)) (|e,e⟩^(q₁⊗q₂) - '
-            r'|g,g⟩^(q₁⊗q₂))')
+            r'1/2 (⟨eg|^(q₁⊗q₂) + ⅈ ⟨ge|^(q₁⊗q₂)) (|ee⟩^(q₁⊗q₂) - '
+            r'|gg⟩^(q₁⊗q₂))')
     assert (unicode(KetBra.create(bell1, bell2)) ==
-            r'1/2 (|e,g⟩^(q₁⊗q₂) - ⅈ |g,e⟩^(q₁⊗q₂))(⟨e,e|^(q₁⊗q₂) - '
-            r'⟨g,g|^(q₁⊗q₂))')
+            r'1/2 (|eg⟩^(q₁⊗q₂) - ⅈ |ge⟩^(q₁⊗q₂))(⟨ee|^(q₁⊗q₂) - '
+            r'⟨gg|^(q₁⊗q₂))')
     assert (unicode(KetBra.create(bell1, bell2), show_hs_label=False) ==
-            r'1/2 (|e,g⟩ - ⅈ |g,e⟩)(⟨e,e| - ⟨g,g|)')
+            r'1/2 (|eg⟩ - ⅈ |ge⟩)(⟨ee| - ⟨gg|)')
     expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
     assert unicode(expr) == "|Ψ⟩⟨i|⁽⁰⁾"
     expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
@@ -393,6 +399,24 @@ def test_unicode_sop_operations():
             '(L\u207d\xb9\u207e + 2 M\u207d\xb9\u207e)'
             '[A\u0302\u207d\xb9\u207e]')
     #       (L⁽¹⁾ + 2 M⁽¹⁾)[Â⁽¹⁾]
+
+
+def test_unicode_spin_arrows():
+    """Test the representation of spin-1/2 spaces with special labels "down",
+    "up" as arrows"""
+    tls1 = SpinSpace('1', spin='1/2', basis=("down", "up"))
+    tls2 = SpinSpace('2', spin='1/2', basis=("down", "up"))
+    tls3 = SpinSpace('3', spin='1/2', basis=("down", "up"))
+    down1 = BasisKet('down', hs=tls1)
+    up1 = BasisKet('up', hs=tls1)
+    down2 = BasisKet('down', hs=tls2)
+    up3 = BasisKet('up', hs=tls3)
+    assert unicode(down1) == r'|↓⟩⁽¹⁾'
+    assert unicode(up1) == r'|↑⟩⁽¹⁾'
+    ket = down1 * down2 * up3
+    assert unicode(ket) == r'|↓↓↑⟩^(1⊗2⊗3)'
+    sig = LocalSigma("up", "down", hs=tls1)
+    assert unicode(sig) == r'|↑⟩⟨↓|⁽¹⁾'
 
 
 @pytest.fixture

@@ -15,7 +15,8 @@ from qnet.utils.indices import IndexOverRange, IdxSym
 from qnet.utils.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
 from qnet.algebra.core.operator_algebra import (
-    LocalProjector, OperatorTimes, Displace)
+    LocalProjector, OperatorTimes)
+from qnet.algebra.library.fock_operators import Displace
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
 

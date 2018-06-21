@@ -1,16 +1,10 @@
-from qnet.printing import ascii, unicode, latex, srepr, configure_printing
-from qnet.algebra.core.exceptions import InfiniteSumError
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace, TrivialSpace
-from qnet.algebra.core.scalar_algebra import ScalarIndexedSum
-from qnet.algebra.core.operator_algebra import (
-    Create, IdentityOperator, OperatorIndexedSum)
-from qnet.algebra.core.state_algebra import (
-    KetPlus, ScalarTimesKet, KetIndexedSum, BasisKet, CoherentStateKet,
-    KetSymbol, Bra, TensorKet, BraKet, KetBra)
-from qnet.utils.indices import (
-    IdxSym, StrLabel, FockIndex, IndexOverFockSpace, IndexOverList,
-    IndexOverRange)
-from qnet.algebra.toolbox.indexed_sums import expand_indexed_sum
+from qnet import (
+    ascii, unicode, latex, srepr, configure_printing,
+    InfiniteSumError, LocalSpace, TrivialSpace, ScalarIndexedSum,
+    OperatorIndexedSum, Create, KetPlus, ScalarTimesKet,
+    KetIndexedSum, BasisKet, CoherentStateKet, KetSymbol, Bra, TensorKet,
+    BraKet, KetBra, IdxSym, StrLabel, FockIndex, IndexOverFockSpace,
+    IndexOverList, IndexOverRange, expand_indexed_sum)
 import sympy
 from sympy import symbols, IndexedBase, Indexed
 

@@ -1,9 +1,12 @@
 import pytest
 
+from sympy import Rational
+
 from qnet.algebra.core.hilbert_space_algebra import (
-        LocalSpace, ProductSpace, TrivialSpace, FullSpace)
+    LocalSpace, ProductSpace, TrivialSpace, FullSpace)
 from qnet.algebra.core.exceptions import BasisNotSetError
-from qnet.algebra.core.operator_algebra import Destroy
+from qnet.algebra.library.fock_operators import Destroy
+from qnet.algebra.library.spin_algebra import SpinSpace, SpinBasisKet
 from qnet.algebra.core.state_algebra import (
     KetSymbol, BasisKet, TrivialKet)
 
@@ -162,6 +165,7 @@ def test_hs_basis_states():
     hs2 = LocalSpace('2', dimension=2)
     hs3 = LocalSpace('3', dimension=2)
     hs4 = LocalSpace('4', dimension=2)
+    spin = SpinSpace('s', spin=Rational(3/2))
 
     assert isinstance(hs0.basis_state(0), BasisKet)
     assert isinstance(hs0.basis_state(1), BasisKet)
@@ -179,9 +183,9 @@ def test_hs_basis_states():
     assert g_1 == hs1.basis_state(0)
     assert e_1 == hs1.basis_state(1)
     with pytest.raises(IndexError):
-        _ = hs1.basis_state(2)
+        hs1.basis_state(2)
     with pytest.raises(KeyError):
-        _ = hs1.basis_state('r')
+        hs1.basis_state('r')
 
     zero_2, one_2 = hs2.basis_states
     assert zero_2 == BasisKet(0, hs=hs2)
@@ -198,9 +202,9 @@ def test_hs_basis_states():
     assert e1 == hs_prod.basis_state('e,1')
     assert hs_prod.basis_labels == ('g,0', 'g,1', 'e,0', 'e,1')
     with pytest.raises(IndexError):
-        _ = hs_prod.basis_state(4)
+        hs_prod.basis_state(4)
     with pytest.raises(KeyError):
-        _ = hs_prod.basis_state('g0')
+        hs_prod.basis_state('g0')
 
     hs_prod4 = hs1 * hs2 * hs3 * hs4
     basis = hs_prod4.basis_states
@@ -215,7 +219,16 @@ def test_hs_basis_states():
     assert list(TrivialSpace.basis_states) == [TrivialKet, ]
     assert TrivialSpace.basis_state(0) == TrivialKet
 
+    basis = spin.basis_states
+    ket = next(basis)
+    assert ket == BasisKet('-3/2', hs=spin)
+    with pytest.raises(TypeError):
+        ket == BasisKet(0, hs=spin)
+    assert next(basis) == SpinBasisKet(-1, 2, hs=spin)
+    assert next(basis) == SpinBasisKet(+1, 2, hs=spin)
+    assert next(basis) == SpinBasisKet(+3, 2, hs=spin)
+
     with pytest.raises(BasisNotSetError):
-        _ = FullSpace.dimension
+        FullSpace.dimension
     with pytest.raises(BasisNotSetError):
-        _ = FullSpace.basis_states
+        FullSpace.basis_states

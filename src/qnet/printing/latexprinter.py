@@ -17,11 +17,14 @@ __private__ = ['QnetLatexPrinter', 'render_latex_sub_super']
 
 
 class QnetLatexPrinter(QnetAsciiPrinter):
-    """Printer for a LaTeX representation."""
+    """Printer for a LaTeX representation.
+
+    See :func:`qnet.printing.latex` for documentation of `settings`.
+    """
     sympy_printer_cls = SympyLatexPrinter
     printmethod = '_latex'
 
-    _default_settings = {
+    _default_settings = {  # documented in :func:`latex`
         'show_hs_label': True,  # alternatively: False, 'subscript'
         'sig_as_ketbra': True,
         'tex_op_macro': r'\hat{{{name}}}',
@@ -30,6 +33,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
         'tex_textsop_macro': r'\mathrm{{{name}}}',
         'tex_identity_sym': r'\mathbb{1}',
         'tex_use_braket': False,  # use the braket package?
+        'tex_frac_for_spin_labels': False,
     }
 
     _parenth_left = r'\left('
@@ -61,6 +65,10 @@ class QnetLatexPrinter(QnetAsciiPrinter):
         if isinstance(expr, (complex, complex128)):
             res = res.replace('j', 'i')
         return res
+
+    @classmethod
+    def _is_single_letter(cls, label):
+        return (len(label) == 1 or label in _TEX_SINGLE_LETTER_SYMBOLS)
 
     def _render_str(self, string):
         """Returned a texified version of the string"""
@@ -164,7 +172,7 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             = self._split_op(identifier, hs_label, dagger, args)
         if name.startswith(r'\text{'):
             name = name[6:-1]
-        if len(name) == 1 or name in _TEX_SINGLE_LETTER_SYMBOLS:
+        if self._is_single_letter(name):
             if superop:
                 name_fmt = self._settings['tex_sop_macro']
             else:
@@ -180,6 +188,20 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             translate_symbols=True)
         res += args_str
         return res
+
+    def _render_state_label(self, label):
+        if self._isinstance(label, 'SymbolicLabelBase'):
+            return self._print_SCALAR_TYPES(label.expr)
+        else:
+            label = self._render_str(label)
+            if "/" in label and self._settings['tex_frac_for_spin_labels']:
+                numer, denom = label.split("/", 1)
+                sign = '+'
+                if numer.startswith('-') or numer.startswith('+'):
+                    sign, numer = numer[0], numer[1:]
+                return r'%s\frac{%s}{%s}' % (sign, numer, denom)
+            else:
+                return label
 
     def _print_Commutator(self, expr):
         return (
@@ -325,7 +347,8 @@ _TEX_GREEK_DICTIONARY = {
     'lamda': r'\lambda', 'Lamda': r'\Lambda', 'khi': r'\chi',
     'Khi': r'X', 'varepsilon': r'\varepsilon', 'varkappa': r'\varkappa',
     'varphi': r'\varphi', 'varpi': r'\varpi', 'varrho': r'\varrho',
-    'varsigma': r'\varsigma', 'vartheta': r'\vartheta',
+    'varsigma': r'\varsigma', 'vartheta': r'\vartheta', 'up': r'\uparrow',
+    'down': r'\downarrow', 'uparrow': r'\uparrow', 'downarrow': r'\downarrow',
 }
 
 
@@ -335,7 +358,7 @@ _TEX_SINGLE_LETTER_SYMBOLS = [
     r'\delta', r'\epsilon', r'\eta', r'\gamma', r'\iota', r'\kappa',
     r'\lambda', r'\mu', r'\nu', r'\omega', r'\phi', r'\pi', r'\psi', r'\rho',
     r'\sigma', r'\tau', r'\theta', r'\upsilon', r'\varepsilon', r'\varphi',
-    r'\varrho', r'\vartheta', r'\xi', r'\zeta']
+    r'\varrho', r'\vartheta', r'\xi', r'\zeta', r'\uparrow', r'\downarrow']
 
 
 def _translate_symbols(string):

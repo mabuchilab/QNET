@@ -15,7 +15,8 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, ascii,
-    ScalarValue, ScalarExpression, QuantumDerivative, Scalar)
+    ScalarValue, ScalarExpression, QuantumDerivative, Scalar,
+    SpinSpace)
 
 
 def test_ascii_scalar():
@@ -128,18 +129,18 @@ def test_ascii_operator_elements():
     assert ascii(Create(hs=1), show_hs_label=False) == "a^H"
     assert ascii(Create(hs=1), show_hs_label='subscript') == "a_(1)^H"
     assert ascii(Destroy(hs=1)) == "a^(1)"
-    hs1_custom = LocalSpace(
-       1, local_identifiers={
-           'Create': 'b', 'Destroy': 'b', 'Jz': 'Z', 'Jplus': 'Jp',
-           'Jminus': 'Jm', 'Phase': 'Ph'})
-    assert ascii(Create(hs=hs1_custom)) == "b^(1)H"
-    assert ascii(Destroy(hs=hs1_custom)) == "b^(1)"
-    assert ascii(Jz(hs=1)) == "J_z^(1)"
-    assert ascii(Jz(hs=hs1_custom)) == "Z^(1)"
-    assert ascii(Jplus(hs=hs1_custom)) == "Jp^(1)"
-    assert ascii(Jminus(hs=hs1_custom)) == "Jm^(1)"
+    fock1 = LocalSpace(
+       1, local_identifiers={'Create': 'b', 'Destroy': 'b', 'Phase': 'Ph'})
+    spin1 = SpinSpace(
+       1, spin=1, local_identifiers={'Jz': 'Z', 'Jplus': 'Jp', 'Jminus': 'Jm'})
+    assert ascii(Create(hs=fock1)) == "b^(1)H"
+    assert ascii(Destroy(hs=fock1)) == "b^(1)"
+    assert ascii(Jz(hs=SpinSpace(1, spin=1))) == "J_z^(1)"
+    assert ascii(Jz(hs=spin1)) == "Z^(1)"
+    assert ascii(Jplus(hs=spin1)) == "Jp^(1)"
+    assert ascii(Jminus(hs=spin1)) == "Jm^(1)"
     assert ascii(Phase(0.5, hs=1)) == 'Phase^(1)(0.5)'
-    assert ascii(Phase(0.5, hs=hs1_custom)) == 'Ph^(1)(0.5)'
+    assert ascii(Phase(0.5, hs=fock1)) == 'Ph^(1)(0.5)'
     assert ascii(Displace(0.5, hs=1)) == 'D^(1)(0.5)'
     assert ascii(Squeeze(0.5, hs=1)) == 'Squeeze^(1)(0.5)'
     hs_tls = LocalSpace('1', basis=('g', 'e'))
@@ -148,6 +149,17 @@ def test_ascii_operator_elements():
     assert ascii(sig_e_g, sig_as_ketbra=False) == 'sigma_e,g^(1)'
     sig_e_e = LocalProjector('e', hs=hs_tls)
     assert ascii(sig_e_e, sig_as_ketbra=False) == 'Pi_e^(1)'
+    assert (
+        ascii(BasisKet(0, hs=1) * BasisKet(0, hs=2) * BasisKet(0, hs=3)) ==
+        '|0,0,0>^(1*2*3)')
+    assert (
+        ascii(BasisKet(0, hs=hs1) * BasisKet(0, hs=hs2)) ==
+        '|00>^(q1*q2)')
+    assert (
+        ascii(
+            BasisKet(0, hs=LocalSpace(0, dimension=20)) *
+            BasisKet(0, hs=LocalSpace(1, dimension=20))) ==
+        '|0,0>^(0*1)')
 
 
 def test_ascii_operator_operations():
@@ -321,17 +333,17 @@ def test_ascii_ket_operations():
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (ascii(bell1) ==
-            '1/sqrt(2) * (|e,g>^(q_1*q_2) - I * |g,e>^(q_1*q_2))')
+            '1/sqrt(2) * (|eg>^(q_1*q_2) - I * |ge>^(q_1*q_2))')
     assert (ascii(bell2) ==
-            '1/sqrt(2) * (|e,e>^(q_1*q_2) - |g,g>^(q_1*q_2))')
+            '1/sqrt(2) * (|ee>^(q_1*q_2) - |gg>^(q_1*q_2))')
     expr = BraKet.create(bell1, bell2)
     expected = (
-        r'1/2 * (<e,g|^(q_1*q_2) + I * <g,e|^(q_1*q_2)) * (|e,e>^(q_1*q_2) '
-        r'- |g,g>^(q_1*q_2))')
+        r'1/2 * (<eg|^(q_1*q_2) + I * <ge|^(q_1*q_2)) * (|ee>^(q_1*q_2) '
+        r'- |gg>^(q_1*q_2))')
     assert ascii(expr) == expected
     assert (ascii(KetBra.create(bell1, bell2)) ==
-            '1/2 * (|e,g>^(q_1*q_2) - I * |g,e>^(q_1*q_2))(<e,e|^(q_1*q_2) '
-            '- <g,g|^(q_1*q_2))')
+            '1/2 * (|eg>^(q_1*q_2) - I * |ge>^(q_1*q_2))(<ee|^(q_1*q_2) '
+            '- <gg|^(q_1*q_2))')
     expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
     assert ascii(expr) == "|Psi><i|^(0)"
     expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))

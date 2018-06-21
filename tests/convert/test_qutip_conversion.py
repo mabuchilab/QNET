@@ -6,13 +6,14 @@ import qutip
 import pytest
 
 from qnet.algebra.core.operator_algebra import (
-    Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol,
+    LocalSigma, LocalProjector, OperatorSymbol,
     ScalarTimesOperator, ZeroOperator)
+from qnet.algebra.library.fock_operators import Destroy, Create
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.circuit_algebra import SLH
 from qnet.algebra.core.matrix_algebra import identity_matrix, Matrix
 from qnet.convert.to_qutip import (
     _time_dependent_to_qutip, convert_to_qutip, SLH_to_qutip)
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
 _hs_counter = 0
 
@@ -209,7 +210,6 @@ def test_trivial_space_conversion():
     """
     from qnet.convert.to_qutip import convert_to_qutip, SLH_to_qutip
     from qnet.algebra.core.operator_algebra import ZeroOperator
-    from qnet.algebra.core.hilbert_space_algebra import LocalSpace
     from qnet.algebra.library.circuit_components import Beamsplitter
     from qnet.algebra.core.exceptions import AlgebraError
 

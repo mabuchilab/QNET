@@ -2,11 +2,12 @@ from sympy import symbols
 import pytest
 
 from qnet.algebra.core.abstract_algebra import substitute
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.exceptions import BasisNotSetError
 from qnet.algebra.core.matrix_algebra import Matrix
 from qnet.algebra.core.operator_algebra import (
-    IdentityOperator, Destroy, II, OperatorSymbol)
+    IdentityOperator, II, OperatorSymbol)
+from qnet.algebra.library.fock_operators import Destroy
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
 
 @pytest.fixture

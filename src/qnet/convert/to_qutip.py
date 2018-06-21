@@ -7,23 +7,25 @@ from sympy.utilities.lambdify import lambdify
 from scipy.sparse import csr_matrix
 from numpy import (
     diag as np_diag, arange, cos as np_cos, sin as np_sin)
-from qnet.algebra.core.scalar_algebra import ScalarValue, is_scalar
-from qnet.algebra.core.exceptions import AlgebraError
-from qnet.algebra.core.circuit_algebra import SLH, move_drive_to_H
-from qnet.algebra.core.abstract_algebra import Operation
-from qnet.algebra.core.operator_algebra import (
-        Operator, IdentityOperator, ZeroOperator, LocalOperator, Create,
-        Destroy, Jz, Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma,
-        OperatorPlus, OperatorTimes, ScalarTimesOperator,
-        Adjoint, PseudoInverse, OperatorTrace, NullSpaceProjector)
-from qnet.algebra.core.state_algebra import (
-        State, BraKet, KetBra, BasisKet, CoherentStateKet, KetPlus, TensorKet,
-        ScalarTimesKet, OperatorTimesKet)
-from qnet.algebra.core.hilbert_space_algebra import TrivialSpace
-from qnet.algebra.core.super_operator_algebra import (
-        SuperOperator, IdentitySuperOperator, SuperOperatorPlus,
-        SuperOperatorTimes, ScalarTimesSuperOperator, SPre, SPost,
-        SuperOperatorTimesOperator, ZeroSuperOperator)
+from ..algebra.core.scalar_algebra import ScalarValue, is_scalar
+from ..algebra.core.exceptions import AlgebraError
+from ..algebra.core.circuit_algebra import SLH, move_drive_to_H
+from ..algebra.core.abstract_algebra import Operation
+from ..algebra.core.operator_algebra import (
+    Operator, IdentityOperator, ZeroOperator, LocalOperator, LocalSigma,
+    OperatorPlus, OperatorTimes, ScalarTimesOperator,
+    Adjoint, PseudoInverse, OperatorTrace, NullSpaceProjector)
+from ..algebra.library.spin_algebra import Jz, Jplus, Jminus
+from ..algebra.library.fock_operators import (
+    Destroy, Create, Phase, Displace, Squeeze)
+from ..algebra.core.state_algebra import (
+    State, BraKet, KetBra, BasisKet, CoherentStateKet, KetPlus, TensorKet,
+    ScalarTimesKet, OperatorTimesKet)
+from ..algebra.core.hilbert_space_algebra import TrivialSpace
+from ..algebra.core.super_operator_algebra import (
+    SuperOperator, IdentitySuperOperator, SuperOperatorPlus,
+    SuperOperatorTimes, ScalarTimesSuperOperator, SPre, SPost,
+    SuperOperatorTimesOperator, ZeroSuperOperator)
 
 try:
     import qutip

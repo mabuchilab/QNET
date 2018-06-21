@@ -48,6 +48,8 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
     _times_cls = None  # class for internal multiplication
     _adjoint_cls = None  # class for the adjoint
     _indexed_sum_cls = None  # class for indexed sum
+    _default_hs_cls = None  # class for implicit Hilbert spaces (str, int)
+    # _default_hs_cls is set by `init_algebra`
 
     _order_index = 0  # index of "order group": things that should go together
     _order_coeff = 1  # scalar prefactor
@@ -303,9 +305,10 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
             resulting symbol is a constant. With one or more `sym_args`, it
             becomes a function.
         hs (HilbertSpace, str, int, tuple): the Hilbert space associated with
-            the symbol. If a `str` or an `int`, and :class:`LocalSpace` with a
-            corresponding label will be created, or, for a tuple of `str` or
-            `int`, a :class:`ProducSpace.
+            the symbol. If a `str` or an `int`, an implicit (sub-)instance of
+            :class:`LocalSpace` with a corresponding label will be created, or,
+            for a tuple of `str` or `int`, a :class:`ProducSpace. The type of
+            the implicit Hilbert space is set by :func:`.init_algebra`.
     """
     _rx_label = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
@@ -326,9 +329,9 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
                 "type of label must be str or SymbolicLabelBase, not %s"
                 % type(label))
         if isinstance(hs, (str, int)):
-            hs = LocalSpace(hs)
+            hs = self._default_hs_cls(hs)
         elif isinstance(hs, tuple):
-            hs = ProductSpace.create(*[LocalSpace(h) for h in hs])
+            hs = ProductSpace.create(*[self._default_hs_cls(h) for h in hs])
         self._hs = hs
         super().__init__(label, *sym_args, hs=hs)
 
@@ -1010,6 +1013,7 @@ def Sum(idx, *args, **kwargs):
         >>> unicode( Sum(i, (1, 2, 3))(ket_i))
         '∑_{i ∈ {1,2,3}} |i⟩⁽⁰⁾'
     """
+    from qnet.algebra.core.hilbert_space_algebra import LocalSpace
     dispatch_table = {
         tuple(): _sum_over_fockspace,
         (LocalSpace, ): _sum_over_fockspace,
@@ -1032,12 +1036,18 @@ def Sum(idx, *args, **kwargs):
     return sum
 
 
-def ensure_local_space(hs):
-    """Ensure that the given `hs` is an instance of :class:`.LocalSpace`.
+def ensure_local_space(hs, cls=LocalSpace):
+    """Ensure that the given `hs` is an instance of :class:`LocalSpace`.
 
     If `hs` an instance of :class:`str` or :class:`int`, it will be converted
-    to a :class:`.LocalSpace`. If it already is a :class:`.LocalSpace`, `hs`
+    to a `cls` (if possible). If it already is an instace of `cls`, `hs`
     will be returned unchanged.
+
+    Args:
+        hs (HilbertSpace or str or int): The Hilbert space (or label) to
+            convert/check
+        cls (type): The class to which an int/str label for a Hilbert space
+            should be converted. Must be a subclass of :class:`LocalSpace`.
 
     Raises:
         TypeError: If `hs` is not a :class:`.LocalSpace`, :class:`str`, or
@@ -1051,17 +1061,26 @@ def ensure_local_space(hs):
         "LocalSpace('0')"
         >>> srepr(ensure_local_space('tls'))
         "LocalSpace('tls')"
+        >>> srepr(ensure_local_space(0, cls=LocalSpace))
+        "LocalSpace('0')"
+        >>> srepr(ensure_local_space(LocalSpace(0)))
+        "LocalSpace('0')"
         >>> srepr(ensure_local_space(LocalSpace(0)))
         "LocalSpace('0')"
         >>> srepr(ensure_local_space(LocalSpace(0) * LocalSpace(1)))
         Traceback (most recent call last):
            ...
-        TypeError: hs must be a LocalSpace
+        TypeError: hs must be an instance of LocalSpace
     """
     if isinstance(hs, (str, int)):
-        hs = LocalSpace(hs)
+        try:
+            hs = cls(hs)
+        except TypeError as exc_info:
+            raise TypeError(
+                "Cannot convert %s '%s' into a %s instance: %s"
+                % (hs.__class__.__name__, hs, cls.__name__, str(exc_info)))
     if not isinstance(hs, LocalSpace):
-        raise TypeError("hs must be a LocalSpace")
+        raise TypeError("hs must be an instance of LocalSpace")
     return hs
 
 

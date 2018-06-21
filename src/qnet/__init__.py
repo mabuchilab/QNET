@@ -61,3 +61,4 @@ qnet._flat_api_tools._import_submodules(
     __all__, __path__, __name__)
 
 qnet.algebra._rules._algebraic_rules()
+qnet.algebra.init_algebra()

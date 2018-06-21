@@ -6,12 +6,17 @@ from qnet.algebra.core.abstract_algebra import simplify
 from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.toolbox.core import no_rules
 from qnet.algebra.core.operator_algebra import (
-        OperatorSymbol, Create, Destroy, Jplus, Jminus, Jz, Phase, Displace,
-        LocalSigma, IdentityOperator, OperatorPlus)
+        OperatorSymbol, LocalSigma, IdentityOperator, OperatorPlus)
+from qnet.algebra.library.spin_algebra import (
+    Jz, Jplus, Jminus, SpinSpace)
+
+from qnet.algebra.library.fock_operators import (
+    Destroy, Create, Phase,
+    Displace)
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.state_algebra import (
     KetSymbol, ZeroKet, KetPlus, ScalarTimesKet, CoherentStateKet,
-    TrivialKet, TensorKet, BasisKet, KetBra, Bra, OperatorTimesKet, BraKet,
+    TrivialKet, TensorKet, BasisKet, Bra, OperatorTimesKet, BraKet,
     KetBra, KetIndexedSum)
 from qnet.algebra.core.exceptions import UnequalSpaces
 from qnet.utils.indices import (
@@ -167,70 +172,94 @@ class TestOperatorTimesKet(unittest.TestCase):
 class TestLocalOperatorKetRelations(unittest.TestCase):
 
     def testCreateDestroy(self):
-        assert Create(hs=1) * BasisKet(2, hs=1) == sqrt(3) * BasisKet(3, hs=1)
-        assert Destroy(hs=1) * BasisKet(2, hs=1) == sqrt(2) * BasisKet(1, hs=1)
-        assert Destroy(hs=1) * BasisKet(0, hs=1) == ZeroKet
-        coh = CoherentStateKet(10., hs=1)
-        a = Destroy(hs=1)
+        hs1 = LocalSpace(1)
+        assert (
+            Create(hs=hs1) * BasisKet(2, hs=hs1) ==
+            sqrt(3) * BasisKet(3, hs=hs1))
+        assert (
+            Destroy(hs=hs1) * BasisKet(2, hs=hs1) ==
+            sqrt(2) * BasisKet(1, hs=hs1))
+        assert (
+            Destroy(hs=hs1) * BasisKet(0, hs=hs1) == ZeroKet)
+        coh = CoherentStateKet(10., hs=hs1)
+        a = Destroy(hs=hs1)
         lhs = a * coh
         rhs = 10 * coh
         assert lhs == rhs
 
     def testSpin(self):
         j = 3
-        h = LocalSpace("j", basis=range(-j,j+1))
+        h = SpinSpace('j', spin=j)
+        assert (Jplus(hs=h) * BasisKet('+2', hs=h) ==
+                sqrt(j*(j+1)-2*(2+1)) * BasisKet('+3', hs=h))
+        assert (Jminus(hs=h) * BasisKet('+2', hs=h) ==
+                sqrt(j*(j+1)-2*(2-1)) * BasisKet('+1', hs=h))
+        assert Jz(hs=h) * BasisKet('+2', hs=h) == 2 * BasisKet('+2', hs=h)
 
-        assert (Jplus(hs=h) * BasisKet('2', hs=h) ==
-                sqrt(j*(j+1)-2*(2+1)) * BasisKet('3', hs=h))
-        assert (Jminus(hs=h) * BasisKet('2', hs=h) ==
-                sqrt(j*(j+1)-2*(2-1)) * BasisKet('1', hs=h))
-        assert Jz(hs=h) * BasisKet('2', hs=h) == 2 * BasisKet('2', hs=h)
+        tls = SpinSpace('tls', spin='1/2', basis=('-', '+'))
+        assert (
+            Jplus(hs=tls) * BasisKet('-', hs=tls) == BasisKet('+', hs=tls))
+        assert (
+            Jminus(hs=tls) * BasisKet('+', hs=tls) == BasisKet('-', hs=tls))
+        assert (
+            Jz(hs=tls) * BasisKet('+', hs=tls) == BasisKet('+', hs=tls) / 2)
+        assert (
+            Jz(hs=tls) * BasisKet('-', hs=tls) == -BasisKet('-', hs=tls) / 2)
 
     def testPhase(self):
-        assert (Phase(5, hs=1) * BasisKet(3, hs=1) ==
-                exp(I * 15) * BasisKet(3, hs=1))
-        lhs = Phase(pi, hs=1) * CoherentStateKet(3., hs=1)
-        rhs = CoherentStateKet(-3., hs=1)
+        hs1 = LocalSpace(1)
+        assert (Phase(5, hs=hs1) * BasisKet(3, hs=hs1) ==
+                exp(I * 15) * BasisKet(3, hs=hs1))
+        lhs = Phase(pi, hs=hs1) * CoherentStateKet(3., hs=hs1)
+        rhs = CoherentStateKet(-3., hs=hs1)
         assert lhs.__class__ == rhs.__class__
         assert lhs.space == rhs.space
         assert abs(lhs.ampl - rhs.ampl) < 1e-14
 
     def testDisplace(self):
-        assert (Displace(5 + 6j, hs=1) * CoherentStateKet(3., hs=1) ==
-                exp(I * ((5+6j)*3).imag) * CoherentStateKet(8 + 6j, hs=1))
-        assert (Displace(5 + 6j, hs=1) * BasisKet(0, hs=1) ==
-                CoherentStateKet(5+6j, hs=1))
+        hs1 = LocalSpace(1)
+        assert (Displace(5 + 6j, hs=hs1) * CoherentStateKet(3., hs=hs1) ==
+                exp(I * ((5+6j)*3).imag) * CoherentStateKet(8 + 6j, hs=hs1))
+        assert (Displace(5 + 6j, hs=hs1) * BasisKet(0, hs=hs1) ==
+                CoherentStateKet(5+6j, hs=hs1))
 
     def testLocalSigmaPi(self):
-        assert (LocalSigma(0, 1, hs = 1) * BasisKet(1, hs=1) ==
+        assert (LocalSigma(0, 1, hs=1) * BasisKet(1, hs=1) ==
                 BasisKet(0, hs=1))
-        assert (LocalSigma(0, 0, hs = 1) * BasisKet(1, hs=1) ==
+        assert (LocalSigma(0, 0, hs=1) * BasisKet(1, hs=1) ==
                 ZeroKet)
 
     def testActLocally(self):
-        assert ((Create(hs=1) * Destroy(hs=2)) *
-                (BasisKet(2, hs=1) * BasisKet(1, hs=2)) ==
-                sqrt(3) * BasisKet(3, hs=1) * BasisKet(0, hs=2))
-
+        hs1 = LocalSpace(1)
+        hs2 = LocalSpace(2)
+        assert ((Create(hs=hs1) * Destroy(hs=hs2)) *
+                (BasisKet(2, hs=hs1) * BasisKet(1, hs=hs2)) ==
+                sqrt(3) * BasisKet(3, hs=hs1) * BasisKet(0, hs=hs2))
 
     def testOperatorTensorProduct(self):
-        assert ((Create(hs=1)*Destroy(hs=2)) *
-                (BasisKet(0, hs=1) * BasisKet(1, hs=2)) ==
-                BasisKet(1, hs=1) * BasisKet(0, hs=2))
+        hs1 = LocalSpace(1)
+        hs2 = LocalSpace(2)
+        assert ((Create(hs=hs1)*Destroy(hs=hs2)) *
+                (BasisKet(0, hs=hs1) * BasisKet(1, hs=hs2)) ==
+                BasisKet(1, hs=hs1) * BasisKet(0, hs=hs2))
 
     def testOperatorProduct(self):
-        assert ((Create(hs=1) * Destroy(hs=1)) *
-                (BasisKet(1, hs=1) * BasisKet(1, hs=2)) ==
-                BasisKet(1, hs=1) * BasisKet(1, hs=2))
-        assert ((Create(hs=1) * Destroy(hs=1) * Destroy(hs=1)) *
-                (BasisKet(2, hs=1)*BasisKet(1, hs=2)) ==
-                sqrt(2) * BasisKet(1, hs=1) * BasisKet(1, hs=2))
-        assert ((Create(hs=1) * Destroy(hs=1) * Destroy(hs=1)) *
-                BasisKet(2, hs=1) ==
-                sqrt(2) * BasisKet(1, hs=1))
-        assert ((Create(hs=1) * Destroy(hs=1)) * BasisKet(1, hs=1) ==
-                BasisKet(1, hs=1))
-        assert ((Create(hs=1) * Destroy(hs=1)) * BasisKet(0, hs=1) == ZeroKet)
+        hs1 = LocalSpace(1)
+        hs2 = LocalSpace(2)
+        assert ((Create(hs=hs1) * Destroy(hs=hs1)) *
+                (BasisKet(1, hs=hs1) * BasisKet(1, hs=hs2)) ==
+                BasisKet(1, hs=hs1) * BasisKet(1, hs=hs2))
+        assert ((Create(hs=hs1) * Destroy(hs=hs1) * Destroy(hs=hs1)) *
+                (BasisKet(2, hs=hs1)*BasisKet(1, hs=hs2)) ==
+                sqrt(2) * BasisKet(1, hs=hs1) * BasisKet(1, hs=hs2))
+        assert ((Create(hs=hs1) * Destroy(hs=hs1) * Destroy(hs=hs1)) *
+                BasisKet(2, hs=hs1) ==
+                sqrt(2) * BasisKet(1, hs=hs1))
+        assert ((Create(hs=hs1) * Destroy(hs=hs1)) * BasisKet(1, hs=hs1) ==
+                BasisKet(1, hs=hs1))
+        assert (
+            (Create(hs=hs1) * Destroy(hs=hs1)) * BasisKet(0, hs=hs1) ==
+            ZeroKet)
 
 
 def test_expand_ketbra():

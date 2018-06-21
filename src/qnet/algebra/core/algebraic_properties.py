@@ -335,8 +335,17 @@ def empty_trivial(cls, ops, kwargs):
 
 def implied_local_space(*, arg_index=None, keys=None):
     """Return a simplification that converts the positional argument
-    `arg_index` from (str, int) to :class:`.LocalSpace`, as well as any keyword
-    argument with one of the given keys"""
+    `arg_index` from (str, int) to a subclass of :class:`.LocalSpace`, as well
+    as any keyword argument with one of the given keys.
+
+    The exact type of the resulting Hilbert space is determined by
+    the `default_hs_cls` argument of :func:`init_algebra`.
+
+    In many cases, we have :func:`implied_local_space` (in ``create``) in
+    addition to a conversion in ``__init__``, so
+    that :func:`match_replace` etc can rely on the relevant arguments being a
+    :class:`HilbertSpace` instance.
+    """
     from qnet.algebra.core.hilbert_space_algebra import (
         HilbertSpace, LocalSpace)
 
@@ -346,7 +355,10 @@ def implied_local_space(*, arg_index=None, keys=None):
             new_args = args
         else:
             if isinstance(args[arg_index], (int, str)):
-                hs = LocalSpace(args[arg_index])
+                try:
+                    hs = cls._default_hs_cls(args[arg_index])
+                except AttributeError:
+                    hs = LocalSpace(args[arg_index])
             else:
                 hs = args[arg_index]
                 assert isinstance(hs, HilbertSpace)
@@ -363,7 +375,10 @@ def implied_local_space(*, arg_index=None, keys=None):
             for key, val in kwargs.items():
                 if key in keys:
                     if isinstance(val, (int, str)):
-                        val = LocalSpace(val)
+                        try:
+                            val = cls._default_hs_cls(val)
+                        except AttributeError:
+                            val = LocalSpace(val)
                     assert isinstance(val, HilbertSpace)
                 new_kwargs[key] = val
         return args, new_kwargs

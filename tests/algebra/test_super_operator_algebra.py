@@ -11,7 +11,8 @@ from qnet.algebra.core.super_operator_algebra import (
 from qnet.algebra.pattern_matching import wc, ProtoExpr, pattern_head
 from qnet.algebra.core.operator_algebra import (
         OperatorPlus, ScalarTimesOperator, OperatorSymbol, ZeroOperator,
-        Create, Destroy, OperatorTimes)
+    OperatorTimes)
+from qnet.algebra.library.fock_operators import Destroy, Create
 
 
 class TestSuperOperatorCreation(unittest.TestCase):

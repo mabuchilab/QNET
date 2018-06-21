@@ -22,7 +22,8 @@ from qnet import(
     TensorKet, KetIndexedSum, SuperOperatorSymbol, IdentitySuperOperator,
     ZeroSuperOperator, SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
     SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator, IdxSym,
-    FockIndex, IndexOverFockSpace, srepr, ScalarValue, ScalarTimes, One, Zero)
+    FockIndex, IndexOverFockSpace, srepr, ScalarValue, ScalarTimes, One, Zero,
+    SpinSpace)
 from qnet.printing._render_head_repr import render_head_repr
 
 
@@ -396,10 +397,10 @@ def operator_exprs():
         Create(hs=LocalSpace(1, local_identifiers={'Create': 'b'})),
         Destroy(hs=1),
         Destroy(hs=LocalSpace(1, local_identifiers={'Destroy': 'b'})),
-        Jz(hs=1),
-        Jz(hs=LocalSpace(1, local_identifiers = {'Jz': 'Z'})),
-        Jplus(hs=LocalSpace(1, local_identifiers={'Jplus': 'Jp'})),
-        Jminus(hs=LocalSpace(1, local_identifiers={'Jminus': 'Jm'})),
+        Jz(hs=SpinSpace(1, spin=1)),
+        Jz(hs=SpinSpace(1, spin=1, local_identifiers={'Jz': 'Z'})),
+        Jplus(hs=SpinSpace(1, spin=1, local_identifiers={'Jplus': 'Jp'})),
+        Jminus(hs=SpinSpace(1, spin=1, local_identifiers={'Jminus': 'Jm'})),
         Phase(0.5, hs=1),
         Phase(0.5, hs=LocalSpace(1, local_identifiers={'PhaseCC': 'Ph'})),
         Displace(0.5, hs=1),

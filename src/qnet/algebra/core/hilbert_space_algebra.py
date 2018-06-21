@@ -18,7 +18,7 @@ from .abstract_algebra import (
 from .algebraic_properties import (
     assoc, idem, filter_neutral, convert_to_spaces, empty_trivial, )
 from .exceptions import AlgebraError, BasisNotSetError
-from ...utils.indices import FockIndex, SymbolicLabelBase
+from ...utils.indices import SymbolicLabelBase, FockIndex
 from ...utils.ordering import KeyTuple
 from ...utils.singleton import Singleton, singleton_object
 
@@ -193,6 +193,24 @@ class LocalSpace(HilbertSpace, Expression):
             e.g. sums or products of Operators. Hilbert spaces will be ordered
             from left to right be increasing `order_index`; Hilbert spaces
             without an explicit `order_index` are sorted by their label
+
+    A :class:`LocalSpace` fundamentally has a Fock-space like structure,
+    in that its basis states may be understood as an "excitation".
+    The spectrum can be infinite, with levels labeled by integers 0, 1, ...::
+
+        >>> hs = LocalSpace(label=0)
+
+    or truncated to a finite dimension::
+
+        >>> hs = LocalSpace(0, dimension=5)
+        >>> hs.basis_labels
+        ('0', '1', '2', '3', '4')
+
+    For finite-dimensional (truncated) Hilbert spaces, we also allow an
+    arbitrary alternative labeling of the canonical basis::
+
+        >>> hs = LocalSpace('rydberg', dimension=3, basis=('g', 'e', 'r'))
+
     """
     _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
 
@@ -224,7 +242,7 @@ class LocalSpace(HilbertSpace, Expression):
         try:
             # we want to normalize the local_identifiers to an arbitrary stable
             # order
-            sorted_local_identifiers = tuple(
+            self._sorted_local_identifiers = tuple(
                 sorted(tuple(local_identifiers.items())))
         except TypeError:
             # this will happen e.g. if the keys in local_identifier are types
@@ -249,14 +267,14 @@ class LocalSpace(HilbertSpace, Expression):
         self._label = label
         self._order_key = KeyTuple((
             order_index, label, str(dimension), basis,
-            sorted_local_identifiers))
+            self._sorted_local_identifiers))
         self._basis = basis
         self._dimension = dimension
         self._local_identifiers = local_identifiers
         self._order_index = order_index
         self._kwargs = OrderedDict([
             ('basis', self._basis), ('dimension', self._dimension),
-            ('local_identifiers', sorted_local_identifiers),
+            ('local_identifiers', self._sorted_local_identifiers),
             ('order_index', self._order_index)])
         self._minimal_kwargs = self._kwargs.copy()
         for key in default_args:
@@ -264,7 +282,7 @@ class LocalSpace(HilbertSpace, Expression):
 
         super().__init__(
             label, basis=basis, dimension=dimension,
-            local_identifiers=sorted_local_identifiers,
+            local_identifiers=self._sorted_local_identifiers,
             order_index=order_index)
 
     @classmethod
@@ -324,7 +342,7 @@ class LocalSpace(HilbertSpace, Expression):
 
     @property
     def basis_labels(self):
-        """Tuple of basis labels.
+        """Tuple of basis labels (strings).
 
         Raises:
             .BasisNotSetError: if the Hilbert space has no defined basis
@@ -397,7 +415,8 @@ class LocalSpace(HilbertSpace, Expression):
             ValueError: If `label` is not a label for any basis state in the
                 Hilbert space
             .BasisNotSetError: If the Hilbert space has no defined basis
-            TypeError: if `label_or_index` is neither a `str` nor an `int`
+            TypeError: if `label_or_index` is neither a :class:`str` nor an
+                :class:`int`, nor a :class:`SymbolicLabelBase`
         """
         if isinstance(label_or_index, int):
             new_index = label_or_index + n
@@ -417,6 +436,10 @@ class LocalSpace(HilbertSpace, Expression):
             return self._basis[new_index]
         elif isinstance(label_or_index, SymbolicLabelBase):
             return label_or_index.__class__(expr=label_or_index.expr + n)
+        else:
+            raise TypeError(
+                "Invalid type for label_or_index: %s"
+                % label_or_index.__class__.__name__)
 
 
 @singleton_object
