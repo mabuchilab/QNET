@@ -1,4 +1,5 @@
-"""Collection of operators that act on a :class:`.SpinSpace`"""
+"""Definitions for an algebra on spin (angular momentum) Hilbert spaces, both
+for integer and half-integer spin"""
 from abc import ABCMeta
 from collections.__init__ import OrderedDict
 
@@ -253,7 +254,7 @@ def SpinBasisKet(*numer_denom, hs):
 
 
 class SpinOperator(LocalOperator, metaclass=ABCMeta):
-    """Base class for Operators in a spin space"""
+    """Base class for operators in a spin space"""
     _hs_cls = SpinSpace
 
     def __init__(self, *args, hs):
@@ -264,7 +265,9 @@ class SpinOperator(LocalOperator, metaclass=ABCMeta):
 
 
 class Jz(SpinOperator):
-    """$\Op{J}_z$ is the $z$ component of a general spin operator acting
+    """Spin (angular momentum) operator in z-direction.
+
+    $\Op{J}_z$ is the $z$ component of a general spin operator acting
     on a particular :class:`SpinSpace` `hs` of freedom with well defined spin
     quantum number $s$.  It is Hermitian::
 
@@ -310,7 +313,9 @@ class Jz(SpinOperator):
 
 
 class Jplus(SpinOperator):
-    """ $\Op{J}_{+} = \Op{J}_x + i \op{J}_y$ is the raising ladder operator
+    """Raising operator of a spin space.
+
+    $\Op{J}_{+} = \Op{J}_x + i \op{J}_y$ is the raising ladder operator
     of a general spin operator acting on a particular :class:`SpinSpace` `hs`
     with well defined spin quantum number $s$.  It's adjoint is the
     lowering operator::
@@ -341,8 +346,10 @@ class Jplus(SpinOperator):
 
 
 class Jminus(SpinOperator):
-    """$\Op{J}_{-} = \Op{J}_x - i \op{J}_y$ is lowering ladder operator of a
-    general spin operator acting on a particular :class:`SpinSpace` `hs`
+    """Lowering operator on a spin space.
+
+    $\Op{J}_{-} = \Op{J}_x - i \op{J}_y$ is the lowering ladder operator of
+    a general spin operator acting on a particular :class:`SpinSpace` `hs`
     with well defined spin quantum number $s$.  It's adjoint is the raising
     operator::
 
@@ -371,9 +378,8 @@ class Jminus(SpinOperator):
         return Jplus(hs=self.space)
 
 
-def Jpjmcoeff(ls, m, shift=False):
-    r'''Eigenvalue of the $\Op{J}_{+}$ (:class:`Jplus`) operator, as a Sympy
-    expression.
+def Jpjmcoeff(ls, m, shift=False) -> sympy.Expr:
+    r'''Eigenvalue of the $\Op{J}_{+}$ (:class:`Jplus`) operator
 
     .. math::
 
@@ -406,9 +412,8 @@ def Jpjmcoeff(ls, m, shift=False):
     return sqrt(s * (s + 1) - m * (m + 1))
 
 
-def Jzjmcoeff(ls, m, shift):
-    r'''Eigenvalue of the $\Op{J}_z$ (:class:`Jz`) operator, as a Sympy
-    expression.
+def Jzjmcoeff(ls, m, shift) -> sympy.Expr:
+    r'''Eigenvalue of the $\Op{J}_z$ (:class:`Jz`) operator
 
     .. math::
 
@@ -430,9 +435,8 @@ def Jzjmcoeff(ls, m, shift):
         return sympify(m)
 
 
-def Jmjmcoeff(ls, m, shift):
-    r'''Eigenvalue of the $\Op{J}_{-}$ (:class:`Jminus`) operator, as a Sympy
-    expression
+def Jmjmcoeff(ls, m, shift) -> sympy.Expr:
+    r'''Eigenvalue of the $\Op{J}_{-}$ (:class:`Jminus`) operator
 
     .. math::
 
