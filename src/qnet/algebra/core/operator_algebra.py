@@ -339,6 +339,12 @@ class LocalSigma(LocalOperator):
         refers to the label of an eigenstate in the basis of `hs`, which needs
         to be set. An integer refers to the (zero-based) index of eigenstate of
         the Hilbert space. This works if `hs` has an unknown dimension.
+        Assuming the Hilbert space has a defined basis, using integer or string
+        labels is equivalent::
+
+            >>> hs = LocalSpace('tls', basis=('g', 'e'))
+            >>> LocalSigma(0, 1, hs=hs) == LocalSigma('g', 'e', hs=hs)
+            True
 
     Raises:
         ValueError: If `j` or `k` are invalid value for the given `hs`
@@ -360,31 +366,14 @@ class LocalSigma(LocalOperator):
     def __init__(self, j, k, *, hs):
         if isinstance(hs, (str, int)):
             hs = self._default_hs_cls(hs)
-        for ind_jk in range(2):
-            jk = j if ind_jk == 0 else k
-            hs._check_basis_label_type(jk)
-            if isinstance(jk, str):
-                if not hs.has_basis:
-                    raise ValueError(
-                        "Invalid to give label %s for Hilbert space %s that "
-                        "has no basis" % (jk, hs))
-            elif isinstance(jk, int):
-                if jk < 0:
-                    raise ValueError("Index j/k=%s must be >= 0" % jk)
-                if hs.has_basis:
-                    if jk >= hs.dimension:
-                        raise ValueError(
-                            "Index j/k=%s must be < the Hilbert space "
-                            "dimension %d" % (jk, hs.dimension))
-                    if ind_jk == 0:
-                        j = hs.basis_labels[jk]
-                    else:
-                        k = hs.basis_labels[jk]
-            elif isinstance(jk, SymbolicLabelBase):
-                pass  # use j, k as-is
-            else:
-                # Interal error: mismatch with hs._basis_label_types
-                raise NotImplementedError()
+        hs._unpack_basis_label_or_index(j)  # for applying checks only ...
+        hs._unpack_basis_label_or_index(k)  # ... (disregard returned tuple)
+        if hs.has_basis:
+            # normalize integer i/j to str label, if possible
+            if isinstance(j, int):
+                j = hs.basis_labels[j]
+            if isinstance(k, int):
+                k = hs.basis_labels[k]
         super().__init__(j, k, hs=hs)
 
     @property

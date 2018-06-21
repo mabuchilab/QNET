@@ -289,12 +289,66 @@ class LocalSpace(HilbertSpace, Expression):
     def _check_basis_label_type(cls, label_or_index):
         """Every object (BasisKet, LocalSigma) that contains a label or index
         for an eigenstate of some LocalSpace should call this routine to check
-        the type of that label or index"""
+        the type of that label or index (or, use
+        :meth:`_unpack_basis_label_or_index`"""
         if not isinstance(label_or_index, cls._basis_label_types):
             raise TypeError(
                 "label_or_index must be an instance of one of %s; not %s" % (
                     ", ".join([t.__name__ for t in cls._basis_label_types]),
                     label_or_index.__class__.__name__))
+
+    def _unpack_basis_label_or_index(self, label_or_index):
+        """return tuple (label, ind) from `label_or_index`
+
+        If `label_or_int` is a :class:`.SymbolicLabelBase` sub-instance, it
+        will be returned unchanged for both `label` and `ind`. No checks are
+        performed in this case.
+
+        :meth:`_check_basis_label_type` is called on `label_or_index`.
+
+        Raises:
+            ValueError: if `label_or_index` is a :class:`str` referencing an
+                invalid basis state; or, if `label_or_index` is an :class:`int`
+                < 0 or >= the dimension of the Hilbert space
+            BasisNotSetError: if `label_or_index` is a :class:`str`, but the
+                Hilbert space has no defined basis
+            TypeError: if `label_or_int` is not a :class:`str`, :class:`int`,
+                or :class:`.SymbolicLabelBase`, or more generally whatever
+                types are allowed through the `_basis_label_types` attribute of
+                the Hilbert space.
+        """
+        self._check_basis_label_type(label_or_index)
+        if isinstance(label_or_index, str):
+            label = label_or_index
+            try:
+                ind = self.basis_labels.index(label)
+                # the above line may also raise BasisNotSetError, which we
+                # don't want to catch here
+            except ValueError:
+                # a less confusing error message:
+                raise ValueError(
+                    "%r is not one of the basis labels %r"
+                    % (label, self.basis_labels))
+        elif isinstance(label_or_index, int):
+            ind = label_or_index
+            if ind < 0:
+                raise ValueError("Index %d must be >= 0" % ind)
+            if self.has_basis:
+                if ind >= self.dimension:
+                    raise ValueError(
+                        "Index %s must be < the dimension %d of Hilbert "
+                        "space %s" % (ind, self.dimension, self))
+                label = self.basis_labels[label_or_index]
+            else:
+                label = str(label_or_index)
+        elif isinstance(label_or_index, SymbolicLabelBase):
+            label = label_or_index
+            ind = label_or_index
+        else:
+            raise TypeError(
+                "label_or_index must be an int or str, or SymbolicLabelBase, "
+                "not %s" % type(label_or_index))
+        return label, ind
 
     @property
     def args(self):

@@ -281,38 +281,7 @@ class BasisKet(LocalKet, KetSymbol):
 
     def __init__(self, label_or_index, *, hs):
         hs = ensure_local_space(hs, cls=self._default_hs_cls)
-        hs._check_basis_label_type(label_or_index)
-        if isinstance(label_or_index, str):
-            label = label_or_index
-            try:
-                ind = hs.basis_labels.index(label)
-                # the above line may also raise BasisNotSetError, which we
-                # don't want to catch here
-            except ValueError:
-                # a less confusing error message:
-                raise ValueError(
-                    "%r is not one of the basis labels %r"
-                    % (label, hs.basis_labels))
-        elif isinstance(label_or_index, int):
-            if hs.has_basis:
-                label = hs.basis_labels[label_or_index]
-            else:
-                label = str(label_or_index)
-            ind = label_or_index
-            if ind < 0:
-                raise ValueError("Index %d must be >= 0" % ind)
-            if hs.has_basis:
-                if ind >= hs.dimension:
-                    raise ValueError(
-                        "Index %s must be < the dimension %d of Hilbert "
-                        "space %s" % (ind, hs.dimension, hs))
-        elif isinstance(label_or_index, SymbolicLabelBase):
-            label = label_or_index
-            ind = label_or_index
-        else:
-            raise TypeError(
-                "label_or_index must be an int or str, not %s"
-                % type(label_or_index))
+        label, ind = hs._unpack_basis_label_or_index(label_or_index)
         self._index = ind
         super().__init__(label, hs=hs)
 

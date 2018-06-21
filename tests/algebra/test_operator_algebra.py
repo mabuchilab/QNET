@@ -10,7 +10,7 @@ from qnet import (
     LocalSigma, LocalProjector, OperatorTrace, Adjoint, PauliX, PauliY, PauliZ,
     ScalarTimesOperator, OperatorTimes, OperatorDerivative, Jz, Jplus, Jminus,
     Destroy, Create, Phase, Displace, Matrix, identity_matrix, LocalSpace,
-    TrivialSpace, ProductSpace, FockIndex, SpinSpace, ascii)
+    TrivialSpace, ProductSpace, FockIndex, SpinSpace, ascii, BasisNotSetError)
 
 
 def test_identity_singleton():
@@ -194,6 +194,33 @@ def test_local_sigma_raise_jk():
     assert (
         sig.raise_jk(j_incr=-1, k_incr=1) ==
         LocalSigma(FockIndex(i-1), FockIndex(i+1), hs='1'))
+
+
+def test_local_sigma_reject_invalid_labels():
+    """Test that a ValueError is raised when trying to instantiate a LocalSigma
+    with invalid labels"""
+    hs = LocalSpace('tls', basis=('g', 'e'))
+    with pytest.raises(ValueError):
+        LocalSigma('0', '1', hs=hs)
+    with pytest.raises(ValueError):
+        LocalSigma(0, 2, hs=hs)
+    with pytest.raises(ValueError):
+        LocalSigma(2, 0, hs=hs)
+    with pytest.raises(ValueError):
+        LocalSigma(0, -1, hs=hs)
+    with pytest.raises(ValueError):
+        LocalSigma(-1, 0, hs=hs)
+    with pytest.raises(BasisNotSetError):
+        LocalSigma('0', '0', hs=1)
+
+
+def test_local_sigma_equivalences():
+    """Test the equivalence of instantiation :class:`LocalSigma` with integer
+    or str labels, if there is a defined basis"""
+    hs = LocalSpace('tls', basis=('g', 'e'))
+    assert LocalSigma('g', 'e', hs=hs) == LocalSigma(0, 1, hs=hs)
+    assert LocalSigma(0, 'e', hs=hs) == LocalSigma(0, 1, hs=hs)
+    assert LocalSigma('g', 1, hs=hs) == LocalSigma(0, 1, hs=hs)
 
 
 def test_proj_create_destroy_product():
