@@ -6,11 +6,11 @@ from numpy import (array as np_array, conjugate as np_conjugate,
 from sympy import symbols, sqrt, I, exp, sympify, Idx
 
 from qnet import (
-    OperatorSymbol, IdentityOperator, ZeroOperator, OperatorPlus, LocalSigma,
-    LocalProjector, OperatorTrace, Adjoint, X, Y, Z, ScalarTimesOperator,
-    OperatorTimes, OperatorDerivative, Jz, Jplus, Jminus, Destroy, Create,
-    Phase, Displace, Matrix, identity_matrix, LocalSpace, TrivialSpace,
-    ProductSpace, FockIndex, SpinSpace, ascii)
+    OperatorSymbol, II, IdentityOperator, ZeroOperator, OperatorPlus,
+    LocalSigma, LocalProjector, OperatorTrace, Adjoint, PauliX, PauliY, PauliZ,
+    ScalarTimesOperator, OperatorTimes, OperatorDerivative, Jz, Jplus, Jminus,
+    Destroy, Create, Phase, Displace, Matrix, identity_matrix, LocalSpace,
+    TrivialSpace, ProductSpace, FockIndex, SpinSpace, ascii)
 
 
 def test_identity_singleton():
@@ -654,8 +654,8 @@ class TestOperatorTrace(unittest.TestCase):
         f = LocalSpace("f")
         x,y,z = symbols("x,y,z", real = True)
         alpha = symbols("alpha")
-        rho_a = (IdentityOperator + x * X(a) + y * Y(a) + z * Z(a)) / 2
-        sigma = X(a) + I*Y(a)
+        rho_a = (II + x * PauliX(a) + y * PauliY(a) + z * PauliZ(a)) / 2
+        sigma = PauliX(a) + I*PauliY(a)
         rho_f = (Displace.create(alpha, hs=f) * LocalProjector(0, hs=f) *
                  Displace.create(-alpha, hs=f))
         rho = rho_a * rho_f

@@ -11,7 +11,7 @@ from collections import OrderedDict, defaultdict
 from functools import partial
 from itertools import product as cartesian_product
 
-from sympy import I, sympify
+from sympy import sympify
 
 from .abstract_quantum_algebra import (
     ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
@@ -41,7 +41,7 @@ __all__ = [
     'Adjoint', 'LocalOperator', 'LocalSigma', 'NullSpaceProjector', 'Operator',
     'OperatorPlus', 'OperatorPlusMinusCC', 'OperatorSymbol', 'OperatorTimes',
     'OperatorTrace', 'PseudoInverse', 'ScalarTimesOperator',
-    'LocalProjector', 'X', 'Y', 'Z', 'adjoint', 'create_operator_pm_cc',
+    'LocalProjector', 'adjoint', 'create_operator_pm_cc',
     'decompose_space', 'expand_operator_pm_cc', 'factor_coeff',
     'factor_for_trace', 'get_coeffs', 'II', 'IdentityOperator',
     'ZeroOperator', 'OperatorDerivative', 'Commutator', 'OperatorIndexedSum',
@@ -781,62 +781,6 @@ class OperatorIndexedSum(QuantumIndexedSum, Operator):
 
 
 tr = OperatorTrace.create
-
-
-def X(local_space, states=("h", "g")):
-    r"""Pauli-type X-operator
-
-    Args:
-        local_space (.LocalSpace): Associated Hilbert space.
-        states (tuple[int or str]): The qubit state labels for the basis states
-            :math:`\left\{|0\rangle, |1\rangle \right\}`,
-            where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-
-    Returns:
-        Operator: Local X-operator as a linear combination of
-        :class:`LocalSigma`
-    """
-    h, g = states  # TODO: default should be 0, 1
-    return (
-        LocalSigma.create(h, g, hs=local_space) +
-        LocalSigma.create(g, h, hs=local_space))
-
-
-def Y(local_space, states=("h", "g")):
-    r""" Pauli-type Y-operator
-
-    Args:
-        local_space (LocalSpace): Associated Hilbert space.
-        states (tuple[int or str]): The qubit state labels for the basis states
-            :math:`\left\{|0\rangle, |1\rangle \right\}`,
-            where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-
-    Returns:
-        Operator: Local Y-operator as a linear combination of
-        :class:`LocalSigma`
-
-    """
-    h, g = states
-    return I * (-LocalSigma.create(h, g, hs=local_space) +
-                LocalSigma.create(g, h, hs=local_space))
-
-
-def Z(local_space, states=("h", "g")):
-    r"""Pauli-type Z-operator
-
-    Args:
-        local_space (LocalSpace): Associated Hilbert space.
-        states (tuple[int or str]): The qubit state labels for the basis states
-            :math:`\left\{|0\rangle, |1\rangle \right\}`,
-            where :math:`Z|0\rangle = +|0\rangle`, default = ``('h', 'g')``.
-
-    Returns:
-        Operator: Local Z-operator as a linear combination of
-        :class:`LocalSigma`
-    """
-    h, g = states
-    return (LocalProjector(h, hs=local_space) -
-            LocalProjector(g, hs=local_space))
 
 
 ###############################################################################
