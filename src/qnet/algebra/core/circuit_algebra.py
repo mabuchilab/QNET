@@ -571,12 +571,14 @@ class CircuitSymbol(Circuit, Expression):
 
     Args:
         label (str): Label for the symbol
+        sym_args (Scalar): optional scalar arguments. With zero `sym_args`, the
+            resulting symbol is a constant. With one or more `sym_args`, it
+            becomes a function.
         cdim (int): The circuit dimension, that is, the number of I/O lines
     """
     _rx_label = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
-    def __init__(self, label, cdim):
-        sym_args = []  # TODO: make *sym_args a positional argument
+    def __init__(self, label, *sym_args, cdim):
         label = str(label)
         cdim = int(cdim)
         self._label = label
@@ -586,7 +588,7 @@ class CircuitSymbol(Circuit, Expression):
         if not self._rx_label.match(label):
             raise ValueError("label '%s' does not match pattern '%s'"
                              % (self.label, self._rx_label.pattern))
-        super().__init__(label, cdim=cdim)
+        super().__init__(label, *sym_args, cdim=cdim)
 
     @property
     def label(self):

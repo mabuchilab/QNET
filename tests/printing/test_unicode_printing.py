@@ -42,12 +42,14 @@ def test_unicode_scalar():
 
 def test_unicode_circuit_elements():
     """Test the unicode representation of "atomic" circuit algebra elements"""
+    alpha, t = symbols('alpha, t')
     assert unicode(CircuitSymbol("C", cdim=2)) == 'C'
     C_1 = CircuitSymbol("C_1", cdim=2)
     assert unicode(C_1) == 'C₁'
     assert unicode(C_1, unicode_sub_super=False) == 'C_1'
     assert unicode(CircuitSymbol("Xi_2", cdim=2)) == 'Ξ₂'
     assert unicode(CircuitSymbol("Xi_full", cdim=2)) == 'Ξ_full'
+    assert unicode(CircuitSymbol("C", alpha, t, cdim=2)) == 'C(α, t)'
     assert unicode(CIdentity) == 'CIdentity'
     assert unicode(cid(4)) == 'cid(4)'
     assert unicode(CircuitZero) == 'CircuitZero'

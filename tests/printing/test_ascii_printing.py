@@ -37,10 +37,12 @@ def test_ascii_scalar():
 
 def test_ascii_circuit_elements():
     """Test the ascii representation of "atomic" circuit algebra elements"""
+    alpha, t = symbols('alpha, t')
     assert ascii(CircuitSymbol("C", cdim=2)) == 'C'
     assert ascii(CircuitSymbol("C_1", cdim=2)) == 'C_1'
     assert ascii(CircuitSymbol("Xi_2", cdim=2)) == 'Xi_2'
     assert ascii(CircuitSymbol("Xi_full", cdim=2)) == 'Xi_full'
+    assert ascii(CircuitSymbol("C", alpha, t, cdim=2)) == 'C(alpha, t)'
     with pytest.raises(ValueError):
         CircuitSymbol(r'\Xi^2', cdim=2)
     assert ascii(CIdentity) == 'CIdentity'

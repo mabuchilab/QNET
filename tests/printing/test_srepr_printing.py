@@ -101,12 +101,15 @@ def test_srepr_local_space():
 
 def test_srepr_circuit_elements():
     """Test the representation of "atomic" circuit algebra elements"""
-    assert (srepr(CircuitSymbol("C_1", cdim=2)) ==
-            "CircuitSymbol('C_1', cdim=2)")
-    assert (srepr(CIdentity) ==
-            r'CIdentity')
-    assert (srepr(CircuitZero) ==
-            r'CircuitZero')
+    alpha = symbols('alpha')
+    assert (
+        srepr(CircuitSymbol("C_1", cdim=2)) ==
+        "CircuitSymbol('C_1', cdim=2)")
+    assert (
+        srepr(CircuitSymbol("A", alpha, 0, 2, cdim=2)) ==
+        "CircuitSymbol('A', ScalarValue(Symbol('alpha')), Zero, 2, cdim=2)")
+    assert srepr(CIdentity) == r'CIdentity'
+    assert srepr(CircuitZero) == r'CircuitZero'
 
 
 def test_srepr_idx_sym():
@@ -335,6 +338,7 @@ def circuit_exprs():
         A + B + C,
         A << (beta + gamma),
         A + (B << C),
+        CircuitSymbol("A", 0, symbols('alpha'), cdim=2),
         perm,
         SeriesProduct(perm, (A+B)),
         Feedback((A+B), out_port=3, in_port=0),

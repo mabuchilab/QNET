@@ -49,6 +49,22 @@ def test_circuit_symbol_hashing():
     assert A1 != A2
 
 
+def test_circuit_symbol_with_symargs():
+    """Test basic properties of a CircuitSymbol with scalar arguments"""
+    alpha, t = sympy.symbols('alpha, t')
+    A = CircuitSymbol('A', alpha, t, cdim=2)
+    assert A._instance_key == (CircuitSymbol, 'A', alpha, t, ('cdim', 2))
+    assert A != CircuitSymbol('A', cdim=2)
+    assert A != CircuitSymbol('A', alpha, 0, cdim=2)
+    assert A.args == ('A', alpha, t)
+    assert A.kwargs == {'cdim': 2}
+    assert A.sym_args == (alpha, t)
+    assert A.free_symbols == set([alpha, t])
+    assert A.bound_symbols == set()
+    assert A.all_symbols == A.free_symbols
+    assert A.substitute({t: 0}) == CircuitSymbol('A', alpha, 0.0, cdim=2)
+
+
 def test_permutation():
     n = 5
     assert CPermutation.create(()) == circuit_identity(0)
