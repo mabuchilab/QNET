@@ -200,7 +200,7 @@ class QnetAsciiPrinter(QnetBasePrinter):
             + self._bracket_right)
 
     def _print_CircuitSymbol(self, expr):
-        return self._render_str(expr.name)
+        return self._render_str(expr.label)
 
     def _print_CPermutation(self, expr):
         return r'Perm(%s)' % (

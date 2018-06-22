@@ -33,7 +33,7 @@ from .operator_algebra import (
     IdentityOperator, LocalProjector, LocalSigma, Operator,
     OperatorPlus, OperatorSymbol, ScalarTimesOperator, ZeroOperator, adjoint,
     get_coeffs, )
-from qnet.algebra.library.fock_operators import Destroy, Create
+from .scalar_algebra import ScalarValue
 from ...utils.permutations import (
     BadPermutationError, block_perm_and_perms_within_blocks, check_permutation,
     full_block_perm, invert_permutation, permutation_to_block_permutations, )
@@ -567,32 +567,43 @@ class SLH(Circuit, Expression):
 
 
 class CircuitSymbol(Circuit, Expression):
-    """Circuit Symbol object, parametrized by an identifier (name) and channel
-    dimension `cdim`.
-    """
-    _rx_name = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
+    """A symbolic circuit element
 
-    def __init__(self, name, *, cdim):
-        name = str(name)
+    Args:
+        label (str): Label for the symbol
+        cdim (int): The circuit dimension, that is, the number of I/O lines
+    """
+    _rx_label = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
+
+    def __init__(self, label, cdim):
+        sym_args = []  # TODO: make *sym_args a positional argument
+        label = str(label)
         cdim = int(cdim)
-        self._name = name
+        self._label = label
         self._cdim = cdim
-        if not self._rx_name.match(name):
-            raise ValueError("name '%s' does not match pattern '%s'"
-                             % (self.name, self._rx_name.pattern))
-        super().__init__(name, cdim=cdim)
+        sym_args = [ScalarValue.create(arg) for arg in sym_args]
+        self._sym_args = tuple(sym_args)
+        if not self._rx_label.match(label):
+            raise ValueError("label '%s' does not match pattern '%s'"
+                             % (self.label, self._rx_label.pattern))
+        super().__init__(label, cdim=cdim)
 
     @property
-    def name(self):
-        return self._name
+    def label(self):
+        return self._label
 
     @property
     def args(self):
-        return (self._name, )
+        return (self.label, ) + self._sym_args
 
     @property
     def kwargs(self):
         return {'cdim': self.cdim}
+
+    @property
+    def sym_args(self):
+        """Tuple of scalar arguments of the symbol"""
+        return self._sym_args
 
     @property
     def cdim(self):
@@ -610,6 +621,80 @@ class CircuitSymbol(Circuit, Expression):
         """FullSpace (Circuit Symbols are not restricted to a particular
         Hilbert space)"""
         return FullSpace
+
+
+class Component(Circuit, Expression, metaclass=ABCMeta):
+    """Base class for all circuit components,
+    both primitive components such as beamsplitters
+    and cavity models and also composite circuit models
+    that are built up from these.
+    Via the creduce() method, an object can be decomposed into its parts.
+    """
+
+    CDIM = 0
+
+    # ingoing port names
+    PORTSIN = []
+
+    # outgoing port names
+    PORTSOUT = []
+
+    _parameters = []
+    _sub_components = []
+
+    _rx_name = re.compile('^[A-Za-z][A-Za-z0-9.]*$')
+
+    def __init__(self, name, **kwargs):
+        self._name = str(name)
+        if not self._rx_name.match(name):
+            raise ValueError("name '%s' does not match pattern '%s'"
+                             % (self.name, self._rx_name.pattern))
+        for pname, val in kwargs.items():
+            if pname in self._parameters:
+                setattr(self, pname, val)
+            else:
+                del kwargs[pname]
+                print("Unknown parameter!")
+        super().__init__(name, **kwargs)
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def args(self):
+        return (self._name, )
+
+    @property
+    def kwargs(self):
+        res = OrderedDict()
+        for key in self._parameters:
+            try:
+                res[key] = getattr(self, key)
+            except AttributeError:
+                pass
+        return res
+
+    @property
+    def cdim(self):
+        return self.CDIM
+
+    @abstractmethod
+    def _toSLH(self):
+        raise NotImplementedError()
+
+    @property
+    def space(self):
+        return TrivialSpace
+
+    def _creduce(self):
+        return self
+
+    def _substitute(self, var_map):
+        all_names = self._parameters
+        all_namesubvals = [(n, substitute(getattr(self, n), var_map))
+                           for n in all_names]
+        return self.__class__(self._name, **dict(all_namesubvals))
 
 
 class CPermutation(Circuit, Expression):
@@ -1498,6 +1583,7 @@ def getABCD(slh, a0=None, doubled_up=True):
         * `c`: constant coherent input vector of scattered amplitudes
             contributing to the output
     """
+    from qnet.algebra.library.fock_operators import Create, Destroy
     if a0 is None:
         a0 = {}
 
@@ -1771,78 +1857,3 @@ def _cumsum(lst):
         sm += s
         ret += [sm]
     return ret
-
-
-class Component(Circuit, Expression, metaclass=ABCMeta):
-    """Base class for all circuit components,
-    both primitive components such as beamsplitters
-    and cavity models and also composite circuit models
-    that are built up from these.
-    Via the creduce() method, an object can be decomposed into its parts.
-    """
-
-    CDIM = 0
-
-    # ingoing port names
-    PORTSIN = []
-
-    # outgoing port names
-    PORTSOUT = []
-
-    _parameters = []
-    _sub_components = []
-
-    _rx_name = re.compile('^[A-Za-z][A-Za-z0-9.]*$')
-
-    def __init__(self, name, **kwargs):
-        self._name = str(name)
-        if not self._rx_name.match(name):
-            raise ValueError("name '%s' does not match pattern '%s'"
-                             % (self.name, self._rx_name.pattern))
-        for pname, val in kwargs.items():
-            if pname in self._parameters:
-                setattr(self, pname, val)
-            else:
-                del kwargs[pname]
-                print("Unknown parameter!")
-        super().__init__(name, **kwargs)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def args(self):
-        return (self._name, )
-
-    @property
-    def kwargs(self):
-        res = OrderedDict()
-        for key in self._parameters:
-            try:
-                res[key] = getattr(self, key)
-            except AttributeError:
-                pass
-        return res
-
-    @property
-    def cdim(self):
-        return self.CDIM
-
-    @abstractmethod
-    def _toSLH(self):
-        raise NotImplementedError()
-
-    @property
-    def space(self):
-        return TrivialSpace
-
-    def _creduce(self):
-        return self
-
-    def _substitute(self, var_map):
-        all_names = self._parameters
-        all_namesubvals = [(n, substitute(getattr(self, n), var_map))
-                           for n in all_names]
-        return self.__class__(self._name, **dict(all_namesubvals))
-

@@ -209,13 +209,13 @@ expr_fb = Feedback(C1, out_port=1, in_port=2)
 wc_a_int_2 = wc('a', head=(ScalarValue, int), conditions=[lambda i: i == 2, ])
 wc_a_int_3 = wc('a', head=(ScalarValue, int), conditions=[lambda i: i == 3, ])
 wc_a_int = wc('a', head=int)
-wc_name_str = wc('name', head=str)
+wc_label_str = wc('label', head=str)
 wc_hs = wc('space', head=HilbertSpace)
 pattern_two_O = pattern(ScalarTimesOperator,
                         wc_a_int_2,
-                        pattern(OperatorSymbol, wc_name_str, hs=wc_hs))
+                        pattern(OperatorSymbol, wc_label_str, hs=wc_hs))
 pattern_two_O_head = pattern_head(wc_a_int_2,
-                                  pattern(OperatorSymbol, wc_name_str,
+                                  pattern(OperatorSymbol, wc_label_str,
                                           hs=wc_hs))
 pattern_two_O_expr = pattern(ScalarTimesOperator,
                              wc_a_int_2, OperatorSymbol('O', hs=FullSpace))
@@ -223,7 +223,7 @@ pattern_kwargs = pattern_head(wc('i1', head=int), wc('i2', head=int),
                               a=wc('a', head=str), b=wc('b', head=int))
 pattern_kw_only = pattern_head(a=pattern(int), b=pattern(int))
 
-conditions = [lambda c: c.cdim == 3, lambda c: c.name[0] == 'C']
+conditions = [lambda c: c.cdim == 3, lambda c: c.label[0] == 'C']
 A__Circuit = wc("A__", head=CircuitSymbol, conditions=conditions)
 C__Circuit = wc("C__", head=CircuitSymbol, conditions=conditions)
 B_CPermutation = wc("B", head=CPermutation)
@@ -259,9 +259,9 @@ PATTERNS = [
     (6,  wc('a'),               two_O,         True,  {'a': two_O}),
     (7,  pattern(SCALAR_TYPES), two_t,         True,  {}),
     (8,  pattern(SCALAR_TYPES), two_O,         False, {}),
-    (9,  pattern_two_O,         two_O,         True,  {'a': 2, 'name': 'O',
+    (9,  pattern_two_O,         two_O,         True,  {'a': 2, 'label': 'O',
                                                        'space': FullSpace}),
-    (10, pattern_two_O_head,    proto_two_O,   True,  {'a': 2, 'name': 'O',
+    (10, pattern_two_O_head,    proto_two_O,   True,  {'a': 2, 'label': 'O',
                                                        'space': FullSpace}),
     (11, pattern_two_O_expr,    two_O,         True,  {'a': 2}),
     (12, pattern_two_O,         two_t,         False, {}),
