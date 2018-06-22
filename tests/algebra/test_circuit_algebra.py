@@ -52,20 +52,22 @@ def test_circuit_symbol_hashing():
 def test_permutation():
     n = 5
     assert CPermutation.create(()) == circuit_identity(0)
-    invalid_permutation = (1,1)
+    invalid_permutation = (1, 1)
     with pytest.raises(Exception):
         CPermutation.create((invalid_permutation,))
     p_id = tuple(range(n))
     assert CPermutation.create(p_id) == circuit_identity(n)
-    assert map_signals({0:1,1:0}, 2) == (1,0)
-    assert map_signals({0:5,1:0}, 6) == (5,0,1,2,3,4)
-    assert map_signals({0:5,1:0, 3:2}, 6) == invert_permutation(map_signals({5:0,0:1, 2:3}, 6))
+    assert map_signals({0: 1, 1: 0}, 2) == (1, 0)
+    assert map_signals({0: 5, 1: 0}, 6) == (5, 0, 1, 2, 3, 4)
+    assert (
+        map_signals({0: 5, 1: 0, 3: 2}, 6) ==
+        invert_permutation(map_signals({5: 0, 0: 1, 2: 3}, 6)))
 
 
 def test_series():
     A, B = get_symbol(1), get_symbol(1)
-    assert A << B == SeriesProduct(A,B)
-    assert A << B == SeriesProduct.create(A,B)
+    assert A << B == SeriesProduct(A, B)
+    assert A << B == SeriesProduct.create(A, B)
     assert SeriesProduct.create(CIdentity, CIdentity) == CIdentity
     # need at least two operands
     # self.assertRaises(Exception, SeriesProduct, ())
@@ -80,31 +82,33 @@ def test_series_filter_identities():
         idn = circuit_identity(n)
         assert A << idn == A
         assert idn << A == A
-        assert SeriesProduct.create(idn, idn, A, idn, idn, B, idn, idn) == A << B
+        assert (
+            SeriesProduct.create(idn, idn, A, idn, idn, B, idn, idn) ==
+            A << B)
 
 
 def test_concatenation():
     n = 4
     A, B = get_symbol(n), get_symbol(n)
     id0 = circuit_identity(0)
-    assert A+B == Concatenation(A,B)
-    assert A+B == Concatenation.create(A,B)
+    assert A + B == Concatenation(A, B)
+    assert A + B == Concatenation.create(A, B)
     assert id0 + id0 + A + id0 + id0 + B + id0 + id0 == A + B
-    #self.assertRaises(Exception, Concatenation, ())
-    #self.assertRaises(Exception, Concatenation, (A,))
+    # self.assertRaises(Exception, Concatenation, ())
+    # self.assertRaises(Exception, Concatenation, (A,))
 
-    assert (A+B).block_structure == (n,n)
-    assert (A+B).get_blocks((n,n)) == (A,B)
-    #test index_in_block()
-    assert (A+B).index_in_block(0) == (0,0)
-    assert (A+B).index_in_block(1) == (1,0)
-    assert (A+B).index_in_block(2) == (2,0)
-    assert (A+B).index_in_block(3) == (3,0)
-    assert (A+B).index_in_block(4) == (0,1)
-    assert (A+B).index_in_block(5) == (1,1)
-    assert (A+B).index_in_block(7) == (3,1)
+    assert (A + B).block_structure == (n, n)
+    assert (A + B).get_blocks((n, n)) == (A, B)
+    # test index_in_block()
+    assert (A + B).index_in_block(0) == (0, 0)
+    assert (A + B).index_in_block(1) == (1, 0)
+    assert (A + B).index_in_block(2) == (2, 0)
+    assert (A + B).index_in_block(3) == (3, 0)
+    assert (A + B).index_in_block(4) == (0, 1)
+    assert (A + B).index_in_block(5) == (1, 1)
+    assert (A + B).index_in_block(7) == (3, 1)
 
-    res = Concatenation.create(CIdentity, CIdentity, CPermutation((1,0)))
+    res = Concatenation.create(CIdentity, CIdentity, CPermutation((1, 0)))
     assert res == CPermutation((0, 1, 3, 2))
 
 
@@ -115,32 +119,50 @@ def test_distributive_law():
     D = CircuitSymbol('D', cdim=1)
     E = CircuitSymbol('E', cdim=1)
     assert (A+B) << (C+D+E) == Concatenation(A<<(C+D), B << E)
-    assert (C+D+E) << (A+B) == Concatenation((C+D)<< A,  E<< B)
-    assert (A+B) << (C+D+E) << (A+B) == Concatenation(A << (C+D)<< A,  B << E<< B)
-    assert SeriesProduct.create((A+B), (C+D+E), (A+B)) == Concatenation(A << (C+D)<< A,  B << E<< B)
+    assert (
+        (C+D+E) << (A+B) ==
+        Concatenation((C+D)<< A,  E<< B))
+    assert (
+        (A+B) << (C+D+E) << (A+B) ==
+        Concatenation(A << (C+D)<< A,  B << E<< B))
+    assert (
+        SeriesProduct.create((A+B), (C+D+E), (A+B)) ==
+        Concatenation(A << (C+D)<< A,  B << E<< B))
     test_perm = (0,1,3,2)
     qtp = CPermutation(test_perm)
-    assert CPermutation((1,0)) << ( B + C) == SeriesProduct(Concatenation(C, B), CPermutation((1,0)))
-    assert qtp << (A + B + C) == (A + C+ B) <<  qtp
-    assert qtp << ( B + C + A) == B + C + (CPermutation((1,0)) << A)
-    test_perm2 = (1,0,3,2)
+    assert (
+        CPermutation((1, 0)) << (B + C) ==
+        SeriesProduct(Concatenation(C, B), CPermutation((1, 0))))
+    assert (
+        qtp << (A + B + C) ==
+        (A + C + B) <<  qtp)
+    assert qtp << (B + C + A) == B + C + (CPermutation((1, 0)) << A)
+    test_perm2 = (1, 0, 3, 2)
     qtp2 = CPermutation(test_perm2)
-    assert qtp2 << (A + B + C) == (CPermutation((1,0)) << A) + ((C+B) << CPermutation((1,0)))
+    assert (
+        qtp2 << (A + B + C) ==
+        (CPermutation((1,0)) << A) + ((C+B) << CPermutation((1,0))))
     assert qtp << qtp2 == CPermutation(permute(test_perm, test_perm2))
 
 
 def test_permutation2():
     test_perm = (0,1,2,5,6,3,4)
     qtp = CPermutation.create(test_perm)
-    assert qtp.series_inverse() == CPermutation.create(invert_permutation(test_perm))
+    assert (
+        qtp.series_inverse() ==
+        CPermutation.create(invert_permutation(test_perm)))
     assert qtp.block_structure == (1,1,1,4)
     id1 = circuit_identity(1)
     assert qtp.get_blocks() == (id1, id1, id1, CPermutation.create((2,3,0,1)))
 
-    assert CPermutation((1,0,3,2)).get_blocks() == (CPermutation((1,0)), CPermutation((1,0)))
+    assert (
+        CPermutation((1,0,3,2)).get_blocks() ==
+        (CPermutation((1,0)), CPermutation((1,0))))
     nt = len(test_perm)
     assert qtp << qtp.series_inverse() == circuit_identity(nt)
-    assert permute(list(invert_permutation(test_perm)), test_perm) == list(range(nt))
+    assert (
+        permute(list(invert_permutation(test_perm)), test_perm) ==
+        list(range(nt)))
 
 
 def test_factorize_permutation():
@@ -290,28 +312,50 @@ def test_feedback():
     circuit_identity(1)
 
     assert FB(A+B) == A + FB(B)
-    smq = map_signals_circuit({2:1}, 3)  # == 'cid(1) + X'
+    smq = map_signals_circuit({2: 1}, 3)  # == 'cid(1) + X'
     assert smq == smq.series_inverse()
 
-    assert ( smq << (B + C)).feedback(out_port = 2, in_port = 1) == B.feedback() + C
+    assert (
+        (smq << (B + C)).feedback(out_port=2, in_port=1) ==
+        B.feedback() + C)
 
-    assert ( smq << (B + C) << smq).feedback() == B.feedback() + C
+    assert (smq << (B + C) << smq).feedback() == B.feedback() + C
 
     assert (B + C).feedback(out_port=1, in_port=1) == B.feedback() + C
 
-    #check that feedback is resolved into series when possible
+    #  check that feedback is resolved into series when possible
     b_feedback = B.feedback(out_port=1, in_port=0)
-    series_D_C = b_feedback.substitute({B:(C+D)})
+    series_D_C = b_feedback.substitute({B: (C + D)})
     assert series_D_C == C << D
-    assert (A << (B + cid(1))).feedback() == A.feedback() << B
-    assert (A << (B + cid(1)) << (cid(1) + P_sigma(1,0))).feedback(out_port=2, in_port=1) == A.feedback() << B
-    assert (A << (cid(1) + P_sigma(1,0)) << (B + cid(1)) << (cid(1) + P_sigma(1,0))).feedback(out_port=1, in_port=1) == A.feedback(out_port=1, in_port=1) << B
-    assert (B << (cid(1)  + C)).feedback(out_port=0, in_port=1).substitute({B: (A1 + A2)}) == A2 << C << A1
-    assert ((cid(1)  + C)<< P_sigma(1,0) << B).feedback(out_port=1, in_port=1).substitute({B: (A1 + A2)}) == A2 << C << A1
-    assert ((cid(1)  + C)<< P_sigma(1,0) << B << (cid(1) + D)).feedback(out_port=1, in_port=1).substitute({B: (A1 + A2)}) == A2 << D<< C << A1
+    assert (
+        (A << (B + cid(1))).feedback() ==
+        A.feedback() << B)
+    assert (
+        (A << (B + cid(1)) << (cid(1) + P_sigma(1, 0)))
+        .feedback(out_port=2, in_port=1) ==
+        A.feedback() << B)
+    assert (
+        (A << (cid(1) + P_sigma(1, 0)) <<
+            (B + cid(1)) << (cid(1) + P_sigma(1, 0)))
+        .feedback(out_port=1, in_port=1) ==
+        A.feedback(out_port=1, in_port=1) << B)
+    assert (
+        (B << (cid(1) + C)).feedback(out_port=0, in_port=1)
+        .substitute({B: (A1 + A2)}) ==
+        A2 << C << A1)
+    assert (
+        ((cid(1) + C) << P_sigma(1, 0) << B)
+        .feedback(out_port=1, in_port=1)
+        .substitute({B: (A1 + A2)}) ==
+        A2 << C << A1)
+    assert (
+        ((cid(1) + C) << P_sigma(1, 0) << B << (cid(1) + D))
+        .feedback(out_port=1, in_port=1)
+        .substitute({B: (A1 + A2)}) ==
+        A2 << D << C << A1)
 
-    #check for correctness of the SLH triple in non-trivial cases, i.e.,
-    #S[k, l] != 0 _and_ L[k] != 0 when feeding back from port k to port l.
+    # check for correctness of the SLH triple in non-trivial cases, i.e.,
+    # S[k, l] != 0 _and_ L[k] != 0 when feeding back from port k to port l.
     a = Destroy(hs=1)
     theta, phi = sympy.symbols('theta phi', real=True)
     gamma, epsilon = sympy.symbols('gamma epsilon', positive=True)
