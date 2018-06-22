@@ -102,7 +102,7 @@ def test_srepr_local_space():
 def test_srepr_circuit_elements():
     """Test the representation of "atomic" circuit algebra elements"""
     assert (srepr(CircuitSymbol("C_1", cdim=2)) ==
-            "CircuitSymbol('C_1', 2)")
+            "CircuitSymbol('C_1', cdim=2)")
     assert (srepr(CIdentity) ==
             r'CIdentity')
     assert (srepr(CircuitZero) ==

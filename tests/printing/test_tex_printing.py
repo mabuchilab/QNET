@@ -84,8 +84,8 @@ def test_tex_circuit_elements():
     """Test the tex representation of "atomic" circuit algebra elements"""
     assert latex(CircuitSymbol("C", cdim=2)) == 'C'
     assert latex(CircuitSymbol("C_1", cdim=2)) == 'C_{1}'
-    assert latex(CircuitSymbol("Xi_2", 2)) == r'\Xi_{2}'
-    assert latex(CircuitSymbol("Xi_full", 2)) == r'\Xi_{\text{full}}'
+    assert latex(CircuitSymbol("Xi_2", cdim=2)) == r'\Xi_{2}'
+    assert latex(CircuitSymbol("Xi_full", cdim=2)) == r'\Xi_{\text{full}}'
     assert latex(CIdentity) == r'{\rm cid}(1)'
     assert latex(cid(4)) == r'{\rm cid}(4)'
     assert latex(CircuitZero) == r'{\rm cid}(0)'

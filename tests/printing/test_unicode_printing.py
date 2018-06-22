@@ -46,8 +46,8 @@ def test_unicode_circuit_elements():
     C_1 = CircuitSymbol("C_1", cdim=2)
     assert unicode(C_1) == 'C₁'
     assert unicode(C_1, unicode_sub_super=False) == 'C_1'
-    assert unicode(CircuitSymbol("Xi_2", 2)) == 'Ξ₂'
-    assert unicode(CircuitSymbol("Xi_full", 2)) == 'Ξ_full'
+    assert unicode(CircuitSymbol("Xi_2", cdim=2)) == 'Ξ₂'
+    assert unicode(CircuitSymbol("Xi_full", cdim=2)) == 'Ξ_full'
     assert unicode(CIdentity) == 'CIdentity'
     assert unicode(cid(4)) == 'cid(4)'
     assert unicode(CircuitZero) == 'CircuitZero'

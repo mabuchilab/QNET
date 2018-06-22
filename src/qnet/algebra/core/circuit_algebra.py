@@ -75,8 +75,8 @@ class Circuit(metaclass=ABCMeta):
         this gives a tuple of cdim values of the subblocks.
         E.g. if A and B are irreducible and have ``A.cdim = 2``, ``B.cdim = 3``
 
-            >>> A = CircuitSymbol('A', 2)
-            >>> B = CircuitSymbol('B', 3)
+            >>> A = CircuitSymbol('A', cdim=2)
+            >>> B = CircuitSymbol('B', cdim=3)
 
         Then the block structure of their Concatenation is:
 
@@ -572,7 +572,7 @@ class CircuitSymbol(Circuit, Expression):
     """
     _rx_name = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
 
-    def __init__(self, name, cdim):
+    def __init__(self, name, *, cdim):
         name = str(name)
         cdim = int(cdim)
         self._name = name
@@ -580,7 +580,7 @@ class CircuitSymbol(Circuit, Expression):
         if not self._rx_name.match(name):
             raise ValueError("name '%s' does not match pattern '%s'"
                              % (self.name, self._rx_name.pattern))
-        super().__init__(name, cdim)
+        super().__init__(name, cdim=cdim)
 
     @property
     def name(self):
@@ -588,7 +588,11 @@ class CircuitSymbol(Circuit, Expression):
 
     @property
     def args(self):
-        return self._name, self._cdim
+        return (self._name, )
+
+    @property
+    def kwargs(self):
+        return {'cdim': self.cdim}
 
     @property
     def cdim(self):
@@ -1426,8 +1430,8 @@ def pad_with_identity(circuit, k, n):
     dimension N+n, where the channels k, k+1, ...k+n-1, just pass through the
     system unaffected.  E.g. let A, B be two single channel systems
 
-        >>> A = CircuitSymbol('A', 1)
-        >>> B = CircuitSymbol('B', 1)
+        >>> A = CircuitSymbol('A', cdim=1)
+        >>> B = CircuitSymbol('B', cdim=1)
         >>> print(ascii(pad_with_identity(A+B, 1, 2)))
         A + cid(2) + B
 

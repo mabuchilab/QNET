@@ -25,7 +25,7 @@ symbol_counter = 0
 
 def get_symbol(cdim):
     global symbol_counter
-    sym = CircuitSymbol('test_%d' % symbol_counter, cdim)
+    sym = CircuitSymbol('test_%d' % symbol_counter, cdim=cdim)
     symbol_counter += 1
     return sym
 
@@ -37,10 +37,10 @@ def get_symbols(*cdim):
 def test_circuit_symbol_hashing():
     """Check that CircuitSymbol have the same hash value if they are the
     same"""
-    A1 = CircuitSymbol('A', 1)
-    A2 = CircuitSymbol('A', 2)
-    B1 = CircuitSymbol('B', 1)
-    a1 = CircuitSymbol('A', '1')
+    A1 = CircuitSymbol('A', cdim=1)
+    A2 = CircuitSymbol('A', cdim=2)
+    B1 = CircuitSymbol('B', cdim=1)
+    a1 = CircuitSymbol('A', cdim='1')
     assert A1 == a1
     assert hash(A1) == hash(a1)
     assert A1 is not B1
@@ -109,11 +109,11 @@ def test_concatenation():
 
 
 def test_distributive_law():
-    A = CircuitSymbol('A', 2)
-    B = CircuitSymbol('B', 1)
-    C = CircuitSymbol('C', 1)
-    D = CircuitSymbol('D', 1)
-    E = CircuitSymbol('E', 1)
+    A = CircuitSymbol('A', cdim=2)
+    B = CircuitSymbol('B', cdim=1)
+    C = CircuitSymbol('C', cdim=1)
+    D = CircuitSymbol('D', cdim=1)
+    E = CircuitSymbol('E', cdim=1)
     assert (A+B) << (C+D+E) == Concatenation(A<<(C+D), B << E)
     assert (C+D+E) << (A+B) == Concatenation((C+D)<< A,  E<< B)
     assert (A+B) << (C+D+E) << (A+B) == Concatenation(A << (C+D)<< A,  B << E<< B)
@@ -209,12 +209,12 @@ def test_factorize_permutation():
     # special test case that helped find the major permutation block structure
     # factorization bug
     p = P_sigma(3, 4, 5, 0, 1, 6, 2)
-    q = cid(3) + CircuitSymbol('NAND1', 4)
+    q = cid(3) + CircuitSymbol('NAND1', cdim=4)
 
     new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(q)
     assert new_lhs == P_sigma(0, 1, 2, 6, 3, 4, 5)
     assert permuted_rhs == (
-        (P_sigma(0, 1, 3, 2) << CircuitSymbol('NAND1', 4)) + cid(3))
+        (P_sigma(0, 1, 3, 2) << CircuitSymbol('NAND1', cdim=4)) + cid(3))
     assert new_rhs == P_sigma(4, 5, 6, 0, 1, 2, 3)
 
 
@@ -377,17 +377,17 @@ def test_inverse():
 
 def test_pad_with_identity():
     """Test that pad_with_identity inserts identity channels correctly"""
-    A = CircuitSymbol('A', 1)
-    B = CircuitSymbol('B', 1)
+    A = CircuitSymbol('A', cdim=1)
+    B = CircuitSymbol('B', cdim=1)
     res = pad_with_identity(A+B, 1, 2)
     expected = A + cid(2) + B
     assert res == expected
 
 
 def connect_data():
-    A = CircuitSymbol('A', 1)
-    B = CircuitSymbol('B', 1)
-    C = CircuitSymbol('C', 2)
+    A = CircuitSymbol('A', cdim=1)
+    B = CircuitSymbol('B', cdim=1)
+    C = CircuitSymbol('C', cdim=2)
     return [
         ([A, B],                 # components
          [((0, 0), (1, 0))],     # connection

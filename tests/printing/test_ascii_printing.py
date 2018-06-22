@@ -39,10 +39,10 @@ def test_ascii_circuit_elements():
     """Test the ascii representation of "atomic" circuit algebra elements"""
     assert ascii(CircuitSymbol("C", cdim=2)) == 'C'
     assert ascii(CircuitSymbol("C_1", cdim=2)) == 'C_1'
-    assert ascii(CircuitSymbol("Xi_2", 2)) == 'Xi_2'
-    assert ascii(CircuitSymbol("Xi_full", 2)) == 'Xi_full'
+    assert ascii(CircuitSymbol("Xi_2", cdim=2)) == 'Xi_2'
+    assert ascii(CircuitSymbol("Xi_full", cdim=2)) == 'Xi_full'
     with pytest.raises(ValueError):
-        CircuitSymbol(r'\Xi^2', 2)
+        CircuitSymbol(r'\Xi^2', cdim=2)
     assert ascii(CIdentity) == 'CIdentity'
     assert ascii(cid(4)) == 'cid(4)'
     assert ascii(CircuitZero) == 'CircuitZero'

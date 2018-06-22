@@ -132,10 +132,10 @@ class Pattern():
 
         Consider the following nested circuit expression::
 
-            >>> C1 = CircuitSymbol('C1', 3)
-            >>> C2 = CircuitSymbol('C2', 3)
-            >>> C3 = CircuitSymbol('C3', 3)
-            >>> C4 = CircuitSymbol('C4', 3)
+            >>> C1 = CircuitSymbol('C1', cdim=3)
+            >>> C2 = CircuitSymbol('C2', cdim=3)
+            >>> C3 = CircuitSymbol('C3', cdim=3)
+            >>> C4 = CircuitSymbol('C4', cdim=3)
             >>> perm1 = CPermutation((2, 1, 0))
             >>> perm2 = CPermutation((0, 2, 1))
             >>> concat_expr = Concatenation(

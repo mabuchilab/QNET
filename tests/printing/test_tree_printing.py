@@ -29,10 +29,10 @@ def test_circuit_tree():
     . Feedback(..., out_port=2, in_port=0)
       └─ Concatenation(..., CIdentity)
          ├─ SeriesProduct(A_test, β ⊞ γ)
-         │  ├─ CircuitSymbol(A_test, 2)
+         │  ├─ CircuitSymbol(A_test, cdim=2)
          │  └─ Concatenation(β, γ)
-         │     ├─ CircuitSymbol(β, 1)
-         │     └─ CircuitSymbol(γ, 1)
+         │     ├─ CircuitSymbol(β, cdim=1)
+         │     └─ CircuitSymbol(γ, cdim=1)
          └─ CIdentity
     ''').strip()
     tree = tree_str(expr, srepr_leaves=True)
@@ -40,10 +40,10 @@ def test_circuit_tree():
     . Feedback(..., out_port=2, in_port=0)
       └─ Concatenation(..., CIdentity)
          ├─ SeriesProduct(A_test, β ⊞ γ)
-         │  ├─ CircuitSymbol('A_test', 2)
+         │  ├─ CircuitSymbol('A_test', cdim=2)
          │  └─ Concatenation(β, γ)
-         │     ├─ CircuitSymbol('beta', 1)
-         │     └─ CircuitSymbol('gamma', 1)
+         │     ├─ CircuitSymbol('beta', cdim=1)
+         │     └─ CircuitSymbol('gamma', cdim=1)
          └─ CIdentity
     ''').strip()
 

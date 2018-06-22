@@ -48,28 +48,28 @@ class TestVisualizationPNG(unittest.TestCase):
         remove(self.fname)
 
     def testDrawSymbol(self):
-        self.assertCanBeDrawn(CircuitSymbol('b',1))
-        self.assertCanBeDrawn(CircuitSymbol('b',2))
+        self.assertCanBeDrawn(CircuitSymbol('b', cdim=1))
+        self.assertCanBeDrawn(CircuitSymbol('b', cdim=2))
 
     def testDrawCPermutation(self):
         self.assertCanBeDrawn(CPermutation((0,2,3,1)))
 
     def testDrawSeries(self):
-        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a',5),CircuitSymbol('b',5)))
+        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a', cdim=5),CircuitSymbol('b', cdim=5)))
 
     def testDrawConcatenation(self):
-        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', cdim=5), CircuitSymbol('b', cdim=5)))
 
     def testDrawIdentity(self):
         self.assertCanBeDrawn(cid(5))
 
     def testDrawFeedback(self):
-        self.assertCanBeDrawn(Feedback(CircuitSymbol('M',5), out_port=3, in_port=4))
+        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', cdim=5), out_port=3, in_port=4))
 
     def testDrawNested(self):
-        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a',2),Concatenation(CircuitSymbol('b',1), CircuitSymbol('c',1))))
-        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))))
-        self.assertCanBeDrawn(Feedback(Concatenation(CircuitSymbol('a',2),SeriesProduct(CircuitSymbol('b',1), CircuitSymbol('c',1))), out_port=2, in_port=0))
+        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a', cdim=2),Concatenation(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))))
+        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', cdim=2),SeriesProduct(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))))
+        self.assertCanBeDrawn(Feedback(Concatenation(CircuitSymbol('a', cdim=2),SeriesProduct(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))), out_port=2, in_port=0))
 
     def testDrawSLH(self):
         self.assertCanBeDrawn(SLH(identity_matrix(1), Matrix([[Create(hs=1)]]), Create(hs=1)*Destroy(hs=1)))
@@ -109,31 +109,31 @@ class TestVisualizationEPS(unittest.TestCase):
         remove(self.fname)
 
     def testDrawSymbol(self):
-        self.assertCanBeDrawn(CircuitSymbol('b', 1))
-        self.assertCanBeDrawn(CircuitSymbol('b', 2))
+        self.assertCanBeDrawn(CircuitSymbol('b', cdim=1))
+        self.assertCanBeDrawn(CircuitSymbol('b', cdim=2))
 
     def testDrawCPermutation(self):
         self.assertCanBeDrawn(CPermutation((0, 2, 3, 1)))
 
     def testDrawSeries(self):
-        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a', cdim=5), CircuitSymbol('b', cdim=5)))
 
     def testDrawConcatenation(self):
-        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', cdim=5), CircuitSymbol('b', cdim=5)))
 
     def testDrawIdentity(self):
         self.assertCanBeDrawn(cid(5))
 
     def testDrawFeedback(self):
-        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', 5), out_port=3, in_port=4))
+        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', cdim=5), out_port=3, in_port=4))
 
     def testDrawNested(self):
         self.assertCanBeDrawn(
-            SeriesProduct(CircuitSymbol('a', 2), Concatenation(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
+            SeriesProduct(CircuitSymbol('a', cdim=2), Concatenation(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))))
         self.assertCanBeDrawn(
-            Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
+            Concatenation(CircuitSymbol('a', cdim=2), SeriesProduct(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))))
         self.assertCanBeDrawn(
-            Feedback(Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))),
+            Feedback(Concatenation(CircuitSymbol('a', cdim=2), SeriesProduct(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))),
                 out_port=2, in_port=0))
 
     def testDrawSLH(self):
@@ -175,31 +175,31 @@ class TestVisualizationPDF(unittest.TestCase):
         remove(self.fname)
 
     def testDrawSymbol(self):
-        self.assertCanBeDrawn(CircuitSymbol('b', 1))
-        self.assertCanBeDrawn(CircuitSymbol('b', 2))
+        self.assertCanBeDrawn(CircuitSymbol('b', cdim=1))
+        self.assertCanBeDrawn(CircuitSymbol('b', cdim=2))
 
     def testDrawCPermutation(self):
         self.assertCanBeDrawn(CPermutation((0, 2, 3, 1)))
 
     def testDrawSeries(self):
-        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+        self.assertCanBeDrawn(SeriesProduct(CircuitSymbol('a', cdim=5), CircuitSymbol('b', cdim=5)))
 
     def testDrawConcatenation(self):
-        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', 5), CircuitSymbol('b', 5)))
+        self.assertCanBeDrawn(Concatenation(CircuitSymbol('a', cdim=5), CircuitSymbol('b', cdim=5)))
 
     def testDrawIdentity(self):
         self.assertCanBeDrawn(cid(5))
 
     def testDrawFeedback(self):
-        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', 5), out_port=3, in_port=4))
+        self.assertCanBeDrawn(Feedback(CircuitSymbol('M', cdim=5), out_port=3, in_port=4))
 
     def testDrawNested(self):
         self.assertCanBeDrawn(
-            SeriesProduct(CircuitSymbol('a', 2), Concatenation(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
+            SeriesProduct(CircuitSymbol('a', cdim=2), Concatenation(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))))
         self.assertCanBeDrawn(
-            Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))))
+            Concatenation(CircuitSymbol('a', cdim=2), SeriesProduct(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))))
         self.assertCanBeDrawn(
-            Feedback(Concatenation(CircuitSymbol('a', 2), SeriesProduct(CircuitSymbol('b', 1), CircuitSymbol('c', 1))),
+            Feedback(Concatenation(CircuitSymbol('a', cdim=2), SeriesProduct(CircuitSymbol('b', cdim=1), CircuitSymbol('c', cdim=1))),
                 out_port=2, in_port=0))
 
     def testDrawSLH(self):
