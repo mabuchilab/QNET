@@ -83,6 +83,7 @@ def test_tex_render_string():
 def test_tex_circuit_elements():
     """Test the tex representation of "atomic" circuit algebra elements"""
     alpha, t = symbols('alpha, t')
+    theta = symbols('theta', positive=True)
     assert latex(CircuitSymbol("C", cdim=2)) == 'C'
     assert latex(CircuitSymbol("C_1", cdim=2)) == 'C_{1}'
     assert latex(CircuitSymbol("Xi_2", cdim=2)) == r'\Xi_{2}'
@@ -93,6 +94,10 @@ def test_tex_circuit_elements():
     assert latex(CIdentity) == r'{\rm cid}(1)'
     assert latex(cid(4)) == r'{\rm cid}(4)'
     assert latex(CircuitZero) == r'{\rm cid}(0)'
+    assert latex(Beamsplitter()) == r'{\rm BS}\left(\frac{\pi}{4}\right)'
+    assert (
+        latex(Beamsplitter(mixing_angle=theta)) ==
+        r'{\rm BS}\left(\theta\right)')
 
 
 def test_tex_circuit_operations():

@@ -1,3 +1,6 @@
+"""Collection of essential circuit components"""
+from functools import partial
+
 from sympy import I, cos, exp, pi, sin, symbols
 
 from ..core.circuit_algebra import Component, SLH
@@ -8,7 +11,7 @@ __all__ = ['CoherentDriveCC', 'PhaseCC', 'Beamsplitter']
 __private__ = []
 
 
-@properties_for_args
+@partial(properties_for_args, arg_names='ARGNAMES')
 class CoherentDriveCC(Component):
     r"""Coherent displacement of the input field.
 
@@ -29,24 +32,19 @@ class CoherentDriveCC(Component):
     """
 
     CDIM = 1  #: circuit dimension
-    PORTSIN = ['in']
-    PORTSOUT = ['out']
-
-    _arg_names = ('displacement', )
-
-    def __init__(self, label, displacement=symbols('alpha')):
-        super().__init__(label, displacement)
+    PORTSIN = ('in', )
+    PORTSOUT = ('out', )
+    ARGNAMES = ('displacement', )
+    DEFAULTS = {'displacement': symbols('alpha')}
+    IDENTIFIER = 'W'
 
     def _toSLH(self):
-
         S = Matrix([[1]])
         L = Matrix([[self.displacement]])
-        H = 0
-
-        return SLH(S, L, H)
+        return SLH(S, L, 0)
 
 
-@properties_for_args
+@partial(properties_for_args, arg_names='ARGNAMES')
 class PhaseCC(Component):
     r"""Coherent phase shift.
 
@@ -59,25 +57,20 @@ class PhaseCC(Component):
         phase: the phase. Defaults to a real symbol 'phi'
     """
 
-    CDIM = 1  #: circuit dimension
-    PORTSIN = ['in']
-    PORTSOUT = ['out']
-
-    _arg_names = ('phase', )
-
-    def __init__(self, label, phase=symbols('phi', real=True)):
-        super().__init__(label, phase)
+    CDIM = 1
+    PORTSIN = ('in', )
+    PORTSOUT = ('out', )
+    ARGNAMES = ('phase', )
+    DEFAULTS = {'phase': symbols('phi', real=True)}
+    IDENTIFIER = 'Phase'
 
     def _toSLH(self):
-
         S = Matrix([[exp(I * self.phase)]])
         L = Matrix([[0]])
-        H = 0
-
-        return SLH(S, L, H)
+        return SLH(S, L, 0)
 
 
-@properties_for_args
+@partial(properties_for_args, arg_names='ARGNAMES')
 class Beamsplitter(Component):
     r"""Infinite bandwidth beamsplitter model.
 
@@ -132,19 +125,15 @@ class Beamsplitter(Component):
         one or more appropriate :class:`PhaseCC` components.
     """
     CDIM = 2  #: circuit dimension
-
-    _arg_names = ('mixing_angle', )
-
-    PORTSIN = ['in', 'vac']
-    PORTSOUT = ['tr', 'rf']
-
-    def __init__(self, label, mixing_angle=pi/4):
-        super().__init__(label, mixing_angle)
+    PORTSIN = ('in', 'vac')
+    PORTSOUT = ('tr', 'rf')
+    ARGNAMES = ('mixing_angle', )
+    DEFAULTS = {'mixing_angle': pi/4}
+    IDENTIFIER = 'BS'
 
     def _toSLH(self):
         theta = self.mixing_angle
         S = Matrix([[cos(theta), -sin(theta)],
                     [sin(theta),  cos(theta)]])
-        L = Matrix([[0],
-                    [0]])
+        L = Matrix([[0], [0]])
         return SLH(S, L, 0)

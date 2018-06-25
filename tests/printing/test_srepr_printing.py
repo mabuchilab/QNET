@@ -23,7 +23,7 @@ from qnet import(
     ZeroSuperOperator, SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator,
     SuperOperatorPlus, SuperOperatorTimes, ScalarTimesSuperOperator, IdxSym,
     FockIndex, IndexOverFockSpace, srepr, ScalarValue, ScalarTimes, One, Zero,
-    SpinSpace)
+    SpinSpace, Beamsplitter)
 from qnet.printing._render_head_repr import render_head_repr
 
 
@@ -110,6 +110,11 @@ def test_srepr_circuit_elements():
         "CircuitSymbol('A', Symbol('alpha'), 0, 2, cdim=2)")
     assert srepr(CIdentity) == r'CIdentity'
     assert srepr(CircuitZero) == r'CircuitZero'
+    assert srepr(Beamsplitter()) == r'Beamsplitter()'
+    assert srepr(Beamsplitter(label='BS1')) == r"Beamsplitter(label='BS1')"
+    assert (
+        srepr(Beamsplitter(mixing_angle=alpha)) ==
+        r"Beamsplitter(mixing_angle=Symbol('alpha'))")
 
 
 def test_srepr_idx_sym():
@@ -334,6 +339,9 @@ def circuit_exprs():
         CircuitSymbol("C_1", cdim=2),
         CIdentity,
         CircuitZero,
+        Beamsplitter(),
+        Beamsplitter(label='BS1'),
+        Beamsplitter(label='BS1', mixing_angle=symbols('phi', positive=True)),
         A << B << C,
         A + B + C,
         A << (beta + gamma),

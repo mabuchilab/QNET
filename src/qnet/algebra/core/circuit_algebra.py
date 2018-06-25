@@ -276,11 +276,11 @@ class Circuit(metaclass=ABCMeta):
                 CoherentDriveCC as Displace_cc)
 
         if n_inputs == 1:
-            concat_displacements = Displace_cc('W', displacement=input_amps[0])
+            concat_displacements = Displace_cc(displacement=input_amps[0])
         else:
-            displacements = [Displace_cc('W', displacement=amp) if amp != 0
-                             else cid(1)
-                             for amp in input_amps]
+            displacements = [
+                Displace_cc(displacement=amp) if amp != 0 else cid(1)
+                for amp in input_amps]
             concat_displacements = Concatenation(*displacements)
         return self << concat_displacements
 
@@ -616,47 +616,115 @@ class Component(CircuitSymbol, metaclass=ABCMeta):
     A circuit component is a :class:`CircuitSymbol` that knows its own SLH
     representation. Consequently, it has a fixed number of I/O
     channels (:attr:`CDIM` class attribute), and a fixed number of named
-    arguments.
+    arguments. Components only accept keyword arguments.
 
-    Subclasses of :class:`Component` should use the
-    :func:`.properties_for_args` class decorator
+    Any subclass of :class:`Component` must define all of the class attributes
+    listed below, and the :meth:`_toSLH` method that return the :class:`SLH`
+    object for the component. Subclasses must also use the
+    :func:`.properties_for_args` class decorator::
+
+        @partial(properties_for_args, arg_names='ARGNAMES')
 
     Args:
-        label (str): label for the component
-        sym_args: list of arguments
+        label (str): label for the component. Defaults to :attr:`IDENTIFIER`
+        kwargs: values for the parameters in :attr:`ARGNAMES`
 
-    Attributes:
+    Class Attributes:
         CDIM: the circuit dimension (number of I/O channels)
         PORTSIN: list of names for the input ports of the component
         PORTSOUT: list of names for the output ports of the component
+        ARGNAMES: the name of the keyword-arguments for the components
+            (excluding ``'label'``)
+        DEFAULTS: mapping of keyword-argument names to default values
+        IDENTIFIER: the default `label`
 
     Note:
         The port names defined in :attr:`PORTSIN` and :attr:`PORTSOUT` may be
         used when defining connection via :func:`.connect`.
+
+    See also:
+        :mod:`qnet.algebra.library.circuit_components` for example
+        :class:`Component` subclasses.
     """
 
-    CDIM = 0  #: the component's circuit dimension (number of I/O channels)
+    CDIM = 0
+    PORTSIN = ()
+    PORTSOUT = ()
+    ARGNAMES = ()
+    DEFAULTS = {}
+    IDENTIFIER = ''
 
-    PORTSIN = ()  #: ingoing port names
-
-    PORTSOUT = ()  #: outgoing port names
-
-    _arg_names = ()  # names of args that can be passed to __init__
-
-    def __init__(self, label, *sym_args):
-        assert self.CDIM > 0
+    def __init__(self, *, label=None, **kwargs):
+        # since Components are commonly user-defined, we do a quick
+        # sanity-check that they've defined the necessary class attributes
+        # correctly:
+        assert isinstance(self.CDIM, int) and self.CDIM > 0
         assert len(self.PORTSIN) == self.CDIM
+        assert all([isinstance(name, str) for name in self.PORTSIN])
         assert len(self.PORTSOUT) == self.CDIM
-        if len(sym_args) != len(self._arg_names):
-            raise ValueError("expected %d arguments, gotten %d"
-                             % (len(self._arg_names), len(sym_args)))
-        for i, arg_name in enumerate(self._arg_names):
-            self.__dict__['_%s' % arg_name] = sym_args[i]
-        super().__init__(label, *sym_args, cdim=self.CDIM)
+        assert all([isinstance(name, str) for name in self.PORTSOUT])
+        assert len(self.DEFAULTS.keys()) == len(self.ARGNAMES)
+        assert all([name in self.DEFAULTS.keys() for name in self.ARGNAMES])
+        assert isinstance(self.IDENTIFIER, str) and len(self.IDENTIFIER) > 0
+        assert self._has_properties_for_args, \
+            "must use properties_for_args class decorater"
+
+        if label is None:
+            label = self.IDENTIFIER
+        else:
+            label = str(label)
+
+        for arg_name in kwargs:
+            if arg_name not in self.ARGNAMES:
+                raise TypeError(
+                    "%s got an unexpected keyword argument '%s'"
+                    % (self.__class__.__name__, arg_name))
+
+        self._kwargs = OrderedDict([('label', label)])
+        self._minimal_kwargs = OrderedDict()
+        if label != self.IDENTIFIER:
+            self._minimal_kwargs['label'] = label
+
+        args = []
+        for arg_name in self.ARGNAMES:
+            val = kwargs.get(arg_name, self.DEFAULTS[arg_name])
+            args.append(val)
+            self.__dict__['_%s' % arg_name] = val
+            # properties_for_args class decorator creates properties for each
+            # arg_name
+            self._kwargs[arg_name] = val
+            if val != self.DEFAULTS[arg_name]:
+                self._minimal_kwargs[arg_name] = val
+
+        super().__init__(label, *args, cdim=self.CDIM)
+
+    @property
+    def args(self):
+        """Empty tuple (no arguments)
+
+        See also:
+            :attr:`~CircuitSymbol.sym_args` is a tuple of the keyword argument
+            values.
+        """
+        return ()
+
+    @property
+    def kwargs(self):
+        """An :class:`.OrderedDict` with the value for the `label` argument, as
+        well as any name in :attr:`ARGNAMES`
+        """
+        return self._kwargs
+
+    @property
+    def minimal_kwargs(self):
+        """An :class:`.OrderedDict` with the keyword arguments necessary to
+        instantiate the component.
+        """
+        return self._minimal_kwargs
 
     @abstractmethod
     def _toSLH(self):
-        raise NotImplementedError()
+        pass
 
 
 class CPermutation(Circuit, Expression):
@@ -713,7 +781,7 @@ class CPermutation(Circuit, Expression):
         """
         if not self._block_perms:
             self._block_perms = permutation_to_block_permutations(
-                                                              self.permutation)
+                self.permutation)
         return self._block_perms
 
     @property

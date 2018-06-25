@@ -23,7 +23,7 @@ def connect(components, connections, force_SLH=False, expand_simplify=True):
     Example:
         >>> A = CircuitSymbol('A', cdim=2)
         >>> B = CircuitSymbol('B', cdim=2)
-        >>> BS = Beamsplitter('BS')
+        >>> BS = Beamsplitter()
         >>> circuit = connect(
         ...     components=[A, B, BS],
         ...     connections=[

@@ -1,3 +1,4 @@
+from functools import partial
 from collections import defaultdict
 import sympy
 from sympy import I
@@ -63,6 +64,29 @@ def test_circuit_symbol_with_symargs():
     assert A.bound_symbols == set()
     assert A.all_symbols == A.free_symbols
     assert A.substitute({t: 0}) == CircuitSymbol('A', alpha, 0.0, cdim=2)
+
+
+def test_component_kwargs():
+    """Test the args, kwargs, and minimal_kwargs of a component"""
+    from sympy import pi
+
+    BS = Beamsplitter()
+    assert BS.args == ()
+    assert len(BS.minimal_kwargs) == 0
+    assert BS.kwargs == {'label': 'BS', 'mixing_angle': pi/4}
+
+    BS = Beamsplitter(label='BS2')
+    assert BS.args == ()
+    assert BS.minimal_kwargs == {'label': 'BS2'}
+    assert BS.kwargs == {'label': 'BS2', 'mixing_angle': pi/4}
+
+    BS = Beamsplitter(mixing_angle=0)
+    assert BS.args == ()
+    assert BS.minimal_kwargs == {'mixing_angle': 0}
+    assert BS.kwargs == {'label': 'BS', 'mixing_angle': 0}
+
+    BS = Beamsplitter(label='BS2', mixing_angle=0)
+    assert BS.kwargs == BS.minimal_kwargs
 
 
 def test_permutation():
@@ -383,8 +407,8 @@ def test_feedback():
     div = 1 + eip * st ** 2
 
     cav = SLH([[1]], [sq2 * sqg * a], 0)
-    bs = Beamsplitter('theta', mixing_angle=theta)
-    ph = PhaseCC('phi', phase=phi)
+    bs = Beamsplitter(label='theta', mixing_angle=theta)
+    ph = PhaseCC(label='phi', phase=phi)
     flip = map_signals_circuit({1: 0}, 2)
 
     sys = (
@@ -449,7 +473,7 @@ def connect_data():
     B = CircuitSymbol('B', cdim=1)
     C = CircuitSymbol('C', cdim=2)
     D = CircuitSymbol('D', cdim=2)
-    BS = Beamsplitter('BS')
+    BS = Beamsplitter()
     Perm = CPermutation
     return [
         ([A, B],                 # components
@@ -507,11 +531,11 @@ def test_component_hash():
     occur by using them as dictionary keys
     """
     counts = defaultdict(int)
-    BS1 = Beamsplitter('BS')
-    BS2 = Beamsplitter('BS')
+    BS1 = Beamsplitter()
+    BS2 = Beamsplitter()
     assert BS1 == BS2
-    assert BS1 != Beamsplitter('BS', mixing_angle=0)
-    assert hash(BS1) != hash(Beamsplitter('BS', mixing_angle=0))
+    assert BS1 != Beamsplitter(label='BS', mixing_angle=0)
+    assert hash(BS1) != hash(Beamsplitter(label='BS', mixing_angle=0))
     assert hash(BS1) == hash(BS2)
     counts[BS1] += 1
     counts[BS2] += 1
@@ -522,7 +546,7 @@ def test_connect_invalid():
     """Test that calling `connect` with invalid data raises a ValueError"""
     A = CircuitSymbol('A', cdim=1)
     B = CircuitSymbol('B', cdim=1)
-    BS = Beamsplitter('BS')
+    BS = Beamsplitter()
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((A, 0), (B, 0))])
     assert 'not in the list of components' in str(exc_info.value)
@@ -558,20 +582,18 @@ def test_connect_invalid():
     assert 'reference it by index' in str(exc_info.value)
 
 
-@properties_for_args
+@partial(properties_for_args, arg_names='ARGNAMES')
 class CavityCC(Component):
     """Single-sided cavity circuit component"""
     CDIM = 1
+    ARGNAMES = ('hs', 'Delta', 'kappa')
+    DEFAULTS = {
+        'hs': 0,
+        'Delta': sympy.symbols('Delta', real=True),
+        'kappa': sympy.symbols('kappa', real=True)}
     PORTSIN = ("in", )
     PORTSOUT = ("out", )
-
-    _arg_names = ('hs', 'Delta', 'kappa')
-
-    def __init__(
-            self, label, hs, Delta=sympy.symbols('Delta', real=True),
-            kappa=sympy.symbols('kappa', real=True)):
-        hs = ensure_local_space(hs)
-        super().__init__(label, hs, Delta, kappa)
+    IDENTIFIER = 'cav'
 
     def _toSLH(self):
         a = Destroy(hs=self.hs)
@@ -585,9 +607,9 @@ class CavityCC(Component):
 
 def test_connect_to_slh():
 
-    cav1 = CavityCC('cav1', 1)
-    cav2 = CavityCC('cav2', 2)
-    BS = Beamsplitter('BS')
+    cav1 = CavityCC(label='cav1', hs=1)
+    cav2 = CavityCC(label='cav2', hs=2)
+    BS = Beamsplitter()
     circuit = connect(
         components=[cav1, BS, cav2],
         connections=[
@@ -606,9 +628,9 @@ def test_connect_to_slh():
 
 def test_duplicate_component():
     """Test that we can build a circuit containing two identical components"""
-    cav = CavityCC('cav', 1)
-    BS = Beamsplitter('BS')
-    BS2 = Beamsplitter('BS2')
+    cav = CavityCC(hs=1)
+    BS = Beamsplitter()
+    BS2 = Beamsplitter(label='BS2')
     circuit1 = connect(
         components=[BS, cav, BS2],
         connections=[
@@ -688,7 +710,7 @@ def test_move_drive_to_H():
 
     # Single Drive
     α = sympy.symbols('alpha')
-    W = CoherentDriveCC('W', displacement=α)
+    W = CoherentDriveCC(displacement=α)
     SLH_driven = (SLH1 << W).toSLH()
     SLH_driven_out = move_drive_to_H(SLH_driven)
     assert SLH_driven_out.S == SLH1.S
@@ -698,7 +720,7 @@ def test_move_drive_to_H():
 
     # Concatenated drives (single channel)
     β = sympy.symbols('beta')
-    Wb = CoherentDriveCC('W', displacement=β)
+    Wb = CoherentDriveCC(displacement=β)
     SLH_concat_driven = (SLH1 << Wb << W).toSLH()
     SLH_concat_driven_out = move_drive_to_H(SLH_concat_driven)
     assert SLH_concat_driven_out.S == SLH1.S
@@ -710,8 +732,8 @@ def test_move_drive_to_H():
     # Two Drives (two channels)
     α1 = sympy.symbols('alpha_1')
     α2 = sympy.symbols('alpha_2')
-    W1 = CoherentDriveCC('W', displacement=α1)
-    W2 = CoherentDriveCC('W', displacement=α2)
+    W1 = CoherentDriveCC(displacement=α1)
+    W2 = CoherentDriveCC(displacement=α2)
     SLH2_driven = (SLH2 << (W1 + W2)).toSLH()
     term2 = SLH2_driven.H.expand().operands
     # ###  remove both inhomogeneities (implicitly)

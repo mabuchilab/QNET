@@ -38,6 +38,7 @@ def test_ascii_scalar():
 def test_ascii_circuit_elements():
     """Test the ascii representation of "atomic" circuit algebra elements"""
     alpha, t = symbols('alpha, t')
+    theta = symbols('theta', positive=True)
     assert ascii(CircuitSymbol("C", cdim=2)) == 'C'
     assert ascii(CircuitSymbol("C_1", cdim=2)) == 'C_1'
     assert ascii(CircuitSymbol("Xi_2", cdim=2)) == 'Xi_2'
@@ -48,6 +49,9 @@ def test_ascii_circuit_elements():
     assert ascii(CIdentity) == 'CIdentity'
     assert ascii(cid(4)) == 'cid(4)'
     assert ascii(CircuitZero) == 'CircuitZero'
+    assert ascii(Beamsplitter()) == 'BS(pi/4)'
+    assert ascii(Beamsplitter(mixing_angle=theta)) == 'BS(theta)'
+    assert ascii(Beamsplitter(label='BS1')) == 'BS1(pi/4)'
 
 
 def test_ascii_circuit_operations():

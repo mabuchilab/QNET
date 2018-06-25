@@ -43,6 +43,7 @@ def test_unicode_scalar():
 def test_unicode_circuit_elements():
     """Test the unicode representation of "atomic" circuit algebra elements"""
     alpha, t = symbols('alpha, t')
+    theta = symbols('theta', positive=True)
     assert unicode(CircuitSymbol("C", cdim=2)) == 'C'
     C_1 = CircuitSymbol("C_1", cdim=2)
     assert unicode(C_1) == 'C₁'
@@ -53,6 +54,8 @@ def test_unicode_circuit_elements():
     assert unicode(CIdentity) == 'CIdentity'
     assert unicode(cid(4)) == 'cid(4)'
     assert unicode(CircuitZero) == 'CircuitZero'
+    assert unicode(Beamsplitter()) == 'BS(π/4)'
+    assert unicode(Beamsplitter(mixing_angle=theta)) == 'BS(θ)'
 
 
 def test_unicode_circuit_operations():

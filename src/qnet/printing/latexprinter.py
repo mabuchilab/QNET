@@ -226,6 +226,24 @@ class QnetLatexPrinter(QnetAsciiPrinter):
     def _print_SeriesInverse(self, expr):
         return r'\left[%s\right]^{\rhd}' % self.doprint(expr.operand)
 
+    def _print_CircuitSymbol(self, expr):
+        res = self._render_str(expr.label)
+        if len(expr.sym_args) > 0:
+            res += (
+                self._parenth_left +
+                ", ".join([self.doprint(arg) for arg in expr.sym_args]) +
+                self._parenth_right)
+        return res
+
+    def _print_Component(self, expr):
+        res = r'{\rm %s}' % self._render_str(expr.label)
+        if len(expr.sym_args) > 0:
+            res += (
+                self._parenth_left +
+                ", ".join([self.doprint(arg) for arg in expr.sym_args]) +
+                self._parenth_right)
+        return res
+
     def _print_CPermutation(self, expr):
         permutation_sym = r'\mathbf{P}_{\sigma}'
         return r'%s\begin{pmatrix} %s \\ %s \end{pmatrix}' % (
