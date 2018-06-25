@@ -23,17 +23,15 @@ from .algebraic_properties import (
 from .exceptions import (
     AlgebraError, BasisNotSetError, CannotConvertToSLH,
     CannotEliminateAutomatically, CannotVisualize, IncompatibleBlockStructures,
-    WrongCDimError, )
-from .hilbert_space_algebra import (
-    FullSpace, LocalSpace, ProductSpace, TrivialSpace, )
+    WrongCDimError)
+from .hilbert_space_algebra import LocalSpace, ProductSpace
 from .matrix_algebra import (
     Im, ImAdjoint, Matrix, block_matrix, identity_matrix, permutation_matrix,
-    vstackm, zerosm, )
+    vstackm, zerosm)
 from .operator_algebra import (
     IdentityOperator, LocalProjector, LocalSigma, Operator,
     OperatorPlus, OperatorSymbol, ScalarTimesOperator, ZeroOperator, adjoint,
-    get_coeffs, )
-from .scalar_algebra import ScalarValue
+    get_coeffs)
 from ...utils.permutations import (
     BadPermutationError, block_perm_and_perms_within_blocks, check_permutation,
     full_block_perm, invert_permutation, permutation_to_block_permutations, )
@@ -285,12 +283,6 @@ class Circuit(metaclass=ABCMeta):
                              for amp in input_amps]
             concat_displacements = Concatenation(*displacements)
         return self << concat_displacements
-
-    @property
-    @abstractmethod
-    def space(self):
-        """Hilbert space of the circuit"""
-        raise NotImplementedError(self.__class__)
 
     def __lshift__(self, other):
         if isinstance(other, Circuit):
@@ -616,12 +608,6 @@ class CircuitSymbol(Circuit, Expression):
 
     def _creduce(self):
         return self
-
-    @property
-    def space(self):
-        """FullSpace (Circuit Symbols are not restricted to a particular
-        Hilbert space)"""
-        return FullSpace
 
 
 class Component(CircuitSymbol, metaclass=ABCMeta):
@@ -949,11 +935,6 @@ class CPermutation(Circuit, Expression):
 
             return out_inv, circuit_identity(n - 1)
 
-    @property
-    def space(self):
-        """TrivialSpace"""
-        return TrivialSpace
-
 
 @singleton_object
 class CIdentity(Circuit, Expression, metaclass=Singleton):
@@ -980,11 +961,6 @@ class CIdentity(Circuit, Expression, metaclass=Singleton):
     def _series_inverse(self):
         return self
 
-    @property
-    def space(self):
-        """TrivialSpace"""
-        return TrivialSpace
-
 
 @singleton_object
 class CircuitZero(Circuit, Expression, metaclass=Singleton):
@@ -1007,11 +983,6 @@ class CircuitZero(Circuit, Expression, metaclass=Singleton):
     def _creduce(self):
         return self
 
-    @property
-    def space(self):
-        """TrivialSpace"""
-        return TrivialSpace
-
 
 cid_1 = CIdentity
 
@@ -1028,8 +999,6 @@ class SeriesProduct(Circuit, Operation):
     _simplifications = [assoc, filter_cid, check_cdims,
                         match_replace_binary]
     _binary_rules = OrderedDict()  # see end of module
-
-    _space = None  # lazily evaluated
 
     _neutral_element = CIdentity
 
@@ -1050,15 +1019,6 @@ class SeriesProduct(Circuit, Operation):
         factors = [o.series_inverse() for o in reversed(self.operands)]
         return SeriesProduct.create(*factors)
 
-    @property
-    def space(self):
-        """Hilbert space of the series product (product space of all operators)
-        """
-        if self._space is None:
-            op_spaces = [o.space for o in self.operands]
-            self._space = ProductSpace.create(*op_spaces)
-        return self._space
-
 
 class Concatenation(Circuit, Operation):
     """The concatenation product circuit operation. It can be applied to any
@@ -1074,7 +1034,6 @@ class Concatenation(Circuit, Operation):
     neutral_element = _neutral_element
 
     def __init__(self, *operands):
-        self._space = None
         self._cdim = None
         super().__init__(*operands)
 
@@ -1160,15 +1119,6 @@ class Concatenation(Circuit, Operation):
                     map_signals_circuit({out_port: in_port - 1}, n - 1) <<
                     (b1 + circuit_identity(b2.cdim - 1)))
 
-    @property
-    def space(self):
-        """Hilbert space of the Concatenation (Product space of all
-        operators)"""
-        if self._space is None:
-            op_spaces = [o.space for o in self.operands]
-            self._space = ProductSpace.create(*op_spaces)
-        return self._space
-
 
 class Feedback(Circuit, Operation):
     """The circuit feedback operation applied to a circuit of channel
@@ -1240,12 +1190,6 @@ class Feedback(Circuit, Operation):
         return Feedback.create(self.operand.series_inverse(),
                                in_port=self.out_port, out_port=self.in_port)
 
-    @property
-    def space(self):
-        """Hilbert space of the Feedback circuit (same as the Hilbert space of
-        the operand)"""
-        return self.operand.space
-
 
 class SeriesInverse(Circuit, Operation):
     """Symbolic series product inversion operation.
@@ -1292,12 +1236,6 @@ class SeriesInverse(Circuit, Operation):
 
     def _substitute(self, var_map, **kwargs):
         return substitute(self, var_map).series_inverse()
-
-    @property
-    def space(self):
-        """Hilbert space of the series inversion circuit (same Hilbert space as
-        the series product being inverted)"""
-        return self.operand.space
 
 
 ###############################################################################
@@ -1567,7 +1505,8 @@ def getABCD(slh, a0=None, doubled_up=True):
         a0 = {}
 
     # the different degrees of freedom
-    modes = sorted(slh.space.local_factors)
+    full_space = ProductSpace.create(slh.S.space, slh.L.space, slh.H.space)
+    modes = sorted(full_space.local_factors)
 
     # various dimensions
     ncav = len(modes)
