@@ -23,8 +23,7 @@ class CoherentDriveCC(Component):
     through :func:`.move_drive_to_H`.
 
     Args:
-        label: label for the component. Physically distinct drives must have
-            different labels.
+        label: label for the component.
         displacement: the coherent displacement amplitude. Defaults to a
             complex symbol 'alpha'
     """
@@ -56,8 +55,7 @@ class PhaseCC(Component):
     Hamiltonian and Lindblad operators
 
     Args:
-        label: label for the component. Physically distinct phase shifters must
-            have different labels.
+        label: label for the component.
         phase: the phase. Defaults to a real symbol 'phi'
     """
 
@@ -111,8 +109,7 @@ class Beamsplitter(Component):
     reflection for $\theta=\pi/2$.
 
     Args:
-        label: label for the beamsplitter. Physically distinct beamsplitters
-            must have different labels.
+        label: label for the beamsplitter.
         mixing_angle: the angle that determines the ratio of transmission and
             reflection defaults to $\pi/4$, corresponding to a
             50-50-beamsplitter. It is recommended to use a sympy expression for

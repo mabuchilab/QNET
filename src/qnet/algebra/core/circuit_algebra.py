@@ -633,9 +633,6 @@ class Component(CircuitSymbol, metaclass=ABCMeta):
     Note:
         The port names defined in :attr:`PORTSIN` and :attr:`PORTSOUT` may be
         used when defining connection via :func:`.connect`.
-
-        Different physical circuit components (e.g., two different
-        beamsplitters) must be distinguished by label
     """
 
     CDIM = 0  #: the component's circuit dimension (number of I/O channels)

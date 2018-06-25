@@ -1,3 +1,4 @@
+from collections import defaultdict
 import sympy
 from sympy import I
 from numpy import array as np_array
@@ -498,6 +499,25 @@ def test_connect(components, connections, expected):
     assert res == expected
 
 
+def test_component_hash():
+    """Test that components with the same parameters are equal and have the
+    same hash.
+
+    :func:`.connect` relies on being able to count how may times components
+    occur by using them as dictionary keys
+    """
+    counts = defaultdict(int)
+    BS1 = Beamsplitter('BS')
+    BS2 = Beamsplitter('BS')
+    assert BS1 == BS2
+    assert BS1 != Beamsplitter('BS', mixing_angle=0)
+    assert hash(BS1) != hash(Beamsplitter('BS', mixing_angle=0))
+    assert hash(BS1) == hash(BS2)
+    counts[BS1] += 1
+    counts[BS2] += 1
+    assert counts[BS1] == 2
+
+
 def test_connect_invalid():
     """Test that calling `connect` with invalid data raises a ValueError"""
     A = CircuitSymbol('A', cdim=1)
@@ -505,31 +525,37 @@ def test_connect_invalid():
     BS = Beamsplitter('BS')
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((A, 0), (B, 0))])
-    assert 'refers to the component B' in str(exc_info.value)
+    assert 'not in the list of components' in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((A, 0), (2, 0))])
-    assert 'refers to the component 2' in str(exc_info.value)
+    assert 'Invalid index 2' in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((2, 0), (A, 0))])
-    assert 'refers to the component 2' in str(exc_info.value)
+    assert 'Invalid index 2' in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((B, 0), (A, 0))])
-    assert 'refers to the component B' in str(exc_info.value)
+    assert 'not in the list of components' in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((A, 0), (BS, 2))])
-    assert 'invalid input channel 2' in str(exc_info.value)
+    assert 'Invalid input channel 2' in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((A, 2), (BS, 0))])
-    assert 'invalid output channel 2' in str(exc_info.value)
+    assert 'Invalid output channel 2' in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((A, 0), (BS, 'bla'))])
     assert 'invalid input channel bla' in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((BS, 0), (A, 'bla'))])
-    assert 'invalid input channel bla' in str(exc_info.value)
+    assert 'component A does not define PORTSIN labels' in str(exc_info.value)
     with pytest.raises(ValueError) as exc_info:
         connect([A, BS], [((A, 'bla'), (BS, 0))])
-    assert 'invalid output channel bla' in str(exc_info.value)
+    assert 'component A does not define PORTSOUT labels' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS, BS], [((A, 0), (BS, 0))])
+    assert 'reference it by index' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, A, BS], [((A, 0), (BS, 0))])
+    assert 'reference it by index' in str(exc_info.value)
 
 
 @properties_for_args
@@ -576,6 +602,26 @@ def test_connect_to_slh():
         force_SLH=True)
     assert isinstance(slh, SLH)
     assert circuit.toSLH().expand() == slh
+
+
+def test_duplicate_component():
+    """Test that we can build a circuit containing two identical components"""
+    cav = CavityCC('cav', 1)
+    BS = Beamsplitter('BS')
+    BS2 = Beamsplitter('BS2')
+    circuit1 = connect(
+        components=[BS, cav, BS2],
+        connections=[
+            ((BS, 'tr'), (cav, 'in')),
+            ((cav, 'out'), (BS2, 'in')),
+            ((BS2, 'tr'), (BS, 'in'))])
+    circuit2 = connect(
+        components=[BS, cav, BS],
+        connections=[
+            ((0, 'tr'), (cav, 'in')),
+            ((cav, 'out'), (2, 'in')),
+            ((2, 'tr'), (0, 'in'))])
+    assert circuit2.toSLH() == circuit1.toSLH()
 
 
 def test_adiabatic_elimination():
