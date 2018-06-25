@@ -3,22 +3,21 @@ from sympy import I
 from numpy import array as np_array
 import pytest
 
-from qnet.algebra.core.circuit_algebra import (
+from qnet import (
     SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
-    SeriesProduct, invert_permutation, Concatenation, P_sigma, cid,
-    map_signals_circuit, FB, getABCD, CIdentity,
-    pad_with_identity, move_drive_to_H, try_adiabatic_elimination)
-from qnet.algebra.toolbox.circuit_manipulation import connect
+    SeriesProduct, Concatenation, P_sigma, cid, map_signals_circuit, FB,
+    getABCD, CIdentity, pad_with_identity, move_drive_to_H,
+    try_adiabatic_elimination, Component, connect, Operator, OperatorSymbol,
+    ZeroOperator, LocalSigma, LocalProjector, IdentityOperator, Destroy,
+    LocalSpace, Matrix, identity_matrix, CoherentDriveCC, PhaseCC,
+    Beamsplitter)
+from qnet.algebra.core.abstract_quantum_algebra import ensure_local_space
 from qnet.utils.permutations import (
-    permute, full_block_perm, block_perm_and_perms_within_blocks)
-from qnet.algebra.core.operator_algebra import (
-    Operator, OperatorSymbol, sympyOne, ZeroOperator, LocalSigma,
-    LocalProjector, IdentityOperator)
-from qnet.algebra.library.fock_operators import Destroy
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace
-from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
-from qnet.algebra.library.circuit_components import (
-    CoherentDriveCC, PhaseCC, Beamsplitter)
+    invert_permutation, permute, full_block_perm,
+    block_perm_and_perms_within_blocks)
+from qnet.utils.properties_for_args import properties_for_args
+
+sympyOne = sympy.sympify(1)
 
 symbol_counter = 0
 
@@ -383,8 +382,8 @@ def test_feedback():
     div = 1 + eip * st ** 2
 
     cav = SLH([[1]], [sq2 * sqg * a], 0)
-    bs = Beamsplitter('theta', theta=theta)
-    ph = PhaseCC('phi', phi=phi)
+    bs = Beamsplitter('theta', mixing_angle=theta)
+    ph = PhaseCC('phi', phase=phi)
     flip = map_signals_circuit({1: 0}, 2)
 
     sys = (
@@ -448,6 +447,9 @@ def connect_data():
     A = CircuitSymbol('A', cdim=1)
     B = CircuitSymbol('B', cdim=1)
     C = CircuitSymbol('C', cdim=2)
+    D = CircuitSymbol('D', cdim=2)
+    BS = Beamsplitter('BS')
+    Perm = CPermutation
     return [
         ([A, B],                 # components
          [((0, 0), (1, 0))],     # connection
@@ -467,6 +469,26 @@ def connect_data():
          [((A, 0), (C, 0))],     # connections
          C << (A + cid(1))       # expected
         ),
+        ([A, C],                 # components
+         [((A, 0), (C, 0))],     # connections
+         C << (A + cid(1))       # expected
+        ),
+        ([C, D, BS],             # components
+         [((C, 0),  (BS, 0)),    # connection 1
+          ((BS, 0), (D, 0)),     # connection 2
+          ((C, 1),  (D, 1))],    # connection 3
+         ((D + cid(1)) << Perm((0, 2, 1)) <<   # expected
+          (BS + cid(1)) << Perm((0, 2, 1)) <<
+          (C + cid(1)))
+        ),
+        ([C, D, BS],                # components
+         [((C, 0),     (BS, 'in')), # connection 1
+          ((BS, 'tr'), (D, 0)),     # connection 2
+          ((C, 1),     (D, 1))],    # connection 3
+         ((D + cid(1)) << Perm((0, 2, 1)) <<   # expected
+          (BS + cid(1)) << Perm((0, 2, 1)) <<
+          (C + cid(1)))
+        ),
     ]
 
 
@@ -474,6 +496,86 @@ def connect_data():
 def test_connect(components, connections, expected):
     res = connect(components, connections, force_SLH=False)
     assert res == expected
+
+
+def test_connect_invalid():
+    """Test that calling `connect` with invalid data raises a ValueError"""
+    A = CircuitSymbol('A', cdim=1)
+    B = CircuitSymbol('B', cdim=1)
+    BS = Beamsplitter('BS')
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((A, 0), (B, 0))])
+    assert 'refers to the component B' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((A, 0), (2, 0))])
+    assert 'refers to the component 2' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((2, 0), (A, 0))])
+    assert 'refers to the component 2' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((B, 0), (A, 0))])
+    assert 'refers to the component B' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((A, 0), (BS, 2))])
+    assert 'invalid input channel 2' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((A, 2), (BS, 0))])
+    assert 'invalid output channel 2' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((A, 0), (BS, 'bla'))])
+    assert 'invalid input channel bla' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((BS, 0), (A, 'bla'))])
+    assert 'invalid input channel bla' in str(exc_info.value)
+    with pytest.raises(ValueError) as exc_info:
+        connect([A, BS], [((A, 'bla'), (BS, 0))])
+    assert 'invalid output channel bla' in str(exc_info.value)
+
+
+@properties_for_args
+class CavityCC(Component):
+    """Single-sided cavity circuit component"""
+    CDIM = 1
+    PORTSIN = ("in", )
+    PORTSOUT = ("out", )
+
+    _arg_names = ('hs', 'Delta', 'kappa')
+
+    def __init__(
+            self, label, hs, Delta=sympy.symbols('Delta', real=True),
+            kappa=sympy.symbols('kappa', real=True)):
+        hs = ensure_local_space(hs)
+        super().__init__(label, hs, Delta, kappa)
+
+    def _toSLH(self):
+        a = Destroy(hs=self.hs)
+
+        S = Matrix([[1]])
+        L = Matrix([[sympy.sqrt(self.kappa) * a]])
+        H = self.Delta * a.dag() * a
+
+        return SLH(S, L, H)
+
+
+def test_connect_to_slh():
+
+    cav1 = CavityCC('cav1', 1)
+    cav2 = CavityCC('cav2', 2)
+    BS = Beamsplitter('BS')
+    circuit = connect(
+        components=[cav1, BS, cav2],
+        connections=[
+            ((cav1, 'out'), (BS, 'in')),
+            ((BS, 'tr'),    (cav2, 'in'))])
+    assert isinstance(circuit, SeriesProduct)
+    slh = connect(
+        components=[cav1, BS, cav2],
+        connections=[
+            ((cav1, 'out'), (BS, 'in')),
+            ((BS, 'tr'),    (cav2, 'in'))],
+        force_SLH=True)
+    assert isinstance(slh, SLH)
+    assert circuit.toSLH().expand() == slh
 
 
 def test_adiabatic_elimination():
@@ -540,7 +642,7 @@ def test_move_drive_to_H():
 
     # Single Drive
     α = sympy.symbols('alpha')
-    W = CoherentDriveCC('W', alpha=α)
+    W = CoherentDriveCC('W', displacement=α)
     SLH_driven = (SLH1 << W).toSLH()
     SLH_driven_out = move_drive_to_H(SLH_driven)
     assert SLH_driven_out.S == SLH1.S
@@ -550,7 +652,7 @@ def test_move_drive_to_H():
 
     # Concatenated drives (single channel)
     β = sympy.symbols('beta')
-    Wb = CoherentDriveCC('W', alpha=β)
+    Wb = CoherentDriveCC('W', displacement=β)
     SLH_concat_driven = (SLH1 << Wb << W).toSLH()
     SLH_concat_driven_out = move_drive_to_H(SLH_concat_driven)
     assert SLH_concat_driven_out.S == SLH1.S
@@ -562,8 +664,8 @@ def test_move_drive_to_H():
     # Two Drives (two channels)
     α1 = sympy.symbols('alpha_1')
     α2 = sympy.symbols('alpha_2')
-    W1 = CoherentDriveCC('W', alpha=α1)
-    W2 = CoherentDriveCC('W', alpha=α2)
+    W1 = CoherentDriveCC('W', displacement=α1)
+    W2 = CoherentDriveCC('W', displacement=α2)
     SLH2_driven = (SLH2 << (W1 + W2)).toSLH()
     term2 = SLH2_driven.H.expand().operands
     # ###  remove both inhomogeneities (implicitly)

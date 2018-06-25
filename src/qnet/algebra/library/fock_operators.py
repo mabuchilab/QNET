@@ -5,7 +5,8 @@ from collections import OrderedDict
 
 from ..core.hilbert_space_algebra import LocalSpace
 from ..core.algebraic_properties import implied_local_space, match_replace
-from ..core.operator_algebra import LocalOperator, properties_for_args
+from ..core.operator_algebra import LocalOperator
+from ...utils.properties_for_args import properties_for_args
 
 __all__ = [
     'Destroy', 'Create', 'Phase', 'Displace', 'Squeeze']

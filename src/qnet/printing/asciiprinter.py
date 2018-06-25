@@ -256,18 +256,6 @@ class QnetAsciiPrinter(QnetBasePrinter):
         return r'[{operand}]^{{-1}}'.format(
             operand=self.doprint(expr.operand))
 
-    def _print_Component(self, expr):
-        name = self._render_str(expr.name)
-        res = name
-        params = []
-        if len(expr._parameters) > 0:
-            for param in expr._parameters:
-                val = getattr(expr, param)
-                params.append("%s=%s" % (param, self.doprint(val)))
-            res += (
-                self._parenth_left + ", ".join(params) + self._parenth_right)
-        return res
-
     def _print_HilbertSpace(self, expr):
         return r'H_{label}'.format(
             label=self._render_hs_label(expr))

@@ -239,18 +239,6 @@ class QnetLatexPrinter(QnetAsciiPrinter):
     def _print_CircuitZero(self, expr):
         return r'{\rm cid}(0)'
 
-    def _print_Component(self, expr):
-        name = r'\text{%s}' % expr.name
-        res = name
-        params = []
-        if len(expr._parameters) > 0:
-            for param in expr._parameters:
-                val = getattr(expr, param)
-                params.append(self.doprint(val))
-            res += (
-                self._parenth_left + ", ".join(params) + self._parenth_right)
-        return res
-
     def _print_HilbertSpace(self, expr):
         return r'\mathcal{{H}}_{{{label}}}'.format(
             label=self._render_hs_label(expr))

@@ -8,11 +8,11 @@ documentation for the basic :class:`Operator` class.
 import re
 from abc import ABCMeta
 from collections import OrderedDict, defaultdict
-from functools import partial
 from itertools import product as cartesian_product
 
 from sympy import sympify
 
+from qnet.utils.properties_for_args import properties_for_args
 from .abstract_quantum_algebra import (
     ScalarTimesQuantumExpression, QuantumExpression, QuantumSymbol,
     QuantumOperation, QuantumPlus, QuantumTimes, SingleQuantumOperation,
@@ -47,7 +47,7 @@ __all__ = [
     'ZeroOperator', 'OperatorDerivative', 'Commutator', 'OperatorIndexedSum',
     'tr']
 
-__private__ = ['properties_for_args']
+__private__ = []
 # anything not in __all__ must be in __private__
 
 
@@ -139,7 +139,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
         'b^(1)'
 
     Note:
-        It is recommended that subclasses use the :func:`properties_for_args`
+        It is recommended that subclasses use the :func:`.properties_for_args`
         class decorator if they define any position arguments (via the
         :attr:`_arg_names` class attribute)
     """
@@ -220,31 +220,6 @@ class LocalOperator(Operator, metaclass=ABCMeta):
             return self.create(*args, hs=self.space)
         else:
             return super()._simplify_scalar(func=func)
-
-
-def properties_for_args(cls):
-    """For a class that defines an `_arg_names` property list, add a property
-    for every `arg_name` in the list.
-
-    It is assumed that there is an instance attribute  ``self._<arg_name>``,
-    which is returned by the `arg_name` poperty.
-    """
-    from qnet.algebra.core.scalar_algebra import Scalar
-    for arg_name in cls._arg_names:
-        def get_arg(self, name):
-            val = getattr(self, "_%s" % name)
-            if cls._scalar_args:
-                assert isinstance(val, Scalar)
-            return val
-        prop = property(partial(get_arg, name=arg_name))
-        doc = "The `%s` argument" % arg_name
-        if cls._scalar_args:
-            doc += ", as a :class:`.Scalar` instance."
-        else:
-            doc += "."
-        prop.__doc__ = doc
-        setattr(cls, arg_name, prop)
-    return cls
 
 
 ###############################################################################

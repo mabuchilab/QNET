@@ -278,9 +278,9 @@ class Circuit(metaclass=ABCMeta):
                 CoherentDriveCC as Displace_cc)
 
         if n_inputs == 1:
-            concat_displacements = Displace_cc('W', alpha=input_amps[0])
+            concat_displacements = Displace_cc('W', displacement=input_amps[0])
         else:
-            displacements = [Displace_cc('W', alpha=amp) if amp != 0
+            displacements = [Displace_cc('W', displacement=amp) if amp != 0
                              else cid(1)
                              for amp in input_amps]
             concat_displacements = Concatenation(*displacements)
@@ -583,7 +583,6 @@ class CircuitSymbol(Circuit, Expression):
         cdim = int(cdim)
         self._label = label
         self._cdim = cdim
-        sym_args = [ScalarValue.create(arg) for arg in sym_args]
         self._sym_args = tuple(sym_args)
         if not self._rx_label.match(label):
             raise ValueError("label '%s' does not match pattern '%s'"
@@ -604,7 +603,7 @@ class CircuitSymbol(Circuit, Expression):
 
     @property
     def sym_args(self):
-        """Tuple of scalar arguments of the symbol"""
+        """Tuple of arguments of the symbol"""
         return self._sym_args
 
     @property
@@ -625,78 +624,56 @@ class CircuitSymbol(Circuit, Expression):
         return FullSpace
 
 
-class Component(Circuit, Expression, metaclass=ABCMeta):
-    """Base class for all circuit components,
-    both primitive components such as beamsplitters
-    and cavity models and also composite circuit models
-    that are built up from these.
-    Via the creduce() method, an object can be decomposed into its parts.
+class Component(CircuitSymbol, metaclass=ABCMeta):
+    """Base class for circuit components.
+
+    A circuit component is a :class:`CircuitSymbol` that knows its own SLH
+    representation. Consequently, it has a fixed number of I/O
+    channels (:attr:`CDIM` class attribute), and a fixed number of named
+    arguments.
+
+    Subclasses of :class:`Component` should use the
+    :func:`.properties_for_args` class decorator
+
+    Args:
+        label (str): label for the component
+        sym_args: list of arguments
+
+    Attributes:
+        CDIM: the circuit dimension (number of I/O channels)
+        PORTSIN: list of names for the input ports of the component
+        PORTSOUT: list of names for the output ports of the component
+
+    Note:
+        The port names defined in :attr:`PORTSIN` and :attr:`PORTSOUT` may be
+        used when defining connection via :func:`.connect`.
+
+        Different physical circuit components (e.g., two different
+        beamsplitters) must be distinguished by label
     """
 
-    CDIM = 0
+    CDIM = 0  #: the component's circuit dimension (number of I/O channels)
 
-    # ingoing port names
-    PORTSIN = []
+    PORTSIN = ()  #: ingoing port names
 
-    # outgoing port names
-    PORTSOUT = []
+    PORTSOUT = ()  #: outgoing port names
 
-    _parameters = []
-    _sub_components = []
+    _arg_names = ()  # names of args that can be passed to __init__
 
-    _rx_name = re.compile('^[A-Za-z][A-Za-z0-9.]*$')
-
-    def __init__(self, name, **kwargs):
-        self._name = str(name)
-        if not self._rx_name.match(name):
-            raise ValueError("name '%s' does not match pattern '%s'"
-                             % (self.name, self._rx_name.pattern))
-        for pname, val in kwargs.items():
-            if pname in self._parameters:
-                setattr(self, pname, val)
-            else:
-                del kwargs[pname]
-                print("Unknown parameter!")
-        super().__init__(name, **kwargs)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def args(self):
-        return (self._name, )
-
-    @property
-    def kwargs(self):
-        res = OrderedDict()
-        for key in self._parameters:
-            try:
-                res[key] = getattr(self, key)
-            except AttributeError:
-                pass
-        return res
-
-    @property
-    def cdim(self):
-        return self.CDIM
+    def __init__(self, label, *sym_args):
+        assert self.CDIM > 0
+        assert len(self.PORTSIN) == self.CDIM
+        assert len(self.PORTSOUT) == self.CDIM
+        if len(sym_args) != len(self._arg_names):
+            raise ValueError("expected %d arguments, gotten %d"
+                             % (len(self._arg_names), len(sym_args)))
+        for i, arg_name in enumerate(self._arg_names):
+            self.__dict__['_%s' % arg_name] = sym_args[i]
+        super().__init__(label, *sym_args, cdim=self.CDIM)
 
     @abstractmethod
     def _toSLH(self):
         raise NotImplementedError()
-
-    @property
-    def space(self):
-        return TrivialSpace
-
-    def _creduce(self):
-        return self
-
-    def _substitute(self, var_map):
-        all_names = self._parameters
-        all_namesubvals = [(n, substitute(getattr(self, n), var_map))
-                           for n in all_names]
-        return self.__class__(self._name, **dict(all_namesubvals))
 
 
 class CPermutation(Circuit, Expression):

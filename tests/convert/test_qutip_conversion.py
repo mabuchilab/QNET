@@ -220,7 +220,7 @@ def test_trivial_space_conversion():
     O = convert_to_qutip(ZeroOperator, full_space=LocalSpace(0, dimension=10))
     assert np.linalg.norm((O.data.todense() - np.zeros((10, 10)))) == 0.0
 
-    bs = Beamsplitter("BS", theta=0)
+    bs = Beamsplitter("BS", 0)
     slh = bs.toSLH()
 
     with pytest.raises(AlgebraError) as excinfo:

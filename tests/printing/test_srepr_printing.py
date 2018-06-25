@@ -107,7 +107,7 @@ def test_srepr_circuit_elements():
         "CircuitSymbol('C_1', cdim=2)")
     assert (
         srepr(CircuitSymbol("A", alpha, 0, 2, cdim=2)) ==
-        "CircuitSymbol('A', ScalarValue(Symbol('alpha')), Zero, 2, cdim=2)")
+        "CircuitSymbol('A', Symbol('alpha'), 0, 2, cdim=2)")
     assert srepr(CIdentity) == r'CIdentity'
     assert srepr(CircuitZero) == r'CircuitZero'
 
