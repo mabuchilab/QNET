@@ -48,7 +48,7 @@ class CoherentDriveCC(Component):
 class PhaseCC(Component):
     r"""Coherent phase shift.
 
-    The field passing through obtains a phase factor $e^i \phi$ \phi` for a
+    The field passing through obtains a phase factor $e^{i \phi}$ for a
     real-valued phase $\phi$. The component has no dynamics, i.e. a trivial
     Hamiltonian and Lindblad operators
 
