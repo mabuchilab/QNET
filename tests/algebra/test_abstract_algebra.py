@@ -15,7 +15,7 @@ from qnet.utils.indices import IndexOverRange, IdxSym
 from qnet.utils.ordering import expr_order_key
 from qnet.algebra.pattern_matching import pattern_head, wc
 from qnet.algebra.core.operator_algebra import (
-    LocalProjector, OperatorTimes)
+    LocalProjector, OperatorTimes, OperatorSymbol)
 from qnet.algebra.library.fock_operators import Displace
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
@@ -30,3 +30,21 @@ def test_match_replace_binary_complete():
            LocalProjector(0, hs=hs)]
     res = OperatorTimes.create(*ops)
     assert res == LocalProjector(0, hs=hs)
+
+
+def test_apply():
+    """Test the apply method"""
+
+    A = OperatorSymbol('A', hs=0)
+
+    def raise_to_power(x, y):
+        return x**y
+
+    def plus_n(expr, *, n):
+        return expr + n
+
+    assert (
+        A
+        .apply(raise_to_power, 2)
+        .apply(plus_n, n=1)
+        == A**2 + 1)

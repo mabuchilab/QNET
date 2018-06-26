@@ -249,6 +249,22 @@ class Expression(metaclass=ABCMeta):
         else:
             return self.create(*new_args, **new_kwargs)
 
+    def apply(self, func, *args, **kwargs):
+        """Apply `func` to expression.
+
+        Equivalent to ``func(self, *args, **kwargs)``. This method exists for
+        easy chaining::
+
+            >>> A, B, C, D = (
+            ...     OperatorSymbol(s, hs=1) for s in ('A', 'B', 'C', 'D'))
+            >>> expr = (
+            ...     Commutator(A * B, C * D)
+            ...     .apply(lambda expr: expr**2)
+            ...     .apply(expand_commutators_leibniz, expand_expr=False)
+            ...     .substitute({A: IdentityOperator}))
+        """
+        return func(self, *args, **kwargs)
+
     def simplify(self, rules=None):
         """Recursively re-instantiate the expression, while applying all of the
         given `rules` to all encountered (sub-) expressions
