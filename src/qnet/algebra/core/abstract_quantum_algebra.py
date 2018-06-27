@@ -310,7 +310,7 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
             for a tuple of `str` or `int`, a :class:`ProducSpace. The type of
             the implicit Hilbert space is set by :func:`.init_algebra`.
     """
-    _rx_label = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-]+)?$')
+    _rx_label = re.compile('^[A-Za-z][A-Za-z0-9]*(_[A-Za-z0-9().+-=]+)?$')
 
     def __init__(self, label, *sym_args, hs):
         from qnet.algebra.core.scalar_algebra import ScalarValue

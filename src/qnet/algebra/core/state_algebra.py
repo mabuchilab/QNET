@@ -172,7 +172,7 @@ class KetSymbol(QuantumSymbol, State):
     """
     _rx_label = re.compile(
         r'(^[+-]?\d+(/\d+)?$|'
-        r'^[A-Za-z0-9+-]+(_[A-Za-z0-9().+-]+)?$)')
+        r'^[A-Za-z0-9+-]+([A-Za-z0-9()_,.+-=]+)?$)')
 
 
 class LocalKet(State, metaclass=ABCMeta):
