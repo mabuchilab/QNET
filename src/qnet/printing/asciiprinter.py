@@ -791,6 +791,15 @@ class QnetAsciiPrinter(QnetBasePrinter):
             matrix_left_sym + matrix_row_sep_sym.join(row_strs) +
             matrix_right_sym)
 
+    def _print_Eq(self, expr):
+        # print for qnet.algebra.toolbox.equality.Eq, but also works for any
+        # Eq class that has the minimum requirement to have an `lhs` and `rhs`
+        # attribute
+        try:
+            return expr._render_str(renderer=self.doprint)
+        except AttributeError:
+            return (self.doprint(expr.lhs) + ' = ' + self.doprint(expr.rhs))
+
 
 class QnetAsciiDefaultPrinter(QnetAsciiPrinter):
     """Printer for an ASCII representation that accepts no settings. This can

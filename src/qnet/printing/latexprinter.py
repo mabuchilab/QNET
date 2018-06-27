@@ -341,6 +341,52 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             matrix_left_sym + matrix_row_sep_sym.join(row_strs) +
             matrix_right_sym)
 
+    def _print_Eq(self, expr):
+        # print for qnet.algebra.toolbox.equality.Eq, but also works for any
+        # Eq class that has the minimum requirement to have an `lhs` and `rhs`
+        # attribute
+        try:
+            has_history = len(expr._prev_rhs) > 0
+        except AttributeError:
+            has_history = False
+        if has_history:
+            res = r'\begin{align}' + "\n"
+            res += "  %s &= %s" % (
+                self.doprint(expr._prev_lhs[0]),
+                self.doprint(expr._prev_rhs[0]))
+            if expr._prev_tags[0] is not None:
+                res += r'\tag{%s}' % expr._prev_tags[0]
+            res += "\\\\\n"
+            for i, rhs in enumerate(expr._prev_rhs[1:]):
+                lhs = expr._prev_lhs[i+1]
+                if lhs is None:
+                    res += "   &= %s" % self.doprint(rhs)
+                else:
+                    res += "  %s &= %s" % (self.doprint(lhs), self.doprint(rhs))
+                if expr._prev_tags[i+1] is not None:
+                    res += r'\tag{%s}' % expr._prev_tags[i+1]
+                res += "\\\\\n"
+            lhs = expr._lhs
+            if lhs is None:
+                res += "   &= %s\n" % self.doprint(expr.rhs)
+            else:
+                res += "  %s &= %s\n" % (
+                    self.doprint(lhs), self.doprint(expr.rhs))
+            if expr.tag is not None:
+                res += r'\tag{%s}' % expr.tag
+            res += r'\end{align}' + "\n"
+        else:
+            res = r'\begin{equation}' + "\n"
+            res += "  %s = %s\n" % (
+                self.doprint(expr.lhs), self.doprint(expr.rhs))
+            try:
+                if expr.tag is not None:
+                    res += r'\tag{%s}' % expr.tag
+            except AttributeError:
+                pass
+            res += r'\end{equation}' + "\n"
+        return res
+
 
 _TEX_GREEK_DICTIONARY = {
     'Alpha': 'A', 'Beta': 'B', 'Gamma': r'\Gamma', 'Delta': r'\Delta',

@@ -16,7 +16,7 @@ from qnet import (
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, latex,
     configure_printing, QuantumDerivative, Scalar, ScalarExpression,
-    SpinSpace, SpinBasisKet)
+    SpinSpace, SpinBasisKet, Eq)
 from qnet.printing.latexprinter import QnetLatexPrinter
 
 
@@ -172,6 +172,56 @@ def test_tex_matrix():
             r'\begin{pmatrix}0 & 1 \\-1 & 0\end{pmatrix}')
     assert latex(Matrix([[], []])) == r'\begin{pmatrix} \\\end{pmatrix}'
     assert latex(Matrix([])) == r'\begin{pmatrix} \\\end{pmatrix}'
+
+
+def test_tex_equation():
+    """Test printing of the Eq class"""
+    eq_1 = Eq(
+        lhs=OperatorSymbol('H', hs=0),
+        rhs=Create(hs=0) * Destroy(hs=0))
+    eq = (
+        eq_1
+        .apply_to_lhs(lambda expr: expr + 1, cont=True)
+        .apply_to_rhs(lambda expr: expr + 1, cont=True)
+        .apply_to_rhs(lambda expr: expr**2, cont=True, tag=3)
+        .apply(lambda expr: expr + 1, cont=True, tag=4)
+        .apply_mtd_to_rhs('expand', cont=True)
+        .apply_to_lhs(lambda expr: expr**2, cont=True, tag=5)
+        .apply_mtd('expand', cont=True)
+        .apply_to_lhs(lambda expr: expr**2, cont=True, tag=6)
+        .apply_mtd_to_lhs('expand', cont=True)
+        .apply_to_rhs(lambda expr: expr + 1, cont=True)
+    )
+    assert (
+        latex(eq_1).split("\n") == [
+            '\\begin{equation}',
+            '  \\hat{H}^{(0)} = \\hat{a}^{(0)\\dagger} \\hat{a}^{(0)}',
+            '\\end{equation}',
+            ''])
+    assert (
+        latex(eq_1.set_tag(1)).split("\n") == [
+            '\\begin{equation}',
+            '  \\hat{H}^{(0)} = \\hat{a}^{(0)\\dagger} \\hat{a}^{(0)}',
+            '\\tag{1}\\end{equation}',
+            ''])
+    assert (
+        latex(
+            eq, show_hs_label=False, tex_op_macro=r'\Op{{{name}}}')
+        .split("\n") == [
+            '\\begin{align}',
+            '  \\Op{H} &= \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '  \\mathbb{1} + \\Op{H} &= \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '   &= \\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '   &= \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right) \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right)\\tag{3}\\\\',
+            '  2 + \\Op{H} &= \\mathbb{1} + \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right) \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right)\\tag{4}\\\\',
+            '   &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '  \\left(2 + \\Op{H}\\right) \\left(2 + \\Op{H}\\right) &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\tag{5}\\\\',
+            '  4 + 4 \\Op{H} + \\Op{H} \\Op{H} &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '  \\left(4 + 4 \\Op{H} + \\Op{H} \\Op{H}\\right) \\left(4 + 4 \\Op{H} + \\Op{H} \\Op{H}\\right) &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\tag{6}\\\\',
+            '  16 + 32 \\Op{H} + \\Op{H} \\Op{H} \\Op{H} \\Op{H} + 8 \\Op{H} \\Op{H} + 8 \\Op{H} \\Op{H} \\Op{H} + 16 \\Op{H} \\Op{H} &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '   &= 3 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}',
+            '\\end{align}',
+            ''])
 
 
 def test_tex_operator_elements():

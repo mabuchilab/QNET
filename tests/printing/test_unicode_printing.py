@@ -16,7 +16,7 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, unicode,
-    QuantumDerivative, Scalar, ScalarExpression, SpinSpace)
+    QuantumDerivative, Scalar, ScalarExpression, SpinSpace, Eq)
 
 
 def test_unicode_scalar():
@@ -116,6 +116,41 @@ def test_unicode_matrix():
     assert unicode(Matrix([[0, 1], [-1, 0]])) == '[[0, 1], [-1, 0]]'
     assert unicode(Matrix([[], []])) == '[[], []]'
     assert unicode(Matrix([])) == '[[], []]'
+
+
+def test_unicode_equation():
+    """Test printing of the Eq class"""
+    eq_1 = Eq(
+        lhs=OperatorSymbol('H', hs=0),
+        rhs=Create(hs=0) * Destroy(hs=0))
+    eq = (
+        eq_1
+        .apply_to_lhs(lambda expr: expr + 1, cont=True)
+        .apply_to_rhs(lambda expr: expr + 1, cont=True)
+        .apply_to_rhs(lambda expr: expr**2, cont=True, tag=3)
+        .apply(lambda expr: expr + 1, cont=True, tag=4)
+        .apply_mtd_to_rhs('expand', cont=True)
+        .apply_to_lhs(lambda expr: expr**2, cont=True, tag=5)
+        .apply_mtd('expand', cont=True)
+        .apply_to_lhs(lambda expr: expr**2, cont=True, tag=6)
+        .apply_mtd_to_lhs('expand', cont=True)
+        .apply_to_rhs(lambda expr: expr + 1, cont=True)
+    )
+    assert unicode(eq_1) == 'Ĥ⁽⁰⁾ = â^(0)† â⁽⁰⁾'
+    assert unicode(eq_1.set_tag(1)) == 'Ĥ⁽⁰⁾ = â^(0)† â⁽⁰⁾    (1)'
+    assert unicode(eq, show_hs_label=False).strip() == (r'''
+                                             Ĥ = â^† â
+                                         𝟙 + Ĥ = â^† â
+                                               = 𝟙 + â^† â
+                                               = (𝟙 + â^† â) (𝟙 + â^† â)        (3)
+                                         2 + Ĥ = 𝟙 + (𝟙 + â^† â) (𝟙 + â^† â)    (4)
+                                               = 2 + â^† â^† â â + 3 â^† â
+                               (2 + Ĥ) (2 + Ĥ) = 2 + â^† â^† â â + 3 â^† â      (5)
+                                 4 + 4 Ĥ + Ĥ Ĥ = 2 + â^† â^† â â + 3 â^† â
+               (4 + 4 Ĥ + Ĥ Ĥ) (4 + 4 Ĥ + Ĥ Ĥ) = 2 + â^† â^† â â + 3 â^† â      (6)
+16 + 32 Ĥ + Ĥ Ĥ Ĥ Ĥ + 8 Ĥ Ĥ + 8 Ĥ Ĥ Ĥ + 16 Ĥ Ĥ = 2 + â^† â^† â â + 3 â^† â
+                                               = 3 + â^† â^† â â + 3 â^† â
+    '''.strip())
 
 
 def test_unicode_operator_elements():

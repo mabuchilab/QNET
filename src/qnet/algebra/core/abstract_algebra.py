@@ -224,6 +224,8 @@ class Expression(metaclass=ABCMeta):
             var_map (dict): Dictionary with entries of the form
                 ``{expr: substitution}``
         """
+        if self in var_map:
+            return var_map[self]
         return self._substitute(var_map)
 
     def _substitute(self, var_map, safe=False):
