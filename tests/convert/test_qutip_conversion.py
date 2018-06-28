@@ -1,22 +1,3 @@
-#This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
-
 from sympy import symbols
 import numpy as np
 from numpy import sqrt
@@ -24,14 +5,15 @@ import qutip
 
 import pytest
 
-from qnet.algebra.operator_algebra import (
-    Create, Destroy, LocalSigma, LocalProjector, OperatorSymbol,
+from qnet.algebra.core.operator_algebra import (
+    LocalSigma, LocalProjector, OperatorSymbol,
     ScalarTimesOperator, ZeroOperator)
-from qnet.algebra.circuit_algebra import SLH
-from qnet.algebra.matrix_algebra import identity_matrix, Matrix
+from qnet.algebra.library.fock_operators import Destroy, Create
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.circuit_algebra import SLH
+from qnet.algebra.core.matrix_algebra import identity_matrix, Matrix
 from qnet.convert.to_qutip import (
     _time_dependent_to_qutip, convert_to_qutip, SLH_to_qutip)
-from qnet.algebra.hilbert_space_algebra import LocalSpace
 
 _hs_counter = 0
 
@@ -197,7 +179,7 @@ def test_time_dependent_to_qutip():
     res = _time_dependent_to_qutip(H, time_symbol=t, convert_as='str')
     assert len(res) == 9
     terms = sorted([term for H, term in res[1:]])
-    expected = sorted([str(op.coeff) for op in H.expand().operands
+    expected = sorted([str(op.coeff.val) for op in H.expand().operands
                        if isinstance(op, ScalarTimesOperator)])
     assert terms == expected
 
@@ -227,10 +209,9 @@ def test_trivial_space_conversion():
     This tests the resolution of issue #48
     """
     from qnet.convert.to_qutip import convert_to_qutip, SLH_to_qutip
-    from qnet.algebra.operator_algebra import ZeroOperator
-    from qnet.algebra.hilbert_space_algebra import LocalSpace
-    from qnet.circuit_components import mach_zehnder_cc
-    from qnet.algebra.abstract_algebra import AlgebraError
+    from qnet.algebra.core.operator_algebra import ZeroOperator
+    from qnet.algebra.library.circuit_components import Beamsplitter
+    from qnet.algebra.core.exceptions import AlgebraError
 
     with pytest.raises(AlgebraError) as excinfo:
         O = convert_to_qutip(ZeroOperator)
@@ -239,8 +220,8 @@ def test_trivial_space_conversion():
     O = convert_to_qutip(ZeroOperator, full_space=LocalSpace(0, dimension=10))
     assert np.linalg.norm((O.data.todense() - np.zeros((10, 10)))) == 0.0
 
-    mz = mach_zehnder_cc.MachZehnder('Zender', alpha=1, phi=0)
-    slh = mz.toSLH()
+    bs = Beamsplitter(label="BS", mixing_angle=0)
+    slh = bs.toSLH()
 
     with pytest.raises(AlgebraError) as excinfo:
         H, Ls = SLH_to_qutip(slh)

@@ -1,35 +1,20 @@
-#This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
-
 """Test *all* of the algebraic rules (the rules in the _rules and _binary_rules
 class attributes of all Operation subclasses"""
 
+import logging
 from collections import defaultdict
 
 import pytest
 
 import sympy
-from sympy import symbols
+from sympy import symbols, IndexedBase
 
-from qnet.algebra import (
+import qnet
+from qnet import (
     ScalarTimesOperator, OperatorSymbol, LocalSpace,
-    no_instance_caching, ZeroOperator, OperatorPlus)
+    no_instance_caching, ZeroOperator, OperatorPlus, KetIndexedSum,
+    IdxSym, BasisKet, KetSymbol, StrLabel, FockIndex, IndexOverRange,
+    IndexOverFockSpace, ZeroKet, KroneckerDelta)
 
 One = sympy.S.One
 Half = One/2
@@ -38,6 +23,11 @@ hs0 = LocalSpace(0)
 OpA = OperatorSymbol('A', hs=hs0)
 OpB = OperatorSymbol('B', hs=hs0)
 OpC = OperatorSymbol('C', hs=hs0)
+i = IdxSym('i')
+j = IdxSym('j')
+a = IndexedBase('a')
+ket_sym_hs01 = KetSymbol(
+    'Psi', hs=(LocalSpace(0, dimension=2) * LocalSpace(1, dimension=2)))
 
 
 # The following list defines all the automatic rules we want to test
@@ -80,6 +70,17 @@ TESTS = [
         ScalarTimesOperator(gamma, OpA)),
     # Circuit Algebra
     # ...
+    # State Algebra
+    # ...
+    (KetIndexedSum, 'R001',
+        (KetSymbol(StrLabel(i), hs=0) - KetSymbol(StrLabel(i), hs=0),
+            IndexOverFockSpace(i, hs=LocalSpace(0))), {},
+        ZeroKet),
+    (KetIndexedSum, 'R002',
+        (symbols('a') * BasisKet(FockIndex(i), hs=0),
+            IndexOverRange(i, 0, 1)), {},
+        symbols('a') * KetIndexedSum(
+            BasisKet(FockIndex(i), hs=0), IndexOverRange(i, 0, 1))),
 ]
 
 
@@ -95,10 +96,13 @@ def test_rule(cls, rule, args, kwargs, expected, caplog):
 
         py.test -s --log-cli-level DEBUG ./tests/algebra/test_rules.py
     """
+    qnet.algebra.core.abstract_algebra.LOG = True
+    qnet.algebra.core.algebraic_properties.LOG = True
     log_marker = "Rule %s.%s" % (cls.__name__, rule)
     print("\n", log_marker)
-    with no_instance_caching():
-        expr = cls.create(*args, **kwargs)
+    with caplog.at_level(logging.DEBUG):
+        with no_instance_caching():
+            expr = cls.create(*args, **kwargs)
     assert expr == expected
     assert log_marker in caplog.text
 

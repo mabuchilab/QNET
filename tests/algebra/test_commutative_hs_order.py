@@ -1,31 +1,52 @@
-# This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
-
 import pytest
 import sympy
 
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import (
-    OperatorSymbol, tr, Phase, Displace)
-from qnet.algebra.ordering import (
-    DisjunctCommutativeHSOrder, FullCommutativeHSOrder)
-from qnet.algebra.state_algebra import BraKet, KetBra, BasisKet
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.operator_algebra import (
+    OperatorSymbol, tr)
+from qnet.algebra.library.fock_operators import Phase, Displace
+from qnet.utils.ordering import (
+    DisjunctCommutativeHSOrder, FullCommutativeHSOrder, expr_order_key)
+from qnet.algebra.core.state_algebra import BraKet, KetBra, BasisKet
+from qnet.algebra.core.scalar_algebra import ScalarValue, Zero, One
+
+
+def test_scalar_expr_order_key():
+    """Test that expr_order_key for ScalarValue instances compares just like
+    the wrapped values, in particular for Zero and One"""
+
+    half = ScalarValue(0.5)
+    two = ScalarValue(2.0)
+    alpha = ScalarValue(sympy.symbols('alpha'))
+    neg_two = ScalarValue(-2.0)
+    neg_alpha = ScalarValue(-sympy.symbols('alpha'))
+
+    key_half = expr_order_key(half)
+    key_two = expr_order_key(two)
+    key_one = expr_order_key(One)
+    key_zero = expr_order_key(Zero)
+    key_alpha = expr_order_key(alpha)
+    key_neg_two = expr_order_key(neg_two)
+    key_neg_alpha = expr_order_key(neg_alpha)
+
+    assert key_half < key_two
+    assert key_half < key_one
+    assert key_zero < key_half
+    assert key_zero < key_one
+    assert key_neg_two < key_zero
+
+    # comparison with symbolic should go by string representation, with the
+    # nice side-effect that negative symbols are smaller than positive numbers
+    assert key_one < key_alpha
+    assert key_neg_alpha < key_one
+    assert key_zero < key_alpha
+    assert key_neg_alpha < key_zero
+    assert key_two < key_alpha
+    assert key_neg_alpha < key_two
+    assert str(-2.0) < "alpha"
+    assert key_neg_two < key_alpha
+    assert str(-2.0) < "-alpha"
+    assert key_neg_two < key_neg_alpha
 
 
 def disjunct_commutative_test_data():

@@ -12,7 +12,7 @@ MathJax.Hub.Register.StartupHook("TeX Jax Ready",function () {
             this.Push(MML.menclose(mml).With({notation:notation}));
         }
     });
-}); 
+});
 MathJax.Hub.Config({
     jax: ["input/TeX","output/SVG"],
     TeX: {
@@ -56,5 +56,6 @@ MathJax.Hub.Config({
         AbsSq: ['{\\left\\vert#1\\right\\vert^2}', 1],
         Re: ['{\\mathfrak{Re}}', 0],
         Im: ['{\\mathfrak{Im}}', 0],
-        } },
-    });
+        }
+    },
+});

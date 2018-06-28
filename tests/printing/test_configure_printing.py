@@ -1,30 +1,10 @@
-# This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
-
 import pytest
 
-from sympy import symbols, sqrt, exp, I, atan
+from sympy import symbols, atan
 
-from qnet.algebra.circuit_algebra import CircuitSymbol, Feedback
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.operator_algebra import OperatorSymbol, LocalSigma
-from qnet.algebra.state_algebra import CoherentStateKet
+from qnet.algebra.core.circuit_algebra import CircuitSymbol, Feedback
+from qnet.algebra.core.operator_algebra import OperatorSymbol, LocalSigma
+from qnet.algebra.core.state_algebra import CoherentStateKet
 from qnet.printing import (
     init_printing, configure_printing, ascii, unicode, latex)
 
@@ -32,7 +12,7 @@ from qnet.printing import (
 def test_custom_str_repr_printer():
     """Test the ascii representation of "atomic" circuit algebra elements"""
     init_printing(str_format='unicode', repr_format='unicode')
-    expr = CircuitSymbol("Xi_2", 2)
+    expr = CircuitSymbol("Xi_2", cdim=2)
     assert str(expr) == 'Ξ₂'
     assert repr(expr) == 'Ξ₂'
     with configure_printing(str_format='ascii', repr_format='ascii'):
@@ -42,7 +22,7 @@ def test_custom_str_repr_printer():
     assert repr(expr) == 'Ξ₂'
     with configure_printing(str_format='ascii', repr_format='srepr'):
         assert str(expr) == 'Xi_2'
-        assert repr(expr) == "CircuitSymbol('Xi_2', 2)"
+        assert repr(expr) == "CircuitSymbol('Xi_2', cdim=2)"
     assert str(expr) == 'Ξ₂'
     assert repr(expr) == 'Ξ₂'
     with configure_printing(str_format='ascii', repr_format='unicode'):
@@ -53,22 +33,22 @@ def test_custom_str_repr_printer():
         assert repr(expr) == 'Xi_2'
     with configure_printing(repr_format='tree'):
         assert repr(expr) in [
-            '. CircuitSymbol(Ξ₂, 2)', '. CircuitSymbol(Xi_2, 2)']
+            '. CircuitSymbol(Ξ₂, cdim=2)', '. CircuitSymbol(Xi_2, cdim=2)']
     init_printing()
 
 
 def test_no_cached_rendering():
     """Test that we can temporarily suspend caching"""
-    expr = Feedback(CircuitSymbol("Xi_2", 2), out_port=1, in_port=0)
+    expr = Feedback(CircuitSymbol("Xi_2", cdim=2), out_port=1, in_port=0)
     assert ascii(expr) == '[Xi_2]_{1->0}'
     assert expr in ascii.printer.cache
-    assert CircuitSymbol("Xi_2", 2) in ascii.printer.cache
+    assert CircuitSymbol("Xi_2", cdim=2) in ascii.printer.cache
     with configure_printing(caching=False):
         assert len(ascii.printer.cache) == 0
         assert ascii(expr) == '[Xi_2]_{1->0}'
         assert len(ascii.printer.cache) == 0
     assert expr in ascii.printer.cache
-    assert CircuitSymbol("Xi_2", 2) in ascii.printer.cache
+    assert CircuitSymbol("Xi_2", cdim=2) in ascii.printer.cache
 
 
 def test_sympy_tex_cached():

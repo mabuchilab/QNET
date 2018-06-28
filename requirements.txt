@@ -1,6 +1,0 @@
-sympy
-numpy
-qutip
-PyX
-ply
-six

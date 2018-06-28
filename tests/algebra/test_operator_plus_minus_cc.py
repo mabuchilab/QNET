@@ -1,31 +1,11 @@
-# This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
-
-import pytest
-
 from sympy import Symbol, I
 
-from qnet.algebra.abstract_algebra import extra_binary_rules
-from qnet.algebra.operator_algebra import (
-        Create, Destroy, LocalSigma, create_operator_pm_cc, OperatorPlus,
-        OperatorPlusMinusCC, expand_operator_pm_cc)
-from qnet.algebra.hilbert_space_algebra import LocalSpace
+from qnet.algebra.toolbox.core import extra_binary_rules
+from qnet.algebra.core.operator_algebra import (
+    LocalSigma, create_operator_pm_cc, OperatorPlus,
+    OperatorPlusMinusCC, expand_operator_pm_cc)
+from qnet.algebra.library.fock_operators import Destroy, Create
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.printing import srepr
 
 
@@ -41,7 +21,7 @@ def test_simple_cc():
     sig_p = LocalSigma('e', 'g', hs=hs_q)
     sig_m = LocalSigma('g', 'e', hs=hs_q)
     coeff = (-I / 2) * (Omega_1 * g_1 / Delta_1)
-    jc_expr= coeff * (a * sig_p  - a_dag * sig_m)
+    jc_expr = coeff * (a * sig_p - a_dag * sig_m)
 
     with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
         simplified = jc_expr.simplify()
@@ -67,7 +47,7 @@ def test_scalar_coeff_cc():
 
     with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
         simplified = jc_expr.simplify()
-    assert (simplified ==
-            I * kappa * OperatorPlusMinusCC(a1.dag() * a2, sign=-1))
+    assert (
+        simplified == I * kappa * OperatorPlusMinusCC(a1.dag() * a2, sign=-1))
     expanded = simplified.simplify(rules=expand_operator_pm_cc())
     assert expanded == I * kappa * (a1.dag() * a2 - a1 * a2.dag())

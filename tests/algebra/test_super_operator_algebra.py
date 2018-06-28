@@ -1,37 +1,18 @@
-# coding=utf-8
-#This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
-
 import unittest
 from sympy import symbols, sqrt, I, conjugate
 
 
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.super_operator_algebra import (
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet.algebra.core.super_operator_algebra import (
         SuperOperator, SuperOperatorSymbol, IdentitySuperOperator,
         SuperOperatorPlus, SuperOperatorTimes, SuperOperatorTimesOperator,
         ScalarTimesSuperOperator, ZeroSuperOperator, SPre, SPost, liouvillian,
         liouvillian_normal_form)
 from qnet.algebra.pattern_matching import wc, ProtoExpr, pattern_head
-from qnet.algebra.operator_algebra import (
+from qnet.algebra.core.operator_algebra import (
         OperatorPlus, ScalarTimesOperator, OperatorSymbol, ZeroOperator,
-        Create, Destroy, OperatorTimes)
+    OperatorTimes)
+from qnet.algebra.library.fock_operators import Destroy, Create
 
 
 class TestSuperOperatorCreation(unittest.TestCase):

@@ -1,26 +1,8 @@
-# This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
 """Test hash and equality implementation of Expressions"""
 
-from qnet.algebra.operator_algebra import Destroy
-from qnet.algebra.hilbert_space_algebra import LocalSpace
-from qnet.algebra.circuit_algebra import SLH
+from qnet.algebra.core.circuit_algebra import SLH
+from qnet.algebra.library.fock_operators import Destroy
+from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
 
 def test_equal_hash():
@@ -48,7 +30,7 @@ def test_heis_eom():
     expressions with the same hash are considered equal"""
     import sympy as sp
     a = Destroy(hs="0")
-    assert a-a == 0 != a-2*a
+    assert (a-a).is_zero; (a-a) != a-2*a
     heis_eom = SLH([[1]], [sp.sqrt(2)*a], 0).symbolic_heisenberg_eom(a)
     assert heis_eom == -a != -2*a
 

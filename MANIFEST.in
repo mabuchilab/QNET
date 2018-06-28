@@ -1,9 +1,12 @@
-include COPYING.txt
+graft src
+include AUTHORS.rst
+include CONTRIBUTING.rst
+include HISTORY.rst
+include LICENSE
 include README.rst
-include requirements.txt
-include gEDA_support/gnet-qhdl.scm
-include gEDA_support/gschem_qhdl_symbols/*.sym
-include gEDA_support/config/*rc
-include examples/qhdl/*.qhdl
-include examples/gschem/*.sch
-include examples/notebooks/*.ipynb
+
+recursive-include tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+
+recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif

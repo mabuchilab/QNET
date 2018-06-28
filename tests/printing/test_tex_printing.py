@@ -1,46 +1,39 @@
-# This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
+from functools import partial
 
-from sympy import symbols, sqrt, exp, I, Rational
+import pytest
 
-from qnet.algebra.circuit_algebra import(
-        CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-        Feedback, SeriesInverse, cid)
-from qnet.circuit_components.beamsplitter_cc import Beamsplitter
-from qnet.circuit_components.three_port_kerr_cavity_cc import (
-        ThreePortKerrCavity)
-from qnet.algebra.operator_algebra import(
-        OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz,
-        Jplus, Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector,
-        tr, Adjoint, PseudoInverse, NullSpaceProjector, Commutator)
-from qnet.algebra.hilbert_space_algebra import (
-        LocalSpace, TrivialSpace, FullSpace)
-from qnet.algebra.matrix_algebra import Matrix
-from qnet.algebra.state_algebra import (
-        KetSymbol, LocalKet, ZeroKet, TrivialKet, BasisKet, CoherentStateKet,
-        UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
-        OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra)
-from qnet.algebra.super_operator_algebra import (
-        SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
-        SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator)
-from qnet.printing import latex
-from qnet.printing._latex import QnetLatexPrinter
+from sympy import symbols, sqrt, exp, I, Rational, Idx, IndexedBase
+
+from qnet import (
+    CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
+    Feedback, SeriesInverse, cid, Beamsplitter, OperatorSymbol,
+    IdentityOperator, ZeroOperator, Create, Destroy, Jz, Jplus, Jminus, Phase,
+    Displace, Squeeze, LocalSigma, LocalProjector, tr, Adjoint, PseudoInverse,
+    NullSpaceProjector, Commutator, LocalSpace, TrivialSpace, FullSpace,
+    Matrix, KetSymbol, ZeroKet, TrivialKet, BasisKet,
+    CoherentStateKet, UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
+    OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
+    IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
+    SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, latex,
+    configure_printing, QuantumDerivative, Scalar, ScalarExpression,
+    SpinSpace, SpinBasisKet, Eq)
+from qnet.printing.latexprinter import QnetLatexPrinter
+
+
+def test_ascii_scalar():
+    """Test rendering of scalar values"""
+    assert latex(2) == '2'
+    latex.printer.cache = {}
+    # we always want 2.0 to be printed as '2'. Without this normalization, the
+    # state of the cache might introduce non-reproducible behavior, as 2==2.0
+    assert latex(2.0) == '2'
+    assert latex(1j) == '1i'
+    assert latex('foo') == 'foo'
+
+    i = Idx('i')
+    alpha = IndexedBase('alpha')
+    assert latex(i) == 'i'
+    assert latex(alpha[i]) == r'\alpha_{i}'
 
 
 def test_tex_render_string():
@@ -89,30 +82,22 @@ def test_tex_render_string():
 
 def test_tex_circuit_elements():
     """Test the tex representation of "atomic" circuit algebra elements"""
+    alpha, t = symbols('alpha, t')
+    theta = symbols('theta', positive=True)
     assert latex(CircuitSymbol("C", cdim=2)) == 'C'
     assert latex(CircuitSymbol("C_1", cdim=2)) == 'C_{1}'
-    assert latex(CircuitSymbol("Xi_2", 2)) == r'\Xi_{2}'
-    assert latex(CircuitSymbol("Xi_full", 2)) == r'\Xi_{\text{full}}'
+    assert latex(CircuitSymbol("Xi_2", cdim=2)) == r'\Xi_{2}'
+    assert latex(CircuitSymbol("Xi_full", cdim=2)) == r'\Xi_{\text{full}}'
+    assert (
+        latex(CircuitSymbol("C", alpha, t, cdim=2)) ==
+        r'C\left(\alpha, t\right)')
     assert latex(CIdentity) == r'{\rm cid}(1)'
     assert latex(cid(4)) == r'{\rm cid}(4)'
     assert latex(CircuitZero) == r'{\rm cid}(0)'
-
-
-def test_tex_circuit_components():
-    """Test ascii-printing of some of the circuit components"""
-    B11 = Beamsplitter('Latch.B11')
-    assert latex(B11) == r'\text{Latch.B11}\left(\frac{\pi}{4}\right)'
-    C1 = ThreePortKerrCavity('Latch.C1')
+    assert latex(Beamsplitter()) == r'{\rm BS}\left(\frac{\pi}{4}\right)'
     assert (
-        latex(C1) == r'\text{Latch.C1}\left(\Delta, \chi, \kappa_{1}, '
-        r'\kappa_{2}, \kappa_{3}, 75\right)')
-    A = CircuitSymbol("A", cdim=2)
-    expr = A << B11
-    assert latex(expr) == r'A \lhd \text{Latch.B11}\left(\frac{\pi}{4}\right)'
-    expr = Feedback(Beamsplitter('BS'), out_port=1, in_port=0)
-    assert (
-        latex(expr) == r'\left\lfloor{\text{BS}'
-        r'\left(\frac{\pi}{4}\right)}\right\rfloor_{1\rightarrow{}0}')
+        latex(Beamsplitter(mixing_angle=theta)) ==
+        r'{\rm BS}\left(\theta\right)')
 
 
 def test_tex_circuit_operations():
@@ -189,13 +174,65 @@ def test_tex_matrix():
     assert latex(Matrix([])) == r'\begin{pmatrix} \\\end{pmatrix}'
 
 
+def test_tex_equation():
+    """Test printing of the Eq class"""
+    eq_1 = Eq(
+        lhs=OperatorSymbol('H', hs=0),
+        rhs=Create(hs=0) * Destroy(hs=0))
+    eq = (
+        eq_1
+        .apply_to_lhs(lambda expr: expr + 1, cont=True)
+        .apply_to_rhs(lambda expr: expr + 1, cont=True)
+        .apply_to_rhs(lambda expr: expr**2, cont=True, tag=3)
+        .apply(lambda expr: expr + 1, cont=True, tag=4)
+        .apply_mtd_to_rhs('expand', cont=True)
+        .apply_to_lhs(lambda expr: expr**2, cont=True, tag=5)
+        .apply_mtd('expand', cont=True)
+        .apply_to_lhs(lambda expr: expr**2, cont=True, tag=6)
+        .apply_mtd_to_lhs('expand', cont=True)
+        .apply_to_rhs(lambda expr: expr + 1, cont=True)
+    )
+    assert (
+        latex(eq_1).split("\n") == [
+            '\\begin{equation}',
+            '  \\hat{H}^{(0)} = \\hat{a}^{(0)\\dagger} \\hat{a}^{(0)}',
+            '\\end{equation}',
+            ''])
+    assert (
+        latex(eq_1.set_tag(1)).split("\n") == [
+            '\\begin{equation}',
+            '  \\hat{H}^{(0)} = \\hat{a}^{(0)\\dagger} \\hat{a}^{(0)}',
+            '\\tag{1}\\end{equation}',
+            ''])
+    assert (
+        latex(
+            eq, show_hs_label=False, tex_op_macro=r'\Op{{{name}}}')
+        .split("\n") == [
+            '\\begin{align}',
+            '  \\Op{H} &= \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '  \\mathbb{1} + \\Op{H} &= \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '   &= \\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '   &= \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right) \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right)\\tag{3}\\\\',
+            '  2 + \\Op{H} &= \\mathbb{1} + \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right) \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right)\\tag{4}\\\\',
+            '   &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '  \\left(2 + \\Op{H}\\right) \\left(2 + \\Op{H}\\right) &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\tag{5}\\\\',
+            '  4 + 4 \\Op{H} + \\Op{H} \\Op{H} &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '  \\left(4 + 4 \\Op{H} + \\Op{H} \\Op{H}\\right) \\left(4 + 4 \\Op{H} + \\Op{H} \\Op{H}\\right) &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\tag{6}\\\\',
+            '  16 + 32 \\Op{H} + \\Op{H} \\Op{H} \\Op{H} \\Op{H} + 8 \\Op{H} \\Op{H} + 8 \\Op{H} \\Op{H} \\Op{H} + 16 \\Op{H} \\Op{H} &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
+            '   &= 3 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}',
+            '\\end{align}',
+            ''])
+
+
 def test_tex_operator_elements():
     """Test the tex representation of "atomic" operator algebra elements"""
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
-    hs_custom = LocalSpace(1, local_identifiers={
-        'Create': 'b', 'Destroy': 'b', 'Jz': 'Z', 'Jplus': 'Jp',
-        'Jminus': 'Jm', 'Phase': 'Phi'})
+    alpha, beta = symbols('alpha, beta')
+    fock1 = LocalSpace(
+       1, local_identifiers={'Create': 'b', 'Destroy': 'b', 'Phase': 'Phi'})
+    spin1 = SpinSpace(
+       1, spin=1, local_identifiers={'Jz': 'Z', 'Jplus': 'Jp', 'Jminus': 'Jm'})
     assert latex(OperatorSymbol("A", hs=hs1)) == r'\hat{A}^{(q_{1})}'
     assert (latex(OperatorSymbol("A_1", hs=hs1*hs2)) ==
             r'\hat{A}_{1}^{(q_{1} \otimes q_{2})}')
@@ -203,24 +240,26 @@ def test_tex_operator_elements():
             r'\hat{\Xi}_{2}^{(q_{1} \otimes q_{2})}')
     assert (latex(OperatorSymbol("Xi_full", hs=1)) ==
             r'\hat{\Xi}_{\text{full}}^{(1)}')
+    assert latex(OperatorSymbol("Xi", alpha, beta, hs=1)) == (
+        r'\hat{\Xi}^{(1)}\left(\alpha, \beta\right)')
     assert latex(IdentityOperator) == r'\mathbb{1}'
     assert latex(IdentityOperator, tex_identity_sym='I') == 'I'
     assert latex(ZeroOperator) == r'\mathbb{0}'
     assert latex(Create(hs=1)) == r'\hat{a}^{(1)\dagger}'
-    assert latex(Create(hs=hs_custom)) == r'\hat{b}^{(1)\dagger}'
+    assert latex(Create(hs=fock1)) == r'\hat{b}^{(1)\dagger}'
     assert latex(Destroy(hs=1)) == r'\hat{a}^{(1)}'
-    assert latex(Destroy(hs=hs_custom)) == r'\hat{b}^{(1)}'
-    assert latex(Jz(hs=1)) == r'\hat{J}_{z}^{(1)}'
-    assert latex(Jz(hs=hs_custom)) == r'\hat{Z}^{(1)}'
-    assert latex(Jplus(hs=1)) == r'\hat{J}_{+}^{(1)}'
-    assert latex(Jplus(hs=hs_custom)) == r'\text{Jp}^{(1)}'
-    assert latex(Jminus(hs=1)) == r'\hat{J}_{-}^{(1)}'
-    assert latex(Jminus(hs=hs_custom)) == r'\text{Jm}^{(1)}'
+    assert latex(Destroy(hs=fock1)) == r'\hat{b}^{(1)}'
+    assert latex(Jz(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{z}^{(1)}'
+    assert latex(Jz(hs=spin1)) == r'\hat{Z}^{(1)}'
+    assert latex(Jplus(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{+}^{(1)}'
+    assert latex(Jplus(hs=spin1)) == r'\text{Jp}^{(1)}'
+    assert latex(Jminus(hs=SpinSpace(1, spin=1))) == r'\hat{J}_{-}^{(1)}'
+    assert latex(Jminus(hs=spin1)) == r'\text{Jm}^{(1)}'
     assert (latex(Phase(Rational(1, 2), hs=1)) ==
             r'\text{Phase}^{(1)}\left(\frac{1}{2}\right)')
     assert (latex(Phase(0.5, hs=1)) ==
             r'\text{Phase}^{(1)}\left(0.5\right)')
-    assert (latex(Phase(0.5, hs=hs_custom)) ==
+    assert (latex(Phase(0.5, hs=fock1)) ==
             r'\hat{\Phi}^{(1)}\left(0.5\right)')
     assert (latex(Displace(0.5, hs=1)) ==
             r'\hat{D}^{(1)}\left(0.5\right)')
@@ -313,20 +352,25 @@ def test_tex_ket_elements():
     """Test the tex representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
+    alpha, beta = symbols('alpha, beta')
     psi = KetSymbol('Psi', hs=hs1)
     assert (latex(psi) == r'\left\lvert \Psi \right\rangle^{(q_{1})}')
+    assert (
+        latex(KetSymbol('Psi', alpha, beta, hs=1)) ==
+        r'\left\lvert \Psi\left(\alpha, \beta\right) \right\rangle^{(1)}')
     assert (latex(psi, tex_use_braket=True) == r'\Ket{\Psi}^{(q_{1})}')
     assert (
         latex(psi, tex_use_braket=True, show_hs_label='subscript') ==
         r'\Ket{\Psi}_{(q_{1})}')
-    assert (latex(psi, tex_use_braket=True, show_hs_label=False) == r'\Ket{\Psi}')
+    assert (
+        latex(psi, tex_use_braket=True, show_hs_label=False) == r'\Ket{\Psi}')
     assert (latex(KetSymbol('Psi', hs=1)) ==
             r'\left\lvert \Psi \right\rangle^{(1)}')
     assert (latex(KetSymbol('Psi', hs=(1, 2))) ==
             r'\left\lvert \Psi \right\rangle^{(1 \otimes 2)}')
     assert (latex(KetSymbol('Psi', hs=hs1*hs2)) ==
             r'\left\lvert \Psi \right\rangle^{(q_{1} \otimes q_{2})}')
-    assert (latex(LocalKet('Psi', hs=1)) ==
+    assert (latex(KetSymbol('Psi', hs=1)) ==
             r'\left\lvert \Psi \right\rangle^{(1)}')
     assert latex(ZeroKet) == '0'
     assert latex(TrivialKet) == '1'
@@ -337,37 +381,105 @@ def test_tex_ket_elements():
             r'\left\lvert \text{excited} \right\rangle^{(1)}')
     assert (latex(BasisKet(1, hs=1)) ==
             r'\left\lvert 1 \right\rangle^{(1)}')
+    spin = SpinSpace('s', spin=(3, 2))
+    assert (
+        latex(SpinBasisKet(-3, 2, hs=spin)) ==
+        r'\left\lvert -3/2 \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(1, 2, hs=spin)) ==
+        r'\left\lvert +1/2 \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(-3, 2, hs=spin), tex_frac_for_spin_labels=True) ==
+        r'\left\lvert -\frac{3}{2} \right\rangle^{(s)}')
+    assert (
+        latex(SpinBasisKet(1, 2, hs=spin), tex_frac_for_spin_labels=True) ==
+        r'\left\lvert +\frac{1}{2} \right\rangle^{(s)}')
     assert (latex(CoherentStateKet(2.0, hs=1)) ==
             r'\left\lvert \alpha=2 \right\rangle^{(1)}')
+
+
+def test_tex_ket_symbolic_labels():
+    """Test tex representation of Kets with symbolic labels"""
+    i = Idx('i')
+    i_sym = symbols('i')
+    j = Idx('j')
+    hs0 = LocalSpace(0)
+    hs1 = LocalSpace(1)
+    Psi = IndexedBase('Psi')
+    with configure_printing(tex_use_braket=True):
+        assert (
+            latex(BasisKet(FockIndex(2 * i), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (
+            latex(BasisKet(FockIndex(2 * i_sym), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (latex(
+            KetSymbol(StrLabel(2 * i), hs=hs0)) ==
+            r'\Ket{2 i}^{(0)}')
+        assert (
+            latex(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) ==
+            r'\Ket{\Psi_{i j}}^{(0 \otimes 1)}')
+        expr = BasisKet(FockIndex(i), hs=hs0) * BasisKet(FockIndex(j), hs=hs1)
+        assert latex(expr) == r'\Ket{i,j}^{(0 \otimes 1)}'
+        assert (
+            latex(Bra(BasisKet(FockIndex(2 * i), hs=hs0))) ==
+            r'\Bra{2 i}^{(0)}')
+        assert (
+            latex(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) ==
+            r'\Ket{i}\!\Bra{j}^{(0)}')
+        alpha = symbols('alpha')
+        expr = CoherentStateKet(alpha, hs=1).to_fock_representation()
+        assert (
+            latex(expr) ==
+            r'e^{- \frac{\alpha \overline{\alpha}}{2}} '
+            r'\left(\sum_{n \in \mathcal{H}_{1}} '
+            r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')
+        assert (
+            latex(expr, conjg_style='star') ==
+            r'e^{- \frac{\alpha {\alpha}^*}{2}} '
+            r'\left(\sum_{n \in \mathcal{H}_{1}} '
+            r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')
 
 
 def test_tex_bra_elements():
     """Test the tex representation of "atomic" kets"""
     hs1 = LocalSpace('q1', basis=('g', 'e'))
     hs2 = LocalSpace('q2', basis=('g', 'e'))
+    alpha, beta = symbols('alpha, beta')
     bra = Bra(KetSymbol('Psi', hs=hs1))
     assert (latex(bra) == r'\left\langle \Psi \right\rvert^{(q_{1})}')
+    assert latex(Bra(KetSymbol('Psi', alpha, beta, hs=hs1))) == (
+        r'\left\langle \Psi\left(\alpha, \beta\right) \right\rvert^{(q_{1})}')
     assert (latex(bra, tex_use_braket=True) == r'\Bra{\Psi}^{(q_{1})}')
     assert (
         latex(bra, tex_use_braket=True, show_hs_label='subscript') ==
         r'\Bra{\Psi}_{(q_{1})}')
-    assert (latex(bra, tex_use_braket=True, show_hs_label=False) == r'\Bra{\Psi}')
-    assert (latex(Bra(KetSymbol('Psi', hs=1))) ==
-            r'\left\langle \Psi \right\rvert^{(1)}')
-    assert (latex(Bra(KetSymbol('Psi', hs=(1, 2)))) ==
-            r'\left\langle \Psi \right\rvert^{(1 \otimes 2)}')
-    assert (latex(Bra(KetSymbol('Psi', hs=hs1*hs2))) ==
-            r'\left\langle \Psi \right\rvert^{(q_{1} \otimes q_{2})}')
-    assert (latex(LocalKet('Psi', hs=1).dag) ==
-            r'\left\langle \Psi \right\rvert^{(1)}')
+    assert (
+        latex(bra, tex_use_braket=True, show_hs_label=False) ==
+        r'\Bra{\Psi}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=1))) ==
+        r'\left\langle \Psi \right\rvert^{(1)}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=(1, 2)))) ==
+        r'\left\langle \Psi \right\rvert^{(1 \otimes 2)}')
+    assert (
+        latex(Bra(KetSymbol('Psi', hs=hs1*hs2))) ==
+        r'\left\langle \Psi \right\rvert^{(q_{1} \otimes q_{2})}')
+    assert (
+        latex(KetSymbol('Psi', hs=1).dag()) ==
+        r'\left\langle \Psi \right\rvert^{(1)}')
     assert latex(Bra(ZeroKet)) == '0'
     assert latex(Bra(TrivialKet)) == '1'
-    assert (latex(BasisKet('e', hs=hs1).adjoint()) ==
-            r'\left\langle e \right\rvert^{(q_{1})}')
-    assert (latex(BasisKet(1, hs=1).adjoint()) ==
-            r'\left\langle 1 \right\rvert^{(1)}')
-    assert (latex(CoherentStateKet(2.0, hs=1).dag) ==
-            r'\left\langle \alpha=2 \right\rvert^{(1)}')
+    assert (
+        latex(BasisKet('e', hs=hs1).adjoint()) ==
+        r'\left\langle e \right\rvert^{(q_{1})}')
+    assert (
+        latex(BasisKet(1, hs=1).adjoint()) ==
+        r'\left\langle 1 \right\rvert^{(1)}')
+    assert (
+        latex(CoherentStateKet(2.0, hs=1).dag()) ==
+        r'\left\langle \alpha=2 \right\rvert^{(1)}')
 
 
 def test_tex_ket_operations():
@@ -379,15 +491,16 @@ def test_tex_ket_operations():
     ket_g2 = BasisKet('g', hs=hs2)
     ket_e2 = BasisKet('e', hs=hs2)
     psi1 = KetSymbol("Psi_1", hs=hs1)
-    psi1_l = LocalKet("Psi_1", hs=hs1)
     psi2 = KetSymbol("Psi_2", hs=hs1)
     psi2 = KetSymbol("Psi_2", hs=hs1)
     psi3 = KetSymbol("Psi_3", hs=hs1)
     phi = KetSymbol("Phi", hs=hs2)
-    phi_l = LocalKet("Phi", hs=hs2)
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
+    alpha = symbols('alpha')
+    beta = symbols('beta')
     phase = exp(-I * gamma)
+    i = IdxSym('i')
     assert (
         latex(psi1 + psi2) ==
         r'\left\lvert \Psi_{1} \right\rangle^{(q_{1})} + '
@@ -402,11 +515,11 @@ def test_tex_ket_operations():
         r'\left\lvert \Psi_{1} \right\rangle^{(q_{1})} \otimes '
         r'\left\lvert \Phi \right\rangle^{(q_{2})}')
     assert (
-        latex(psi1_l * phi_l) ==
-        r'\left\lvert \Psi_{1},\Phi \right\rangle^{(q_{1} \otimes q_{2})}')
-    assert (
         latex(phase * psi1) ==
         r'e^{- i \gamma} \left\lvert \Psi_{1} \right\rangle^{(q_{1})}')
+    assert (
+        latex((alpha + 1) * KetSymbol('Psi', hs=0)) ==
+        r'\left(\alpha + 1\right) \left\lvert \Psi \right\rangle^{(0)}')
     assert (
         latex(A * psi1) ==
         r'\hat{A}_{0}^{(q_{1})} \left\lvert \Psi_{1} \right\rangle^{(q_{1})}')
@@ -417,8 +530,17 @@ def test_tex_ket_operations():
     assert (
         latex(braket, show_hs_label=False) ==
         r'\left\langle \Psi_{1} \middle\vert \Psi_{2} \right\rangle')
-    assert latex(ket_e1.dag * ket_e1) == r'1'
-    assert latex(ket_g1.dag * ket_e1) == r'0'
+    expr = BraKet(
+        KetSymbol('Psi_1', alpha, hs=hs1), KetSymbol('Psi_2', beta, hs=hs1))
+    assert (
+        latex(expr) ==
+        r'\left\langle \Psi_{1}\left(\alpha\right) \middle\vert '
+        r'\Psi_{2}\left(\beta\right) \right\rangle^{(q_{1})}')
+    assert (
+        latex(ket_e1 * ket_e2) ==
+        r'\left\lvert ee \right\rangle^{(q_{1} \otimes q_{2})}')
+    assert latex(ket_e1.dag() * ket_e1) == r'1'
+    assert latex(ket_g1.dag() * ket_e1) == r'0'
     ketbra = KetBra(psi1, psi2)
     assert (
         latex(ketbra) ==
@@ -432,37 +554,52 @@ def test_tex_ket_operations():
         latex(ketbra, show_hs_label=False) ==
         r'\left\lvert \Psi_{1} \middle\rangle\!'
         r'\middle\langle \Psi_{2} \right\rvert')
+    expr = KetBra(
+        KetSymbol('Psi_1', alpha, hs=hs1), KetSymbol('Psi_2', beta, hs=hs1))
+    assert (
+        latex(expr) ==
+        r'\left\lvert \Psi_{1}\left(\alpha\right) \middle\rangle\!'
+        r'\middle\langle \Psi_{2}\left(\beta\right) \right\rvert^{(q_{1})}')
     bell1 = (ket_e1 * ket_g2 - I * ket_g1 * ket_e2) / sqrt(2)
     bell2 = (ket_e1 * ket_e2 - ket_g1 * ket_g2) / sqrt(2)
     assert (
         latex(bell1) ==
-        r'\frac{1}{\sqrt{2}} \left(\left\lvert e,g \right\rangle^{(q_{1} '
-        r'\otimes q_{2})} - i \left\lvert g,e \right\rangle'
+        r'\frac{1}{\sqrt{2}} \left(\left\lvert eg \right\rangle^{(q_{1} '
+        r'\otimes q_{2})} - i \left\lvert ge \right\rangle'
         r'^{(q_{1} \otimes q_{2})}\right)')
     assert (
         latex(bell2) ==
-        r'\frac{1}{\sqrt{2}} \left(\left\lvert e,e \right\rangle^{(q_{1} '
-        r'\otimes q_{2})} - \left\lvert g,g \right\rangle'
+        r'\frac{1}{\sqrt{2}} \left(\left\lvert ee \right\rangle^{(q_{1} '
+        r'\otimes q_{2})} - \left\lvert gg \right\rangle'
         r'^{(q_{1} \otimes q_{2})}\right)')
     assert (
         latex(bell2, show_hs_label=False) ==
-        r'\frac{1}{\sqrt{2}} \left(\left\lvert e,e \right\rangle - '
-        r'\left\lvert g,g \right\rangle\right)')
+        r'\frac{1}{\sqrt{2}} \left(\left\lvert ee \right\rangle - '
+        r'\left\lvert gg \right\rangle\right)')
     assert BraKet.create(bell1, bell2).expand() == 0
     assert (
         latex(BraKet.create(bell1, bell2)) ==
-        r'\frac{1}{2} \left(\left\langle e,g \right\rvert'
-        r'^{(q_{1} \otimes q_{2})} + i \left\langle g,e \right\rvert'
+        r'\frac{1}{2} \left(\left\langle eg \right\rvert'
+        r'^{(q_{1} \otimes q_{2})} + i \left\langle ge \right\rvert'
         r'^{(q_{1} \otimes q_{2})}\right) '
-        r'\left(\left\lvert e,e \right\rangle^{(q_{1} \otimes q_{2})} '
-        r'- \left\lvert g,g \right\rangle^{(q_{1} \otimes q_{2})}\right)')
+        r'\left(\left\lvert ee \right\rangle^{(q_{1} \otimes q_{2})} '
+        r'- \left\lvert gg \right\rangle^{(q_{1} \otimes q_{2})}\right)')
     assert (
         latex(KetBra.create(bell1, bell2)) ==
-        r'\frac{1}{2} \left(\left\lvert e,g \right\rangle'
-        r'^{(q_{1} \otimes q_{2})} - i \left\lvert g,e \right\rangle'
-        r'^{(q_{1} \otimes q_{2})}\right)\left(\left\langle e,e \right\rvert'
-        r'^{(q_{1} \otimes q_{2})} - \left\langle g,g \right\rvert'
+        r'\frac{1}{2} \left(\left\lvert eg \right\rangle'
+        r'^{(q_{1} \otimes q_{2})} - i \left\lvert ge \right\rangle'
+        r'^{(q_{1} \otimes q_{2})}\right)\left(\left\langle ee \right\rvert'
+        r'^{(q_{1} \otimes q_{2})} - \left\langle gg \right\rvert'
         r'^{(q_{1} \otimes q_{2})}\right)')
+    with configure_printing(tex_use_braket=True):
+        expr = KetBra(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+        assert latex(expr) == r'\Ket{\Psi}\!\Bra{i}^{(0)}'
+        expr = KetBra(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+        assert latex(expr) == r'\Ket{i}\!\Bra{\Psi}^{(0)}'
+        expr = BraKet(KetSymbol('Psi', hs=0), BasisKet(FockIndex(i), hs=0))
+        assert latex(expr) == r'\Braket{\Psi | i}^(0)'
+        expr = BraKet(BasisKet(FockIndex(i), hs=0), KetSymbol('Psi', hs=0))
+        assert latex(expr) == r'\Braket{i | \Psi}^(0)'
 
 
 def test_tex_bra_operations():
@@ -472,22 +609,20 @@ def test_tex_bra_operations():
     psi1 = KetSymbol("Psi_1", hs=hs1)
     psi2 = KetSymbol("Psi_2", hs=hs1)
     psi2 = KetSymbol("Psi_2", hs=hs1)
-    bra_psi1 = KetSymbol("Psi_1", hs=hs1).dag
-    bra_psi1_l = LocalKet("Psi_1", hs=hs1).dag
-    bra_psi2 = KetSymbol("Psi_2", hs=hs1).dag
-    bra_psi2 = KetSymbol("Psi_2", hs=hs1).dag
-    bra_psi3 = KetSymbol("Psi_3", hs=hs1).dag
-    bra_phi = KetSymbol("Phi", hs=hs2).dag
-    bra_phi_l = LocalKet("Phi", hs=hs2).dag
+    bra_psi1 = KetSymbol("Psi_1", hs=hs1).dag()
+    bra_psi2 = KetSymbol("Psi_2", hs=hs1).dag()
+    bra_psi2 = KetSymbol("Psi_2", hs=hs1).dag()
+    bra_psi3 = KetSymbol("Psi_3", hs=hs1).dag()
+    bra_phi = KetSymbol("Phi", hs=hs2).dag()
     A = OperatorSymbol("A_0", hs=hs1)
     gamma = symbols('gamma', positive=True)
     phase = exp(-I * gamma)
     assert (
-        latex((psi1 + psi2).dag) ==
+        latex((psi1 + psi2).dag()) ==
         r'\left\langle \Psi_{1} \right\rvert^{(q_{1})} + '
         r'\left\langle \Psi_{2} \right\rvert^{(q_{1})}')
     assert (
-        latex((psi1 + psi2).dag, tex_use_braket=True) ==
+        latex((psi1 + psi2).dag(), tex_use_braket=True) ==
         r'\Bra{\Psi_{1}}^{(q_{1})} + \Bra{\Psi_{2}}^{(q_{1})}')
     assert (
         latex(bra_psi1 + bra_psi2) ==
@@ -506,13 +641,10 @@ def test_tex_bra_operations():
         latex(bra_psi1 * bra_phi, tex_use_braket=True) ==
         r'\Bra{\Psi_{1}}^{(q_{1})} \otimes \Bra{\Phi}^{(q_{2})}')
     assert (
-        latex(bra_psi1_l * bra_phi_l) ==
-        r'\left\langle \Psi_{1},\Phi \right\rvert^{(q_{1} \otimes q_{2})}')
-    assert (
         latex(Bra(phase * psi1)) ==
         r'e^{i \gamma} \left\langle \Psi_{1} \right\rvert^{(q_{1})}')
     assert (
-        latex((A * psi1).dag) ==
+        latex((A * psi1).dag()) ==
         r'\left\langle \Psi_{1} \right\rvert^{(q_{1})} '
         r'\hat{A}_{0}^{(q_{1})\dagger}')
 
@@ -521,9 +653,12 @@ def test_tex_sop_elements():
     """Test the tex representation of "atomic" Superoperators"""
     hs1 = LocalSpace('q1', dimension=2)
     hs2 = LocalSpace('q2', dimension=2)
+    alpha, beta = symbols('alpha, beta')
     assert latex(SuperOperatorSymbol("A", hs=hs1)) == r'\mathrm{A}^{(q_{1})}'
     assert (latex(SuperOperatorSymbol("A_1", hs=hs1*hs2)) ==
             r'\mathrm{A}_{1}^{(q_{1} \otimes q_{2})}')
+    assert (latex(SuperOperatorSymbol("Xi", alpha, beta, hs=hs1)) ==
+            r'\mathrm{\Xi}^{(q_{1})}\left(\alpha, \beta\right)')
     assert (latex(SuperOperatorSymbol("Xi_2", hs=('q1', 'q2'))) ==
             r'\mathrm{\Xi}_{2}^{(q_{1} \otimes q_{2})}')
     assert (latex(SuperOperatorSymbol("Xi_full", hs=1)) ==
@@ -574,9 +709,172 @@ def test_tex_sop_operations():
             r'\left[\hat{A}^{(1)}\right]')
 
 
+def test_tex_spin_arrows():
+    """Test the representation of spin-1/2 spaces with special labels "down",
+    "up" as arrows"""
+    tls1 = SpinSpace('1', spin='1/2', basis=("down", "up"))
+    tls2 = SpinSpace('2', spin='1/2', basis=("down", "up"))
+    tls3 = SpinSpace('3', spin='1/2', basis=("down", "up"))
+    down1 = BasisKet('down', hs=tls1)
+    up1 = BasisKet('up', hs=tls1)
+    down2 = BasisKet('down', hs=tls2)
+    up3 = BasisKet('up', hs=tls3)
+    assert latex(down1) == r'\left\lvert \downarrow \right\rangle^{(1)}'
+    assert latex(up1) == r'\left\lvert \uparrow \right\rangle^{(1)}'
+    ket = down1 * down2 * up3
+    assert (
+        latex(ket) ==
+        r'\left\lvert \downarrow\downarrow\uparrow \right\rangle'
+        r'^{(1 \otimes 2 \otimes 3)}')
+    sig = LocalSigma("up", "down", hs=tls1)
+    assert (
+        latex(sig) ==
+        r'\left\lvert \uparrow \middle\rangle\!'
+        r'\middle\langle \downarrow \right\rvert^{(1)}')
+
+
+@pytest.mark.xfail
+def test_tex_spin_arrows_multi_sigma():
+    # when fixed, combine with test_tex_spin_arrows
+    tls1 = SpinSpace('1', spin='1/2', basis=("down", "up"))
+    tls2 = SpinSpace('2', spin='1/2', basis=("down", "up"))
+    tls3 = SpinSpace('3', spin='1/2', basis=("down", "up"))
+    sig1 = LocalSigma("up", "down", hs=tls1)
+    sig2 = LocalSigma("up", "up", hs=tls2)
+    sig3 = LocalSigma("down", "down", hs=tls3)
+    assert latex(sig1 * sig2 * sig3) == r''
+
+
 def test_repr_latex():
     """Test the automatic representation in the notebook"""
     A = OperatorSymbol("A", hs=1)
     B = OperatorSymbol("B", hs=1)
     assert A._repr_latex_() == "$%s$" % latex(A)
     assert (A + B)._repr_latex_() == "$%s$" % latex(A + B)
+
+
+@pytest.fixture
+def MyScalarFunc():
+
+    class MyScalarDerivative(QuantumDerivative, Scalar):
+        pass
+
+    class ScalarFunc(ScalarExpression):
+
+        def __init__(self, name, *sym_args):
+            self._name = name
+            self._sym_args = sym_args
+            super().__init__(name, *sym_args)
+
+        def _adjoint(self):
+            return self
+
+        @property
+        def args(self):
+            return (self._name, *self._sym_args)
+
+        def _diff(self, sym):
+            return MyScalarDerivative(self, derivs={sym: 1})
+
+        def _latex(self, *args, **kwargs):
+            return "%s(%s)" % (
+                self._name, ", ".join(
+                    [latex(sym) for sym in self._sym_args]))
+
+    return ScalarFunc
+
+
+def test_tex_derivative(MyScalarFunc):
+    s, s0, t, t0, gamma = symbols('s, s_0, t, t_0, gamma', real=True)
+    m = IdxSym('m')
+    n = IdxSym('n')
+    S = IndexedBase('s')
+    T = IndexedBase('t')
+
+    f = partial(MyScalarFunc, "f")
+    g = partial(MyScalarFunc, "g")
+
+    expr = f(s, t).diff(t)
+    assert latex(expr) == r'\frac{\partial}{\partial t} f(s, t)'
+
+    expr = f(s, t).diff(s, n=2).diff(t)
+    assert latex(expr) == (
+        r'\frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t)')
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: s0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t) '
+        r'\right\vert_{s=s_{0}}')
+
+    expr = f(S[m], T[n]).diff(S[m], n=2).diff(T[n]).evaluate_at({S[m]: s0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s_{m}^{2} \partial t_{n}} '
+        r'f(s_{m}, t_{n}) \right\vert_{s_{m}=s_{0}}')
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: 0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t) '
+        r'\right\vert_{s=0}')
+
+    expr = f(gamma, t).diff(gamma, n=2).diff(t).evaluate_at({gamma: 0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial \gamma^{2} \partial t} '
+        r'f(\gamma, t) \right\vert_{\gamma=0}')
+
+    expr = f(s, t).diff(s, n=2).diff(t).evaluate_at({s: s0, t: t0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t) '
+        r'\right\vert_{s=s_{0}, t=t_{0}}')
+
+    D = expr.__class__
+
+    expr = D(f(s, t) + g(s, t), derivs={s: 2, t: 1}, vals={s: s0, t: t0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} '
+        r'\left(f(s, t) + g(s, t)\right) \right\vert_{s=s_{0}, t=t_{0}}')
+
+    expr = D(2 * f(s, t), derivs={s: 2, t: 1}, vals={s: s0, t: t0})
+    assert latex(expr) == (
+        r'\left. \frac{\partial^{3}}{\partial s^{2} \partial t} '
+        r'\left(2 f(s, t)\right) \right\vert_{s=s_{0}, t=t_{0}}')
+
+    expr = f(s, t).diff(t) * g(s, t)
+    assert latex(expr) == (
+        r'\left(\frac{\partial}{\partial t} f(s, t)\right) g(s, t)')
+
+    expr = f(s, t).diff(t).evaluate_at({t: 0}) * g(s, t)
+    assert latex(expr) == (
+        r'\left(\left. \frac{\partial}{\partial t} f(s, t) '
+        r'\right\vert_{t=0}\right) g(s, t)')
+
+    expr = f(s, t).diff(t) + g(s, t)
+    assert latex(expr) == r'\frac{\partial}{\partial t} f(s, t) + g(s, t)'
+
+    f = MyScalarFunc("f", S[m], T[n])
+    series = f.series_expand(T[n], about=0, order=3)
+    assert latex(series) == (
+        r'\left(f(s_{m}, 0), \left. \frac{\partial}{\partial t_{n}} '
+        r'f(s_{m}, t_{n}) \right\vert_{t_{n}=0}, \frac{1}{2} \left(\left. '
+        r'\frac{\partial^{2}}{\partial t_{n}^{2}} f(s_{m}, t_{n}) '
+        r'\right\vert_{t_{n}=0}\right), \frac{1}{6} \left(\left. '
+        r'\frac{\partial^{3}}{\partial t_{n}^{3}} f(s_{m}, t_{n}) '
+        r'\right\vert_{t_{n}=0}\right)\right)')
+    f = MyScalarFunc("f", s, t)
+    series = f.series_expand(t, about=0, order=2)
+    assert (
+        latex(series) ==
+        r'\left(f(s, 0), \left. \frac{\partial}{\partial t} f(s, t) '
+        r'\right\vert_{t=0}, \frac{1}{2} \left(\left. '
+        r'\frac{\partial^{2}}{\partial t^{2}} f(s, t) '
+        r'\right\vert_{t=0}\right)\right)')
+
+    expr = (  # nested derivative
+        MyScalarFunc("f", s, t)
+        .diff(s, n=2)
+        .diff(t)
+        .evaluate_at({t: t0})
+        .diff(t0))
+    assert latex(expr) == (
+        r'\frac{\partial}{\partial t_{0}} \left(\left. '
+        r'\frac{\partial^{3}}{\partial s^{2} \partial t} f(s, t) '
+        r'\right\vert_{t=t_{0}}\right)')

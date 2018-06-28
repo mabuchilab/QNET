@@ -1,22 +1,3 @@
-# This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
-
 from os.path import join
 
 import pytest
@@ -25,14 +6,14 @@ from sympy import symbols, sqrt, atan
 from sympy.printing.str import StrPrinter
 from sympy.printing.printer import Printer
 
-from qnet.misc.testing_tools import datadir, QnetAsciiTestPrinter
+from qnet.utils.testing import datadir, QnetAsciiTestPrinter
 
-from qnet.algebra.operator_algebra import LocalSigma
-from qnet.algebra.state_algebra import BasisKet
+from qnet.algebra.core.operator_algebra import LocalSigma
+from qnet.algebra.core.state_algebra import BasisKet
 from qnet.printing import (
     init_printing, configure_printing, ascii, unicode, latex)
-from qnet.printing._ascii import QnetAsciiPrinter
-from qnet.printing._unicode import QnetUnicodePrinter
+from qnet.printing.asciiprinter import QnetAsciiPrinter
+from qnet.printing.unicodeprinter import QnetUnicodePrinter
 from qnet.printing.sympy import SympyStrPrinter
 
 

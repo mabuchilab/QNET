@@ -1,22 +1,3 @@
-# This file is part of QNET.
-#
-#    QNET is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#   (at your option) any later version.
-#
-#    QNET is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with QNET.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Copyright (C) 2012-2017, QNET authors (see AUTHORS file)
-#
-###########################################################################
-
 """Test consistency and completeness of the flat API for QDYN (for interactive
 use)"""
 
@@ -38,62 +19,6 @@ def get_leaf_modules(package_path):
     return res
 
 
-def test_get_leaf_modules(request):
-    """Test that get_leaf_modules produces expected results"""
-    filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = get_leaf_modules(qnet_dir)
-    assert "qnet.algebra.abstract_algebra" in modules
-
-
-def test_module_access(request):
-    """Test that we can reach all leaf modules by importing just qnet"""
-    filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = get_leaf_modules(qnet_dir)
-
-    import qnet
-
-    exclude = ['qnet.misc.circuit_visualization',
-               'qnet.misc.parser__CircuitExpressionParser_parsetab',
-               'qnet.qhdl']
-
-    def check_excl(module, exclude):
-        for excl in exclude:
-            if module.startswith(excl):
-                return True
-        return False
-
-    for module in modules:
-        if check_excl(module, exclude):
-            continue
-        obj = qnet
-        for part in module.split(".")[1:]:
-            obj = getattr(obj, part)
-
-
-def test_flat_algebra(request):
-    """Check that all items defined in an __all__ list of any of the
-    qnet.algebra.* modules are directly accessible through qnet.algebra
-    """
-    filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = [m for m in get_leaf_modules(qnet_dir)
-               if m.startswith('qnet.algebra.')]
-
-    import qnet
-
-    exclude = ['Singleton', 'singleton_object', 'SingletonType']
-
-    for modname in modules:
-        mod = importlib.import_module(modname)
-        assert hasattr(mod, '__all__'), "All algebra mods must define __all__"
-        for name in mod.__all__:
-            if name in exclude:
-                continue
-            assert hasattr(qnet.algebra, name)
-
-
 def _get_members(obj):
     """Get public members of the module `obj`."""
     public = []
@@ -108,45 +33,56 @@ def _get_members(obj):
     return public
 
 
-def test_algebra_all(request):
-    """Check that all public members of all qnet.algebra.* modules appear
-    either in __all__ or in __private__. This ensures that as new members
-    are added to these modules, they are not accidentally missing from the flat
-    API (i.e., __all__). By requiring that all members not in __all__ must be
-    in private, we force the developer to make a conscious choice.
-    """
+def test_get_leaf_modules(request):
+    """Test that get_leaf_modules produces expected results"""
     filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = [m for m in get_leaf_modules(qnet_dir)
-               if m.startswith('qnet.algebra.')]
+    qnet_dir = os.path.join(os.path.split(filename)[0], '../src/qnet')
+    modules = get_leaf_modules(qnet_dir)
+    assert "qnet.algebra.core.abstract_algebra" in modules
+
+
+def test_flat_api(request):
+    """Check the promises made by the "flat" API"""
+    filename = request.module.__file__
+    pkg_dir = os.path.join(os.path.split(filename)[0], '../src/qnet')
+    modules = get_leaf_modules(pkg_dir)
+    # TODO: what about packages that define members?
+
     for modname in modules:
+
+        if modname.split(".")[-1].startswith('_'):
+            continue
+
+        # check that we can reach all leaf modules by importing just qnet
+        obj = importlib.import_module('qnet')
+        for part in modname.split(".")[1:]:
+            assert hasattr(obj, part)
+            obj = getattr(obj, part)
+
         mod = importlib.import_module(modname)
         public_members = _get_members(mod)
+        private_symbols = getattr(mod, '__private__', [])
+        assert len(set(private_symbols)) == len(private_symbols)
+
+        # check that every public member is either in __all__ or in __private__
         if len(public_members) > 0:
-            assert hasattr(mod, '__private__'), \
-                "All algebra mods must define __private__"
-            assert set(mod.__all__).isdisjoint(mod.__private__)
-        for member in public_members:
-            assert member in mod.__all__ or member in mod.__private__
+            assert hasattr(mod, '__all__')
+            assert set(mod.__all__).isdisjoint(private_symbols)
+            assert len(set(mod.__all__)) == len(mod.__all__)
+        for symbol in public_members:
+            assert symbol in mod.__all__ or symbol in private_symbols
 
-
-def test_flat_circuit_components(request):
-    """Check that all items defined in an __all__ list of any of the
-    qnet.circuit_components.* modules are directly accessible through qnet.cc
-    """
-    filename = request.module.__file__
-    qnet_dir = os.path.join(os.path.split(filename)[0], '../qnet')
-    modules = [m for m in get_leaf_modules(qnet_dir)
-               if m.startswith('qnet.circuit_components.')]
-
-    import qnet
-
-    exclude = []
-
-    for modname in modules:
-        mod = importlib.import_module(modname)
-        assert hasattr(mod, '__all__'), "All cc mods must define __all__"
-        for name in mod.__all__:
-            if name in exclude:
-                continue
-            assert getattr(qnet.cc, name) is not None
+        # check that every member in __all__ is exported in every super-package
+        modname_parts = modname.split('.')
+        super_packages = [
+            ".".join(l) for l in reversed(
+                [modname_parts[:i] for i in range(1, len(modname_parts)+1)])]
+        for symbol in mod.__all__:
+            assert hasattr(mod, symbol)
+            for super_package in super_packages:
+                pkg = importlib.import_module(super_package)
+                assert hasattr(pkg, symbol)
+                assert hasattr(pkg, '__all__')
+                assert symbol in pkg.__all__
+        for symbol in private_symbols:
+            assert hasattr(mod, symbol)

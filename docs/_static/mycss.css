@@ -17,3 +17,17 @@ div.figure p.caption {
 div.section p {
     clear: left;
 }
+
+img.inheritance {
+    max-width: none;
+}
+
+object.inheritance {
+    max-width: 100%;
+}
+
+div.math {
+    overflow: auto;
+}
+
+.highlight  { background: none; }
