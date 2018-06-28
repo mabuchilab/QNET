@@ -273,10 +273,10 @@ def configure_printing(**kwargs):
 
         >>> A = OperatorSymbol('A', hs=1); B = OperatorSymbol('B', hs=1)
         >>> with configure_printing(show_hs_label=False):
-        ...     ascii(A + B)
-        'A + B'
-        >>> ascii(A + B)
-        'A^(1) + B^(1)'
+        ...     print(ascii(A + B))
+        A + B
+        >>> print(ascii(A + B))
+        A^(1) + B^(1)
     """
     freeze = init_printing(_freeze=True, **kwargs)
     yield
