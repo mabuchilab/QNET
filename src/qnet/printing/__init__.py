@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from collections import defaultdict
 from functools import partial
 
+from sympy.interactive.printing import init_printing as sympy_init_printing
 from sympy.printing.printer import Printer as SympyPrinter
 
 from .base import QnetBasePrinter
@@ -43,7 +44,7 @@ def _printer_cls(label, class_address, require_base=QnetBasePrinter):
         return cls
 
 
-def init_printing(*, reset=False, **kwargs):
+def init_printing(*, reset=False, init_sympy=True, **kwargs):
     """Initialize the printing system.
 
     This determines the behavior of the :func:`ascii`, :func:`unicode`,
@@ -88,7 +89,6 @@ def init_printing(*, reset=False, **kwargs):
     allows for more detailed settings through a config file, see the
     :ref:`notes on using an INI file <ini_file_printing>`.
 
-
     If `str_format` or `repr_format` are not given, they will be set of
     'unicode' if the current terminal is known to support an UTF8 (accordig to
     ``sys.stdout.encoding``), and 'ascii' otherwise.
@@ -100,6 +100,9 @@ def init_printing(*, reset=False, **kwargs):
     are rendered graphically via LaTeX, using the settings as they affect the
     :func:`latex` printer.
 
+    The :func:`sympy.init_printing()` routine is called automatically, unless
+    `init_sympy` is given as ``False``.
+
     See also:
         :func:`configure_printing` allows to temporarily change the printing
         system from what was configured in :func:`init_printing`.
@@ -110,6 +113,8 @@ def init_printing(*, reset=False, **kwargs):
     logger = logging.getLogger(__name__)
     if reset:
         SympyPrinter._global_settings = {}
+    if init_sympy:
+        sympy_init_printing()
     if 'inifile' in kwargs:
         invalid_kwargs = False
         if '_freeze' in kwargs:
