@@ -52,7 +52,8 @@ def test_initfile(datadir):
             '1 ; with either prefix character')
         assert 'show_hs_label' in Printer._global_settings
         assert 'sig_as_ketbra' in Printer._global_settings
-        assert len(Printer._global_settings) == 4
+        assert 'use_unicode' in Printer._global_settings
+        assert len(Printer._global_settings) == 5
         str(psi) == ascii(psi)
         repr(psi) == unicode(psi)
         assert isinstance(ascii.printer, QnetAsciiTestPrinter)
@@ -67,7 +68,8 @@ def test_initfile(datadir):
             latex(atan(x) * sig) ==
             r'\arctan{\left (x \right )} \Op{\sigma}_{0,1}')
 
-    assert len(Printer._global_settings) == 0
+    assert 'use_unicode' in Printer._global_settings
+    assert len(Printer._global_settings) == 1
 
     str(psi) == unicode(psi)
     repr(psi) == unicode(psi)

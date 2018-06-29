@@ -554,7 +554,7 @@ def _algebraic_rules_superop():
         ('plus', (
             pattern_head(sA_plus, B),
             lambda sA, B:
-                SuperOperatorPlus.create(*[o*B for o in sA.operands]))),
+                OperatorPlus.create(*[o*B for o in sA.operands]))),
         ('id', (
             pattern_head(IdentitySuperOperator, B),
             lambda B: B)),
@@ -573,19 +573,16 @@ def _algebraic_rules_superop():
         ('AB', (
             pattern_head(pattern(SPre, A), B),
             lambda A, B: A*B)),
-        ('xxx1', (  # XXX
+        ('sAsBC2', (
             pattern_head(
-                pattern(SuperOperatorTimes, sA__, pattern(SPre, B)), C),
-            lambda sA, B, C: (
-                SuperOperatorTimes.create(*sA) * (pattern(SPre, B) * C)))),
+                pattern(
+                    SuperOperatorTimes, sA__, wc('sB', head=(SPost, SPre))),
+                C),
+            lambda sA, sB, C: (
+                SuperOperatorTimes.create(*sA) * (sB * C)))),
         ('spost', (
             pattern_head(pattern(SPost, A), B),
             lambda A, B: B*A)),
-        ('xxx2', (  # XXX
-            pattern_head(
-                pattern(SuperOperatorTimes, sA__, pattern(SPost, B)), C),
-            lambda sA, B, C: (
-                SuperOperatorTimes.create(*sA) * (pattern(SPost, B) * C)))),
     ]))
 
 
