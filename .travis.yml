@@ -21,6 +21,6 @@ install:
   - pip install coveralls
 
 script:
-  - py.test --doctest-modules --cov=qnet src tests
+  - py.test --doctest-modules --cov=qnet src tests docs/*.rst
 after_success:
   - coveralls

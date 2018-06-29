@@ -89,7 +89,7 @@ def init_printing(*, reset=False, init_sympy=True, **kwargs):
     allows for more detailed settings through a config file, see the
     :ref:`notes on using an INI file <ini_file_printing>`.
 
-    If `str_format` or `repr_format` are not given, they will be set of
+    If `str_format` or `repr_format` are not given, they will be set to
     'unicode' if the current terminal is known to support an UTF8 (accordig to
     ``sys.stdout.encoding``), and 'ascii' otherwise.
 
@@ -114,7 +114,12 @@ def init_printing(*, reset=False, init_sympy=True, **kwargs):
     if reset:
         SympyPrinter._global_settings = {}
     if init_sympy:
-        sympy_init_printing()
+        if kwargs.get('repr_format', '') == 'unicode':
+            sympy_init_printing(use_unicode=True)
+        if kwargs.get('repr_format', '') == 'ascii':
+            sympy_init_printing(use_unicode=False)
+        else:
+            sympy_init_printing()  # let sympy decide by itself
     if 'inifile' in kwargs:
         invalid_kwargs = False
         if '_freeze' in kwargs:

@@ -4,7 +4,7 @@ CONDA_PACKAGES =  anaconda pytest-cov pytest-xdist coverage sphinx_rtd_theme fla
 TESTENV =
 #TESTENV = MATPLOTLIBRC=tests
 TESTOPTIONS = --doctest-modules --cov=qnet
-TESTS = src tests
+TESTS = src tests docs/*.rst
 
 
 define PRINT_HELP_PYSCRIPT

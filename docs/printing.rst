@@ -21,10 +21,11 @@ reordered, for example).
 
 In the context of a Jupyter notebook, expressions will be shown via LaTeX.
 In an interactive (I)Python terminal, a unicode rendering will be used if the
-terminal has unicode support, with a fallback to ascii::
+terminal has unicode support, with a fallback to ascii. We can force this
+manually by::
 
-    >>> from qnet.algebra import Create, CoherentStateKet
-    >>> from sympy import symbols
+    >>> init_printing(repr_format='unicode')
+
     >>> Create(hs='q_1') * CoherentStateKet(symbols('eta')**2/2, hs='q_1')
     â^(q₁)† |α=η²/2⟩^(q₁)
 
@@ -35,15 +36,15 @@ Unlike SymPy, the unicode rendering will not span multiple lines. Also, QNET
 will not rationalize the denominators of scalar fractions by default, to match
 the standard notation in quantum mechanics::
 
-    >>> from qnet.algebra import BasisKet
-    >>> from sympy import sqrt
     >>> (BasisKet(0, hs=1) + BasisKet(1, hs=1)) / sqrt(2)
-    1/√2 * (|0⟩⁽¹⁾ + |1⟩⁽¹⁾)
+    1/√2 (|0⟩⁽¹⁾ + |1⟩⁽¹⁾)
 
 Compare this to the default in SymPy::
 
-    >>> (symbols('a') + symbols('b')) / sqrt(2)
-    sqrt(2)*(a + b)/2
+    >>> (symbols('a') + symbols('b')) / sqrt(2)  # doctest: +SKIP
+    √2⋅(a + b)
+    ──────────
+        2
 
 With the default settings, the LaTeX renderer that produces the output in the
 Jupyter notebook uses only tex macros that MathJax_ understands. You can obtain
@@ -51,7 +52,6 @@ the LaTeX code through the :func:`latex` function. When generating code for a
 paper or report, it is better to customize the output for better readability
 with a more semantic use of macros, e.g. as::
 
-    >>> from qnet.printing import latex
     >>> print(latex((BasisKet(0, hs=1) + BasisKet(1, hs=1)) / sqrt(2), tex_use_braket=True))
     \frac{1}{\sqrt{2}} \left(\Ket{0}^{(1)} + \Ket{1}^{(1)}\right)
 
@@ -83,16 +83,15 @@ The initialization also specifies the default settings for each
 printing function. For example, you could suppress the display of Hilbert space
 labels::
 
-    >>> from qnet.printing import init_printing
-    >>> init_printing(show_hs_label=False)
+    >>> init_printing(show_hs_label=False, repr_format='unicode')
     >>> (BasisKet(0, hs=1) + BasisKet(1, hs=1)) / sqrt(2)
-    1/√2 * (|0⟩ + |1⟩)
+    1/√2 (|0⟩ + |1⟩)
 
 Or, in a debugging session, you could switch the default representation to use
 the indented :func:`srepr`::
 
-    >>> init_printing(repr_format='indsrepr')
-    >>> (BasisKet(0, hs=1) + BasisKet(1, hs=1)) / sqrt(2)
+    >>> init_printing(repr_format='indsrepr')              # doctest: +SKIP
+    >>> (BasisKet(0, hs=1) + BasisKet(1, hs=1)) / sqrt(2)  # doctest: +SKIP
     ScalarTimesKet(
         Mul(Rational(1, 2), Pow(Integer(2), Rational(1, 2))),
         KetPlus(
@@ -107,6 +106,11 @@ the indented :func:`srepr`::
 
 The settings can also be changed *temporarily* via the :func:`configure_printing`
 context manager.
+
+Note that :func:`init_printing` should only be called once; or else it should
+be given the ``reset`` parameter::
+
+    >>> init_printing(repr_format='unicode', reset=True)
 
 
 Printer classes

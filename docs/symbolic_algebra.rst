@@ -159,8 +159,6 @@ define a basis through the `basis` or `dimension` arguments. The :class:`LocalSp
 may also define custom identifiers for operators acting on that space
 (subclasses of :class:`~.LocalOperator`)::
 
-    >>> from qnet.printing import ascii
-    >>> from qnet.algebra.operator_algebra import Destroy
     >>> a = Destroy(hs=1)
     >>> ascii(a)
     'a^(1)'
@@ -240,67 +238,57 @@ There are also a number of algebraic operations that act only on a single operat
 Examples
 ^^^^^^^^
 
-.. warning::
-
-    This example is currently not up to date with respect to the latest
-    development version of QNET
-
 Say we want to write a function that constructs a typical Jaynes-Cummings Hamiltonian
 
 .. math::
-    H = \Delta \sigma^\dagger \sigma + \Theta a^\dagger a + i g(\sigma a^\dagger - \sigma^\dagger a) + i\epsilon (a - a^\dagger)
+    H = \Delta \sigma^\dagger \sigma + \Theta a^\dagger a +
+         i g(\sigma a^\dagger - \sigma^\dagger a) + i\epsilon (a - a^\dagger)
 
 for a given set of numerical parameters::
 
-    def H_JaynesCummings(Delta, Theta, epsilon, g, namespace = ''):
-
-        # create Fock- and Atom local spaces
-        fock = local_space('fock', namespace = namespace)
-        tls = local_space('tls', namespace = namespace, basis = ('e', 'g'))
-
-        # create representations of a and sigma
-        a = Destroy(fock)
-        sigma = LocalSigma(tls, 'g', 'e')
-
-        H = (Delta * sigma.dag() * sigma                        # detuning from atomic resonance
-            + Theta * a.dag() * a                               # detuning from cavity resonance
-            + I * g * (sigma * a.dag() - sigma.dag() * a)       # atom-mode coupling, I = sqrt(-1)
-            + I * epsilon * (a - a.dag()))                      # external driving amplitude
-        return H
+    >>> from sympy import I
+    >>> def H_JC(Delta, Theta, epsilon, g):
+    ...
+    ...     # create Fock- and Atom local spaces
+    ...     fock = LocalSpace('fock')
+    ...     tls = LocalSpace('tls', basis=('e', 'g'))
+    ...
+    ...     # create representations of a and sigma
+    ...     a = Destroy(hs=fock)
+    ...     sigma = LocalSigma('g', 'e', hs=tls)
+    ...
+    ...     H = (Delta * sigma.dag() * sigma                    # detuning from atomic resonance
+    ...         + Theta * a.dag() * a                           # detuning from cavity resonance
+    ...         + I * g * (sigma * a.dag() - sigma.dag() * a)   # atom-mode coupling, I = sqrt(-1)
+    ...         + I * epsilon * (a - a.dag()))                  # external driving amplitude
+    ...     return H
 
 Here we have allowed for a variable namespace which would come in handy if we wanted to construct an overall model that features multiple Jaynes-Cummings-type subsystems.
 
-By using the support for symbolic :mod:`sympy` expressions as scalar pre-factors to operators, one can instantiate a Jaynes-Cummings Hamiltonian with symbolic parameters:
+By using the support for symbolic :mod:`sympy` expressions as scalar pre-factors to operators, one can instantiate a Jaynes-Cummings Hamiltonian with symbolic parameters::
 
+    >>> Delta, Theta, epsilon, g = symbols('Delta, Theta, epsilon, g', real=True)
+    >>> H = H_JC(Delta, Theta, epsilon, g)
+    >>> H
+    ⅈ ε (-â^(fock)† + â⁽ᶠᵒᶜᵏ⁾) + Θ â^(fock)† â⁽ᶠᵒᶜᵏ⁾ + ⅈ g (â^(fock)† |g⟩⟨e|⁽ᵗˡˢ⁾ - â⁽ᶠᵒᶜᵏ⁾ |e⟩⟨g|⁽ᵗˡˢ⁾) + Δ |e⟩⟨e|⁽ᵗˡˢ⁾
 
->>> Delta, Theta, epsilon, g = symbols('Delta, Theta, epsilon, g', real = True)
->>> H = H_JaynesCummings(Delta, Theta, epsilon, g)
->>> str(H)
-    'Delta Pi_e^[tls] +  I*g ((a_fock)^* sigma_ge^[tls] - a_fock sigma_eg^[tls]) +  I*epsilon ( - (a_fock)^* + a_fock) +  Theta (a_fock)^* a_fock'
+    >>> H.space
+    ℌ_fock ⊗ ℌ_tls
 
->>> H.space
-    ProductSpace(LocalSpace('fock', ''), LocalSpace('tls', ''))
+Operator products between commuting operators are automatically re-arranged such that they are ordered according to their Hilbert Space::
 
-or equivalently, represented in latex via ``H.tex()`` this yields:
+    >>> Create(hs=2) * Create(hs=1)
+    â^(1)† â^(2)†
 
-.. math::
-    \Delta {\Pi_{{\rm e}}^{{{\rm tls}}}} +  \mathbf{\imath} g \left({a_{{{\rm fock}}}^\dagger} {\sigma_{{\rm g},{\rm e}}^{{{\rm tls}}}} - {a_{{{\rm fock}}}} {\sigma_{{\rm e},{\rm g}}^{{{\rm tls}}}}\right) +  \mathbf{\imath} \epsilon \left( - {a_{{{\rm fock}}}^\dagger} + {a_{{{\rm fock}}}}\right) +  \Theta {a_{{{\rm fock}}}^\dagger} {a_{{{\rm fock}}}}
+There are quite a few built-in replacement rules, e.g., mode operators products are normally ordered::
 
+    >>> Destroy(hs=1) * Create(hs=1)
+    𝟙 + â^(1)† â⁽¹⁾
 
-Operator products between commuting operators are automatically re-arranged such that they are ordered according to their Hilbert Space
+Or for higher powers one can use the ``expand()`` method::
 
->>> Create(2) * Create(1)
-    OperatorTimes(Create(1), Create(2))
-
-There are quite a few built-in replacement rules, e.g., mode operators products are normally ordered:
-
->>> Destroy(1) * Create(1)
-    1 + Create(1) * Destroy(1)
-
-Or for higher powers one can use the ``expand()`` method:
-
->>> (Destroy(1) * Destroy(1) * Destroy(1) * Create(1) * Create(1) * Create(1)).expand()
-    (6 + Create(1) * Create(1) * Create(1) * Destroy(1) * Destroy(1) * Destroy(1) + 9 * Create(1) * Create(1) * Destroy(1) * Destroy(1) + 18 * Create(1) * Destroy(1))
+    >>> (Destroy(hs=1) * Destroy(hs=1) * Destroy(hs=1) * Create(hs=1) * Create(hs=1) * Create(hs=1)).expand()
+    6 + â^(1)† â^(1)† â^(1)† â⁽¹⁾ â⁽¹⁾ â⁽¹⁾ + 2 â^(1)† â^(1)† â⁽¹⁾ â⁽¹⁾ + 6 â^(1)† â⁽¹⁾ + 7 â^(1)† â^(1)† â⁽¹⁾ â⁽¹⁾ + 12 â^(1)† â⁽¹⁾
 
 
 .. _state_algebra:
@@ -362,17 +350,17 @@ elements of Liouville space (density matrices).
 Each super-operator has an associated `space` property which gives the Hilbert space
 on which the operators the super-operator acts non-trivially are themselves acting non-trivially.
 
-The most basic way to construct super-operators is by lifting 'normal' operators to linear pre- and post-multiplication super-operators:
+The most basic way to construct super-operators is by lifting 'normal' operators to linear pre- and post-multiplication super-operators::
 
-    >>> A, B, C = OperatorSymbol("A", FullSpace), OperatorSymbol("B", FullSpace), OperatorSymbol("C", FullSpace)
+    >>> A, B, C = (OperatorSymbol(s, hs=FullSpace) for s in ("A", "B", "C"))
     >>> SPre(A) * B
-        A * B
+    Â⁽ᵗᵒᵗᵃˡ⁾ B̂⁽ᵗᵒᵗᵃˡ⁾
     >>> SPost(C) * B
-        B * C
+    B̂⁽ᵗᵒᵗᵃˡ⁾ Ĉ⁽ᵗᵒᵗᵃˡ⁾
     >>> (SPre(A) * SPost(C)) * B
-        A * B * C
+    Â⁽ᵗᵒᵗᵃˡ⁾ B̂⁽ᵗᵒᵗᵃˡ⁾ Ĉ⁽ᵗᵒᵗᵃˡ⁾
     >>> (SPre(A) - SPost(A)) * B        # Linear super-operator associated with A that maps B --> [A,B]
-        A * B - B * A
+    Â⁽ᵗᵒᵗᵃˡ⁾ B̂⁽ᵗᵒᵗᵃˡ⁾ - B̂⁽ᵗᵒᵗᵃˡ⁾ Â⁽ᵗᵒᵗᵃˡ⁾
 
 
 The neutral elements of super-operator addition and multiplication are :obj:`ZeroSuperOperator` and :obj:`IdentitySuperOperator`, respectively.
@@ -381,14 +369,14 @@ Super operator objects can be added together in code via the infix '+' operator 
 They can also be added to or multiplied by scalar objects.
 In the first case, the scalar object is multiplied by the :obj:`IdentitySuperOperator` constant.
 
-Super operators are applied to operators by multiplying an operator with superoperator from the left:
+Super operators are applied to operators by multiplying an operator with superoperator from the left::
 
-    >>> S = SuperOperatorSymbol("S", FullSpace)
-    >>> A = OperatorSymbol("A", FullSpace)
+    >>> S = SuperOperatorSymbol("S", hs=FullSpace)
+    >>> A = OperatorSymbol("A", hs=FullSpace)
     >>> S * A
-        SuperOperatorTimesOperator(S, A)
+    S⁽ᵗᵒᵗᵃˡ⁾[Â⁽ᵗᵒᵗᵃˡ⁾]
     >>> isinstance(S*A, Operator)
-        True
+    True
 
 The result is an operator.
 
@@ -482,64 +470,59 @@ Representation as Python objects
 
 Python objects that are of the :class:`~.Circuit` type have some of their operators overloaded to realize symbolic circuit algebra operations::
 
-    >>> A = CircuitSymbol('A', 2)
-    >>> B = CircuitSymbol('B', 2)
-    >>> A << B
-        SeriesProduct(A, B)
-    >>> A + B
-        Concatenation(A, B)
-    >>> FB(A, 0, 1)
-        Feedback(A, 0, 1)
+    >>> A = CircuitSymbol('A', cdim=2)
+    >>> B = CircuitSymbol('B', cdim=2)
+    >>> print(srepr(A << B, cache={A: 'A', B: 'B'}))
+    SeriesProduct(A, B)
+    >>> print(srepr(A + B, cache={A: 'A', B: 'B'}))
+    Concatenation(A, B)
+    >>> print(srepr(FB(A, out_port=0, in_port=1), cache={A: 'A'}))
+    Feedback(A, out_port=0, in_port=1)
 
 For a thorough treatment of the circuit expression simplification rules see :ref:`circuit_rules`.
 
 Examples
 ^^^^^^^^
 
-.. warning::
-
-    This example is currently not up to date with respect to the latest
-    development version of QNET
-
 Extending the JaynesCummings problem above to an open system by adding collapse operators :math:`L_1 = \sqrt{\kappa} a` and :math:`L_2 = \sqrt{\gamma}\sigma.` ::
 
-    def SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, namespace = ''):
-
-        # create Fock- and Atom local spaces
-        fock = local_space('fock', namespace = namespace)
-        tls = local_space('tls', namespace = namespace, basis = ('e', 'g'))
-
-        # create representations of a and sigma
-        a = Destroy(fock)
-        sigma = LocalSigma(tls, 'g', 'e')
-
-        # Trivial scattering matrix
-        S = identity_matrix(2)
-
-        # Collapse/Jump operators
-        L1 = sqrt(kappa) * a                                    # Decay of cavity mode through mirror
-        L2 = sqrt(gamma) * sigma                                # Atomic decay due to spontaneous emission into outside modes.
-        L = Matrix([[L1], \
-                    [L2]])
-
-        # Hamilton operator
-        H = (Delta * sigma.dag() * sigma                        # detuning from atomic resonance
-            + Theta * a.dag() * a                               # detuning from cavity resonance
-            + I * g * (sigma * a.dag() - sigma.dag() * a)       # atom-mode coupling, I = sqrt(-1)
-            + I * epsilon * (a - a.dag()))                      # external driving amplitude
-
-        return SLH(S, L, H)
+    >>> def SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, n=0):
+    ...
+    ...     # create Fock- and Atom local spaces
+    ...     fock = LocalSpace('fock_%s' % n)
+    ...     tls = LocalSpace('tls_%s' % n, basis=('e', 'g'))
+    ...
+    ...     # create representations of a and sigma
+    ...     a = Destroy(hs=fock)
+    ...     sigma = LocalSigma('g', 'e', hs=tls)
+    ...
+    ...     # Trivial scattering matrix
+    ...     S = identity_matrix(2)
+    ...
+    ...     # Collapse/Jump operators
+    ...     L1 = sqrt(kappa) * a                                    # Decay of cavity mode through mirror
+    ...     L2 = sqrt(gamma) * sigma                                # Atomic decay due to spontaneous emission into outside modes.
+    ...     L = Matrix([[L1], \
+    ...                 [L2]])
+    ...
+    ...     # Hamilton operator
+    ...     H = (Delta * sigma.dag() * sigma                        # detuning from atomic resonance
+    ...         + Theta * a.dag() * a                               # detuning from cavity resonance
+    ...         + I * g * (sigma * a.dag() - sigma.dag() * a)       # atom-mode coupling, I = sqrt(-1)
+    ...         + I * epsilon * (a - a.dag()))                      # external driving amplitude
+    ...
+    ...     return SLH(S, L, H)
 
 
 Consider now an example where we feed one Jaynes-Cummings system's output into a second one::
 
-    Delta, Theta, epsilon, g = symbols('Delta, Theta, epsilon, g', real = True)
-    kappa, gamma = symbols('kappa, gamma')
+    >>> Delta, Theta, epsilon, g = symbols('Delta, Theta, epsilon, g', real=True)
+    >>> kappa, gamma = symbols('kappa, gamma')
 
-    JC1 = SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, namespace = 'jc1')
-    JC2 = SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, namespace = 'jc2')
+    >>> JC1 = SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, n=1)
+    >>> JC2 = SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, n=2)
 
-    SYS = (JC2 + cid(1)) << P_sigma(0, 2, 1) << (JC1 + cid(1))
+    >>> SYS = (JC2 + cid(1)) << P_sigma(0, 2, 1) << (JC1 + cid(1))
 
 
 The resulting system's block diagram is:
