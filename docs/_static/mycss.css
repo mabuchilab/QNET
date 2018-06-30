@@ -11,6 +11,13 @@ div.figure p.caption {
     text-align: center;
 }
 
+div.graphviz p {
+    text-align: right;
+    margin-bottom: 0;
+    font-size: smaller;
+    padding: 0;
+}
+
 
 /* necessary to have line-break between last figure and text. */
 

@@ -34,12 +34,19 @@ r"""
 
     :copyright: Copyright 2007-2018 by the Sphinx team, see AUTHORS.
     :license: BSD, see LICENSE for details.
+
+    Extended by Michael Goerz:
+
+    * take into account classes exported via __all__ (cls_is_in_module)
+    * add flag `cluster_modules`
+    * link to svg files
 """
 
 import inspect
 import re
 import sys
 from hashlib import md5
+from collections import defaultdict
 
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
@@ -92,6 +99,15 @@ def try_import(objname):
             return None
 
 
+def cls_is_in_module(cls, mod):
+    if cls.__module__ == mod.__name__:
+        return True
+    elif cls.__name__ in mod.__dict__.get('__all__', ()):
+        return True
+    else:
+        return False
+
+
 def import_classes(name, currmodule):
     # type: (unicode, unicode) -> Any
     """Import a class using its fully-qualified *name*."""
@@ -117,7 +133,7 @@ def import_classes(name, currmodule):
         # If imported object is a module, return classes defined on it
         classes = []
         for cls in target.__dict__.values():
-            if inspect.isclass(cls) and cls.__module__ == target.__name__:
+            if inspect.isclass(cls) and cls_is_in_module(cls, mod=target):
                 classes.append(cls)
         return classes
     raise InheritanceException('%r specified for inheritance diagram is '
@@ -135,7 +151,8 @@ class InheritanceGraph(object):
     graphviz dot graph from them.
     """
     def __init__(self, class_names, currmodule, show_builtins=False,
-                 private_bases=False, parts=0, aliases=None, top_classes=[]):
+                 private_bases=False, parts=0, aliases=None,
+                 cluster_modules=False, top_classes=[]):
         # type: (unicode, str, bool, bool, int, Optional[Dict[unicode, unicode]], List[Any]) -> None  # NOQA
         """*class_names* is a list of child classes to show bases from.
 
@@ -145,7 +162,9 @@ class InheritanceGraph(object):
         self.class_names = class_names
         classes = self._import_classes(class_names, currmodule)
         self.class_info = self._class_info(classes, show_builtins,
-                                           private_bases, parts, aliases, top_classes)
+                                           private_bases, parts, aliases,
+                                           top_classes)
+        self.cluster_modules = cluster_modules
         if not self.class_info:
             raise InheritanceException('No classes found for '
                                        'inheritance diagram')
@@ -259,6 +278,15 @@ class InheritanceGraph(object):
         'style': '"setlinewidth(0.5)"',
     }
 
+    default_cluster_attrs = {
+        'fontsize': 8,
+        'fontname': '"Vera Sans, DejaVu Sans, Liberation Sans, '
+                    'Arial, Helvetica, sans"',
+        'style': 'filled',
+        'fontcolor': 'gray40',
+        'color': 'gray95',
+    }
+
     def _format_node_attrs(self, attrs):
         # type: (Dict) -> unicode
         return ','.join(['%s=%s' % x for x in sorted(attrs.items())])
@@ -283,6 +311,7 @@ class InheritanceGraph(object):
         g_attrs = self.default_graph_attrs.copy()
         n_attrs = self.default_node_attrs.copy()
         e_attrs = self.default_edge_attrs.copy()
+        c_attrs = self.default_cluster_attrs.copy()
         g_attrs.update(graph_attrs)
         n_attrs.update(node_attrs)
         e_attrs.update(edge_attrs)
@@ -290,12 +319,17 @@ class InheritanceGraph(object):
             g_attrs.update(env.config.inheritance_graph_attrs)
             n_attrs.update(env.config.inheritance_node_attrs)
             e_attrs.update(env.config.inheritance_edge_attrs)
+            c_attrs.update(env.config.inheritance_cluster_attrs)
 
         res = []  # type: List[unicode]
         res.append('digraph %s {\n' % name)
         res.append(self._format_graph_attrs(g_attrs))
 
+        subgraphs = defaultdict(list)  # subgraph_name => list of node names
+
         for name, fullname, bases, tooltip in sorted(self.class_info):
+            subgraph_name = ".".join(fullname.split(".")[:-1])
+            subgraphs[subgraph_name].append(name)
             # Write the node
             this_node_attrs = n_attrs.copy()
             if fullname in urls:
@@ -311,6 +345,17 @@ class InheritanceGraph(object):
                 res.append('  "%s" -> "%s" [%s];\n' %
                            (base_name, name,
                             self._format_node_attrs(e_attrs)))
+
+        if self.cluster_modules:
+            for subgraph_name in subgraphs:
+                res.append('subgraph cluster_%s {\n'
+                           % subgraph_name.replace('.', '_'))
+                res.append('  label="%s";\n' % subgraph_name)
+                res.append('  graph[' + self._format_node_attrs(c_attrs) +
+                           "];\n")
+                res.append('  ' + "; ".join(subgraphs[subgraph_name]) + "\n")
+                res.append('}\n')
+
         res.append('}\n')
         return ''.join(res)
 
@@ -335,6 +380,7 @@ class InheritanceDiagram(Directive):
         'private-bases': directives.flag,
         'caption': directives.unchanged,
         'top-classes': directives.unchanged_required,
+        'cluster_modules': directives.flag,
     }
 
     def run(self):
@@ -360,6 +406,7 @@ class InheritanceDiagram(Directive):
                 parts=node['parts'],
                 private_bases='private-bases' in self.options,
                 aliases=env.config.inheritance_alias,
+                cluster_modules='cluster_modules' in self.options,
                 top_classes=node['top-classes'])
         except InheritanceException as err:
             return [node.document.reporter.warning(err.args[0],
@@ -418,8 +465,10 @@ def html_visit_inheritance_diagram(self, node):
                 urls[child['reftitle']] = '#' + child.get('refid')
 
     dotcode = graph.generate_dot(name, urls, env=self.builder.env)
-    render_dot_html(self, node, dotcode, {}, 'inheritance', 'inheritance',
-                    alt='Inheritance diagram of ' + node['content'])
+    render_dot_html(
+        self, node, dotcode, {}, 'inheritance', 'inheritance',
+        alt='Inheritance diagram of ' + node['content'],
+        link_to_svg='<i class="fa fa-external-link" aria-hidden="true"></i>'' SVG')
     raise nodes.SkipNode
 
 
@@ -474,5 +523,6 @@ def setup(app):
     app.add_config_value('inheritance_graph_attrs', {}, False)
     app.add_config_value('inheritance_node_attrs', {}, False)
     app.add_config_value('inheritance_edge_attrs', {}, False)
+    app.add_config_value('inheritance_cluster_attrs', {}, False)
     app.add_config_value('inheritance_alias', {}, False)
     return {'version': sphinx.__display_version__, 'parallel_read_safe': True}

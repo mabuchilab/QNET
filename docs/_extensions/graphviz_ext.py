@@ -268,7 +268,7 @@ def render_dot(self, code, options, format, prefix='graphviz'):
 
 
 def render_dot_html(self, node, code, options, prefix='graphviz',
-                    imgcls=None, alt=None):
+                    imgcls=None, alt=None, link_to_svg=None):
     # type: (nodes.NodeVisitor, graphviz, unicode, Dict, unicode, unicode, unicode) -> Tuple[unicode, unicode]  # NOQA
     format = self.builder.config.graphviz_output_format
     try:
@@ -291,6 +291,9 @@ def render_dot_html(self, node, code, options, prefix='graphviz',
                              (node['align'], node['align']))
         if format == 'svg':
             self.body.append('<div class="graphviz">')
+            if link_to_svg is not None:
+                self.body.append(
+                    '<p><a href="%s">%s</a></p>' % (fname, link_to_svg))
             self.body.append('<object data="%s" type="image/svg+xml" %s>\n' %
                              (fname, imgcss))
             self.body.append('<p class="warning">%s</p>' % alt)
