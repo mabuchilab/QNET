@@ -31,57 +31,79 @@
        {%- endfor %}
     {%- endif %}
 
-{% if members %}
+{% set all = get_members(in_list='__all__', include_imported=True) %}
+{% if members or all %}
     Summary
     -------
 
+{%- set exceptions = get_members(typ='exception', in_list='__all__', include_imported=True, out_format='table') -%}
+{%- set classes = get_members(typ='class', in_list='__all__', include_imported=True, out_format='table') -%}
+{%- set functions = get_members(typ='function', in_list='__all__', include_imported=True, out_format='table') -%}
+{%- set data = get_members(typ='data', in_list='__all__', include_imported=True, out_format='table') -%}
+{%- set private_exceptions = get_members(typ='exception', in_list='__private__', out_format='table') -%}
+{%- set private_classes = get_members(typ='class', in_list='__private__', out_format='table') -%}
+{%- set private_functions = get_members(typ='function', in_list='__private__', out_format='table') -%}
+
     {%- if exceptions %}
 
-    Exceptions:
+    ``__all__`` Exceptions:
 
-    .. autosummary::
-        :nosignatures:
-{% for item in exceptions %}
-        {{ item }}
+{% for line in exceptions %}
+    {{ line }}
+{%- endfor %}
+    {%- endif %}
+    {%- if private_exceptions %}
+
+    Private Exceptions:
+
+{% for line in private_exceptions %}
+    {{ line }}
 {%- endfor %}
     {%- endif %}
 
     {%- if classes %}
 
-    Classes:
+    ``__all__`` Classes:
 
-    .. autosummary::
-        :nosignatures:
-{% for item in classes %}
-        {{ item }}
+{% for line in classes %}
+    {{ line }}
+{%- endfor %}
+    {%- endif %}
+    {%- if private_classes %}
+
+    Private Classes:
+
+{% for line in private_classes %}
+    {{ line }}
 {%- endfor %}
     {%- endif %}
 
     {%- if functions %}
 
-    Functions:
+    ``__all__`` Functions:
 
-    .. autosummary::
-        :nosignatures:
-{% for item in functions %}
-        {{ item }}
+{% for line in functions %}
+    {{ line }}
 {%- endfor %}
     {%- endif %}
-{%- endif %}
+    {%- if private_functions %}
+
+    Private Functions:
+
+{% for line in private_functions %}
+    {{ line }}
+{%- endfor %}
+    {%- endif %}
 
     {%- if data %}
 
-    Data:
+    ``__all__`` Data:
 
-    .. autosummary::
-        :nosignatures:
-{% for item in data %}
-        {{ item }}
+{% for line in data %}
+    {{ line }}
 {%- endfor %}
     {%- endif %}
 
-{% if all_refs %}
-    ``__all__``: {{ all_refs|join(", ") }}
 {%- endif %}
 
 

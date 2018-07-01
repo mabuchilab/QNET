@@ -30,7 +30,7 @@ dev_requirements = [
     'coverage', 'pytest', 'pytest-cov', 'pytest-xdist', 'twine', 'pep8',
     'flake8', 'wheel', 'sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme',
     'sphinx-autodoc-typehints']
-dev_requirements.append('better-apidoc>=0.1.4')
+dev_requirements.append('better-apidoc>=0.2.0')
 
 
 version = get_version('./src/qnet/__init__.py')

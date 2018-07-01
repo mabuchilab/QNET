@@ -50,6 +50,7 @@
     {%- endif %}
 {%- endif %}
 
+{% set data = get_members(typ='data', in_list='__all__') %}
     {%- if data %}
 
     Data:
@@ -61,6 +62,7 @@
 {%- endfor %}
     {%- endif %}
 
+{% set all_refs = get_members(in_list='__all__', include_imported=True, out_format='refs') %}
 {% if all_refs %}
     ``__all__``: {{ all_refs|join(", ") }}
 {%- endif %}
