@@ -69,6 +69,7 @@ def singleton_object(cls):
     cls.__reduce__ = lambda self: cls.__name__
     obj = cls()
     obj.__name__ = cls.__name__
+    obj.__qualname__ = cls.__qualname__
     return obj
 
 
