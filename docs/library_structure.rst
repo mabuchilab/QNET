@@ -5,6 +5,9 @@ Library Structure
 =================
 
 
+Subpackage Organization
+=======================
+
 
 .. graphviz::
 
@@ -82,3 +85,14 @@ In order from high-level to low-level:
     qnet.utils
 
 See also the full :ref:`modindex`
+
+
+Class Hierarchy
+===============
+
+The following is an inheritance diagram of *all* the classes defined in QNET
+(this is best viewed as the full-page SVG):
+
+.. inheritance-diagram:: qnet
+   :parts: 1
+   :cluster_modules:
