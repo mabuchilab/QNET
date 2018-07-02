@@ -439,7 +439,7 @@ class ScalarValue(Scalar):
 
 
 class ScalarExpression(Scalar, metaclass=ABCMeta):
-    """Base class for scalars with non-scalar arguments.
+    """Base class for scalars with non-scalar arguments
 
     For example, a :class:`.BraKet` is a :class:`Scalar`, but has arguments
     that are states.
@@ -453,7 +453,7 @@ class ScalarExpression(Scalar, metaclass=ABCMeta):
 
 @singleton_object
 class Zero(Scalar, metaclass=Singleton):
-    """The neutral element with respect to scalar addition.
+    """The neutral element with respect to scalar addition
 
     Equivalent to the scalar value zero::
 
@@ -611,7 +611,7 @@ class Zero(Scalar, metaclass=Singleton):
 
 @singleton_object
 class One(Scalar, metaclass=Singleton):
-    """The neutral element with respect to scalar multiplication.
+    """The neutral element with respect to scalar multiplication
 
     Equivalent to the scalar value one::
 
@@ -764,7 +764,7 @@ class One(Scalar, metaclass=Singleton):
 
 
 class ScalarPlus(QuantumPlus, Scalar):
-    """Sum of scalars.
+    """Sum of scalars
 
     Generally, :class:`ScalarValue` instances are combined directly::
 
@@ -800,7 +800,7 @@ class ScalarPlus(QuantumPlus, Scalar):
 
 
 class ScalarTimes(QuantumTimes, Scalar):
-    """Product of scalars.
+    """Product of scalars
 
     Generally, :class:`ScalarValue` instances are combined directly::
 
@@ -913,7 +913,7 @@ class ScalarIndexedSum(QuantumIndexedSum, Scalar):
 
 
 class ScalarPower(QuantumOperation, Scalar):
-    """A scalar raised to a power.
+    """A scalar raised to a power
 
     Generally, :class:`ScalarValue` instances are exponentiated directly::
 
@@ -978,7 +978,7 @@ class ScalarPower(QuantumOperation, Scalar):
 
 
 class ScalarDerivative(QuantumDerivative, Scalar):
-    """Symbolic partial derivative of a scalar.
+    """Symbolic partial derivative of a scalar
 
     See :class:`.QuantumDerivative`.
     """
@@ -986,7 +986,7 @@ class ScalarDerivative(QuantumDerivative, Scalar):
 
 
 def KroneckerDelta(i, j):
-    """Kronecker delta symbol.
+    """Kronecker delta symbol
 
     If ``i == j``, return :class:`One`.
     Otherwise, if `i` and `j` are Sympy or
@@ -1025,7 +1025,7 @@ def KroneckerDelta(i, j):
 
 
 def sqrt(scalar):
-    """Square root of a :class:`Scalar` or scalar value.
+    """Square root of a :class:`Scalar` or scalar value
 
     This always returns a :class:`Scalar`, and uses a symbolic square root if
     possible (i.e., for non-floats)::
@@ -1082,7 +1082,7 @@ def sqrt(scalar):
 
 
 def is_scalar(scalar):
-    """Check if `scalar` is a :class:`Scalar` or a scalar value.
+    """Check if `scalar` is a :class:`Scalar` or a scalar value
 
     Specifically, whether `scalar` is an instance of :class:`Scalar` or an
     instance of a numeric or symbolic type that could be wrapped in

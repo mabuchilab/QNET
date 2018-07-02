@@ -14,7 +14,7 @@ __all__ = ["IndexedSum"]
 
 
 class IndexedSum(Operation, metaclass=ABCMeta):
-    # TODO: documentation
+    """Base class for indexed sums"""
 
     _expanded_cls = None  # must be set by subclasses
     _expand_limit = 1000

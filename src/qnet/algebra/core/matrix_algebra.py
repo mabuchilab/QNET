@@ -27,7 +27,11 @@ sympyOne = sympify(1)
 
 
 class Matrix(Expression):
-    """Matrix with Operator (or scalar-) valued elements."""
+    """Matrix of Expressions
+
+    Matrices of :class:`Operator` expressions are required for the SLH
+    formalism.
+    """
     matrix = None
     _hash = None
 

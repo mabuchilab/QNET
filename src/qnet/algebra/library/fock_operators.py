@@ -13,8 +13,7 @@ __all__ = [
 
 
 class Destroy(LocalOperator):
-    """Bosonic annihilation operator acting on a particular
-    :class:`.LocalSpace` `hs`.
+    """Bosonic annihilation operator
 
     It obeys the bosonic commutation relation::
 
@@ -36,7 +35,7 @@ class Destroy(LocalOperator):
 
     @property
     def identifier(self):
-        """The identifier (symbols) that is used when printing the annihilation
+        """The identifier (symbol) that is used when printing the annihilation
         operator. This is identical to the identifier of :class:`Create`. A
         custom identifier for both :class:`Destroy` and :class:`Create` can be
         set through the `local_identifiers` parameter of the associated Hilbert
@@ -59,8 +58,9 @@ class Destroy(LocalOperator):
 
 
 class Create(LocalOperator):
-    """Bosonic creation operator acting on a particular :class:`.LocalSpace`
-    `hs`. It is the adjoint of :class:`Destroy`.
+    """Bosonic creation operator
+
+    This is the adjoint of :class:`Destroy`.
     """
 
     _identifier = 'a'
@@ -164,7 +164,7 @@ class Displace(LocalOperator):
 
 @properties_for_args
 class Squeeze(LocalOperator):
-    r"""Unitary Squeezing operator
+    r"""Unitary squeezing operator
 
     .. math::
 

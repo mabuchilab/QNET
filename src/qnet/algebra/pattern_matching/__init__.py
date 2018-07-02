@@ -24,7 +24,9 @@ __private__ = ['ProtoExpr']  # anything not in __all__ must be in __private__
 
 
 class MatchDict(OrderedDict):
-    """Dictionary of wildcard names to expressions. Once the value for a key is
+    """Result of a :class:`Pattern` match
+
+    Dictionary of wildcard names to expressions. Once the value for a key is
     set, attempting to set it again with a different value raises a KeyError.
     The attribute `merge_lists` may be set do modify this behavior for values
     that are lists: If it is set to a value different from zero two lists
@@ -32,9 +34,10 @@ class MatchDict(OrderedDict):
     the new values are appended to the existing values; if it is positive, the
     new values are prepended
 
-    In a boolean context, a MatchDict always evaluates as True (even if empty,
-    unlike a normal dictionary), unless the `success` attribute is explicitly
-    set to False (which a failed `Pattern` matching should do)
+    In a boolean context, a :calss:`MatchDict` always evaluates as True (even
+    if empty, unlike a normal dictionary), unless the `success` attribute is
+    explicitly set to False (which a failed :class:`Pattern` matching should
+    do)
 
     Attributes:
         success (bool):  Value of the MatchDict object in a boolean context:

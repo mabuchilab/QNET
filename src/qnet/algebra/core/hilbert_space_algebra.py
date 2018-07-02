@@ -35,16 +35,10 @@ __private__ = []  # anything not in __all__ must be in __private__
 
 
 class HilbertSpace(metaclass=ABCMeta):
-    """Basic Hilbert space class from which concrete classes are derived."""
+    """Base class for Hilbert spaces"""
 
     def tensor(self, *others):
-        """Tensor product between Hilbert spaces
-
-        :param others: Other Hilbert space(s)
-        :type others: HilbertSpace
-        :return: Tensor product space.
-        :rtype: HilbertSpace
-        """
+        """Tensor product between Hilbert spaces"""
         return ProductSpace.create(self, *others)
 
     @abstractmethod
@@ -175,7 +169,7 @@ class HilbertSpace(metaclass=ABCMeta):
 
 
 class LocalSpace(HilbertSpace, Expression):
-    """A local Hilbert space, i.e., for a single degree of freedom.
+    """Hilbert space for a single degree of freedom.
 
     Args:
         label (str or int): label (subscript) of the Hilbert space
@@ -635,8 +629,7 @@ class FullSpace(HilbertSpace, Expression, metaclass=Singleton):
 
 
 class ProductSpace(HilbertSpace, Operation):
-    """Tensor product space class for an arbitrary number of
-    :class:`LocalSpace` factors.
+    """Tensor product of local Hilbert spaces
 
     >>> hs1 = LocalSpace('1', basis=(0,1))
     >>> hs2 = LocalSpace('2', basis=(0,1))

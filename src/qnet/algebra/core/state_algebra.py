@@ -44,7 +44,7 @@ __private__ = []  # anything not in __all__ must be in __private__
 
 
 class State(QuantumExpression, metaclass=ABCMeta):
-    """Basic State algebra class to represent Hilbert Space states"""
+    """Base class for states in a Hilbert space"""
 
     def _adjoint(self):
         if self.isket:
@@ -166,7 +166,7 @@ class State(QuantumExpression, metaclass=ABCMeta):
 
 
 class KetSymbol(QuantumSymbol, State):
-    """Symbolic state.
+    """Symbolic state
 
     See :class:`.QuantumSymbol`.
     """
@@ -176,9 +176,10 @@ class KetSymbol(QuantumSymbol, State):
 
 
 class LocalKet(State, metaclass=ABCMeta):
-    """A state that lives on a single local Hilbert space. This does
-    not include operations, even if these operations only involve states acting
-    on the same local space"""
+    """A state on a :class:`LocalSpace`
+
+    This does not include operations, even if these operations only involve
+    states acting on the same local space"""
 
     def __init__(self, *args, hs):
         hs = ensure_local_space(hs, cls=self._default_hs_cls)
@@ -236,7 +237,7 @@ class TrivialKet(State, Expression, metaclass=Singleton):
 
 
 class BasisKet(LocalKet, KetSymbol):
-    """Local basis state, identified by index or label.
+    """Local basis state, identified by index or label
 
     Basis kets are orthornormal, and the :meth:`next` and :meth:`prev` methods
     can be used to move between basis states.
@@ -347,7 +348,7 @@ class BasisKet(LocalKet, KetSymbol):
 
 
 class CoherentStateKet(LocalKet):
-    """Local coherent state, labeled by a scalar amplitude.
+    """Local coherent state, labeled by a complex amplitude
 
     Args:
         hs (LocalSpace): The local Hilbert space degree of freedom.
@@ -401,7 +402,7 @@ class CoherentStateKet(LocalKet):
 
 
 class KetPlus(State, QuantumPlus):
-    """A sum of states."""
+    """Sum of states"""
     _neutral_element = ZeroKet
     _binary_rules = OrderedDict()
     _simplifications = [
@@ -415,7 +416,9 @@ class KetPlus(State, QuantumPlus):
 
 
 class TensorKet(State, QuantumTimes):
-    """A tensor product of kets each belonging to different degrees of freedom.
+    """A tensor product of kets
+
+    Each ket must belong to different degree of freedom (:class:`.LocalSpace`).
     """
     _binary_rules = OrderedDict()
     _neutral_element = TrivialKet
@@ -436,7 +439,7 @@ class TensorKet(State, QuantumTimes):
 
 
 class ScalarTimesKet(State, ScalarTimesQuantumExpression):
-    """Multiply a Ket by a scalar coefficient.
+    """Product of a :class:`.Scalar` coefficient and a ket
 
     Args:
         coeff (Scalar): coefficient
@@ -510,7 +513,7 @@ class OperatorTimesKet(State, Operation):
 
 
 class StateDerivative(QuantumDerivative, State):
-    """Symbolic partial derivative of a state.
+    """Symbolic partial derivative of a state
 
     See :class:`.QuantumDerivative`.
     """
@@ -518,7 +521,7 @@ class StateDerivative(QuantumDerivative, State):
 
 
 class Bra(State, QuantumAdjoint):
-    """The associated dual/adjoint state for any `ket`"""
+    """The associated dual/adjoint state for any ket"""
     def __init__(self, ket):
         if ket.isbra:
             raise TypeError("ket cannot be a Bra instance")
@@ -569,10 +572,9 @@ class Bra(State, QuantumAdjoint):
 
 
 class BraKet(ScalarExpression, Operation):
-    r"""The symbolic inner product between two states, represented as Bra and
-    Ket
+    r"""The symbolic inner product between two states
 
-    In math notation this corresponds to:
+    This mathermatically corresponds to:
 
     .. math::
         \langle b | k \rangle
@@ -627,7 +629,7 @@ class BraKet(ScalarExpression, Operation):
 
 
 class KetBra(Operator, Operation):
-    """A symbolic operator formed by the outer product of two states"""
+    """Outer product of two states"""
     _rules = OrderedDict()
     _simplifications = [match_replace]
 

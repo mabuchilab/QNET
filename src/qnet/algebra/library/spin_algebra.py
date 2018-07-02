@@ -265,7 +265,7 @@ class SpinOperator(LocalOperator, metaclass=ABCMeta):
 
 
 class Jz(SpinOperator):
-    """Spin (angular momentum) operator in z-direction.
+    """Spin (angular momentum) operator in z-direction
 
     $\Op{J}_z$ is the $z$ component of a general spin operator acting
     on a particular :class:`SpinSpace` `hs` of freedom with well defined spin
@@ -313,7 +313,7 @@ class Jz(SpinOperator):
 
 
 class Jplus(SpinOperator):
-    """Raising operator of a spin space.
+    """Raising operator of a spin space
 
     $\Op{J}_{+} = \Op{J}_x + i \op{J}_y$ is the raising ladder operator
     of a general spin operator acting on a particular :class:`SpinSpace` `hs`
@@ -346,7 +346,7 @@ class Jplus(SpinOperator):
 
 
 class Jminus(SpinOperator):
-    """Lowering operator on a spin space.
+    """Lowering operator on a spin space
 
     $\Op{J}_{-} = \Op{J}_x - i \op{J}_y$ is the lowering ladder operator of
     a general spin operator acting on a particular :class:`SpinSpace` `hs`

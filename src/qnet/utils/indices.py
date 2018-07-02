@@ -19,7 +19,7 @@ __private__ = [
 
 
 def _merge_dicts(*dicts):
-    """Given any number of dicts, shallow copy and merge into a new dict."""
+    """Given any number of dicts, shallow copy and merge into a new dict"""
     result = {}
     for dictionary in dicts:
         result.update(dictionary)
@@ -28,7 +28,7 @@ def _merge_dicts(*dicts):
 
 def product(*generators, repeat=1):
     """Cartesian product akin to :func:`itertools.product`, but accepting
-    generator functions.
+    generator functions
 
     Unlike :func:`itertools.product` this function does not convert the input
     iterables into tuples. Thus, it can handle large or infinite inputs. As a
@@ -64,11 +64,8 @@ def yield_from_ranges(ranges):
         yield _merge_dicts(*dicts)
 
 
-# IdxSym
-
 class IdxSym(sympy.Symbol):
-    """A symbol that serves as the index in a symbolic indexed sum or
-    product.
+    """Index symbol in an indexed sum or product
 
     Args:
         name (str): The label for the symbol. It must be a simple Latin or
@@ -222,12 +219,11 @@ class IntIndex(SymbolicLabelBase):
 
 
 class FockIndex(IntIndex):
-    """A symbolic index labeling a basis state in a :class:`.LocalSpace`"""
-    pass
+    """Symbolic index labeling a basis state in a :class:`.LocalSpace`"""
 
 
 class StrLabel(SymbolicLabelBase):
-    """A symbolic label that evaluates to a string"""
+    """Symbolic label that evaluates to a string"""
 
     def evaluate(self, mapping):
         from qnet.printing.sympy import SympyStrPrinter
@@ -235,8 +231,10 @@ class StrLabel(SymbolicLabelBase):
 
 
 class SpinIndex(StrLabel):
-    """A symbolic label that evaluates to a string representation of an
-    integer or half-integer"""
+    """Symbolic label for a spin degree of freedom
+
+    This evaluates to a string representation of an integer or half-integer
+    """
 
     def evaluate(self, mapping):
         sym = self.expr.subs(mapping)
@@ -263,6 +261,10 @@ class SpinIndex(StrLabel):
 
 @immutable_attribs
 class IndexRangeBase(metaclass=ABCMeta):
+    """Base class for index ranges
+
+    Index ranges occur in indexed sums or products.
+    """
     index_symbol = attr.ib(validator=attr.validators.instance_of(IdxSym))
 
     @abstractmethod
@@ -287,6 +289,12 @@ class IndexRangeBase(metaclass=ABCMeta):
 
 @immutable_attribs
 class IndexOverList(IndexRangeBase):
+    """Index over a list of explicit values
+
+    Args:
+        index_symbol (IdxSym): The symbol iterating over the value
+        values (list): List of values for the index
+    """
     values = attr.ib(convert=tuple)
 
     def iter(self):
@@ -308,6 +316,14 @@ class IndexOverList(IndexRangeBase):
 
 @immutable_attribs
 class IndexOverRange(IndexRangeBase):
+    """Index over the inclusive range between two integers
+
+    Args:
+        index_symbol (IdxSym): The symbol iterating over the range
+        start_from (int): Starting value for the index
+        to (int): End value of the index
+        step (int): Step width by which index increases
+    """
     start_from = attr.ib(validator=attr.validators.instance_of(int))
     to = attr.ib(validator=attr.validators.instance_of(int))
     step = attr.ib(validator=attr.validators.instance_of(int), default=1)
@@ -338,6 +354,13 @@ class IndexOverRange(IndexRangeBase):
 
 @immutable_attribs
 class IndexOverFockSpace(IndexRangeBase):
+    """Index range over the integer indices of a :class:`.LocalSpace` basis
+
+    Args:
+        index_symbol (IdxSym): The symbol iterating over the range
+        hs (.LocalSpace): Hilbert space over whose basis to iterate
+
+    """
     hs = attr.ib()
     # TODO: assert that hs is indeed a LocalSpace
 

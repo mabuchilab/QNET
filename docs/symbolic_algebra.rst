@@ -522,7 +522,7 @@ Consider now an example where we feed one Jaynes-Cummings system's output into a
     >>> JC1 = SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, n=1)
     >>> JC2 = SLH_JaynesCummings(Delta, Theta, epsilon, g, kappa, gamma, n=2)
 
-    >>> SYS = (JC2 + cid(1)) << P_sigma(0, 2, 1) << (JC1 + cid(1))
+    >>> SYS = (JC2 + cid(1)) << CPermutation((0, 2, 1)) << (JC1 + cid(1))
 
 
 The resulting system's block diagram is:

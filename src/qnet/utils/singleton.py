@@ -74,20 +74,21 @@ def singleton_object(cls):
 
 
 class Singleton(ABCMeta):
-    """Metaclass for singletons. Any instantiation of a Singleton class yields
-    the exact same object, e.g.:
+    """Metaclass for singletons
 
-    >>> class MyClass(metaclass=Singleton):
-    ...     pass
-    >>> a = MyClass()
-    >>> b = MyClass()
-    >>> a is b
-    True
+    Any instantiation of a singleton class yields the exact same object, e.g.::
 
-    You can check that an object is a singleton using
+        >>> class MyClass(metaclass=Singleton):
+        ...     pass
+        >>> a = MyClass()
+        >>> b = MyClass()
+        >>> a is b
+        True
 
-    >>> isinstance(a, SingletonType)
-    True
+    You can check that an object is a singleton using::
+
+        >>> isinstance(a, SingletonType)
+        True
     """
     _instances = {}
 

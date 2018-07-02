@@ -1,5 +1,4 @@
-"""Implementation of the SLH circuit algebra.
-
+"""Implementation of the SLH circuit algebra
 
 For more details see :ref:`circuit_algebra`.
 """
@@ -39,7 +38,7 @@ from ...utils.singleton import Singleton, singleton_object
 
 __all__ = [
     'CPermutation', 'CircuitSymbol', 'Concatenation', 'Feedback',
-    'Circuit', 'SLH', 'SeriesInverse', 'SeriesProduct', 'FB', 'P_sigma',
+    'Circuit', 'SLH', 'SeriesInverse', 'SeriesProduct', 'FB',
     'circuit_identity', 'cid', 'cid_1', 'eval_adiabatic_limit',
     'extract_signal', 'extract_signal_circuit', 'getABCD',
     'get_common_block_structure', 'map_signals', 'map_signals_circuit',
@@ -55,7 +54,7 @@ __private__ = []  # anything not in __all__ must be in __private__
 
 
 class Circuit(metaclass=ABCMeta):
-    """Abstract base class for the circuit algebra elements."""
+    """Base class for the circuit algebra elements"""
 
     @property
     @abstractmethod
@@ -96,7 +95,8 @@ class Circuit(metaclass=ABCMeta):
         return tuple((self.cdim, ))
 
     def index_in_block(self, channel_index: int) -> int:
-        """Return the index a channel has within the subblock it belongs to.
+        """Return the index a channel has within the subblock it belongs to
+
         I.e., only for reducible circuits, this gives a result different from
         the argument itself.
 
@@ -153,7 +153,8 @@ class Circuit(metaclass=ABCMeta):
                                           "structure %s" % (block_structure,))
 
     def series_inverse(self) -> 'Circuit':
-        """Return the inverse object (under the series product) for a circuit.
+        """Return the inverse object (under the series product) for a circuit
+
         In general for any X
 
             >>> X = CircuitSymbol('X', cdim=3)
@@ -229,7 +230,8 @@ class Circuit(metaclass=ABCMeta):
         raise CannotVisualize()
 
     def creduce(self) -> 'Circuit':
-        """If the circuit is reducible, try to reduce each subcomponent once.
+        """If the circuit is reducible, try to reduce each subcomponent once
+
         Depending on whether the components at the next hierarchy-level are
         themselves reducible, successive ``circuit.creduce()`` operations
         yields an increasingly fine-grained decomposition of a circuit into its
@@ -301,8 +303,11 @@ class Circuit(metaclass=ABCMeta):
 
 
 class SLH(Circuit, Expression):
-    """SLH class to encapsulate an open system model that is parametrized as
-    described in [2]_ , [3]_
+    """Element of the SLH algebra
+
+    The SLH class encapsulate an open system model that is parametrized the a
+    scattering matrix (S), a column vector of Lindblad operators (L), and a
+    Hamiltonian (H).
 
     Args:
         S (Matrix): The scattering matrix (with in general Operator-valued
@@ -366,7 +371,7 @@ class SLH(Circuit, Expression):
             self.S.free_symbols, self.L.free_symbols, self.H.free_symbols)
 
     def series_with_slh(self, other):
-        """Evaluate the series product with another :py:class:``SLH`` object.
+        """Series product with another :class:`SLH` object
 
         Args:
             other (SLH): An upstream SLH circuit.
@@ -388,7 +393,7 @@ class SLH(Circuit, Expression):
         return SLH(new_S, new_L, new_H)
 
     def concatenate_slh(self, other):
-        """Evaluate the concatenation product with another SLH object."""
+        """Concatenation with another :class:`SLH` object"""
         selfS = self.S
         otherS = other.S
         new_S = block_matrix(
@@ -403,14 +408,16 @@ class SLH(Circuit, Expression):
         return self
 
     def expand(self):
-        """Expand out all operator expressions within S, L and H and return a
-        new SLH object with these expanded expressions.
+        """Expand out all operator expressions within S, L and H
+
+        Return a new :class:`SLH` object with these expanded expressions.
         """
         return SLH(self.S.expand(), self.L.expand(), self.H.expand())
 
     def simplify_scalar(self, func=sympy.simplify):
-        """Simplify all scalar expressions within S, L and H and return a new
-        SLH object with the simplified expressions.
+        """Simplify all scalar expressions within S, L and H
+
+        Return a new :class:`SLH` object with the simplified expressions.
 
         See also: :meth:`.QuantumExpression.simplify_scalar`
         """
@@ -478,7 +485,8 @@ class SLH(Circuit, Expression):
         return liouvillian(self.H, self.L)
 
     def symbolic_master_equation(self, rho=None):
-        """Compute the symbolic Liouvillian acting on a state rho.
+        """Compute the symbolic Liouvillian acting on a state rho
+
         If no rho is given, an OperatorSymbol is created in its place.
         This correspnds to the RHS of the master equation
         in which an average is taken over the external noise degrees of
@@ -559,7 +567,7 @@ class SLH(Circuit, Expression):
 
 
 class CircuitSymbol(Circuit, Expression):
-    """A symbolic circuit element
+    """Symbolic circuit element
 
     Args:
         label (str): Label for the symbol
@@ -611,7 +619,7 @@ class CircuitSymbol(Circuit, Expression):
 
 
 class Component(CircuitSymbol, metaclass=ABCMeta):
-    """Base class for circuit components.
+    """Base class for circuit components
 
     A circuit component is a :class:`CircuitSymbol` that knows its own SLH
     representation. Consequently, it has a fixed number of I/O
@@ -728,11 +736,11 @@ class Component(CircuitSymbol, metaclass=ABCMeta):
 
 
 class CPermutation(Circuit, Expression):
-    r"""The channel permuting circuit. This circuit expression is only a
-    rearrangement of input and output fields. A channel permutation is given as
-    a tuple of image points. Permutations are usually represented as
+    r"""Channel permuting circuit
 
-    A permutation :math:`\sigma \in \Sigma_n` of :math:`n` elements  is often
+    This circuit expression is only a rearrangement of input and output fields.
+    A channel permutation is given as a tuple of image points. A permutation
+    :math:`\sigma \in \Sigma_n` of :math:`n` elements  is often
     represented in the following form
 
     .. math::
@@ -801,7 +809,7 @@ class CPermutation(Circuit, Expression):
         return self
 
     def series_with_permutation(self, other):
-        """Compute the series product with another channel permutation circuit.
+        """Compute the series product with another channel permutation circuit
 
         Args:
             other (CPermutation):
@@ -1086,9 +1094,7 @@ class SeriesProduct(Circuit, Operation):
 
 
 class Concatenation(Circuit, Operation):
-    """The concatenation product circuit operation. It can be applied to any
-    sequence of circuit objects.
-    """
+    """Concatenation of circuit elements"""
 
     _simplifications = [assoc, filter_neutral, match_replace_binary]
 
@@ -1186,8 +1192,10 @@ class Concatenation(Circuit, Operation):
 
 
 class Feedback(Circuit, Operation):
-    """The circuit feedback operation applied to a circuit of channel
-    dimension > 1 and an from an output port index to an input port index.
+    """Feedback on a single channel of a circuit
+
+    The circuit feedback operation applied to a circuit of channel
+    dimension > 1 and from an output port index to an input port index.
 
     Args:
         circuit (Circuit): The circuit that undergoes self-feedback
@@ -1257,7 +1265,7 @@ class Feedback(Circuit, Operation):
 
 
 class SeriesInverse(Circuit, Operation):
-    """Symbolic series product inversion operation.
+    """Symbolic series product inversion operation
 
         ``SeriesInverse(circuit)``
 
@@ -1309,7 +1317,7 @@ class SeriesInverse(Circuit, Operation):
 
 
 def circuit_identity(n):
-    """Return the circuit identity for n channels.
+    """Return the circuit identity for n channels
 
     Args:
         n (int): The channel dimension
@@ -1327,20 +1335,8 @@ def circuit_identity(n):
 cid = circuit_identity
 
 
-def P_sigma(*permutation):
-    """Create a channel permutation circuit for the given index image values.
-
-    Args:
-        permutation (int): image points
-
-    Returns:
-        Circuit: CPermutation.create(permutation)
-    """
-    return CPermutation.create(permutation)
-
-
 def FB(circuit, *, out_port=None, in_port=None):
-    """Wrapper for :py:class:Feedback: but with additional default values.
+    """Wrapper for :class:`Feedback` but with additional default values
 
     Args:
         circuit (Circuit): The circuit that undergoes self-feedback
@@ -1492,10 +1488,12 @@ def map_signals_circuit(mapping, n):
 
 
 def pad_with_identity(circuit, k, n):
-    """Pad a circuit by 'inserting' an n-channel identity circuit at index k.
-    I.e., a circuit of channel dimension N is extended to one of channel
-    dimension N+n, where the channels k, k+1, ...k+n-1, just pass through the
-    system unaffected.  E.g. let A, B be two single channel systems
+    """Pad a circuit by 'inserting' an n-channel identity circuit at index k
+
+    That is, a circuit of channel dimension $N$ is extended to one of channel
+    dimension $N+n$, where the channels $k$, $k+1$, ...$k+n-1$, just pass
+    through the system unaffected.  E.g. let ``A``, ``B`` be two single channel
+    systems::
 
         >>> A = CircuitSymbol('A', cdim=1)
         >>> B = CircuitSymbol('B', cdim=1)
@@ -1512,7 +1510,7 @@ def pad_with_identity(circuit, k, n):
 
     Returns:
         Circuit: An extended circuit that passes through the channels
-            k, k+1, ..., k+n-1
+            $k$, $k+1$, ..., $k+n-1$
 
     """
     circuit_n = circuit.cdim
@@ -1752,7 +1750,7 @@ def prepare_adiabatic_limit(slh, k=None):
 
 
 def eval_adiabatic_limit(YABFGN, Ytilde, P0):
-    """Compute the limiting SLH model for the adiabatic approximation.
+    """Compute the limiting SLH model for the adiabatic approximation
 
     Args:
         YABFGN: The tuple (Y, A, B, F, G, N)

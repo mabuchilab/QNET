@@ -37,8 +37,7 @@ _sympyOne = sympify(1)
 
 
 class QuantumExpression(Expression, metaclass=ABCMeta):
-    """Common base class for any expression that is associated with a Hilbert
-    space"""
+    """Base class for expressions associated with a Hilbert space"""
 
     _zero = None  # The neutral element for addition
     _one = None  # The neutral element for multiplication
@@ -297,7 +296,7 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
 
 
 class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
-    """A symbolic element of the algebra.
+    """Symbolic element of an algebra
 
     Args:
         label (str or SymbolicLabelBase): Label for the symbol
@@ -397,12 +396,15 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
 
 
 class QuantumOperation(QuantumExpression, Operation, metaclass=ABCMeta):
-    """Base class for operations on quantum expressions within the same
-    fundamental set"""
+    """Base class for operations on quantum expression
+
+    These are operations on quantum expressions within the same fundamental
+    set."""
 
     # "same fundamental set" means all operandas are instances of _base_cls
-    # Operations that involve objects from different sets should directly
-    # subclass from QuantumExpression and Operation
+    # Operations that involve objects from different sets (e.g.,
+    # OperatorTimesKet) should directly subclass from QuantumExpression and
+    # Operation
 
     _order_index = 1  # Operations are printed after "atomic" Expressions
 
@@ -574,7 +576,7 @@ class QuantumTimes(QuantumOperation, metaclass=ABCMeta):
 
 class ScalarTimesQuantumExpression(
         QuantumExpression, Operation, metaclass=ABCMeta):
-    """Product of a scalar and an expression"""
+    """Product of a :class:`.Scalar` and a :class:`QuantumExpression`"""
 
     @classmethod
     def create(cls, coeff, term):

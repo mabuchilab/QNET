@@ -37,10 +37,9 @@ LOG_NO_MATCH = False  # also log non-matching rules? (very verbose!)
 
 
 class Expression(metaclass=ABCMeta):
-    """Abstract class for QNET Expressions. All algebraic objects are either
-    scalars (numbers or Sympy expressions) or instances of Expression.
+    """Base class for all QNET Expressions
 
-    Expressions should generally be instantiated using the `create` class
+    Expressions should generally be instantiated using the :meth:`create` class
     method, which takes into account the algebraic properties of the Expression
     and and applies simplifications. It also uses memoization to cache all
     known (sub-)expression. This is possible because expressions are intended
@@ -528,8 +527,10 @@ def _bound_symbols(expr):
 
 
 class Operation(Expression, metaclass=ABCMeta):
-    """Base class for all "operations", i.e. Expressions that act algebraically
-    on other expressions (their "operands").
+    """Base class for "operations"
+
+    Operations are Expressions that act algebraically on other expressions
+    (their "operands").
 
     Operations differ from more general Expressions by the convention that the
     arguments of the Operator are exactly the operands (which must be members

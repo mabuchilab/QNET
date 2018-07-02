@@ -13,7 +13,7 @@ __private__ = []
 
 @partial(properties_for_args, arg_names='ARGNAMES')
 class CoherentDriveCC(Component):
-    r"""Coherent displacement of the input field.
+    r"""Coherent displacement of the input field
 
     Typically, the input field is the, displaced by a complex
     amplitude :math:`\alpha`. This component serves as the model of an ideal
@@ -46,7 +46,7 @@ class CoherentDriveCC(Component):
 
 @partial(properties_for_args, arg_names='ARGNAMES')
 class PhaseCC(Component):
-    r"""Coherent phase shift.
+    r"""Coherent phase shift cicuit component
 
     The field passing through obtains a phase factor $e^{i \phi}$ for a
     real-valued phase $\phi$. The component has no dynamics, i.e. a trivial
@@ -72,7 +72,7 @@ class PhaseCC(Component):
 
 @partial(properties_for_args, arg_names='ARGNAMES')
 class Beamsplitter(Component):
-    r"""Infinite bandwidth beamsplitter model.
+    r"""Infinite bandwidth beamsplitter component.
 
     It is a pure scattering component, i.e. it's internal dynamics are not
     modeled explicitly (trivial Hamiltonian and Lindblad operators). The single

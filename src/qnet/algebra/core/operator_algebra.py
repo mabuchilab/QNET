@@ -125,13 +125,12 @@ class Operator(QuantumExpression, metaclass=ABCMeta):
 
 
 class LocalOperator(Operator, metaclass=ABCMeta):
-    """Base class for all kinds of operators that act *locally*,
-    i.e. only on a single degree of freedom.
+    """Base class for "known" operators on a :class:`LocalSpace`
 
-    All :class:`LocalOperator` instances have a fixed associated identifier
-    (symbol) that is used when printing that operator. A custom identifier can
-    be used through the associated :class:`.LocalSpace`'s
-    `local_identifiers` parameter. For example::
+    All :class:`LocalOperator` instances have known algebraic properties and a
+    fixed associated identifier (symbol) that is used when printing that
+    operator. A custom identifier can be used through the associated
+    :class:`.LocalSpace`'s `local_identifiers` parameter. For example::
 
         >>> hs1_custom = LocalSpace(1, local_identifiers={'Destroy': 'b'})
         >>> b = Destroy(hs=hs1_custom)
@@ -290,8 +289,7 @@ class ZeroOperator(Operator, metaclass=Singleton):
 
 @properties_for_args
 class LocalSigma(LocalOperator):
-    r'''A local level flip operator operator acting on a particular
-    :class:`.LocalSpace` `hs`.
+    r'''Level flip operator between two levels of a :class:`.LocalSpace`
 
     .. math::
 
@@ -304,7 +302,7 @@ class LocalSigma(LocalOperator):
     Args:
         j (int or str): The label or index identifying $\ket{j}$
         k (int or str):  The label or index identifying $\ket{k}$
-        hs (HilbertSpace or int or str): The Hilbert space on which the
+        hs (LocalSpace or int or str): The Hilbert space on which the
             operator acts. If an :class:`int` or a :class:`str`, an implicit
             Hilbert space will be constructed as a subclass of
             :class:`LocalSpace`, as configured by :func:`init_algebra`.
@@ -419,7 +417,7 @@ class LocalSigma(LocalOperator):
 
 
 class LocalProjector(LocalSigma):
-    """A projector onto a specific level.
+    """A projector onto a specific level of a :class:`.LocalSpace`
 
     Args:
         j (int or str): The label or index identifying the state onto which
@@ -448,7 +446,7 @@ class LocalProjector(LocalSigma):
 
 
 class OperatorPlus(QuantumPlus, Operator):
-    """A sum of Operators"""
+    """Sum of Operators"""
 
     _neutral_element = ZeroOperator
     _binary_rules = OrderedDict()
@@ -458,8 +456,10 @@ class OperatorPlus(QuantumPlus, Operator):
 
 
 class OperatorTimes(QuantumTimes, Operator):
-    """A product of Operators that serves both as a product within a Hilbert
-    space as well as a tensor product."""
+    """Product of operators
+
+    This serves both as a product within a Hilbert space as well as a tensor
+    product."""
 
     _neutral_element = IdentityOperator
     _binary_rules = OrderedDict()
@@ -467,7 +467,7 @@ class OperatorTimes(QuantumTimes, Operator):
 
 
 class ScalarTimesOperator(Operator, ScalarTimesQuantumExpression):
-    """Multiply an operator by a scalar coefficient."""
+    """Product of a :class:`.Scalar` coefficient and an :class:`Operator`"""
 
     _rules = OrderedDict()
     _simplifications = [match_replace, ]
@@ -500,7 +500,7 @@ class ScalarTimesOperator(Operator, ScalarTimesQuantumExpression):
 
 
 class OperatorDerivative(QuantumDerivative, Operator):
-    """Symbolic partial derivative of an operator.
+    """Symbolic partial derivative of an operator
 
     See :class:`.QuantumDerivative`.
     """
@@ -574,7 +574,9 @@ class Commutator(QuantumOperation, Operator):
 
 
 class OperatorTrace(SingleQuantumOperation, Operator):
-    r'''Take the (partial) trace of an operator `op` ($\Op{O}) over the degrees
+    r'''(Partial) trace of an operator
+
+    Trace of an operator `op` ($\Op{O}) over the degrees
     of freedom of a Hilbert space `over_space` ($\mathcal{H}$):
 
     .. math::
@@ -634,7 +636,7 @@ class OperatorTrace(SingleQuantumOperation, Operator):
 
 
 class Adjoint(QuantumAdjoint, Operator):
-    """The symbolic Adjoint of an operator."""
+    """Symbolic Adjoint of an operator"""
 
     _simplifications = [
         scalars_to_op, delegate_to_method('_adjoint')]
@@ -680,8 +682,9 @@ class OperatorPlusMinusCC(SingleQuantumOperation, Operator):
 
 
 class PseudoInverse(SingleQuantumOperation, Operator):
-    r"""The symbolic pseudo-inverse :math:`X^+` of an operator :math:`X`. It is
-    defined via the relationship
+    r"""Symbolic pseudo-inverse :math:`X^+` of an operator :math:`X`
+
+    It is defined via the relationship
 
     .. math::
 
@@ -705,8 +708,9 @@ class PseudoInverse(SingleQuantumOperation, Operator):
 
 
 class NullSpaceProjector(SingleQuantumOperation, Operator):
-    r"""Returns a projection operator :math:`\mathcal{P}_{{\rm Ker} X}` that
-    projects onto the nullspace of its operand
+    r"""Projection operator onto the nullspace of its operand
+
+    Returns the operator :math:`\mathcal{P}_{{\rm Ker} X}` with
 
     .. math::
 

@@ -7,7 +7,7 @@ import pytest
 
 from qnet import (
     SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
-    SeriesProduct, Concatenation, P_sigma, cid, map_signals_circuit, FB,
+    SeriesProduct, Concatenation, cid, map_signals_circuit, FB,
     getABCD, CIdentity, pad_with_identity, move_drive_to_H,
     try_adiabatic_elimination, Component, connect, Operator, OperatorSymbol,
     ZeroOperator, LocalSigma, LocalProjector, IdentityOperator, Destroy,
@@ -221,29 +221,29 @@ def test_factorize_permutation():
     A1, A2, A3, A4 = get_symbols(1, 2, 3, 4)
 
     new_lhs, permuted_rhs, new_rhs = (
-        P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3)
+        CPermutation((9, 4, 5, 6, 7, 8, 0, 1, 2, 3))
         ._factorize_for_rhs(A1 + A2 + A3 + A4))
     assert new_lhs == cid(10)
     assert permuted_rhs == (A4+A2+A3+A1)
-    assert new_rhs == P_sigma(9, 4, 5, 6, 7, 8, 0, 1, 2, 3)
+    assert new_rhs == CPermutation((9, 4, 5, 6, 7, 8, 0, 1, 2, 3))
 
-    p = P_sigma(0, 1, 4, 2, 3, 5)
+    p = CPermutation((0, 1, 4, 2, 3, 5))
     expr = A2 + A3 + A1
     new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(expr)
     assert new_lhs == cid(6)
-    assert permuted_rhs == A2 + (P_sigma(2, 0, 1) << A3) + A1
+    assert permuted_rhs == A2 + (CPermutation((2, 0, 1)) << A3) + A1
     assert new_rhs == cid(6)
 
-    p = P_sigma(0, 3, 1, 2)
+    p = CPermutation((0, 3, 1, 2))
 
-    p_r = P_sigma(2, 0, 1)
+    p_r = CPermutation((2, 0, 1))
     assert p == cid(1) + p_r
     A = get_symbol(2)
 
     new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(cid(1) + A + cid(1))
 
-    assert new_lhs == P_sigma(0, 1, 3, 2)
-    assert permuted_rhs == (cid(1) + (P_sigma(1, 0) << A)  + cid(1))
+    assert new_lhs == CPermutation((0, 1, 3, 2))
+    assert permuted_rhs == (cid(1) + (CPermutation((1, 0)) << A)  + cid(1))
     assert new_rhs == cid(4)
 
     new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(cid(2) + A)
@@ -255,29 +255,30 @@ def test_factorize_permutation():
     assert p.series_inverse() << (cid(2) + A) == (
         cid(1) +
         SeriesProduct(
-            P_sigma(0, 2, 1),
-            Concatenation(SeriesProduct(P_sigma(1, 0), A), cid(1)),
-            P_sigma(2, 0, 1)))
+            CPermutation((0, 2, 1)),
+            Concatenation(SeriesProduct(CPermutation((1, 0)), A), cid(1)),
+            CPermutation((2, 0, 1))))
 
     assert p.series_inverse() << (cid(2) + A) << p == (
         cid(1) + (p_r.series_inverse() << (cid(1) + A) << p_r))
 
     new_lhs, permuted_rhs, new_rhs = (
-        P_sigma(4, 2, 1, 3, 0)._factorize_for_rhs((A4 + cid(1))))
+        CPermutation((4, 2, 1, 3, 0))._factorize_for_rhs((A4 + cid(1))))
     assert new_lhs == cid(5)
-    assert permuted_rhs == (cid(1) + (P_sigma(3, 1, 0, 2) << A4))
+    assert permuted_rhs == (cid(1) + (CPermutation((3, 1, 0, 2)) << A4))
     assert new_rhs == map_signals_circuit({4: 0}, 5)
 
     # special test case that helped find the major permutation block structure
     # factorization bug
-    p = P_sigma(3, 4, 5, 0, 1, 6, 2)
+    p = CPermutation((3, 4, 5, 0, 1, 6, 2))
     q = cid(3) + CircuitSymbol('NAND1', cdim=4)
 
     new_lhs, permuted_rhs, new_rhs = p._factorize_for_rhs(q)
-    assert new_lhs == P_sigma(0, 1, 2, 6, 3, 4, 5)
+    assert new_lhs == CPermutation((0, 1, 2, 6, 3, 4, 5))
     assert permuted_rhs == (
-        (P_sigma(0, 1, 3, 2) << CircuitSymbol('NAND1', cdim=4)) + cid(3))
-    assert new_rhs == P_sigma(4, 5, 6, 0, 1, 2, 3)
+        (CPermutation((0, 1, 3, 2)) <<
+         CircuitSymbol('NAND1', cdim=4)) + cid(3))
+    assert new_rhs == CPermutation((4, 5, 6, 0, 1, 2, 3))
 
 
 def _symbmatrix(a):
@@ -371,12 +372,12 @@ def test_feedback():
         (A << (B + cid(1))).feedback() ==
         A.feedback() << B)
     assert (
-        (A << (B + cid(1)) << (cid(1) + P_sigma(1, 0)))
+        (A << (B + cid(1)) << (cid(1) + CPermutation((1, 0))))
         .feedback(out_port=2, in_port=1) ==
         A.feedback() << B)
     assert (
-        (A << (cid(1) + P_sigma(1, 0)) <<
-            (B + cid(1)) << (cid(1) + P_sigma(1, 0)))
+        (A << (cid(1) + CPermutation((1, 0))) <<
+            (B + cid(1)) << (cid(1) + CPermutation((1, 0))))
         .feedback(out_port=1, in_port=1) ==
         A.feedback(out_port=1, in_port=1) << B)
     assert (
@@ -384,12 +385,12 @@ def test_feedback():
         .substitute({B: (A1 + A2)}) ==
         A2 << C << A1)
     assert (
-        ((cid(1) + C) << P_sigma(1, 0) << B)
+        ((cid(1) + C) << CPermutation((1, 0)) << B)
         .feedback(out_port=1, in_port=1)
         .substitute({B: (A1 + A2)}) ==
         A2 << C << A1)
     assert (
-        ((cid(1) + C) << P_sigma(1, 0) << B << (cid(1) + D))
+        ((cid(1) + C) << CPermutation((1, 0)) << B << (cid(1) + D))
         .feedback(out_port=1, in_port=1)
         .substitute({B: (A1 + A2)}) ==
         A2 << D << C << A1)
