@@ -85,5 +85,5 @@ class BadLiouvillianError(AlgebraError):
     pass
 
 
-class NonSquareMatrix(Exception):
+class NonSquareMatrix(AlgebraError):
     """Raised when a :class:`.Matrix` fails to be square"""
