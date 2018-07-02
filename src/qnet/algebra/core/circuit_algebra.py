@@ -25,7 +25,7 @@ from .exceptions import (
     WrongCDimError)
 from .hilbert_space_algebra import LocalSpace, ProductSpace
 from .matrix_algebra import (
-    Im, ImAdjoint, Matrix, block_matrix, identity_matrix, permutation_matrix,
+    Im, Matrix, block_matrix, identity_matrix, permutation_matrix,
     vstackm, zerosm)
 from .operator_algebra import (
     IdentityOperator, LocalProjector, LocalSigma, Operator,
@@ -381,6 +381,9 @@ class SLH(Circuit, Expression):
         """
         new_S = self.S * other.S
         new_L = self.S * other.L + self.L
+
+        def ImAdjoint(m):
+            return (m.H - m) * (I / 2)
 
         delta = ImAdjoint(self.L.adjoint() * self.S * other.L)
 
@@ -1336,7 +1339,7 @@ cid = circuit_identity
 
 
 def FB(circuit, *, out_port=None, in_port=None):
-    """Wrapper for :class:`Feedback` but with additional default values
+    """Wrapper for :class:`.Feedback`, defaulting to last channel
 
     Args:
         circuit (Circuit): The circuit that undergoes self-feedback

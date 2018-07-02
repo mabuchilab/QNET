@@ -17,13 +17,10 @@ from ...utils.permutations import check_permutation
 
 __all__ = [
     'Matrix', 'block_matrix', 'diagm', 'hstackm',
-    'identity_matrix', 'permutation_matrix', 'vstackm', 'zerosm',
-    'ImMatrix', 'ReMatrix', 'ImAdjoint', 'ReAdjoint']
+    'identity_matrix', 'Re', 'Im', 'vstackm', 'zerosm']
 
 __private__ = [  # anything not in __all__ must be in __private__
-    'sympyOne', 'Re', 'Im']
-
-sympyOne = sympify(1)
+    'permutation_matrix']
 
 
 class Matrix(Expression):
@@ -156,7 +153,7 @@ class Matrix(Expression):
 
     def __truediv__(self, other):
         if is_scalar(other):
-            return self * (sympyOne / other)
+            return self * (sympify(1)/ other)
         raise NotImplementedError("Can't divide matrix %s by %s"
                                   % (self, other))
 
@@ -383,7 +380,7 @@ def permutation_matrix(permutation):
 
 
 def Im(op):
-    """The imaginary part of a number, operator, or Matrix (elementwise).
+    """Imaginary part of a number, operator, or Matrix (elementwise).
 
     Args:
         op: Anything that has a `conjugate` method.
@@ -395,11 +392,8 @@ def Im(op):
     return (op.conjugate() - op) * I / 2
 
 
-ImMatrix = Im  # for flat API
-
-
 def Re(op):
-    """The real part of a number, operator, or Matrix (elementwise).
+    """Real part of a number, operator, or Matrix (elementwise).
 
     Args:
         op: Anything that has a `conjugate` method.
@@ -408,30 +402,3 @@ def Re(op):
         The element-wise real part of the operand.
     """
     return (op.conjugate() + op) / 2
-
-
-ReMatrix = Re  # for flat API
-
-
-def ImAdjoint(opmatrix):
-    """The imaginary part of a :class:`Matrix`
-
-    Args:
-        opmatrix (Matrix): The operand.
-
-    Returns:
-        Matrix: The matrix imaginary part of the operand.
-    """
-    return (opmatrix.H - opmatrix) * I / 2
-
-
-def ReAdjoint(opmatrix):
-    """The real part of a :class:`Matrix`
-
-    Args:
-        opmatrix (Matrix): The operand.
-
-    Returns:
-        Matrix: The matrix real part of the operand.
-    """
-    return (opmatrix.H + opmatrix) / 2
