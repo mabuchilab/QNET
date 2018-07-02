@@ -3,22 +3,20 @@
 
 __all__ = [
     'AlgebraException', 'AlgebraError', 'InfiniteSumError', 'CannotSimplify',
-    'WrongSignatureError', 'CannotConvertToSLH', 'CannotVisualize',
-    'WrongCDimError', 'IncompatibleBlockStructures',
-    'CannotEliminateAutomatically', 'BasisNotSetError', 'UnequalSpaces',
-    'OverlappingSpaces', 'SpaceTooLargeError', 'CannotSymbolicallyDiagonalize',
+    'CannotConvertToSLH', 'CannotVisualize', 'WrongCDimError',
+    'IncompatibleBlockStructures', 'CannotEliminateAutomatically',
+    'BasisNotSetError', 'UnequalSpaces', 'OverlappingSpaces',
+    'SpaceTooLargeError', 'CannotSymbolicallyDiagonalize',
     'BadLiouvillianError', 'NonSquareMatrix']
 
 
 class AlgebraException(Exception):
-    """Base class for all errors concerning the mathematical definitions and
-    rules of an algebra."""
+    """Base class for all algebraic exceptions"""
     pass
 
 
 class AlgebraError(AlgebraException):
-    """Base class for all errors concerning the mathematical definitions and
-    rules of an algebra."""
+    """Base class for all algebraic errors"""
     pass
 
 
@@ -28,33 +26,26 @@ class InfiniteSumError(AlgebraError):
 
 
 class CannotSimplify(AlgebraException):
-    """Raised when an expression cannot be further simplified"""
-    pass
-
-
-class WrongSignatureError(AlgebraError):
-    """Raised when an operation is instantiated with operands of the wrong
-    signature."""
+    """Raised when a rule cannot further simplify an expression"""
     pass
 
 
 class CannotConvertToSLH(AlgebraException):
-    """Is raised when a circuit algebra object cannot be converted to a
-    concrete SLH object."""
+    """Raised when a circuit algebra object cannot be converted to SLH"""
 
 
 class CannotVisualize(AlgebraException):
-    """Is raised when a circuit algebra object cannot be visually
-    represented."""
+    """Raised when a circuit cannot be visually represented."""
 
 
 class WrongCDimError(AlgebraError):
-    """Is raised when two object are tried to joined together in series but
-    have different channel dimensions."""
+    """Raised for mismatched channel number in circuit series"""
 
 
 class IncompatibleBlockStructures(AlgebraError):
-    """Is raised when a circuit decomposition into a block-structure is
+    """Raised for invalid block-decomposition
+
+    This is raised when a circuit decomposition into a block-structure is
     requested that is icompatible with the actual block structure of the
     circuit expression."""
 
@@ -64,30 +55,35 @@ class CannotEliminateAutomatically(AlgebraError):
 
 
 class BasisNotSetError(AlgebraError):
-    """Raised if the basis or a Hilbert space dimension is requested but is not
-    available"""
+    """Raised if the basis or a Hilbert space dimension is unavailable"""
 
 
 class UnequalSpaces(AlgebraError):
-    pass
+    """Raised when objects fail to be in the same Hilbert space.
+
+    This happens for example when trying to add two states from different
+    Hilbert spaces."""
 
 
 class OverlappingSpaces(AlgebraError):
-    pass
+    """Raised when objects fail to be in separate Hilbert spaces."""
 
 
 class SpaceTooLargeError(AlgebraError):
-    pass
+    """Raised when objects fail to be have overlapping Hilbert spaces."""
 
 
 class CannotSymbolicallyDiagonalize(AlgebraException):
-    pass
+    """Matrix cannot be diagonalized analytically.
+
+    Signals that a fallback to numerical diagonalization is required.
+    """
 
 
 class BadLiouvillianError(AlgebraError):
-    """Raise when a Liouvillian is not of standard Lindblad form."""
+    """Raised when a Liouvillian is not of standard Lindblad form."""
     pass
 
 
 class NonSquareMatrix(Exception):
-    pass
+    """Raised when a :class:`.Matrix` fails to be square"""
