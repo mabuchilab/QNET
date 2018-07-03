@@ -1,8 +1,8 @@
 import unittest
 import pytest
 
-from numpy import (array as np_array, conjugate as np_conjugate,
-                   int_ as np_int, float_ as np_float)
+from numpy import (
+    array as np_array, int_ as np_int, float_ as np_float)
 from sympy import symbols, sqrt, I, exp, sympify, Idx
 
 from qnet import (
@@ -10,7 +10,8 @@ from qnet import (
     LocalSigma, LocalProjector, OperatorTrace, Adjoint, PauliX, PauliY, PauliZ,
     ScalarTimesOperator, OperatorTimes, OperatorDerivative, Jz, Jplus, Jminus,
     Destroy, Create, Phase, Displace, Matrix, identity_matrix, LocalSpace,
-    TrivialSpace, ProductSpace, FockIndex, SpinSpace, ascii, BasisNotSetError)
+    TrivialSpace, ProductSpace, FockIndex, SpinSpace, ascii, BasisNotSetError,
+    adjoint, NoConjugateMatrix)
 
 
 def test_identity_singleton():
@@ -701,16 +702,17 @@ class TestOperatorTrace(unittest.TestCase):
 def test_opmatrix_construction():
     h1, h2, h3 = LocalSpace("h1"), LocalSpace("h2"), LocalSpace("h3")
     a, b, c = Destroy(hs=h1), Destroy(hs=h2), Destroy(hs=h3)
-    assert np_conjugate(a) == a.dag()
 
     M = Matrix([[a, b], [c, a]])
     assert M == Matrix(np_array([[a, b], [c, a]]))
     assert M.T == Matrix(np_array([[a, c], [b, a]]))
+    with pytest.raises(NoConjugateMatrix):
+        M.conjugate()
     assert (
-        M.conjugate() ==
+        M.element_wise(adjoint) ==
         Matrix(np_array([[a.dag(), b.dag()], [c.dag(), a.dag()]])))
     assert M.H == Matrix(np_array([[a.dag(), c.dag()], [b.dag(), a.dag()]]))
-    assert M.H == Matrix(np_array([[a.dag(), c.dag()], [b.dag(), a.dag()]]))
+    assert M.H == M.adjoint()
 
 
 def test_opmatrix_math_operations():

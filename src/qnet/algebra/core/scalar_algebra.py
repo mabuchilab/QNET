@@ -17,7 +17,7 @@ from .algebraic_properties import (
 from .hilbert_space_algebra import TrivialSpace
 from ...utils.singleton import Singleton, singleton_object
 from ...utils.ordering import KeyTuple
-from ...utils.indices import SymbolicLabelBase
+from ...utils.indices import SymbolicLabelBase, IdxSym
 
 __all__ = [
     'Scalar', 'ScalarValue', 'ScalarExpression', 'Zero', 'One', 'ScalarPlus',
@@ -41,6 +41,20 @@ class Scalar(QuantumExpression, metaclass=ABCMeta):
     def space(self):
         """:obj:`.TrivialSpace`, by definition"""
         return TrivialSpace
+
+    def conjugate(self):
+        """Complex conjugate"""
+        return self._adjoint()
+
+    @property
+    def real(self):
+        """Real part"""
+        return (self.conjugate() + self) / 2
+
+    @property
+    def imag(self):
+        """Imaginary part"""
+        return (self.conjugate() - self) * (sympy.I / 2)
 
     def __add__(self, other):
         if other == 0:
@@ -233,6 +247,12 @@ class ScalarValue(Scalar):
         else:
             return Zero
 
+    def _simplify_scalar(self, func):
+        if isinstance(self.val, sympy.Basic):
+            return self.__class__.create(func(self.val))
+        else:
+            return self
+
     @property
     def val(self):
         """The wrapped scalar value"""
@@ -267,6 +287,24 @@ class ScalarValue(Scalar):
             return tuple([ScalarValue.create(c) for c in res])
         else:
             return tuple([self, ] + [Zero] * order)
+
+    @property
+    def real(self):
+        """Real part"""
+        if hasattr(self.val, 'real'):
+            return self.val.real
+        else:
+            # SymPy
+            return self.val.as_real_imag()[0]
+
+    @property
+    def imag(self):
+        """Imaginary part"""
+        if hasattr(self.val, 'imag'):
+            return self.val.imag
+        else:
+            # SymPy
+            return self.val.as_real_imag()[1]
 
     def _adjoint(self):
         return self.__class__(self.val.conjugate())
@@ -473,6 +511,16 @@ class Zero(Scalar, metaclass=Singleton):
         return self._hash_val
 
     @property
+    def real(self):
+        """Real part"""
+        return self
+
+    @property
+    def imag(self):
+        """Imaginary part"""
+        return self
+
+    @property
     def _order_key(self):
         return KeyTuple([
             self._order_index, self._order_name or self.__class__.__name__,
@@ -629,6 +677,16 @@ class One(Scalar, metaclass=Singleton):
     @property
     def val(self):
         return self._hash_val
+
+    @property
+    def real(self):
+        """Real part"""
+        return self
+
+    @property
+    def imag(self):
+        """Imaginary part"""
+        return Zero
 
     @property
     def _order_key(self):
@@ -795,6 +853,11 @@ class ScalarPlus(QuantumPlus, Scalar):
         assoc, convert_to_scalars, orderby, filter_neutral,
         match_replace_binary]
 
+    def conjugate(self):
+        """Complex conjugate of of the sum"""
+        return self.__class__.create(
+            *[arg.conjugate() for arg in self.args])
+
     def __pow__(self, other):
         return ScalarPower.create(self, other)
 
@@ -839,6 +902,11 @@ class ScalarTimes(QuantumTimes, Scalar):
                 op = ScalarValue.create(op)
             converted_operands.append(op)
         return super().create(*converted_operands, **kwargs)
+
+    def conjugate(self):
+        """Complex conjugate of of the product"""
+        return self.__class__.create(
+            *[arg.conjugate() for arg in reversed(self.args)])
 
     def __pow__(self, other):
         return ScalarPower.create(self, other)
@@ -888,6 +956,55 @@ class ScalarIndexedSum(QuantumIndexedSum, Scalar):
         if not isinstance(term, Scalar):
             term = ScalarValue.create(term)
         super().__init__(term, *ranges)
+
+    def conjugate(self):
+        """Complex conjugate of of the indexed sum"""
+        return self.__class__.create(self.term.conjugate(), *self.ranges)
+
+    @property
+    def real(self):
+        """Real part"""
+        return self.__class__.create(self.term.real, *self.ranges)
+
+    @property
+    def imag(self):
+        """Imaginary part"""
+        return self.__class__.create(self.term.imag, *self.ranges)
+
+    def _check_val_type(self, other):
+        return (
+            isinstance(other, ScalarValue) or
+            isinstance(other, Scalar._val_types))
+
+    def __mul__(self, other):
+        # For "normal" indexed sums, we prefer to keep scalar factors in front
+        # of the sum. For a ScalarIndexedSum, this doesn't make sense, though
+        if self._check_val_type(other):
+            sum = self
+            try:
+                idx_syms = [
+                    s for s in other.free_symbols if isinstance(s, IdxSym)]
+                if len(idx_syms) > 0:
+                    sum = self.make_disjunct_indices(*idx_syms)
+            except AttributeError:
+                pass
+            return self.__class__.create(sum.term * other, *self.ranges)
+        else:
+            return super().__mul__(other)
+
+    def __rmul__(self, other):
+        if self._check_val_type(other):
+            sum = self
+            try:
+                idx_syms = [
+                    s for s in other.free_symbols if isinstance(s, IdxSym)]
+                if len(idx_syms) > 0:
+                    sum = self.make_disjunct_indices(*idx_syms)
+            except AttributeError:
+                pass
+            return self.__class__.create(other * sum.term, *self.ranges)
+        else:
+            return super().__rmul__(other)
 
     def __pow__(self, other):
         if other == 0:

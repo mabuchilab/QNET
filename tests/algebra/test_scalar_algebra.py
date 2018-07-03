@@ -1,7 +1,7 @@
 from qnet import (
     ScalarTimesOperator, OperatorSymbol, KetSymbol, BraKet, IdxSym,
     KetIndexedSum, BasisKet, FockIndex, LocalSpace, IndexOverRange,
-    ZeroOperator, Bra, ZeroKet)
+    ZeroOperator, Bra, ZeroKet, Sum)
 from qnet.algebra.core.scalar_algebra import (
     Scalar, ScalarExpression, ScalarValue, ScalarPlus, ScalarTimes,
     ScalarPower, sqrt, Zero, One, ScalarIndexedSum)
@@ -544,12 +544,13 @@ def test_scalar_power(braket):
     assert braket**1 == braket
 
 
-def test_scalar_indexed_sum():
-    """Test instantiation of a ScalarIndexedSum"""
+def test_scalar_indexed_sum(braket):
+    """Test instantiation and behavior of a ScalarIndexedSum"""
     i = IdxSym('i')
     ip = i.prime
     ipp = ip.prime
     alpha = IndexedBase('alpha')
+    a = symbols('a')
     hs = LocalSpace(0)
     ket_sum = KetIndexedSum(
         alpha[1, i] * BasisKet(FockIndex(i), hs=hs),
@@ -569,6 +570,22 @@ def test_scalar_indexed_sum():
     assert expr == ScalarIndexedSum(i, IndexOverRange(i, 1, 2))
     assert expr.doit() == 3
 
+    assert expr.real == expr
+    assert expr.imag == Zero
+    assert expr.conjugate() == expr
+
+    assert 3 * expr == expr * 3 == Sum(i, 1, 2)(3 * i)
+    assert a * expr == expr * a == Sum(i, 1, 2)(a * i)
+    assert braket * expr == ScalarTimes(braket, Sum(i, 1, 2)(i))
+    assert expr * braket == ScalarTimes(braket, Sum(i, 1, 2)(i))
+    assert (2 * i) * expr == 2 * expr * i
+    assert (2 * i) * expr == Sum(i, 1, 2)(2 * i * i.prime)
+
+    assert expr * expr == ScalarIndexedSum(
+            ScalarValue(i * ip),
+            IndexOverRange(i, 1, 2),
+            IndexOverRange(ip, 1, 2))
+
     sum3 = expr**3
     assert sum3 == ScalarIndexedSum(
             ScalarValue(i * ip * ipp),
@@ -584,6 +601,11 @@ def test_scalar_indexed_sum():
 
     sqrt_sum = sqrt(expr)
     assert sqrt_sum == ScalarPower(expr, ScalarValue(half))
+
+    expr = ScalarIndexedSum.create(I * i, IndexOverRange(i, 1, 2))
+    assert expr.real == Zero
+    assert expr.imag == ScalarIndexedSum.create(i, IndexOverRange(i, 1, 2))
+    assert expr.conjugate() == -expr
 
 
 def test_sqrt(braket):
@@ -755,6 +777,44 @@ def test_scalar_conjugate(braket):
     assert expr.conjugate() == braket.adjoint()**(alpha.conjugate())
 
 
+def test_scalar_real_imag(braket):
+    """Test taking the real and imaginary part of a scalar"""
+    alpha = symbols('alpha')
+    a, b = symbols('a, b', real=True)
+    braket_dag = braket.adjoint()
+
+    expr = ScalarValue(1 + 1j)
+    assert (expr.real, expr.imag) == (1, 1)
+
+    expr = ScalarValue(a + I * b)
+    assert (expr.real, expr.imag) == (a, b)
+
+    expr = ScalarValue(alpha)
+    assert (expr.real, expr.imag) == expr.as_real_imag()
+    assert (expr.real, expr.imag) == alpha.as_real_imag()
+
+    expr = Zero
+    assert (expr.real, expr.imag) == (Zero, Zero)
+
+    expr = One
+    assert (expr.real, expr.imag) == (One, Zero)
+
+    assert braket.real == (braket + braket_dag) / 2
+    assert braket.imag == (I / 2) * (braket_dag - braket)
+
+    expr = braket + One + I
+    assert expr.real.expand().simplify_scalar() == 1 + braket.real.expand()
+    assert expr.imag.expand().simplify_scalar() == 1 + braket.imag.expand()
+
+    expr = I * braket
+    assert expr.real.expand() == (-I/2) * braket_dag + (I/2) * braket
+    assert expr.imag.expand() == braket / 2 + braket_dag / 2
+
+    expr = braket**alpha
+    assert expr.real == (expr.adjoint() + expr) / 2
+    assert expr.imag == (I/2) * (expr.adjoint() - expr)
+
+
 def test_differentiation(braket):
     """Test symbolic differentiation of scalars"""
     t = symbols('t', real=True)
@@ -764,8 +824,11 @@ def test_differentiation(braket):
     assert expr.diff(t, 1) == alpha * t + 2
     assert expr.diff(t, 2) == alpha
     assert ScalarValue(2).diff(t, 1) is Zero
+    assert ScalarValue(2)._diff(t) is Zero
     assert One.diff(t, 1) is Zero
+    assert One._diff(t) is Zero
     assert Zero.diff(t, 1) is Zero
+    assert Zero._diff(t) is Zero
 
     expr = braket * t**2 / 2 + 2 * t
     assert isinstance(expr, Scalar)

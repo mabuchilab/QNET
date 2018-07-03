@@ -7,7 +7,7 @@ __all__ = [
     'IncompatibleBlockStructures', 'CannotEliminateAutomatically',
     'BasisNotSetError', 'UnequalSpaces', 'OverlappingSpaces',
     'SpaceTooLargeError', 'CannotSymbolicallyDiagonalize',
-    'BadLiouvillianError', 'NonSquareMatrix']
+    'BadLiouvillianError', 'NonSquareMatrix', 'NoConjugateMatrix']
 
 
 class AlgebraException(Exception):
@@ -87,3 +87,7 @@ class BadLiouvillianError(AlgebraError):
 
 class NonSquareMatrix(AlgebraError):
     """Raised when a :class:`.Matrix` fails to be square"""
+
+
+class NoConjugateMatrix(AlgebraError):
+    """Raised when entries of :class:`.Matrix` have no defined conjugate"""

@@ -100,10 +100,6 @@ class QuantumExpression(Expression, metaclass=ABCMeta):
         """Alias for :meth:`adjoint`"""
         return self._adjoint()
 
-    def conjugate(self):
-        """Alias for :meth:`adjoint`"""
-        return self._adjoint()
-
     @abstractmethod
     def _adjoint(self):
         raise NotImplementedError(self.__class__.__name__)
@@ -885,7 +881,7 @@ class QuantumIndexedSum(IndexedSum, SingleQuantumOperation, metaclass=ABCMeta):
             return new_term.__class__._indexed_sum_cls.create(
                 new_term, *new_ranges)
         elif is_scalar(other):
-            return self._class__._scalar_times_expr_cls(other, self)
+            return self.__class__._scalar_times_expr_cls(other, self)
         elif isinstance(other, ScalarTimesQuantumExpression):
             return self._class__._scalar_times_expr_cls(
                 other.coeff, self * other.term)
@@ -905,7 +901,7 @@ class QuantumIndexedSum(IndexedSum, SingleQuantumOperation, metaclass=ABCMeta):
             return new_term.__class__._indexed_sum_cls.create(
                 new_term, *new_ranges)
         elif is_scalar(other):
-            return self.__class__._scalar_times_expr_cls(other, self)
+            return self.__class__._scalar_times_expr_cls.create(other, self)
         elif isinstance(other, ScalarTimesQuantumExpression):
             return self._class__._scalar_times_expr_cls(
                 other.coeff, other.term * self)
@@ -1016,6 +1012,7 @@ def Sum(idx, *args, **kwargs):
         '∑_{i ∈ {1,2,3}} |i⟩⁽⁰⁾'
     """
     from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+    from qnet.algebra.core.scalar_algebra import ScalarValue
     dispatch_table = {
         tuple(): _sum_over_fockspace,
         (LocalSpace, ): _sum_over_fockspace,
@@ -1032,6 +1029,8 @@ def Sum(idx, *args, **kwargs):
         raise TypeError("No implementation for args of type %s" % str(key))
 
     def sum(term):
+        if isinstance(term, ScalarValue._val_types):
+            term = ScalarValue.create(term)
         idx_range = idx_range_func(term, idx, *args, **kwargs)
         return term._indexed_sum_cls.create(term, idx_range)
 

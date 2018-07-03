@@ -25,7 +25,7 @@ from .exceptions import (
     WrongCDimError)
 from .hilbert_space_algebra import LocalSpace, ProductSpace
 from .matrix_algebra import (
-    Im, Matrix, block_matrix, identity_matrix, permutation_matrix,
+    Matrix, block_matrix, identity_matrix, permutation_matrix,
     vstackm, zerosm)
 from .operator_algebra import (
     IdentityOperator, LocalProjector, LocalSigma, Operator,
@@ -474,7 +474,12 @@ class SLH(Circuit, Expression):
 
         new_S = S[:n, :n] + S[:n, n:] * one_minus_Snn_inv * S[n:, :n]
         new_L = L[:n] + S[:n, n] * one_minus_Snn_inv * L[n]
-        delta_H = Im((L.adjoint() * S[:, n:]) * one_minus_Snn_inv * L[n, 0])
+
+        def ImAdjoint(m):
+            return (m.H - m) * (I / 2)
+
+        delta_H = ImAdjoint(
+            (L.adjoint() * S[:, n:]) * one_minus_Snn_inv * L[n, 0])
 
         if isinstance(delta_H, Matrix):
             delta_H = delta_H[0, 0]
@@ -537,7 +542,7 @@ class SLH(Circuit, Expression):
         if noises is not None:
             if not isinstance(noises, Matrix):
                 noises = Matrix(noises)
-            LambdaT = (noises.conjugate() * noises.transpose()).transpose()
+            LambdaT = (noises.adjoint() * noises.transpose()).transpose()
             assert noises.shape == L.shape
             S = self.S
             summands.append((adjoint(noises) * S.adjoint() * (X * L - L * X))

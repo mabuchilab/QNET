@@ -9,15 +9,15 @@ from sympy import I, sympify, Symbol
 
 from .abstract_algebra import Expression, substitute
 from .abstract_quantum_algebra import QuantumExpression
-from .exceptions import NonSquareMatrix
+from .exceptions import NonSquareMatrix, NoConjugateMatrix
 from .hilbert_space_algebra import ProductSpace, TrivialSpace
-from .operator_algebra import Operator
+from .operator_algebra import adjoint
 from .scalar_algebra import is_scalar
 from ...utils.permutations import check_permutation
 
 __all__ = [
     'Matrix', 'block_matrix', 'diagm', 'hstackm',
-    'identity_matrix', 'Re', 'Im', 'vstackm', 'zerosm']
+    'identity_matrix', 'vstackm', 'zerosm']
 
 __private__ = [  # anything not in __all__ must be in __private__
     'permutation_matrix']
@@ -55,7 +55,7 @@ class Matrix(Expression):
         """For square matrices this gives the block (-diagonal) structure of
         the matrix as a tuple of integers that sum up to the full dimension.
 
-        :type: tuple
+        :rtype: tuple
         """
         n, m = self.shape
         if n != m:
@@ -153,7 +153,7 @@ class Matrix(Expression):
 
     def __truediv__(self, other):
         if is_scalar(other):
-            return self * (sympify(1)/ other)
+            return self * (sympify(1) / other)
         raise NotImplementedError("Can't divide matrix %s by %s"
                                   % (self, other))
 
@@ -165,24 +165,104 @@ class Matrix(Expression):
         return Matrix(self.matrix.T)
 
     def conjugate(self):
-        """The element-wise adjoint matrix.
+        """The element-wise conjugate matrix
 
-        Any element that is a :class:`.QuantumExpression` will be replaced by
-        its adjoint, and any scalar will be replaced by its complex conjugate.
-        However, no transposition of matrix elements takes place.
+        This is defined only if all the entries in the matrix have a defined
+        conjugate (i.e., they have a `conjugate` method). This is *not* the
+        case for a matrix of operators. In such a case, only an
+        :meth:`elementwise` :func:`adjoint` would be applicable, but this is
+        mathematically different from a complex conjugate.
+
+        Raises:
+            NoConjugateMatrix: if any entries have no `conjugate` method
         """
-        return Matrix(np_conjugate(self.matrix))
+        try:
+            return Matrix(np_conjugate(self.matrix))
+        except AttributeError:
+            raise NoConjugateMatrix(
+                "Matrix %s contains entries that have no defined "
+                "conjugate" % str(self))
+
+    @property
+    def real(self):
+        """Element-wise real part
+
+        Raises:
+            NoConjugateMatrix: if entries have no `conjugate` method and no
+                other way to determine the real part
+
+        Note:
+            A mathematically equivalent way to obtain a real matrix from a
+            complex matrix ``M`` is::
+
+                (M.conjugate() + M) / 2
+
+            However, the result may not be identical to ``M.real``, as the
+            latter tries to convert elements of the matrix to real values
+            directly, if possible, and only uses the conjugate as a fall-back
+        """
+
+        def re(val):
+            if hasattr(val, 'real'):
+                return val.real
+            elif hasattr(val, 'as_real_imag'):
+                return val.as_real_imag()[0]
+            elif hasattr(val, 'conjugate'):
+                return (val.conjugate() + val) / 2
+            else:
+                raise NoConjugateMatrix(
+                    "Matrix entry %s contains has no defined "
+                    "conjugate" % str(val))
+
+        # Note: Do NOT use self.matrix.real! This will give wrong results, as
+        # numpy thinks of objects (Operators) as real, even if they have no
+        # defined real part
+        return self.element_wise(re)
+
+    @property
+    def imag(self):
+        """Element-wise imaginary part
+
+        Raises:
+            NoConjugateMatrix: if entries have no `conjugate` method and no
+                other way to determine the imaginary part
+
+        Note:
+            A mathematically equivalent way to obtain an imaginary matrix from
+            a complex matrix ``M`` is::
+
+                (M.conjugate() - M) / (I * 2)
+
+            with same same caveats as :attr:`real`.
+        """
+
+        def im(val):
+            if hasattr(val, 'imag'):
+                return val.imag
+            elif hasattr(val, 'as_real_imag'):
+                return val.as_real_imag()[1]
+            elif hasattr(val, 'conjugate'):
+                return (val.conjugate() - val) / (2 * I)
+            else:
+                raise NoConjugateMatrix(
+                    "Matrix entry %s contains has no defined "
+                    "conjugate" % str(val))
+
+        # Note: Do NOT use self.matrix.real! This will give wrong results, as
+        # numpy thinks of objects (Operators) as real, even if they have no
+        # defined real part
+        return self.element_wise(im)
 
     @property
     def T(self):
-        """Transpose matrix"""
+        """Alias for :meth:`transpose`"""
         return self.transpose()
 
     def adjoint(self):
-        """Return the adjoint operator matrix, i.e. transpose and the Hermitian
-        adjoint operators of all elements.
-        """
-        return self.T.conjugate()
+        """Adjoint of the matrix
+
+        This is the transpose and the Hermitian adjoint of all elements."""
+        return self.T.element_wise(adjoint)
 
     dag = adjoint
 
@@ -193,8 +273,7 @@ class Matrix(Expression):
 
     @property
     def H(self):
-        """Return the adjoint operator matrix, i.e. transpose and the Hermitian
-        adjoint operators of all elements."""
+        """Alias for :meth:`adjoint`"""
         return self.adjoint()
 
     def __getitem__(self, item_id):
@@ -211,7 +290,7 @@ class Matrix(Expression):
             func (FunctionType): A function to be applied to each element. It
                 must take the element as its first argument.
             args: Additional positional arguments to be passed to `func`
-            args: Additional keyword arguments to be passed to `func`
+            kwargs: Additional keyword arguments to be passed to `func`
 
         Returns:
             Matrix: Matrix with results of `func`, applied element-wise.
@@ -313,17 +392,14 @@ def block_matrix(A, B, C, D):
 
        \begin{pmatrix} A B \\ C D \end{pmatrix}
 
-    :param A: Matrix of shape ``(n, m)``
-    :type A: Matrix
-    :param B: Matrix of shape ``(n, k)``
-    :type B: Matrix
-    :param C: Matrix of shape ``(l, m)``
-    :type C: Matrix
-    :param D: Matrix of shape ``(l, k)``
-    :type D: Matrix
+    Args:
+        A (Matrix): Matrix of shape ``(n, m)``
+        B (Matrix): Matrix of shape ``(n, k)``
+        C (Matrix): Matrix of shape ``(l, m)``
+        D (Matrix): Matrix of shape ``(l, k)``
 
-    :return: The combined block matrix [[A, B], [C, D]].
-    :type: Matrix
+    Returns:
+        Matrix: The combined block matrix ``[[A, B], [C, D]]``.
     """
     return vstackm((hstackm((A, B)), hstackm((C, D))))
 
@@ -331,10 +407,12 @@ def block_matrix(A, B, C, D):
 def identity_matrix(N):
     """Generate the N-dimensional identity matrix.
 
-    :param N: Dimension
-    :type N: int
-    :return: Identity matrix in N dimensions
-    :rtype: Matrix
+    Args:
+        N (int): Dimension
+
+    Returns:
+        Matrix: Identity matrix in N dimensions
+
     """
     return diagm(np_ones(N, dtype=int))
 
@@ -345,8 +423,9 @@ def zerosm(shape, *args, **kwargs):
 
 
 def permutation_matrix(permutation):
-    r"""Return an orthogonal permutation matrix
-    :math:`M_\sigma`
+    r"""Return orthogonal permutation matrix for permutation tuple
+
+    Return an orthogonal permutation matrix :math:`M_\sigma`
     for a permutation :math:`\sigma` defined by the image tuple
     :math:`(\sigma(1), \sigma(2),\dots \sigma(n))`,
     such that
@@ -366,10 +445,13 @@ def permutation_matrix(permutation):
 
     .. math::
 
-        M = (\vec{e}_{\sigma(1)}, \vec{e}_{\sigma(2)}, \dots \vec{e}_{\sigma(n)}).
+        M = (
+            \vec{e}_{\sigma(1)},
+            \vec{e}_{\sigma(2)},
+            \dots \vec{e}_{\sigma(n)}).
 
-    :param permutation: A permutation image tuple (zero-based indices!)
-    :type permutation: tuple
+    Args:
+        permutation (tuple): A permutation image tuple (zero-based indices!)
     """
     assert check_permutation(permutation)
     n = len(permutation)
@@ -377,28 +459,3 @@ def permutation_matrix(permutation):
     for i, j in enumerate(permutation):
         op_matrix[j, i] = 1
     return Matrix(op_matrix)
-
-
-def Im(op):
-    """Imaginary part of a number, operator, or Matrix (elementwise).
-
-    Args:
-        op: Anything that has a `conjugate` method.
-
-    Returns:
-        The element-wise imaginary part of the operand.
-
-    """
-    return (op.conjugate() - op) * I / 2
-
-
-def Re(op):
-    """Real part of a number, operator, or Matrix (elementwise).
-
-    Args:
-        op: Anything that has a `conjugate` method.
-
-    Returns:
-        The element-wise real part of the operand.
-    """
-    return (op.conjugate() + op) / 2
