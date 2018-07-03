@@ -3,9 +3,7 @@ import logging
 from sympy import Mul as SympyMul, KroneckerDelta as SympyKroneckerDelta
 
 from .abstract_algebra import LOG, LEVEL, LOG_NO_MATCH
-from .exceptions import (
-    CannotSimplify, UnequalSpaces,
-    SpaceTooLargeError, )
+from .exceptions import CannotSimplify
 from ..pattern_matching import ProtoExpr, match_pattern
 
 __all__ = []
@@ -299,10 +297,10 @@ def filter_cid(cls, ops, kwargs):
     """Remove occurrences of the :func:`.circuit_identity` ``cid(n)`` for any
     ``n``. Cf. :func:`filter_neutral`
     """
-    from qnet.algebra.core.circuit_algebra import CircuitZero, cid
+    from qnet.algebra.core.circuit_algebra import CircuitZero, circuit_identity
     if len(ops) == 0:
         return CircuitZero
-    fops = [op for op in ops if op != cid(op.cdim)]
+    fops = [op for op in ops if op != circuit_identity(op.cdim)]
     if len(fops) > 1:
         return fops, kwargs
     elif len(fops) == 1:

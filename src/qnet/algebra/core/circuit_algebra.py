@@ -39,10 +39,9 @@ from ...utils.singleton import Singleton, singleton_object
 __all__ = [
     'CPermutation', 'CircuitSymbol', 'Concatenation', 'Feedback',
     'Circuit', 'SLH', 'SeriesInverse', 'SeriesProduct', 'FB',
-    'circuit_identity', 'cid', 'cid_1', 'eval_adiabatic_limit',
-    'extract_signal', 'extract_signal_circuit', 'getABCD',
-    'get_common_block_structure', 'map_signals', 'map_signals_circuit',
-    'move_drive_to_H', 'pad_with_identity', 'prepare_adiabatic_limit',
+    'circuit_identity', 'eval_adiabatic_limit',
+    'extract_channel', 'getABCD', 'map_channels', 'move_drive_to_H',
+    'pad_with_identity', 'prepare_adiabatic_limit',
     'try_adiabatic_elimination', 'CIdentity', 'CircuitZero', 'Component', ]
 
 __private__ = []  # anything not in __all__ must be in __private__
@@ -68,7 +67,7 @@ class Circuit(metaclass=ABCMeta):
     @property
     def block_structure(self) -> tuple:
         """If the circuit is *reducible* (i.e., it can be represented as a
-        :py:class:Concatenation: of individual circuit expressions),
+        :class:`Concatenation` of individual circuit expressions),
         this gives a tuple of cdim values of the subblocks.
         E.g. if A and B are irreducible and have ``A.cdim = 2``, ``B.cdim = 3``
 
@@ -87,6 +86,12 @@ class Circuit(metaclass=ABCMeta):
             >>> B.block_structure
             (3,)
 
+        See also:
+
+            :meth:`get_blocks` allows to actually retrieve the blocks::
+
+                >>> (A + B).get_blocks()
+                (A, B)
         """
         return self._block_structure
 
@@ -159,7 +164,7 @@ class Circuit(metaclass=ABCMeta):
 
             >>> X = CircuitSymbol('X', cdim=3)
             >>> (X << X.series_inverse() == X.series_inverse() << X ==
-            ...  cid(X.cdim))
+            ...  circuit_identity(X.cdim))
             True
         """
         return self._series_inverse()
@@ -281,7 +286,8 @@ class Circuit(metaclass=ABCMeta):
             concat_displacements = Displace_cc(displacement=input_amps[0])
         else:
             displacements = [
-                Displace_cc(displacement=amp) if amp != 0 else cid(1)
+                Displace_cc(displacement=amp) if amp != 0
+                else circuit_identity(1)
                 for amp in input_amps]
             concat_displacements = Concatenation(*displacements)
         return self << concat_displacements
@@ -444,12 +450,12 @@ class SLH(Circuit, Expression):
 
         if out_port != n:
             return (
-                map_signals_circuit({out_port: n}, self.cdim).toSLH() <<
+                map_channels({out_port: n}, self.cdim).toSLH() <<
                 self
             ).feedback(in_port=in_port)
         elif in_port != n:
             return (
-                self << map_signals_circuit({n: in_port}, self.cdim).toSLH()
+                self << map_channels({n: in_port}, self.cdim).toSLH()
             ).feedback()
 
         S, L, H = self.S, self.L, self.H
@@ -780,7 +786,7 @@ class CPermutation(Circuit, Expression):
         if not check_permutation(permutation):
             raise BadPermutationError(str(permutation))
         if list(permutation) == list(range(len(permutation))):
-            return cid(len(permutation))
+            return circuit_identity(len(permutation))
         return super().create(permutation)
 
     @property
@@ -910,8 +916,8 @@ class CPermutation(Circuit, Expression):
     def _feedback(self, *, out_port, in_port):
         n = self.cdim
         new_perm_circuit = (
-                map_signals_circuit({out_port: (n - 1)}, n) << self <<
-                map_signals_circuit({(n - 1): in_port}, n))
+            map_channels({out_port: (n - 1)}, n) << self <<
+            map_channels({(n - 1): in_port}, n))
         if new_perm_circuit == circuit_identity(n):
             return circuit_identity(n - 1)
         new_perm = list(new_perm_circuit.permutation)
@@ -949,9 +955,9 @@ class CPermutation(Circuit, Expression):
         # (I) is equivalent to
         #       m_{in_im -> (n-1)} <<  self << m_{(n-1) -> in_port}
         #           == (red_self + cid(1))     (I')
-        red_self_plus_cid1 = (map_signals_circuit({in_im: (n - 1)}, n) <<
+        red_self_plus_cid1 = (map_channels({in_im: (n - 1)}, n) <<
                               self <<
-                              map_signals_circuit({(n - 1): in_port}, n))
+                              map_channels({(n - 1): in_port}, n))
         if isinstance(red_self_plus_cid1, CPermutation):
 
             #make sure we can factor
@@ -996,9 +1002,9 @@ class CPermutation(Circuit, Expression):
         #       m_{out_port -> (n-1)} <<  self << m_{(n-1)
         #           -> out_inv} == (red_self + cid(1))     (I')
 
-        red_self_plus_cid1 = (map_signals_circuit({out_port: (n - 1)}, n) <<
+        red_self_plus_cid1 = (map_channels({out_port: (n - 1)}, n) <<
                               self <<
-                              map_signals_circuit({(n - 1): out_inv}, n))
+                              map_channels({(n - 1): out_inv}, n))
 
         if isinstance(red_self_plus_cid1, CPermutation):
 
@@ -1019,8 +1025,8 @@ class CPermutation(Circuit, Expression):
 
 @singleton_object
 class CIdentity(Circuit, Expression, metaclass=Singleton):
-    """Single channel circuit identity system, the neutral element of single
-    channel series products."""
+    """Single pass-through channel; neutral element of :class:`SeriesProduct`
+    """
 
     _cdim = 1
 
@@ -1045,8 +1051,9 @@ class CIdentity(Circuit, Expression, metaclass=Singleton):
 
 @singleton_object
 class CircuitZero(Circuit, Expression, metaclass=Singleton):
-    """The zero circuit system, the neutral element of Concatenation. No ports,
-    no internal dynamics."""
+    """Zero circuit, the neutral element of :class:`Concatenation`
+
+    No ports, no internal dynamics."""
     _cdim = 0
 
     @property
@@ -1063,9 +1070,6 @@ class CircuitZero(Circuit, Expression, metaclass=Singleton):
 
     def _creduce(self):
         return self
-
-
-cid_1 = CIdentity
 
 
 ###############################################################################
@@ -1188,14 +1192,14 @@ class Concatenation(Circuit, Operation):
             b2 = Concatenation.create(*blocks[out_block:])
 
             return ((b1 + circuit_identity(b2.cdim - 1)) <<
-                    map_signals_circuit({out_port - 1: in_port}, n - 1) <<
+                    map_channels({out_port - 1: in_port}, n - 1) <<
                     (circuit_identity(b1.cdim - 1) + b2))
         else:
             b1 = Concatenation.create(*blocks[:in_block])
             b2 = Concatenation.create(*blocks[in_block:])
 
             return ((circuit_identity(b1.cdim - 1) + b2) <<
-                    map_signals_circuit({out_port: in_port - 1}, n - 1) <<
+                    map_channels({out_port: in_port - 1}, n - 1) <<
                     (b1 + circuit_identity(b2.cdim - 1)))
 
 
@@ -1280,12 +1284,12 @@ class SeriesInverse(Circuit, Operation):
     One generally has
 
         >>> C = CircuitSymbol('C', cdim=3)
-        >>> SeriesInverse(C) << C == cid(C.cdim)
+        >>> SeriesInverse(C) << C == circuit_identity(C.cdim)
         True
 
     and
 
-        >>> C << SeriesInverse(C) == cid(C.cdim)
+        >>> C << SeriesInverse(C) == circuit_identity(C.cdim)
         True
     """
     _simplifications = []
@@ -1336,11 +1340,9 @@ def circuit_identity(n):
     if n <= 0:
         return CircuitZero
     if n == 1:
-        return cid_1
-    return Concatenation(*((cid_1,) * n))
+        return CIdentity
+    return Concatenation(*((CIdentity,) * n))
 
-
-cid = circuit_identity
 
 
 def FB(circuit, *, out_port=None, in_port=None):
@@ -1366,95 +1368,41 @@ def FB(circuit, *, out_port=None, in_port=None):
 ###############################################################################
 
 
-def get_common_block_structure(lhs_bs, rhs_bs):
-    """For two block structures ``aa = (a1, a2, ..., an)``, ``bb = (b1, b2,
-    ..., bm)`` generate the maximal common block structure so that every block
-    from aa and bb is contained in exactly one block of the resulting
-    structure.  This is useful for determining how to apply the distributive
-    law when feeding two concatenated Circuit objects into each other.
+def extract_channel(k, cdim):
+    """Create a :class:`CPermutation` that extracts channel `k`
 
-    Examples:
-        ``(1, 1, 1), (2, 1) -> (2, 1)``
-        ``(1, 1, 2, 1), (2, 1, 2) -> (2, 3)``
-
-    Args:
-        lhs_bs (tuple): first block structure
-        rhs_bs (tuple): second block structure
-    """
-
-    # for convenience the arguments may also be Circuit objects
-    if isinstance(lhs_bs, Circuit):
-        lhs_bs = lhs_bs.block_structure
-    if isinstance(rhs_bs, Circuit):
-        rhs_bs = rhs_bs.block_structure
-
-    if sum(lhs_bs) != sum(rhs_bs):
-        raise AlgebraError('Blockstructures have different total '
-                           'channel numbers.')
-
-    if len(lhs_bs) == len(rhs_bs) == 0:
-        return ()
-
-    i = j = 1
-    lsum = 0
-    while True:
-        lsum = sum(lhs_bs[:i])
-        rsum = sum(rhs_bs[:j])
-        if lsum < rsum:
-            i += 1
-        elif rsum < lsum:
-            j += 1
-        else:
-            break
-
-    return (lsum, ) + get_common_block_structure(lhs_bs[i:], rhs_bs[j:])
-
-
-def extract_signal(k, n):
-    """Create a permutation that maps the k-th (zero-based) element to the last
-    element, while preserving the relative order of all other elements.
-
-    Args:
-        k (int): The index to extract
-        n (int): The total number of elements
-
-    Returns:
-        tuple: Permutation image tuple
-    """
-    return tuple(list(range(k)) + [n - 1] + list(range(k, n - 1)))
-
-
-def extract_signal_circuit(k, cdim):
-    """Create a channel permutation circuit that maps the k-th (zero-based)
+    Return a permutation circuit that maps the k-th (zero-based)
     input to the last output, while preserving the relative order of all other
     channels.
 
     Args:
         k (int): Extracted channel index
-        cdim (int): The channel dimension
+        cdim (int): The circuit dimension (number of channels)
 
     Returns:
         Circuit: Permutation circuit
     """
-    return CPermutation.create(extract_signal(k, cdim))
+    n = cdim
+    perm = tuple(list(range(k)) + [n - 1] + list(range(k, n - 1)))
+    return CPermutation.create(perm)
 
 
-def map_signals(mapping, n):
-    """For a given {input:output} mapping in form of a dictionary,
-    generate the permutation that achieves the specified mapping
-    while leaving the relative order of all non-specified elements intact.
+def map_channels(mapping, cdim):
+    """Create a :class:`CPermuation` based on a dict of channel mappings
+
+    For a given mapping in form of a dictionary, generate the channel
+    permutating circuit that achieves the specified mapping while leaving the
+    relative order of all non-specified channels intact.
 
     Args:
         mapping (dict): Input-output mapping of indices (zero-based)
             ``{in1:out1, in2:out2,...}``
-        n (int): total number of elements
+        cdim (int): The circuit dimension (number of channels)
 
     Returns:
-        tuple: Signal mapping permutation image tuple
-
-    Raises:
-        ValueError
+        CPermutation: Circuit mapping the channels as specified
     """
+    n = cdim
     free_values = list(range(n))
 
     for v in mapping.values():
@@ -1466,37 +1414,18 @@ def map_signals(mapping, n):
         if k >= n:
             raise ValueError('the mapping cannot map keys larger than '
                              'cdim - 1')
-    # sorted(set(range(n)).difference(set(mapping.values())))
     permutation = []
-    # print(free_values, mapping, n)
     for k in range(n):
         if k in mapping:
             permutation.append(mapping[k])
         else:
             permutation.append(free_values.pop(0))
-    # print(permutation)
-    return tuple(permutation)
 
-
-def map_signals_circuit(mapping, n):
-    """For a given {input:output} mapping in form of a dictionary,
-    generate the channel permutating circuit that achieves the specified
-    mapping while leaving the relative order of all non-specified channels
-    intact.
-
-    Args:
-        mapping (dict): Input-output mapping of indices (zero-based)
-            ``{in1:out1, in2:out2,...}``
-        n (int): total number of elements
-
-    Returns:
-        Circuit: Signal mapping permutation image tuple
-    """
-    return CPermutation.create(map_signals(mapping, n))
+    return CPermutation.create(tuple(permutation))
 
 
 def pad_with_identity(circuit, k, n):
-    """Pad a circuit by 'inserting' an n-channel identity circuit at index k
+    """Pad a circuit by adding a `n`-channel identity circuit at index `k`
 
     That is, a circuit of channel dimension $N$ is extended to one of channel
     dimension $N+n$, where the channels $k$, $k+1$, ...$k+n-1$, just pass
@@ -1530,7 +1459,9 @@ def pad_with_identity(circuit, k, n):
 
 
 def getABCD(slh, a0=None, doubled_up=True):
-    """Return the A, B, C, D and (a, c) matrices that linearize an SLH model
+    """Calculate the ABCD-linearization of an SLH model
+
+    Return the A, B, C, D and (a, c) matrices that linearize an SLH model
     about a coherent displacement amplitude a0.
 
     The equations of motion and the input-output relation are then:
@@ -1686,7 +1617,9 @@ def getABCD(slh, a0=None, doubled_up=True):
 
 
 def move_drive_to_H(slh, which=None):
-    r'''For the given `slh` model, move inhomogeneities in the Lindblad
+    r'''Move coherent drives from the Lindblad operators to the Hamiltonian
+
+    For the given `slh` model, move inhomogeneities in the Lindblad
     operators (resulting from the presence of a coherent drive, see
     :class:`.CoherentDriveCC`) to the Hamiltonian.
 
@@ -1733,17 +1666,16 @@ def move_drive_to_H(slh, which=None):
 
 
 def prepare_adiabatic_limit(slh, k=None):
-    """Prepare the adiabatic elimination procedure for an SLH object with
-    scaling parameter k->\infty
+    """Prepare the adiabatic elimination on an SLH object
 
     Args:
         slh: The SLH object to take the limit for
-        k: The scaling parameter.
+        k: The scaling parameter $k \rightarrow \infty$. The default is a
+            positive symbol 'k'
 
     Returns:
         tuple: The objects ``Y, A, B, F, G, N``
         necessary to compute the limiting system.
-
     """
     if k is None:
         k = symbols('k', positive=True)
@@ -1783,13 +1715,11 @@ def eval_adiabatic_limit(YABFGN, Ytilde, P0):
 
 
 def try_adiabatic_elimination(slh, k=None, fock_trunc=6, sub_P0=True):
-    """Attempt to automatically carry out the adiabatic elimination procedure
-    on slh with scaling parameter k.
+    """Attempt to automatically do adiabatic elimination on an SLH object
 
-    This will project the Y operator onto
-    a truncated basis with dimension specified by fock_trunc.
-    sub_P0 controls whether an attempt is made to replace the
-    kernel projector P0 by an IdentityOperator.
+    This will project the `Y` operator onto a truncated basis with dimension
+    specified by `fock_trunc`.  `sub_P0` controls whether an attempt is made to
+    replace the kernel projector P0 by an :class:`.IdentityOperator`.
     """
     ops = prepare_adiabatic_limit(slh, k)
     Y = ops[0]
@@ -1833,8 +1763,7 @@ def try_adiabatic_elimination(slh, k=None, fock_trunc=6, sub_P0=True):
 
     else:
         raise CannotEliminateAutomatically(
-            "Currently only single degree of freedom Y-operators supported"
-            )
+            "Currently only single degree of freedom Y-operators supported")
 
 
 def _cumsum(lst):

@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from ..core.circuit_algebra import (
-    Concatenation, SLH, _cumsum, map_signals_circuit, )
+    Concatenation, SLH, _cumsum, map_channels, )
 
 __all__ = ["connect", ]
 
@@ -148,11 +148,11 @@ def connect(components, connections, force_SLH=False, expand_simplify=True):
     n = combined.cdim
     nfb = len(connections)
 
-    imapping = map_signals_circuit(
+    imapping = map_channels(
         {k: im for (k, im) in zip(range(n-nfb, n), imap)},
         n)
 
-    omapping = map_signals_circuit(
+    omapping = map_channels(
         {om: k for (k, om) in zip(range(n-nfb, n), omap)},
         n)
 

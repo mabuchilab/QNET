@@ -7,16 +7,16 @@ from sympy import symbols, sqrt, exp, I, Idx, IndexedBase
 
 from qnet import (
     CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-    Feedback, SeriesInverse, cid, Beamsplitter, OperatorSymbol,
-    IdentityOperator, ZeroOperator, Create, Destroy, Jz, Jplus, Jminus, Phase,
-    Displace, Squeeze, LocalSigma, LocalProjector, tr, Adjoint, PseudoInverse,
-    NullSpaceProjector, Commutator, OperatorTimes, OperatorPlusMinusCC,
-    LocalSpace, TrivialSpace, FullSpace, Matrix, KetSymbol, ZeroKet,
-    TrivialKet, BasisKet, CoherentStateKet, UnequalSpaces, Bra,
-    OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
-    IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
-    SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, ascii,
-    ScalarValue, ScalarExpression, QuantumDerivative, Scalar,
+    Feedback, SeriesInverse, circuit_identity as cid, Beamsplitter,
+    OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz, Jplus,
+    Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector, tr, Adjoint,
+    PseudoInverse, NullSpaceProjector, Commutator, OperatorTimes,
+    OperatorPlusMinusCC, LocalSpace, TrivialSpace, FullSpace, Matrix,
+    KetSymbol, ZeroKet, TrivialKet, BasisKet, CoherentStateKet, UnequalSpaces,
+    Bra, OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra,
+    SuperOperatorSymbol, IdentitySuperOperator, ZeroSuperOperator,
+    SuperAdjoint, SPre, SPost, SuperOperatorTimesOperator, FockIndex, StrLabel,
+    IdxSym, ascii, ScalarValue, ScalarExpression, QuantumDerivative, Scalar,
     SpinSpace, Eq)
 
 

@@ -6,14 +6,13 @@ from numpy import array as np_array
 import pytest
 
 from qnet import (
-    SLH, CircuitSymbol, CPermutation, circuit_identity, map_signals,
-    SeriesProduct, Concatenation, cid, map_signals_circuit, FB,
+    SLH, CircuitSymbol, CPermutation, circuit_identity, map_channels,
+    SeriesProduct, Concatenation, circuit_identity as cid, FB,
     getABCD, CIdentity, pad_with_identity, move_drive_to_H,
     try_adiabatic_elimination, Component, connect, Operator, OperatorSymbol,
     ZeroOperator, LocalSigma, LocalProjector, IdentityOperator, Destroy,
     LocalSpace, Matrix, identity_matrix, CoherentDriveCC, PhaseCC,
     Beamsplitter)
-from qnet.algebra.core.abstract_quantum_algebra import ensure_local_space
 from qnet.utils.permutations import (
     invert_permutation, permute, full_block_perm,
     block_perm_and_perms_within_blocks)
@@ -97,11 +96,11 @@ def test_permutation():
         CPermutation.create((invalid_permutation,))
     p_id = tuple(range(n))
     assert CPermutation.create(p_id) == circuit_identity(n)
-    assert map_signals({0: 1, 1: 0}, 2) == (1, 0)
-    assert map_signals({0: 5, 1: 0}, 6) == (5, 0, 1, 2, 3, 4)
+    assert map_channels({0: 1, 1: 0}, 2) == CPermutation((1, 0))
+    assert map_channels({0: 5, 1: 0}, 6) == CPermutation((5, 0, 1, 2, 3, 4))
     assert (
-        map_signals({0: 5, 1: 0, 3: 2}, 6) ==
-        invert_permutation(map_signals({5: 0, 0: 1, 2: 3}, 6)))
+        map_channels({0: 5, 1: 0, 3: 2}, 6).permutation ==
+        invert_permutation(map_channels({5: 0, 0: 1, 2: 3}, 6).permutation))
 
 
 def test_series():
@@ -266,7 +265,7 @@ def test_factorize_permutation():
         CPermutation((4, 2, 1, 3, 0))._factorize_for_rhs((A4 + cid(1))))
     assert new_lhs == cid(5)
     assert permuted_rhs == (cid(1) + (CPermutation((3, 1, 0, 2)) << A4))
-    assert new_rhs == map_signals_circuit({4: 0}, 5)
+    assert new_rhs == map_channels({4: 0}, 5)
 
     # special test case that helped find the major permutation block structure
     # factorization bug
@@ -353,7 +352,7 @@ def test_feedback():
     circuit_identity(1)
 
     assert FB(A+B) == A + FB(B)
-    smq = map_signals_circuit({2: 1}, 3)  # == 'cid(1) + X'
+    smq = map_channels({2: 1}, 3)  # == 'cid(1) + X'
     assert smq == smq.series_inverse()
 
     assert (
@@ -410,7 +409,7 @@ def test_feedback():
     cav = SLH([[1]], [sq2 * sqg * a], 0)
     bs = Beamsplitter(label='theta', mixing_angle=theta)
     ph = PhaseCC(label='phi', phase=phi)
-    flip = map_signals_circuit({1: 0}, 2)
+    flip = map_channels({1: 0}, 2)
 
     sys = (
         (cid(1) + ph + cid(1)) <<

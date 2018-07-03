@@ -7,11 +7,11 @@ from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 
 from qnet import (
     CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
-    Feedback, SeriesInverse, cid, Beamsplitter, OperatorSymbol,
-    IdentityOperator, ZeroOperator, Create, Destroy, Jz, Jplus, Jminus, Phase,
-    Displace, Squeeze, LocalSigma, LocalProjector, tr, Adjoint, PseudoInverse,
-    NullSpaceProjector, Commutator, LocalSpace, TrivialSpace, FullSpace,
-    Matrix, KetSymbol, ZeroKet, TrivialKet, BasisKet,
+    Feedback, SeriesInverse, circuit_identity as cid, Beamsplitter,
+    OperatorSymbol, IdentityOperator, ZeroOperator, Create, Destroy, Jz, Jplus,
+    Jminus, Phase, Displace, Squeeze, LocalSigma, LocalProjector, tr, Adjoint,
+    PseudoInverse, NullSpaceProjector, Commutator, LocalSpace, TrivialSpace,
+    FullSpace, Matrix, KetSymbol, ZeroKet, TrivialKet, BasisKet,
     CoherentStateKet, UnequalSpaces, ScalarTimesKet, OperatorTimesKet, Bra,
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,

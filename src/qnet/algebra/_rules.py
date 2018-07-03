@@ -2,15 +2,15 @@ from sympy import Basic as SympyBasic, I, exp, sqrt
 
 from .core.circuit_algebra import (
     CIdentity, CPermutation, Circuit, Concatenation, Feedback, SLH,
-    SeriesInverse, SeriesProduct, cid, get_common_block_structure, )
+    SeriesInverse, SeriesProduct, circuit_identity as cid)
 from .core.exceptions import CannotSimplify
 from .core.hilbert_space_algebra import (
-    HilbertSpace, LocalSpace, ProductSpace, TrivialSpace, )
+    HilbertSpace, LocalSpace, ProductSpace, TrivialSpace)
 from .core.operator_algebra import (
     Adjoint, Commutator, IdentityOperator, LocalOperator, LocalProjector,
     LocalSigma, Operator, OperatorIndexedSum, OperatorPlus, OperatorTimes,
     OperatorTrace, PseudoInverse, ScalarTimesOperator, ZeroOperator,
-    decompose_space, factor_for_trace, )
+    decompose_space, factor_for_trace)
 from .library.spin_algebra import (
     Jz, Jplus, Jminus, Jpjmcoeff, Jzjmcoeff, Jmjmcoeff)
 from .library.fock_operators import (
@@ -22,11 +22,11 @@ from .core.scalar_algebra import (
 from .core.state_algebra import (
     BasisKet, Bra, BraKet, CoherentStateKet, State, KetBra, KetIndexedSum,
     KetPlus, LocalKet, OperatorTimesKet, ScalarTimesKet, TensorKet, TrivialKet,
-    ZeroKet, )
+    ZeroKet)
 from .core.super_operator_algebra import (
     IdentitySuperOperator, SPost, SPre, ScalarTimesSuperOperator, SuperAdjoint,
     SuperOperator, SuperOperatorPlus, SuperOperatorTimes,
-    SuperOperatorTimesOperator, ZeroSuperOperator, )
+    SuperOperatorTimesOperator, ZeroSuperOperator)
 from .pattern_matching import pattern, pattern_head, wc
 from ..utils.check_rules import check_rules_dict
 from ..utils.indices import IndexRangeBase, SymbolicLabelBase
@@ -908,6 +908,49 @@ def _algebraic_rules_state():
 
 
 # Circuit rules
+def _get_common_block_structure(lhs_bs, rhs_bs):
+    """For two block structures ``aa = (a1, a2, ..., an)``, ``bb = (b1, b2,
+    ..., bm)`` generate the maximal common block structure so that every block
+    from aa and bb is contained in exactly one block of the resulting
+    structure.  This is useful for determining how to apply the distributive
+    law when feeding two concatenated Circuit objects into each other.
+
+    Examples:
+        ``(1, 1, 1), (2, 1) -> (2, 1)``
+        ``(1, 1, 2, 1), (2, 1, 2) -> (2, 3)``
+
+    Args:
+        lhs_bs (tuple): first block structure
+        rhs_bs (tuple): second block structure
+    """
+
+    # for convenience the arguments may also be Circuit objects
+    if isinstance(lhs_bs, Circuit):
+        lhs_bs = lhs_bs.block_structure
+    if isinstance(rhs_bs, Circuit):
+        rhs_bs = rhs_bs.block_structure
+
+    if sum(lhs_bs) != sum(rhs_bs):
+        raise AlgebraError('Blockstructures have different total '
+                           'channel numbers.')
+
+    if len(lhs_bs) == len(rhs_bs) == 0:
+        return ()
+
+    i = j = 1
+    lsum = 0
+    while True:
+        lsum = sum(lhs_bs[:i])
+        rsum = sum(rhs_bs[:j])
+        if lsum < rsum:
+            i += 1
+        elif rsum < lsum:
+            j += 1
+        else:
+            break
+
+    return (lsum, ) + _get_common_block_structure(lhs_bs[i:], rhs_bs[j:])
+
 
 def _tensor_decompose_series(lhs, rhs):
     """Simplification method for lhs << rhs
@@ -927,7 +970,7 @@ def _tensor_decompose_series(lhs, rhs):
         raise CannotSimplify()
     lhs_structure = lhs.block_structure
     rhs_structure = rhs.block_structure
-    res_struct = get_common_block_structure(lhs_structure, rhs_structure)
+    res_struct = _get_common_block_structure(lhs_structure, rhs_structure)
     if len(res_struct) > 1:
         blocks, oblocks = (
             lhs.get_blocks(res_struct),
