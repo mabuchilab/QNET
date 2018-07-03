@@ -32,7 +32,7 @@ def test_simplify():
     with extra_binary_rules(
             OperatorTimes,
             {'extra': (pattern_head(B_, C_), b_times_c_equal_d)}):
-        new_expr = _apply_rules(expr)
+        new_expr = expr.rebuild()
 
     commutator_rule = (
             pattern(

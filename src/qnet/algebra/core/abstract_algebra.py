@@ -266,33 +266,41 @@ class Expression(metaclass=ABCMeta):
         """
         return func(self, *args, **kwargs)
 
-    def apply_rules(self, rules):
-        """Recursively re-instantiate the expression, while applying all of the
-        given `rules` to all encountered (sub-) expressions
+    def apply_rules(self, rules, recursive=True):
+        """Rebuild the expression, with additional rules
 
         Args:
             rules (list or ~collections.OrderedDict): List of rules or
                 dictionary mapping names to rules, where each rule is a tuple
-                (Pattern, replacement callable)
+                (:class:`Pattern`, replacement callable), cf.
+                :meth:`apply_rule`
+            recursive (bool): If true (default), apply rules to all arguments
+                and keyword arguments of the expression. Otherwise, only the
+                expression itself will be re-instantiated.
+
+        If `rules` is a dictionary, the keys (rules names) are used only for
+        debug logging, to allow an analysis of which rules lead to the final
+        form of an expression.
         """
         new_args = [_apply_rules(arg, rules) for arg in self.args]
         new_kwargs = {key: _apply_rules(val, rules)
                       for (key, val) in self.kwargs.items()}
         simplified = self.create(*new_args, **new_kwargs)
-        try:
-            # `rules` is an OrderedDict key => (pattern, replacement)
-            items = rules.items()
-        except AttributeError:
-            # `rules` is a list of (pattern, replacement) tuples
-            items = enumerate(rules)
-        for key, (pat, replacement) in items:
-            matched = pat.match(simplified)
-            if matched:
-                try:
-                    return replacement(**matched)
-                except CannotSimplify:
-                    pass
-        return simplified
+        return _apply_rules_no_recurse(simplified, rules)
+
+    def apply_rule(self, pattern, replacement, recursive=True):
+        """Apply a single rules to the expression
+
+        This is equivalent to :meth:`apply_rules` with
+        ``rules=[(pattern, replacement)]``
+
+        Args:
+            pattern (.Pattern): A pattern containing one or more wildcards
+            replacement (callable): A callable that takes the wildcard names in
+                `pattern` as keyword arguments, and returns a replacement for
+                any expression that `pattern` matches.
+        """
+        return self.apply_rules([(pattern, replacement)], recursive=recursive)
 
     def rebuild(self):
         """Recursively re-instantiate the expression
@@ -378,10 +386,8 @@ def substitute(expr, var_map):
         return expr
 
 
-def _apply_rules_no_recurse(expr, rules=None):
+def _apply_rules_no_recurse(expr, rules):
     """Non-recursively match expr again all rules"""
-    if rules is None:
-        rules = {}
     try:
         # `rules` is an OrderedDict key => (pattern, replacement)
         items = rules.items()
@@ -398,7 +404,7 @@ def _apply_rules_no_recurse(expr, rules=None):
     return expr
 
 
-def _apply_rules(expr, rules=None):
+def _apply_rules(expr, rules):
     """Recursively re-instantiate the expression, while applying all of the
     given `rules` to all encountered (sub-) expressions
 
@@ -427,8 +433,6 @@ def _apply_rules(expr, rules=None):
     """
     if LOG:
         logger = logging.getLogger(__name__ + '.simplify')
-    if rules is None:
-        rules = {}
     stack = []
     path = []
     if isinstance(expr, Expression):
