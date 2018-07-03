@@ -2,7 +2,7 @@ import unittest
 
 from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols, factorial
 
-from qnet.algebra.core.abstract_algebra import simplify
+from qnet.algebra.core.abstract_algebra import _apply_rules
 from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.toolbox.core import no_rules
 from qnet.algebra.core.operator_algebra import (
@@ -279,7 +279,7 @@ def test_expand_ketbra():
 
 def eval_lb(expr, mapping):
     """Evaluate symbolic labels with the given mapping"""
-    return simplify(expr, rules=[(
+    return _apply_rules(expr, rules=[(
         wc('label', head=SymbolicLabelBase),
         lambda label: label.evaluate(mapping))])
 

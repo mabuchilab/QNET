@@ -78,12 +78,12 @@ class IndexedSum(Operation, metaclass=ABCMeta):
         for mapping in yield_from_ranges(self.ranges):
             term = self.term.substitute(mapping)
             try:
-                term = term.simplify(rules=[(
+                term = term.apply_rules(rules=[(
                     wc('label', head=SymbolicLabelBase),
                     lambda label: label.evaluate(mapping))])
             except AttributeError:
                 # for ScalarIndexedSum, term may be a scalar that doesn't have
-                # a `simplify` method
+                # a `apply_rules` method
                 pass
             yield term
 
@@ -158,7 +158,7 @@ class IndexedSum(Operation, metaclass=ABCMeta):
                     "Cannot expand %s: more than %s terms"
                     % (self, self._expand_limit))
         if len(other_ranges) == 0:
-            res = res_term.simplify(rules=[(
+            res = res_term.apply_rules(rules=[(
                 wc('label', head=SymbolicLabelBase),
                 lambda label: label.evaluate(mapping))])
         else:

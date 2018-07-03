@@ -22,7 +22,7 @@ from ..pattern_matching import ProtoExpr, pattern
 from ...utils.singleton import Singleton
 
 __all__ = [
-    'Expression', 'Operation', 'simplify', 'simplify_by_method', 'substitute']
+    'Expression', 'Operation', 'substitute']
 
 __private__ = []  # anything not in __all__ must be in __private__
 
@@ -266,7 +266,7 @@ class Expression(metaclass=ABCMeta):
         """
         return func(self, *args, **kwargs)
 
-    def simplify(self, rules=None):
+    def apply_rules(self, rules):
         """Recursively re-instantiate the expression, while applying all of the
         given `rules` to all encountered (sub-) expressions
 
@@ -275,10 +275,8 @@ class Expression(metaclass=ABCMeta):
                 dictionary mapping names to rules, where each rule is a tuple
                 (Pattern, replacement callable)
         """
-        if rules is None:
-            rules = {}
-        new_args = [simplify(arg, rules) for arg in self.args]
-        new_kwargs = {key: simplify(val, rules)
+        new_args = [_apply_rules(arg, rules) for arg in self.args]
+        new_kwargs = {key: _apply_rules(val, rules)
                       for (key, val) in self.kwargs.items()}
         simplified = self.create(*new_args, **new_kwargs)
         try:
@@ -295,6 +293,15 @@ class Expression(metaclass=ABCMeta):
                 except CannotSimplify:
                     pass
         return simplified
+
+    def rebuild(self):
+        """Recursively re-instantiate the expression
+
+        This is generally used within a managed context such as
+        :func:`.extra_rules`, :func:`.extra_binary_rules`, or
+        :func:`.no_rules`.
+        """
+        return self.apply_rules(rules={})
 
     def _repr_latex_(self):
         """For compatibility with the IPython notebook, generate TeX expression
@@ -371,7 +378,7 @@ def substitute(expr, var_map):
         return expr
 
 
-def _simplify_expr(expr, rules=None):
+def _apply_rules_no_recurse(expr, rules=None):
     """Non-recursively match expr again all rules"""
     if rules is None:
         rules = {}
@@ -391,7 +398,7 @@ def _simplify_expr(expr, rules=None):
     return expr
 
 
-def simplify(expr, rules=None):
+def _apply_rules(expr, rules=None):
     """Recursively re-instantiate the expression, while applying all of the
     given `rules` to all encountered (sub-) expressions
 
@@ -442,7 +449,7 @@ def simplify(expr, rules=None):
                 # done at this level
                 path.pop()
                 expr = stack.pop().instantiate()
-                expr = _simplify_expr(expr, rules)
+                expr = _apply_rules_no_recurse(expr, rules)
                 if len(stack) == 0:
                     if LOG:
                         logger.debug(
@@ -464,17 +471,17 @@ def simplify(expr, rules=None):
                     if LOG:
                         logger.debug("   placing arg on stack")
                 else:  # scalar
-                    stack[-1][i] = _simplify_expr(arg, rules)
+                    stack[-1][i] = _apply_rules_no_recurse(arg, rules)
                     if LOG:
                         logger.debug(
                             "   arg is leaf, replacing with simplified expr: "
                             "%s", stack[-1][i])
                     path[-1] += 1
     else:
-        return _simplify_expr(expr, rules)
+        return _apply_rules_no_recurse(expr, rules)
 
 
-def simplify_by_method(expr, *method_names, head=None, **kwargs):
+def _simplify_by_method(expr, *method_names, head=None, **kwargs):
     """Simplify `expr` by calling all of the given methods on it, if possible.
 
     Args:
@@ -508,7 +515,7 @@ def simplify_by_method(expr, *method_names, head=None, **kwargs):
 
     pat = pattern(head=head, wc_name='X', conditions=(has_any_wanted_method, ))
 
-    return simplify(
+    return _apply_rules(
         expr, [(pat, lambda X: apply_methods(X, method_names, **kwargs))])
 
 

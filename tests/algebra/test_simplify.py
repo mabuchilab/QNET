@@ -2,7 +2,7 @@ from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.operator_algebra import (
     OperatorSymbol, ScalarTimesOperator, OperatorPlus, Operator,
     OperatorTimes)
-from qnet.algebra.core.abstract_algebra import simplify
+from qnet.algebra.core.abstract_algebra import _apply_rules
 from qnet.algebra.toolbox.core import extra_binary_rules
 from qnet.algebra.core.exceptions import CannotSimplify
 from qnet.algebra.pattern_matching import wc, pattern_head, pattern
@@ -32,7 +32,7 @@ def test_simplify():
     with extra_binary_rules(
             OperatorTimes,
             {'extra': (pattern_head(B_, C_), b_times_c_equal_d)}):
-        new_expr = simplify(expr)
+        new_expr = _apply_rules(expr)
 
     commutator_rule = (
             pattern(
@@ -49,7 +49,7 @@ def test_simplify():
     with extra_binary_rules(
             OperatorTimes, {
                 'extra': (pattern_head(B_, C_), b_times_c_equal_d)}):
-        new_expr = simplify(expr, [commutator_rule, ])
+        new_expr = _apply_rules(expr, [commutator_rule, ])
     assert (srepr(new_expr) ==
             "ScalarTimesOperator(ScalarValue(2), OperatorSymbol('CommutAD', "
             "hs=LocalSpace('h1')))")

@@ -925,13 +925,13 @@ def create_operator_pm_cc():
         >>> A = OperatorSymbol('A', hs=1)
         >>> sum = A + A.dag()
         >>> with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
-        ...     sum2 = sum.simplify()
+        ...     sum2 = sum.rebuild()
         >>> print(ascii(sum2))
         A^(1) + c.c.
 
     The inverse is done through :func:`expand_operator_pm_cc`::
 
-        >>> print(ascii(sum2.simplify(rules=expand_operator_pm_cc())))
+        >>> print(ascii(sum2.apply_rules(rules=expand_operator_pm_cc())))
         A^(1) + A^(1)H
     """
     A = wc("A", head=Operator)

@@ -22,7 +22,7 @@ from .hilbert_space_algebra import TrivialSpace
 from .matrix_algebra import Matrix
 from .operator_algebra import (
     Operator, OperatorPlus, ZeroOperator, sympyOne)
-from .scalar_algebra import is_scalar
+from .scalar_algebra import is_scalar, One
 from ...utils.ordering import DisjunctCommutativeHSOrder, KeyTuple
 from ...utils.singleton import Singleton, singleton_object
 
@@ -483,7 +483,7 @@ def liouvillian_normal_form(L, symbolic = False):
             if isinstance(s, ScalarTimesSuperOperator):
                 coeff, term = s.operands
             else:
-                coeff, term = sympyOne, s
+                coeff, term = One, s
             if isinstance(term, SPre):
                 spres.append(coeff * term.operands[0])
             elif isinstance(term, SPost):
@@ -504,7 +504,7 @@ def liouvillian_normal_form(L, symbolic = False):
                     complex(coeff)
                 except (ValueError, TypeError):
                     symbolic = True
-                    coeff = coeff.simplify()
+                    coeff = coeff.simplify_scalar()
 
                 collapse_form[Li][Ljd] = coeff
 
@@ -556,7 +556,7 @@ def liouvillian_normal_form(L, symbolic = False):
                 diag = True
                 for i in range(len(basis)):
                     for j in range(i):
-                        if M[i,j].simplify() != 0 or M[j,i].simplify != 0:
+                        if M[i,j].apply_rules() != 0 or M[j, i].apply_rules != 0:
                             diag = False
                             break
                     if not diag:

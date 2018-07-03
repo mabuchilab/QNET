@@ -1,7 +1,7 @@
 from collections.__init__ import OrderedDict
 from functools import partial
 
-from ..core.abstract_algebra import simplify
+from ..core.abstract_algebra import _apply_rules
 from ..core.operator_algebra import (
     Operator, OperatorTimes,
     Commutator, )
@@ -52,9 +52,9 @@ def expand_commutators_leibniz(expr, expand_expr=True):
             lambda AB, C: recurse(leibniz_left(AB, C).expand())))])
 
     if expand_expr:
-        res = simplify(expr.expand(), rules).expand()
+        res = _apply_rules(expr.expand(), rules).expand()
     else:
-        res = simplify(expr, rules)
+        res = _apply_rules(expr, rules)
     return res
 
 
@@ -70,5 +70,5 @@ def evaluate_commutators(expr):
     """
     A = wc('A', head=Operator)
     B = wc('B', head=Operator)
-    return simplify(
+    return _apply_rules(
         expr, [(pattern(Commutator, A, B), lambda A, B: A*B - B*A)])
