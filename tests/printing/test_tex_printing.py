@@ -398,8 +398,8 @@ def test_tex_ket_elements():
             r'\left\lvert \alpha=2 \right\rangle^{(1)}')
 
 
-def test_tex_ket_symbolic_labels():
-    """Test tex representation of Kets with symbolic labels"""
+def test_tex_symbolic_labels():
+    """Test tex representation of symbols with symbolic labels"""
     i = Idx('i')
     i_sym = symbols('i')
     j = Idx('j')
@@ -439,6 +439,12 @@ def test_tex_ket_symbolic_labels():
             r'e^{- \frac{\alpha {\alpha}^*}{2}} '
             r'\left(\sum_{n \in \mathcal{H}_{1}} '
             r'\frac{\alpha^{n}}{\sqrt{n!}} \Ket{n}^{(1)}\right)')
+
+    tls = SpinSpace(label='s', spin='1/2', basis=('down', 'up'))
+    Sig = IndexedBase('sigma')
+    n = IdxSym('n')
+    Sig_n = OperatorSymbol(StrLabel(Sig[n]), hs=tls)
+    assert latex(Sig_n, show_hs_label=False) == r'\hat{\sigma}_{n}'
 
 
 def test_tex_bra_elements():

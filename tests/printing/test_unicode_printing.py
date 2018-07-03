@@ -16,7 +16,7 @@ from qnet import (
     OverlappingSpaces, SpaceTooLargeError, BraKet, KetBra, SuperOperatorSymbol,
     IdentitySuperOperator, ZeroSuperOperator, SuperAdjoint, SPre, SPost,
     SuperOperatorTimesOperator, FockIndex, StrLabel, IdxSym, unicode,
-    QuantumDerivative, Scalar, ScalarExpression, SpinSpace, Eq)
+    QuantumDerivative, Scalar, ScalarExpression, SpinSpace, Eq, SpinSpace)
 
 
 def test_unicode_scalar():
@@ -278,8 +278,8 @@ def test_unicode_ket_elements():
     assert unicode(CoherentStateKet(2.1, hs=1)) == '|α=2.1⟩⁽¹⁾'
 
 
-def test_unicode_ket_symbolic_labels():
-    """Test unicode representation of Kets with symbolic labels"""
+def test_unicode_symbolic_labels():
+    """Test unicode representation of symbols with symbolic labels"""
     i = IdxSym('i')
     i_sym = symbols('i')
     j = IdxSym('j')
@@ -298,6 +298,12 @@ def test_unicode_ket_symbolic_labels():
         unicode(LocalSigma(FockIndex(i), FockIndex(j), hs=hs0)) == '|i⟩⟨j|⁽⁰⁾')
     expr = CoherentStateKet(symbols('alpha'), hs=1).to_fock_representation()
     assert unicode(expr) == 'exp(-α α ⃰/2) (∑_{n ∈ ℌ₁} αⁿ/√n! |n⟩⁽¹⁾)'
+
+    tls = SpinSpace(label='s', spin='1/2', basis=('down', 'up'))
+    Sig = IndexedBase('sigma')
+    n = IdxSym('n')
+    Sig_n = OperatorSymbol(StrLabel(Sig[n]), hs=tls)
+    assert unicode(Sig_n, show_hs_label=False) == 'σ̂ₙ'
 
 
 def test_unicode_bra_elements():

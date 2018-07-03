@@ -69,9 +69,9 @@ class QnetAsciiPrinter(QnetBasePrinter):
         `arguments` str. All of the returned strings are fully rendered.
 
         Args:
-            identifier (str): An (non-rendered/ascii) identifier that may
-                include a subscript. The output `name` will be the `identifier`
-                without any subscript
+            identifier (str or SymbolicLabelBase): A (non-rendered/ascii)
+                identifier that may include a subscript. The output `name` will
+                be the `identifier` without any subscript
             hs_label (str): The rendered label for the Hilbert space of the
                 operator, or None. Returned unchanged.
             dagger (bool): Flag to indicate whether the operator is daggered.
@@ -83,6 +83,9 @@ class QnetAsciiPrinter(QnetBasePrinter):
                 with :attr:`_parenth_left` and :attr:`parenth_right`, and
                 returnd as the `arguments` string
         """
+        if self._isinstance(identifier, 'SymbolicLabelBase'):
+            identifier = QnetAsciiDefaultPrinter()._print_SCALAR_TYPES(
+                identifier.expr)
         name, total_subscript = self._split_identifier(identifier)
         total_superscript = ''
         if (hs_label not in [None, '']):
@@ -151,8 +154,8 @@ class QnetAsciiPrinter(QnetBasePrinter):
         """Render an operator
 
         Args:
-            identifier (str): The identifier (name/symbol) of the operator. May
-                include a subscript, denoted by '_'.
+            identifier (str or SymbolicLabelBase): The identifier (name/symbol)
+                of the operator. May include a subscript, denoted by '_'.
             hs (qnet.algebra.hilbert_space_algebra.HilbertSpace): The Hilbert
                 space in which the operator is defined
             dagger (bool): Whether the operator should be daggered

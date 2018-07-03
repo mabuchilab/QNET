@@ -121,10 +121,10 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
         """Render an operator
 
         Args:
-            identifier (str): The identifier (name/symbol) of the operator. May
-                include a subscript, denoted by '_'.
-            hs (qnet.algebra.hilbert_space_algebra.HilbertSpace): The Hilbert
-                space in which the operator is defined
+            identifier (str or SymbolicLabelBase): The identifier (name/symbol)
+                of the operator. May include a subscript, denoted by '_'.
+            hs (HilbertSpace): The Hilbert space in which the operator is
+                defined
             dagger (bool): Whether the operator should be daggered
             args (list): A list of expressions that will be rendered with
                 :meth:`doprint`, joined with commas, enclosed in parenthesis

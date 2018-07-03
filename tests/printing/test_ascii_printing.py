@@ -276,8 +276,8 @@ def test_ascii_ket_elements():
     assert ascii(CoherentStateKet(2.1, hs=1)) == '|alpha=2.1>^(1)'
 
 
-def test_ascii_ket_symbolic_labels():
-    """Test ascii representation of Kets with symbolic labels"""
+def test_ascii_symbolic_labels():
+    """Test ascii representation of symbols with symbolic labels"""
     i = Idx('i')
     i_sym = symbols('i')
     j = Idx('j')
@@ -299,6 +299,12 @@ def test_ascii_ket_symbolic_labels():
         ascii(expr) ==
         'exp(-alpha*conjugate(alpha)/2) * '
         '(Sum_{n in H_1} alpha**n/sqrt(n!) * |n>^(1))')
+
+    tls = SpinSpace(label='s', spin='1/2', basis=('down', 'up'))
+    Sig = IndexedBase('sigma')
+    n = IdxSym('n')
+    Sig_n = OperatorSymbol(StrLabel(Sig[n]), hs=tls)
+    assert ascii(Sig_n, show_hs_label=False) == 'sigma_n'
 
 
 def test_ascii_bra_elements():
