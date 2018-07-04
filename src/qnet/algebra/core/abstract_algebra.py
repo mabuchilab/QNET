@@ -304,6 +304,29 @@ class Expression(metaclass=ABCMeta):
             replacement (callable): A callable that takes the wildcard names in
                 `pattern` as keyword arguments, and returns a replacement for
                 any expression that `pattern` matches.
+
+        Example:
+            Consider the following Heisenberg Hamiltonian::
+
+                >>> tls = SpinSpace(label='s', spin='1/2')
+                >>> i, j, n = symbols('i, j, n', cls=IdxSym)
+                >>> J = symbols('J', cls=sympy.IndexedBase)
+                >>> def Sig(i):
+                ...     return OperatorSymbol(
+                ...         StrLabel(sympy.Indexed('sigma', i)), hs=tls)
+                >>> H = - Sum(i, tls)(Sum(j, tls)(
+                ...     J[i, j] * Sig(i) * Sig(j)))
+                >>> unicode(H)
+                '- (∑_{i,j ∈ ℌₛ} J_ij σ̂_i^(s) σ̂_j^(s))'
+
+            We can transform this into a classical Hamiltonian by replacing the
+            operators with scalars::
+
+                >>> H_classical = H.apply_rule(
+                ...     pattern(OperatorSymbol, wc('label', head=StrLabel)),
+                ...     lambda label: label.expr * IdentityOperator)
+                >>> unicode(H_classical)
+                '- (∑_{i,j ∈ ℌₛ} J_ij σ_i σ_j)'
         """
         return self.apply_rules([(pattern, replacement)], recursive=recursive)
 
