@@ -47,25 +47,25 @@ ket_sym_hs01 = KetSymbol(
 # TESTS must contain at least one test for any rule of any class.
 TESTS = [
     # Operator Algebra
-    (ScalarTimesOperator, '1A',   # class, rule
-        (1, OpA), {},             # args, kwargs
-        OpA),                     # expected
-    (ScalarTimesOperator, '0A',
+    (ScalarTimesOperator, 'R001',   # class, rule
+        (1, OpA), {},               # args, kwargs
+        OpA),                       # expected
+    (ScalarTimesOperator, 'R002',
         (0, OpA), {},
         ZeroOperator),
-    (ScalarTimesOperator, '0A',
+    (ScalarTimesOperator, 'R002',
         (sympy.S.Zero, OpA), {},
         ZeroOperator),
-    (ScalarTimesOperator, '0A',
+    (ScalarTimesOperator, 'R002',
         (0.0j, OpA), {},
         ZeroOperator),
-    (ScalarTimesOperator, 'u0',
+    (ScalarTimesOperator, 'R003',
         (sympy.symbols('g'), ZeroOperator), {},
         ZeroOperator),
-    (ScalarTimesOperator, 'negsum',
+    (ScalarTimesOperator, 'R005',
         (-1, OpA + OpB + OpC), {},
         OperatorPlus(-OpA, -OpB, -OpC)),
-    (ScalarTimesOperator, 'assoc_coeff',
+    (ScalarTimesOperator, 'R004',
         (2 * gamma, Half * OpA), {},
         ScalarTimesOperator(gamma, OpA)),
     # Circuit Algebra
