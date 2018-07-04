@@ -58,13 +58,13 @@ def assoc_indexed(cls, ops, kwargs):
     combined_ranges = tuple(ranges) + term.ranges
 
     if coeff == 1:
-        return cls(term.term, *combined_ranges)
+        return cls.create(term.term, *combined_ranges)
     else:
         bound_symbols = set([r.index_symbol for r in combined_ranges])
         if len(coeff.free_symbols.intersection(bound_symbols)) == 0:
-            return coeff * cls(term.term, *combined_ranges)
+            return coeff * cls.create(term.term, *combined_ranges)
         else:
-            return cls(coeff * term.term, *combined_ranges)
+            return cls.create(coeff * term.term, *combined_ranges)
 
 
 def idem(cls, ops, kwargs):
@@ -500,22 +500,32 @@ def indexed_sum_over_const(cls, ops, kwargs):
     r'''Execute an indexed sum over a term that does not depend on the
     summation indices
 
-    ..math::
+    .. math::
 
-        \sum_{j=1}{N} a = N a
+        \sum_{j=1}^{N} a = N a
+
+    >>> a = symbols('a')
+    >>> i, j  = (IdxSym(s) for s in ('i', 'j'))
+    >>> unicode(Sum(i, 1, 2)(a))
+    '2 a'
+    >>> unicode(Sum(j, 1, 2)(Sum(i, 1, 2)(a * i)))
+    '∑_{i=1}^{2} 2 i a'
     '''
     term, *ranges = ops
-    bound_symbols = set([r.index_symbol for r in ranges])
-    if len(term.free_symbols.intersection(bound_symbols)) == 0:
-        n = 1
-        for r in ranges:
+    new_ranges = []
+    new_term = term
+    for r in ranges:
+        if r.index_symbol not in term.free_symbols:
             try:
-                n *= len(r)
+                new_term *= len(r)
             except TypeError:
-                return ops, kwargs
-        return n * term
+                new_ranges.append(r)
+        else:
+            new_ranges.append(r)
+    if len(new_ranges) == 0:
+        return new_term
     else:
-        return ops, kwargs
+        return (new_term, ) + tuple(new_ranges), kwargs
 
 
 def indexed_sum_over_kronecker(cls, ops, kwargs):

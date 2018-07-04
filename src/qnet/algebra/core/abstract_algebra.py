@@ -282,9 +282,14 @@ class Expression(metaclass=ABCMeta):
         debug logging, to allow an analysis of which rules lead to the final
         form of an expression.
         """
-        new_args = [_apply_rules(arg, rules) for arg in self.args]
-        new_kwargs = {key: _apply_rules(val, rules)
-                      for (key, val) in self.kwargs.items()}
+        if recursive:
+            new_args = [_apply_rules(arg, rules) for arg in self.args]
+            new_kwargs = {
+                key: _apply_rules(val, rules)
+                for (key, val) in self.kwargs.items()}
+        else:
+            new_args = self.args
+            new_kwargs = self.kwargs
         simplified = self.create(*new_args, **new_kwargs)
         return _apply_rules_no_recurse(simplified, rules)
 

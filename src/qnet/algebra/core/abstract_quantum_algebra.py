@@ -1013,9 +1013,11 @@ def Sum(idx, *args, **kwargs):
     """
     from qnet.algebra.core.hilbert_space_algebra import LocalSpace
     from qnet.algebra.core.scalar_algebra import ScalarValue
+    from qnet.algebra.library.spin_algebra import SpinSpace
     dispatch_table = {
         tuple(): _sum_over_fockspace,
         (LocalSpace, ): _sum_over_fockspace,
+        (SpinSpace, ): _sum_over_fockspace,
         (list, ): _sum_over_list,
         (tuple, ): _sum_over_list,
         (int, ): _sum_over_range,
