@@ -96,7 +96,7 @@ class Expression(metaclass=ABCMeta):
         """
         global LEVEL
         if LOG:
-            logger = logging.getLogger(__name__ + '.create')
+            logger = logging.getLogger('QNET.create')
             logger.debug(
                 "%s%s.create(*args, **kwargs); args = %s, kwargs = %s",
                 ("  " * LEVEL), cls.__name__, args, kwargs)
@@ -606,7 +606,7 @@ def _apply_rules(expr, rules):
         expressions.
     """
     if LOG:
-        logger = logging.getLogger(__name__ + '.simplify')
+        logger = logging.getLogger('QNET.create')
     stack = []
     path = []
     if isinstance(expr, Expression):

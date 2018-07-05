@@ -167,7 +167,7 @@ def match_replace(cls, ops, kwargs):
     """
     expr = ProtoExpr(ops, kwargs)
     if LOG:
-        logger = logging.getLogger(__name__ + '.create')
+        logger = logging.getLogger('QNET.create')
     for key, rule in cls._rules.items():
         pat, replacement = rule
         match_dict = match_pattern(pat, expr)
@@ -198,7 +198,7 @@ def _get_binary_replacement(first, second, cls):
     """Helper function for match_replace_binary"""
     expr = ProtoExpr([first, second], {})
     if LOG:
-        logger = logging.getLogger(__name__ + '.create')
+        logger = logging.getLogger('QNET.create')
     for key, rule in cls._binary_rules.items():
         pat, replacement = rule
         match_dict = match_pattern(pat, expr)
@@ -211,7 +211,16 @@ def _get_binary_replacement(first, second, cls):
                         cls.__name__, key, expr.args, expr.kwargs, replaced)
                 return replaced
             except CannotSimplify:
+                if LOG_NO_MATCH:
+                    logger.debug(
+                        "%sRule %s.%s: no match: CannotSimplify",
+                        ("  " * (LEVEL)), cls.__name__, key)
                 continue
+        else:
+            if LOG_NO_MATCH:
+                logger.debug(
+                    "%sRule %s.%s: no match: %s", ("  " * (LEVEL)),
+                    cls.__name__, key, match_dict.reason)
     return None
 
 
