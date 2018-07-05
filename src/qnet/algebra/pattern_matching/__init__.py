@@ -24,24 +24,24 @@ __private__ = ['ProtoExpr']  # anything not in __all__ must be in __private__
 
 
 class MatchDict(OrderedDict):
-    """Result of a :class:`Pattern` match
+    """Result of a :meth:`Pattern.match`
 
     Dictionary of wildcard names to expressions. Once the value for a key is
-    set, attempting to set it again with a different value raises a KeyError.
-    The attribute `merge_lists` may be set do modify this behavior for values
-    that are lists: If it is set to a value different from zero two lists
-    that are set via the same key are merged. If `merge_lists` is negative,
-    the new values are appended to the existing values; if it is positive, the
-    new values are prepended
+    set, attempting to set it again with a different value raises a
+    :exc:`KeyError`.  The attribute `merge_lists` may be set to modify this
+    behavior for values that are lists: If it is set to a value different from
+    zero, two lists that are set via the same key are merged. If `merge_lists`
+    is negative, the new values are appended to the existing values; if it is
+    positive, the new values are prepended.
 
-    In a boolean context, a :calss:`MatchDict` always evaluates as True (even
+    In a boolean context, a :class:`MatchDict` always evaluates as True (even
     if empty, unlike a normal dictionary), unless the `success` attribute is
-    explicitly set to False (which a failed :class:`Pattern` matching should
+    explicitly set to False (which a failed :meth:`Pattern.match` should
     do)
 
     Attributes:
-        success (bool):  Value of the MatchDict object in a boolean context:
-            ``bool(match) == match.success``
+        success (bool):  Value of the :class:`MatchDict` object in a boolean
+            context: ``bool(match) == match.success``
         reason (str):  If `success` is False, string explaining why the match
             failed
         merge_lists (int): Code that indicates how to combine multiple values
@@ -81,8 +81,10 @@ class MatchDict(OrderedDict):
         return self.success
 
     def update(self, *others):
-        """Update dict with entries from `other`. If `other` has an attribute
-        ``success=False`` and ``reason``, those attributes are copied as well
+        """Update dict with entries from `other`
+
+        If `other` has an attribute ``success=False`` and ``reason``, those
+        attributes are copied as well
         """
         for other in others:
             for key, val in other.items():
@@ -116,11 +118,11 @@ class Pattern():
             consume: `Pattern.single`, `Pattern.one_or_more`,
             `Pattern.zero_or_more`
         wc_name (str or None): If pattern matches an expression, key in the
-            resulting MatchDict for the expression. If None, the match will not
-            be recorded in the result
+            resulting :class:`MatchDict` for the expression. If None, the match
+            will not be recorded in the result
         conditions (list of callables, or None): If not None, a list of
             callables that take `expr` and return a boolean value. If the
-            return value os False, the pattern is determined not to match
+            return value is False, the pattern is determined not to match
             `expr`.
 
     Note:
@@ -166,7 +168,7 @@ class Pattern():
             >>> result = {'A': [C1, C2], 'B': perm1, 'C': [C3, C4], 'D': perm2}
             >>> assert m == result
     """
-    # Note: if we every need to allow Patterns that have backtracking (i.e.
+    # Note: if we ever need to allow Patterns that have backtracking (i.e.
     # multiple more-than-single wildcards, or more-than-single wildcards
     # sandwiched between single-wildcards, we should subclass Pattern to
     # BacktrackingPattern(Pattern) to implement this special case
@@ -204,7 +206,7 @@ class Pattern():
                         elif i < len(args) - 1:
                             raise ValueError(
                                     "Only the first or last argument may have "
-                                    "a mode indicating an occurance of more "
+                                    "a mode indicating an occurrence of more "
                                     "than 1")
         self.kwargs = kwargs
         self.mode = mode
@@ -228,9 +230,11 @@ class Pattern():
             self._arg_iterator = reversed
 
     def extended_arg_patterns(self):
-        """Return an iterator over patterns for positional arguments to be
-        matched. This yields the elements of :attr:`args`, extended by their
-        `mode` value"""
+        """Iterator over patterns for positional arguments to be matched
+
+        This yields the elements of :attr:`args`, extended by their `mode`
+        value
+        """
         for arg in self._arg_iterator(self.args):
             if isinstance(arg, Pattern):
                 if arg.mode > self.single:
@@ -264,16 +268,17 @@ class Pattern():
         return {}
 
     def match(self, expr) -> MatchDict:
-        """Match the given expression (recursively) and return a `MatchDict`
-        instance that maps any wildcard names to the expressions that the
-        corresponding wildcard pattern matches. For (sub-)pattern that have a
-        `mode` attribute other than `Pattern.single`, the wildcard name is
-        mapped to a list of all matched expression.
+        """Match the given expression (recursively)
 
-        If the match is successful, the resulting `MatchDict` instance will
-        evalute to True in a boolean context. If the match is not successful,
-        it will evaluate as False, and the reason for failure is stored in the
-        `reason` attribute of the `MatchDict` object.
+        Returns a :class:`MatchDict` instance that maps any wildcard names to
+        the expressions that the corresponding wildcard pattern matches. For
+        (sub-)pattern that have a `mode` attribute other than `Pattern.single`,
+        the wildcard name is mapped to a list of all matched expression.
+
+        If the match is successful, the resulting :class:`MatchDict` instance
+        will evaluate to True in a boolean context. If the match is not
+        successful, it will evaluate as False, and the reason for failure is
+        available in the `reason` attribute of the :class:`MatchDict` object.
         """
         res = MatchDict()
         if self._has_non_single_arg:
@@ -359,7 +364,7 @@ class Pattern():
 
     @property
     def wc_names(self):
-        """Set of all wildcard names occuring in the pattern"""
+        """Set of all wildcard names occurring in the pattern"""
         if self.wc_name is None:
             res = set()
         else:
@@ -421,10 +426,11 @@ class Pattern():
 
 def pattern(head, *args, mode=1, wc_name=None, conditions=None, **kwargs) \
         -> Pattern:
-    """'Flat' constructor for the Pattern class, where positional and keyword
-    arguments are mapped into `args` and `kwargs`, respectively. Useful for
-    defining rules that match an instantiated Expression with specific
-    arguments
+    """'Flat' constructor for the Pattern class
+
+    Positional and keyword arguments are mapped into `args` and `kwargs`,
+    respectively. Useful for defining rules that match an instantiated
+    Expression with specific arguments
     """
     if len(args) == 0:
         args = None
@@ -435,10 +441,12 @@ def pattern(head, *args, mode=1, wc_name=None, conditions=None, **kwargs) \
 
 
 def pattern_head(*args, conditions=None, wc_name=None, **kwargs) -> Pattern:
-    """Helper function to create a Pattern object specfically matching a
-    `ProtoExpr`. The patterns used associated with `_rules` and `_binary_rules`
-    of an `Expression` subclass must be instantiated through this routine. The
-    function does not allow to set a wildcard name
+    """Constructor for a :class:`Pattern` matching a :class:`ProtoExpr`
+
+    The patterns associated with :attr:`_rules` and :attr:`_binary_rules`
+    of an :class:`Expression` subclass, or those passed to
+    :meth:`Expression.add_rule`, must be instantiated through this
+    routine. The function does not allow to set a wildcard name
     (`wc_name` must not be given / be None)"""
     # This routine is indented for the _rules and _binary_rules class
     # attributes of algebraic objects, which the match_replace and
@@ -457,17 +465,19 @@ def pattern_head(*args, conditions=None, wc_name=None, **kwargs) -> Pattern:
 
 def wc(name_mode="_", head=None, args=None, kwargs=None, *, conditions=None) \
         -> Pattern:
-    """Helper function to create a Pattern object with an emphasis on wildcard
-    patterns if we don't care about the arguments of the matched expressions
+    """Constructor for a wildcard-:class:`Pattern`
+
+    Helper function to create a Pattern object with an emphasis on wildcard
+    patterns, if we don't care about the arguments of the matched expressions
     (otherwise, use :func:`pattern`)
 
     Args:
-        name_mode (str): Combined wc_name and mode for `Pattern` constructor
-            argument. See below for syntax
-        head (type, or None): See `Pattern`
-        args (list or None): See `Pattern`
-        kwargs (dict or None): See `Pattern`
-        conditions (list or None): See `Pattern`
+        name_mode (str): Combined `wc_name` and `mode` for :class:`Pattern`
+            constructor argument. See below for syntax
+        head (type, or None): See :class:`Pattern`
+        args (list or None): See :class:`Pattern`
+        kwargs (dict or None): See :class:`Pattern`
+        conditions (list or None): See :class:`Pattern`
 
     The `name_mode` argument uses trailing underscored to indicate the `mode`:
 
@@ -492,19 +502,25 @@ def wc(name_mode="_", head=None, args=None, kwargs=None, *, conditions=None) \
 # Proto-Expressions the provide just the 'args' and 'kwargs' properties,
 # allowing `match_pattern` to match them via duck typing
 class ProtoExpr(Sequence):
-    """Object representing an un-instantiated Expression that may matched by a
-    `Pattern` created via :func:`pattern_head`
+    """Object representing an un-instantiated :class:`Expression`
 
-    The combined values of `args` and `kwargs` are accessible as a (mutable)
-    sequence.
+    A :class:`ProtoExpr` may be matched by a :class:`Pattern` created via
+    :func:`pattern_head`. This is used in :meth:`.Expression.create`: before an
+    expression is instantiated, a :class:`ProtoExpr` is constructed with the
+    positional and keyword arguments passed to :meth:`~.Expression.create`.
+    Then, this :class:`ProtoExpr` is matched against all the automatic rules
+    :meth:`~.Expression.create` knows about.
 
     Args:
         args (list): positional arguments that would be used in the
             instantiation of the Expression
         kwargs (dict):  keyword arguments. Will we converted to an
-            :class:`~collections.OrderedDict`
+            :class:`~.collections.OrderedDict`
         cls (class or None): The class of the Expression that will ultimately
             be instantiated.
+
+    The combined values of `args` and `kwargs` are accessible as a (mutable)
+    sequence.
     """
     def __init__(self, args, kwargs, cls=None):
         self.args = list(args)
@@ -550,8 +566,8 @@ class ProtoExpr(Sequence):
         ``cls.create(*self.args, **self.kwargs)``
 
         Args:
-            cls (class): The class of the instatiated expression. If not given,
-            `self.cls` will be used.
+            cls (class): The class of the instantiated expression. If not
+            given, ``self.cls`` will be used.
         """
         if cls is None:
             cls = self.cls
@@ -570,9 +586,12 @@ class ProtoExpr(Sequence):
 
 
 def match_pattern(expr_or_pattern: object, expr: object) -> MatchDict:
-    """Recursively match `expr` with the given `expr_or_pattern`, which is
-    either a direct expression (equal to `expr` for a successful match), or an
-    instance of `Pattern`.
+    """Recursively match `expr` with the given `expr_or_pattern`
+
+    Args:
+        expr_or_pattern: either a direct expression (equal to `expr` for a
+            successful match), or an instance of :class:`Pattern`.
+        expr: the expression to be matched
     """
     try:  # first try expr_or_pattern as a Pattern
         return expr_or_pattern.match(expr)

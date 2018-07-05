@@ -149,7 +149,7 @@ def test_invalid_pattern():
     with pytest.raises(ValueError) as exc_info:
         pattern(ScalarTimesOperator, wc('a'), wc('b__'), wc('c'))
     assert ('Only the first or last argument may have a mode indicating an '
-            'occurance of more than 1' in str(exc_info))
+            'occurrence of more than 1' in str(exc_info))
     with pytest.raises(ValueError) as exc_info:
         wc('a_____')
     assert "Invalid name_mode" in str(exc_info)
