@@ -1,5 +1,6 @@
 """Utilities for algebraic rules"""
 
+import inspect
 from collections.__init__ import OrderedDict
 
 __private__ = ['check_rules_dict']
@@ -64,4 +65,12 @@ def check_rules_dict(rules):
         if not callable(replacement):
             raise ValueError(
                 "replacement in '%s' is not callable" % key)
+        else:
+            arg_names = inspect.signature(replacement).parameters.keys()
+            if not arg_names == pat.wc_names:
+                raise ValueError(
+                    "arguments (%s) of replacement function differ from the "
+                    "wildcard names (%s) in pattern" % (
+                        ", ".join(sorted(arg_names)),
+                        ", ".join(sorted(pat.wc_names))))
     return OrderedDict(rules)

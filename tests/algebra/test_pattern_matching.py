@@ -7,7 +7,7 @@ from qnet.algebra.core.scalar_algebra import Scalar
 from qnet.algebra.core.scalar_algebra import ScalarValue
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, ScalarTimesOperator, OperatorTimes, Operator,
-        LocalOperator)
+        LocalOperator, LocalSigma)
 from qnet.algebra.library.fock_operators import Create
 from qnet.algebra.core.hilbert_space_algebra import (
     FullSpace, HilbertSpace, LocalSpace)
@@ -386,3 +386,16 @@ def test_findall():
     assert len(pattern(LocalOperator).findall(expr)) == 0
     assert len(pattern(LocalOperator)
                .findall(expr.substitute({c: c_local}))) == 2
+
+
+def test_wc_names():
+    """Test the wc_names property"""
+    ra = wc("ra", head=(int, str))
+    rb = wc("rb", head=(int, str))
+    rc = wc("rc", head=(int, str))
+    rd = wc("rd", head=(int, str))
+    ls = wc("ls", head=LocalSpace)
+    pat = pattern_head(
+        pattern(LocalSigma, ra, rb, hs=ls),
+        pattern(LocalSigma, rc, rd, hs=ls))
+    assert pat.wc_names == set(['ra', 'rb', 'rc', 'rd', 'ls'])

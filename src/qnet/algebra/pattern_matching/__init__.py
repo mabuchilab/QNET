@@ -357,6 +357,23 @@ class Pattern():
             result.append(expr)
         return result
 
+    @property
+    def wc_names(self):
+        """Set of all wildcard names occuring in the pattern"""
+        if self.wc_name is None:
+            res = set()
+        else:
+            res = set([self.wc_name])
+        if self.args is not None:
+            for arg in self.args:
+                if isinstance(arg, Pattern):
+                    res.update(arg.wc_names)
+        if self.kwargs is not None:
+            for val in self.kwargs.values():
+                if isinstance(val, Pattern):
+                    res.update(val.wc_names)
+        return res
+
     def _repr_head(self):
         if self.head is not None:
             if isinstance(self.head, (list, tuple)):

@@ -11,6 +11,9 @@ expressions.
 See :ref:`abstract_algebra` for design details and usage.
 """
 import logging
+import inspect
+import textwrap
+from collections import OrderedDict
 from abc import ABCMeta, abstractmethod
 
 from sympy import (
@@ -167,6 +170,140 @@ class Expression(metaclass=ABCMeta):
         """
         return (cls,) + tuple(args) + tuple(sorted(kwargs.items()))
 
+    @classmethod
+    def _rules_attr(cls):
+        """Return the name of the attribute with rules for :meth:`create`"""
+        from qnet.algebra.core.algebraic_properties import (
+            match_replace, match_replace_binary)
+        if match_replace in cls._simplifications:
+            return '_rules'
+        elif match_replace_binary in cls._simplifications:
+            return '_binary_rules'
+        else:
+            raise TypeError(
+                "class %s does not have match_replace or "
+                "match_replace_binary in its _simplifications" % cls.__name__)
+
+    @classmethod
+    def add_rule(cls, name, pattern, replacement, attr=None):
+        """Add an algebraic rule for :meth:`create` to the class
+
+        Args:
+            name (str): Name of the rule. This is used for debug logging to
+                allow an analysis of which rules where applied when creating an
+                expression. The `name` can be arbitrary, but it must be unique.
+                Built-in rules have names ``'Rxxx'`` where ``x`` is a digit
+            pattern (.Pattern): A pattern constructed by :func:`.pattern_head`
+                to match a :class:`.ProtoExpr`
+            replacement (callable): callable that takes the wildcard names
+                defined in `pattern` as keyword arguments and returns an
+                evaluated expression.
+            attr (None or str): Name of the class attribute to which to add the
+                rule. If None, one of ``'_rules'``, ``'_binary_rules'`` is
+                automatically chosen
+
+        Raises:
+            TypeError: if `name` is not a :class:`str` or `pattern` is not a
+                :class:`.Pattern` instance
+            ValueError: if `pattern` is not set up to match a
+                :class:`.ProtoExpr`; if there there is already a rule with the
+                same `name`; if `replacement` is not a callable or does not
+                take all the wildcard names in `pattern` as arguments
+            AttributeError: If invalid `attr`
+
+        Note:
+            The "automatic" rules added by this method are applied *before*
+            expressions are instantiated (against a corresponding
+            :class:`.ProtoExpr`). In contrast,
+            :meth:`apply_rules`/:meth:`apply_rule` are applied to fully
+            instantiated objects.
+        """
+        from qnet.utils.check_rules import check_rules_dict
+        if attr is None:
+            attr = cls._rules_attr()
+        if name in getattr(cls, attr):
+            raise ValueError(
+                "Duplicate key '%s': rule already exists" % name)
+        getattr(cls, attr).update(check_rules_dict(
+            [(name, (pattern, replacement))]))
+
+    @classmethod
+    def show_rules(cls, *names, attr=None):
+        """Print algebraic rules used by :class:`create`
+
+        Print a summary of the algebraic rules with the given names, or all
+        rules if not names a given.
+
+        Args:
+            names (str): Names of rules to show
+            attr (None or str): Name of the class attribute from which to get
+                the rules. Cf. :meth:`add_rule`.
+
+        Raises:
+            AttributeError: If invalid `attr`
+        """
+        from qnet.printing import srepr
+        try:
+            if attr is None:
+                attr = cls._rules_attr()
+            rules = getattr(cls, attr)
+        except TypeError:
+            rules = {}
+        for (name, rule) in rules.items():
+            if len(names) > 0 and name not in names:
+                continue
+            pat, repl = rule
+            print(name)
+            print("    PATTERN:")
+            print(textwrap.indent(
+                textwrap.dedent(srepr(pat, indented=True)),
+                prefix=" "*8))
+            print("    REPLACEMENT:")
+            print(textwrap.indent(
+                textwrap.dedent(inspect.getsource(repl).rstrip()),
+                prefix=" "*8))
+
+    @classmethod
+    def del_rules(cls, *names, attr=None):
+        """Delete algebraic rules used by :meth:`create`
+
+        Remove the rules with the given `names`, or all rules if no names are
+        given
+
+        Args:
+            names (str): Names of rules to delete
+            attr (None or str): Name of the class attribute from which to
+                delete the rules. Cf. :meth:`add_rule`.
+
+        Raises:
+            KeyError: If any rules in `names` does not exist
+            AttributeError: If invalid `attr`
+        """
+        if attr is None:
+            attr = cls._rules_attr()
+        if len(names) == 0:
+            getattr(cls, attr)  # raise AttributeError if wrong attr
+            setattr(cls, attr, OrderedDict())
+        else:
+            for name in names:
+                del getattr(cls, attr)[name]
+
+    @classmethod
+    def rules(cls, attr=None):
+        """Iterable of rule names used by :meth:`create`
+
+        Args:
+            attr (None or str): Name of the class attribute to which to get the
+                names. If None, one of ``'_rules'``, ``'_binary_rules'`` is
+                automatically chosen
+        """
+        try:
+            if attr is None:
+                attr = cls._rules_attr()
+            return getattr(cls, attr).keys()
+        except TypeError:
+            return ()
+
     @property
     @abstractmethod
     def args(self):
@@ -267,7 +404,13 @@ class Expression(metaclass=ABCMeta):
         return func(self, *args, **kwargs)
 
     def apply_rules(self, rules, recursive=True):
-        """Rebuild the expression, with additional rules
+        """Rebuild the expression while applying a list of rules
+
+        The rules are applied against the instantiated expression, and any
+        sub-expressions if `recursive` is True. Rule application is best though
+        of as a pattern-based substitution. This is different from the
+        *automatic* rules that :meth:`create` uses (see :meth:`add_rule`),
+        which are applied *before* expressions are instantiated.
 
         Args:
             rules (list or ~collections.OrderedDict): List of rules or
