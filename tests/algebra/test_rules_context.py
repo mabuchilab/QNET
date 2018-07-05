@@ -7,6 +7,7 @@ from qnet.algebra.core.operator_algebra import (
 from qnet.algebra.toolbox.core import temporary_rules
 from qnet.algebra.pattern_matching import wc, pattern_head, pattern
 from qnet.printing import srepr
+from qnet.algebra.core.algebraic_properties import scalars_to_op
 
 
 def test_no_rules():
@@ -91,3 +92,12 @@ def test_extra_binary_rules():
         expr = 2 * (a * b - b * a + IdentityOperator)
         assert expr == 2 * (c + IdentityOperator)
     assert rule not in OperatorPlus._binary_rules.values()
+
+
+def test_temporary_simplifications():
+    """Test that we can locally modify the simplifications class attrib"""
+    assert scalars_to_op in OperatorPlus.simplifications
+    with temporary_rules(OperatorPlus):
+        OperatorPlus.simplifications.remove(scalars_to_op)
+        assert scalars_to_op not in OperatorPlus.simplifications
+    assert scalars_to_op in OperatorPlus.simplifications

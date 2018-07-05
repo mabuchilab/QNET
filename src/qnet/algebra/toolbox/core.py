@@ -55,14 +55,22 @@ def temporary_rules(*classes, clear=False):
     :meth:`~.Expression.del_rules` to disable specific existing rules (assuming
     `clear` is False). Upon leaving the managed context all original rules will
     be restored, removing any local rules.
+
+    The classes' :attr:`~.Expression.simplifications` attribute is also
+    protected from permanent modification. Locally modifying
+    :attr:`~.Expression.simplifications` should be done with care, but allows
+    complete control over the creation of expressions.
     """
     orig_instances = []
     orig_rules = []
     orig_binary_rules = []
+    orig_simplifications = []
 
     for cls in classes:
         orig_instances.append(cls._instances)
         cls._instances = {}
+        orig_simplifications.append(cls.simplifications)
+        cls.simplifications = cls.simplifications.copy()
         try:
             orig_rules.append(cls._rules)
             if clear:
@@ -84,6 +92,7 @@ def temporary_rules(*classes, clear=False):
 
     for i, cls in enumerate(classes):
         cls._instances = orig_instances[i]
+        cls.simplifications = orig_simplifications[i]
         if orig_rules[i] is not None:
             cls._rules = orig_rules[i]
         if orig_binary_rules[i] is not None:
