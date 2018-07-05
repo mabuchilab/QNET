@@ -1,9 +1,8 @@
 from sympy import Symbol, I
 
-from qnet.algebra.toolbox.core import extra_binary_rules
 from qnet.algebra.core.operator_algebra import (
-    LocalSigma, create_operator_pm_cc, OperatorPlus,
-    OperatorPlusMinusCC, expand_operator_pm_cc)
+    LocalSigma, rewrite_with_operator_pm_cc, OperatorPlusMinusCC,
+    expand_operator_pm_cc)
 from qnet.algebra.library.fock_operators import Destroy, Create
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.printing import srepr
@@ -23,8 +22,7 @@ def test_simple_cc():
     coeff = (-I / 2) * (Omega_1 * g_1 / Delta_1)
     jc_expr = coeff * (a * sig_p - a_dag * sig_m)
 
-    with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
-        simplified = jc_expr.rebuild()
+    simplified = rewrite_with_operator_pm_cc(jc_expr)
     assert simplified == coeff * OperatorPlusMinusCC(a * sig_p, sign=-1)
     assert (srepr(simplified.term) ==
             "OperatorPlusMinusCC(OperatorTimes(Destroy(hs=LocalSpace('c', "
@@ -45,8 +43,7 @@ def test_scalar_coeff_cc():
 
     jc_expr = I/2 * (2*kappa * (a1.dag() * a2) - 2*kappa * (a1 * a2.dag()))
 
-    with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
-        simplified = jc_expr.rebuild()
+    simplified = rewrite_with_operator_pm_cc(jc_expr)
     assert (
         simplified == I * kappa * OperatorPlusMinusCC(a1.dag() * a2, sign=-1))
     expanded = simplified.apply_rules(rules=expand_operator_pm_cc())

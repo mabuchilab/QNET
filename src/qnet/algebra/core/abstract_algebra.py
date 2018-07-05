@@ -217,6 +217,9 @@ class Expression(metaclass=ABCMeta):
             :class:`.ProtoExpr`). In contrast,
             :meth:`apply_rules`/:meth:`apply_rule` are applied to fully
             instantiated objects.
+
+            The :func:`.temporary_rules` context manager may be used to create
+            a context in which rules may be defined locally.
         """
         from qnet.utils.check_rules import check_rules_dict
         if attr is None:

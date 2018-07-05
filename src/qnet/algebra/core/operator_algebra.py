@@ -41,7 +41,7 @@ __all__ = [
     'Adjoint', 'LocalOperator', 'LocalSigma', 'NullSpaceProjector', 'Operator',
     'OperatorPlus', 'OperatorPlusMinusCC', 'OperatorSymbol', 'OperatorTimes',
     'OperatorTrace', 'PseudoInverse', 'ScalarTimesOperator',
-    'LocalProjector', 'adjoint', 'create_operator_pm_cc',
+    'LocalProjector', 'adjoint', 'rewrite_with_operator_pm_cc',
     'decompose_space', 'expand_operator_pm_cc', 'factor_coeff',
     'factor_for_trace', 'get_coeffs', 'II', 'IdentityOperator',
     'ZeroOperator', 'OperatorDerivative', 'Commutator', 'OperatorIndexedSum',
@@ -894,63 +894,59 @@ def adjoint(obj):
 ###############################################################################
 
 
-def _combine_operator_p_cc(A, B):
-    if B.adjoint() == A:
-        return OperatorPlusMinusCC(A, sign=+1)
-    else:
-        raise CannotSimplify
+def rewrite_with_operator_pm_cc(expr):
+    """Try to rewrite expr using :class:`OperatorPlusMinusCC`
 
-
-def _combine_operator_m_cc(A, B):
-    if B.adjoint() == A:
-        return OperatorPlusMinusCC(A, sign=-1)
-    else:
-        raise CannotSimplify
-
-
-def _scal_combine_operator_pm_cc(c, A, d, B):
-    if B.adjoint() == A:
-        if c == d:
-            return c * OperatorPlusMinusCC(A, sign=+1)
-        elif c == -d:
-            return c * OperatorPlusMinusCC(A, sign=-1)
-    raise CannotSimplify
-
-
-def create_operator_pm_cc():
-    """Return a list of rules that can be used in an
-    :func:`.extra_binary_rules` context for :class:`OperatorPlus` in order to
-    combine suitable terms into a :class:`OperatorPlusMinusCC` instance::
+    Example:
 
         >>> A = OperatorSymbol('A', hs=1)
         >>> sum = A + A.dag()
-        >>> with extra_binary_rules(OperatorPlus, create_operator_pm_cc()):
-        ...     sum2 = sum.rebuild()
+        >>> sum2 = rewrite_with_operator_pm_cc(sum)
         >>> print(ascii(sum2))
         A^(1) + c.c.
-
-    The inverse is done through :func:`expand_operator_pm_cc`::
-
-        >>> print(ascii(sum2.apply_rules(rules=expand_operator_pm_cc())))
-        A^(1) + A^(1)H
     """
+    # TODO: move this to the toolbox
+    from qnet.algebra.toolbox.core import temporary_rules
+
+    def _combine_operator_p_cc(A, B):
+        if B.adjoint() == A:
+            return OperatorPlusMinusCC(A, sign=+1)
+        else:
+            raise CannotSimplify
+
+    def _combine_operator_m_cc(A, B):
+        if B.adjoint() == A:
+            return OperatorPlusMinusCC(A, sign=-1)
+        else:
+            raise CannotSimplify
+
+    def _scal_combine_operator_pm_cc(c, A, d, B):
+        if B.adjoint() == A:
+            if c == d:
+                return c * OperatorPlusMinusCC(A, sign=+1)
+            elif c == -d:
+                return c * OperatorPlusMinusCC(A, sign=-1)
+        raise CannotSimplify
+
     A = wc("A", head=Operator)
     B = wc("B", head=Operator)
     c = wc("c", head=Scalar)
     d = wc("d", head=Scalar)
-    return [
-        ('pmCC1', (
-            pattern_head(A, B),
-            _combine_operator_p_cc)),
-        ('pmCC2', (
+
+    with temporary_rules(OperatorPlus, clear=True):
+        OperatorPlus.add_rule(
+            'PM1', pattern_head(A, B), _combine_operator_p_cc)
+        OperatorPlus.add_rule(
+            'PM2',
             pattern_head(pattern(ScalarTimesOperator, -1, B), A),
-            _combine_operator_m_cc)),
-        ('pmCC3', (
+            _combine_operator_m_cc)
+        OperatorPlus.add_rule(
+            'PM3',
             pattern_head(
                 pattern(ScalarTimesOperator, c, A),
                 pattern(ScalarTimesOperator, d, B)),
-            _scal_combine_operator_pm_cc)),
-    ]
+            _scal_combine_operator_pm_cc)
+        return expr.rebuild()
 
 
 def expand_operator_pm_cc():

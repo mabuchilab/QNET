@@ -4,8 +4,7 @@ from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.operator_algebra import (
     OperatorSymbol, ScalarTimesOperator, OperatorPlus, Operator,
     IdentityOperator, OperatorTimes)
-from qnet.algebra.toolbox.core import no_rules, extra_binary_rules
-from qnet.algebra.toolbox.core import extra_rules
+from qnet.algebra.toolbox.core import temporary_rules
 from qnet.algebra.pattern_matching import wc, pattern_head, pattern
 from qnet.printing import srepr
 
@@ -20,7 +19,7 @@ def test_no_rules():
         srepr(2*a*3 + 3 * (2*a*3)) ==
         "ScalarTimesOperator(ScalarValue(24), OperatorSymbol('a', hs=" +
         hs_repr + "))")
-    with no_rules(ScalarTimesOperator):
+    with temporary_rules(ScalarTimesOperator, clear=True):
         expr = 2*a*3 + 3 * (2*a*3)
         print(srepr(expr))
         assert (
@@ -29,7 +28,7 @@ def test_no_rules():
             "ScalarTimesOperator(ScalarValue(3), "
             "ScalarTimesOperator(ScalarValue(2), OperatorSymbol('a', hs=" +
             hs_repr + "))))")
-    with no_rules(OperatorPlus):
+    with temporary_rules(OperatorPlus, clear=True):
         expr = 2*a*3 + 3 * (2*a*3)
         print(srepr(expr))
         assert (
@@ -39,7 +38,7 @@ def test_no_rules():
             hs_repr + ")), "
             "ScalarTimesOperator(ScalarValue(18), OperatorSymbol('a', hs=" +
             hs_repr + ")))")
-    with no_rules(OperatorPlus), no_rules(ScalarTimesOperator):
+    with temporary_rules(OperatorPlus, ScalarTimesOperator, clear=True):
         expr = 2*a*3 + 3 * (2*a*3)
         print(srepr(expr))
         summand_repr = (
@@ -60,14 +59,12 @@ def test_extra_rules():
     b = OperatorSymbol("b", hs=h1)
     hs_repr = "LocalSpace('h1')"
     rule = (pattern_head(6, a), lambda: b)
-    with extra_rules(ScalarTimesOperator, {'extra': rule}):
+    with temporary_rules(ScalarTimesOperator):
+        ScalarTimesOperator.add_rule('extra', rule[0], rule[1])
         assert ('extra', rule) in ScalarTimesOperator._rules.items()
         expr = 2*a*3 + 3 * (2*a*3)
         assert expr == 4 * b
     assert rule not in ScalarTimesOperator._rules.values()
-    with pytest.raises(AttributeError):
-        with extra_binary_rules(ScalarTimesOperator, {'extra': rule}):
-            expr = 2*a*3 + 3 * (2*a*3)
     assert (srepr(2*a*3 + 3 * (2*a*3)) ==
             "ScalarTimesOperator(ScalarValue(24), "
             "OperatorSymbol('a', hs="+hs_repr+"))")
@@ -83,15 +80,14 @@ def test_extra_binary_rules():
     B_ = wc('B', head=Operator)
     rule = (pattern_head(
                 pattern(OperatorTimes, A_, B_),
-                pattern(ScalarTimesOperator, -1,
+                pattern(
+                    ScalarTimesOperator, -1,
                     pattern(OperatorTimes, B_, A_)),
                 ),
             lambda A, B: c)
-    with extra_binary_rules(OperatorPlus, {'extra': rule}):
+    with temporary_rules(OperatorPlus):
+        OperatorPlus.add_rule('extra', rule[0], rule[1])
         assert ('extra', rule) in OperatorPlus._binary_rules.items()
         expr = 2 * (a * b - b * a + IdentityOperator)
         assert expr == 2 * (c + IdentityOperator)
     assert rule not in OperatorPlus._binary_rules.values()
-    with pytest.raises(AttributeError):
-        with extra_rules(OperatorPlus, {'extra': rule}):
-            expr = 2 * (a * b - b * a + IdentityOperator)

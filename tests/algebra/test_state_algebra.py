@@ -4,7 +4,7 @@ from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols, factorial
 
 from qnet.algebra.core.abstract_algebra import _apply_rules
 from qnet.algebra.core.scalar_algebra import ScalarValue
-from qnet.algebra.toolbox.core import no_rules
+from qnet.algebra.toolbox.core import temporary_rules
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, LocalSigma, IdentityOperator, OperatorPlus)
 from qnet.algebra.library.spin_algebra import (
@@ -268,7 +268,7 @@ def test_expand_ketbra():
     expr = KetBra(
         KetPlus(BasisKet('0', hs=hs), BasisKet('1', hs=hs)),
         KetPlus(BasisKet('0', hs=hs), BasisKet('1', hs=hs)))
-    with no_rules(KetBra):
+    with temporary_rules(KetBra, clear=True):
         expr_expand = expr.expand()
     assert expr_expand == OperatorPlus(
         KetBra(BasisKet('0', hs=hs), BasisKet('0', hs=hs)),
