@@ -639,8 +639,8 @@ class ProductSpace(HilbertSpace, Operation):
     """
 
     _neutral_element = TrivialSpace
-    _simplifications = [empty_trivial, assoc, convert_to_spaces, idem,
-                        filter_neutral]
+    simplifications = [empty_trivial, assoc, convert_to_spaces, idem,
+                       filter_neutral]
 
     def __init__(self, *local_spaces):
         if len(set(local_spaces)) != len(local_spaces):

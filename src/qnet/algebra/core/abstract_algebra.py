@@ -60,14 +60,17 @@ class Expression(metaclass=ABCMeta):
     will return and object identical to `expr`.
 
     Class attributes:
-        instance_caching (bool):  Flag to indicate whether the `create` class
-            method should cache the instantiation of instances
+        instance_caching (bool):  Flag to indicate whether the :meth:`create`
+            class method should cache the instantiation of instances
+        simplifications (list): List of callable simplifications that
+            :meth:`create` will use to process its positional and keyword
+            arguments
     """
     # Note: all subclasses of Exression that override `__init__` or `create`
     # *must* call the corresponding superclass method *at the end*. Otherwise,
     # caching will not work correctly
 
-    _simplifications = []
+    simplifications = []
 
     # we cache all instances of Expressions for fast construction
     _instances = {}
@@ -90,9 +93,9 @@ class Expression(metaclass=ABCMeta):
     def create(cls, *args, **kwargs):
         """Instead of directly instantiating, it is recommended to use create,
         which applies simplifications to the args and keyword arguments
-        according to the `_simplifications` class attribute, and returns an
-        appropriate object (which may or may not be an instance of the original
-        class)
+        according to the :attr:`simplifications` class attribute, and returns
+        an appropriate object (which may or may not be an instance of the
+        original class)
         """
         global LEVEL
         if LOG:
@@ -111,7 +114,7 @@ class Expression(metaclass=ABCMeta):
                 return instance
         except KeyError:
             pass
-        for i, simplification in enumerate(cls._simplifications):
+        for i, simplification in enumerate(cls.simplifications):
             if LOG:
                 try:
                     simpl_name = simplification.__name__
@@ -175,14 +178,14 @@ class Expression(metaclass=ABCMeta):
         """Return the name of the attribute with rules for :meth:`create`"""
         from qnet.algebra.core.algebraic_properties import (
             match_replace, match_replace_binary)
-        if match_replace in cls._simplifications:
+        if match_replace in cls.simplifications:
             return '_rules'
-        elif match_replace_binary in cls._simplifications:
+        elif match_replace_binary in cls.simplifications:
             return '_binary_rules'
         else:
             raise TypeError(
                 "class %s does not have match_replace or "
-                "match_replace_binary in its _simplifications" % cls.__name__)
+                "match_replace_binary in its simplifications" % cls.__name__)
 
     @classmethod
     def add_rule(cls, name, pattern, replacement, attr=None):

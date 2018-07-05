@@ -702,7 +702,7 @@ class QuantumDerivative(SingleQuantumOperation):
         Generally, if a derivative can be calculated explicitly, the explicit
         form is preferred over the abstract :class:`QuantumDerivative`.
     """
-    _simplifications = [derivative_via_diff, ]  # create -> ._diff
+    simplifications = [derivative_via_diff, ]  # create -> ._diff
     # *Any* invocations of `create` will directly return the result of
     # `derivative_via_diff` (but with caching)
 

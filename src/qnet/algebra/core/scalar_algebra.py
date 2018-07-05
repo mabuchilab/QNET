@@ -849,7 +849,7 @@ class ScalarPlus(QuantumPlus, Scalar):
     """
     _neutral_element = Zero
     _binary_rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         assoc, convert_to_scalars, orderby, filter_neutral,
         match_replace_binary]
 
@@ -891,7 +891,7 @@ class ScalarTimes(QuantumTimes, Scalar):
     """
     _neutral_element = One
     _binary_rules = OrderedDict()
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+    simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
     @classmethod
     def create(cls, *operands, **kwargs):
@@ -941,7 +941,7 @@ class ScalarIndexedSum(QuantumIndexedSum, Scalar):
     """Indexed sum over scalars"""
 
     _rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         assoc_indexed, scalar_indexed_sum_over_kronecker,
         indexed_sum_over_const, match_replace]
 
@@ -1043,7 +1043,7 @@ class ScalarPower(QuantumOperation, Scalar):
     """
 
     _rules = OrderedDict()
-    _simplifications = [convert_to_scalars, match_replace]
+    simplifications = [convert_to_scalars, match_replace]
 
     def __init__(self, b, e):
         self._base = b

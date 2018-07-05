@@ -23,7 +23,7 @@ def assoc(cls, ops, kwargs):
     E.g.::
 
         >>> class Plus(Operation):
-        ...     _simplifications = [assoc, ]
+        ...     simplifications = [assoc, ]
         >>> Plus.create(1,Plus(2,3))
         Plus(1, 2, 3)
     """
@@ -74,7 +74,7 @@ def idem(cls, ops, kwargs):
 
         >>> class Set(Operation):
         ...     order_key = lambda val: val
-        ...     _simplifications = [idem, ]
+        ...     simplifications = [idem, ]
         >>> Set.create(1,2,3,1,3)
         Set(1, 2, 3)
     """
@@ -88,7 +88,7 @@ def orderby(cls, ops, kwargs):
 
         >>> class Times(Operation):
         ...     order_key = lambda val: val
-        ...     _simplifications = [orderby, ]
+        ...     simplifications = [orderby, ]
         >>> Times.create(2,1)
         Times(1, 2)
     """
@@ -103,7 +103,7 @@ def filter_neutral(cls, ops, kwargs):
 
         >>> class X(Operation):
         ...     _neutral_element = 1
-        ...     _simplifications = [filter_neutral, ]
+        ...     simplifications = [filter_neutral, ]
         >>> X.create(2,1,3,1)
         X(2, 3)
     """
@@ -131,7 +131,7 @@ def match_replace(cls, ops, kwargs):
 
         >>> class Invert(Operation):
         ...     _rules = OrderedDict()
-        ...     _simplifications = [match_replace, ]
+        ...     simplifications = [match_replace, ]
 
     Then some _rules::
 
@@ -158,7 +158,7 @@ def match_replace(cls, ops, kwargs):
         ...     _rules = {
         ...         'r1': (pattern_head(A, A), lambda A: A),
         ...     }
-        ...     _simplifications = [match_replace, ]
+        ...     simplifications = [match_replace, ]
         >>> X.create(1,2)
         X(1, 2)
         >>> X.create(1,1)
@@ -232,7 +232,7 @@ def match_replace_binary(cls, ops, kwargs):
         >>> class FilterDupes(Operation):
         ...     _binary_rules = {
         ...          'filter_dupes': (pattern_head(A,A), lambda A: A)}
-        ...     _simplifications = [match_replace_binary, assoc]
+        ...     simplifications = [match_replace_binary, assoc]
         ...     _neutral_element = 0
         >>> FilterDupes.create(1,2,3,4)         # No duplicates
         FilterDupes(1, 2, 3, 4)
@@ -249,7 +249,7 @@ def match_replace_binary(cls, ops, kwargs):
     i.e. there is no specific order in which the rules are applied to pairs of
     operands.
     """
-    assert assoc in cls._simplifications, (
+    assert assoc in cls.simplifications, (
         cls.__name__ + " must be associative to use match_replace_binary")
     assert hasattr(cls, '_neutral_element'), (
         cls.__name__ + " must define a neutral element to use "

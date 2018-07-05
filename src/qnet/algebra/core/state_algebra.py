@@ -278,7 +278,7 @@ class BasisKet(LocalKet, KetSymbol):
             ZeroKet
     """
 
-    _simplifications = [basis_ket_zero_outside_hs]
+    simplifications = [basis_ket_zero_outside_hs]
 
     def __init__(self, label_or_index, *, hs):
         hs = ensure_local_space(hs, cls=self._default_hs_cls)
@@ -405,7 +405,7 @@ class KetPlus(State, QuantumPlus):
     """Sum of states"""
     _neutral_element = ZeroKet
     _binary_rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = FullCommutativeHSOrder
@@ -422,7 +422,7 @@ class TensorKet(State, QuantumTimes):
     """
     _binary_rules = OrderedDict()
     _neutral_element = TrivialKet
-    _simplifications = [
+    simplifications = [
         accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = FullCommutativeHSOrder
@@ -446,7 +446,7 @@ class ScalarTimesKet(State, ScalarTimesQuantumExpression):
         term (State): the ket that is multiplied
     """
     _rules = OrderedDict()
-    _simplifications = [match_replace, ]
+    simplifications = [match_replace, ]
 
     @classmethod
     def create(cls, coeff, term):
@@ -463,7 +463,7 @@ class ScalarTimesKet(State, ScalarTimesQuantumExpression):
 class OperatorTimesKet(State, Operation):
     """Product of an operator and a state."""
     _rules = OrderedDict()
-    _simplifications = [match_replace]
+    simplifications = [match_replace]
 
     def __init__(self, operator, ket):
         _check_kets(ket)
@@ -589,7 +589,7 @@ class BraKet(ScalarExpression, Operation):
     """
     _rules = OrderedDict()
     _space = TrivialSpace
-    _simplifications = [match_replace]
+    simplifications = [match_replace]
 
     def __init__(self, bra, ket):
         _check_kets(bra, ket, same_space=True)
@@ -631,7 +631,7 @@ class BraKet(ScalarExpression, Operation):
 class KetBra(Operator, Operation):
     """Outer product of two states"""
     _rules = OrderedDict()
-    _simplifications = [match_replace]
+    simplifications = [match_replace]
 
     def __init__(self, ket, bra):
         _check_kets(ket, bra, same_space=True)
@@ -680,7 +680,7 @@ class KetIndexedSum(State, QuantumIndexedSum):
     # Must inherit from State first, so that proper __mul__ is used
 
     _rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         assoc_indexed, indexed_sum_over_kronecker, indexed_sum_over_const,
         match_replace, ]
 

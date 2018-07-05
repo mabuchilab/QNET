@@ -772,7 +772,7 @@ class CPermutation(Circuit, Expression):
     python tuple of image indices) scatters the :math:`j`-th input field to the
     :math:`\sigma(j)`-th output field.
     """
-    _simplifications = []
+    simplifications = []
     _block_perms = None
 
     def __init__(self, permutation):
@@ -1081,8 +1081,8 @@ class SeriesProduct(Circuit, Operation):
     """The series product circuit operation. It can be applied to any sequence
     of circuit objects that have equal channel dimension.
     """
-    _simplifications = [assoc, filter_cid, check_cdims,
-                        match_replace_binary]
+    simplifications = [assoc, filter_cid, check_cdims,
+                       match_replace_binary]
     _binary_rules = OrderedDict()  # see end of module
 
     _neutral_element = CIdentity
@@ -1108,7 +1108,7 @@ class SeriesProduct(Circuit, Operation):
 class Concatenation(Circuit, Operation):
     """Concatenation of circuit elements"""
 
-    _simplifications = [assoc, filter_neutral, match_replace_binary]
+    simplifications = [assoc, filter_neutral, match_replace_binary]
 
     _binary_rules = OrderedDict()  # see end of module
 
@@ -1216,7 +1216,7 @@ class Feedback(Circuit, Operation):
     """
     delegate_to_method = (Concatenation, SLH, CPermutation)
 
-    _simplifications = [match_replace, ]
+    simplifications = [match_replace, ]
 
     _rules = OrderedDict()  # see end of module
 
@@ -1292,7 +1292,7 @@ class SeriesInverse(Circuit, Operation):
         >>> C << SeriesInverse(C) == circuit_identity(C.cdim)
         True
     """
-    _simplifications = []
+    simplifications = []
     delegate_to_method = (SeriesProduct, Concatenation, Feedback, SLH,
                           CPermutation, CIdentity.__class__)
 

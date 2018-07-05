@@ -95,9 +95,9 @@ def test_rule_manipulation(cls):
 def test_no_rule_manipulation():
     """Test that manipulating the rules of an object that has no rules raises
     the appropriate exceptions"""
-    assert hasattr(LocalOperator, '_simplifications')
-    assert match_replace not in LocalOperator._simplifications
-    assert match_replace_binary not in LocalOperator._simplifications
+    assert hasattr(LocalOperator, 'simplifications')
+    assert match_replace not in LocalOperator.simplifications
+    assert match_replace_binary not in LocalOperator.simplifications
     assert len(LocalOperator.rules()) == 0
     with pytest.raises(TypeError) as exc_info:
         LocalOperator.add_rule(None, None, None)

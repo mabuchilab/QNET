@@ -122,7 +122,7 @@ class SuperOperatorPlus(QuantumPlus, SuperOperator):
 
     _neutral_element = ZeroSuperOperator
     _binary_rules = OrderedDict()
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+    simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
 
 class SuperCommutativeHSOrder(DisjunctCommutativeHSOrder):
@@ -142,7 +142,7 @@ class SuperOperatorTimes(QuantumTimes, SuperOperator):
 
     _neutral_element = IdentitySuperOperator
     _binary_rules = OrderedDict()  # see end of module
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+    simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
     order_key = SuperCommutativeHSOrder
 
@@ -162,7 +162,7 @@ class ScalarTimesSuperOperator(SuperOperator, ScalarTimesQuantumExpression):
         pass
 
     _rules = OrderedDict()  # see end of module
-    _simplifications = [match_replace, ]
+    simplifications = [match_replace, ]
 
 #    def _pseudo_inverse(self):
 #        c, t = self.operands
@@ -185,7 +185,7 @@ class SuperAdjoint(QuantumAdjoint, SuperOperator):
 
     """
 
-    _simplifications = [delegate_to_method('_adjoint')]
+    simplifications = [delegate_to_method('_adjoint')]
 
     def __init__(self, operand):
         super().__init__(operand)
@@ -198,7 +198,7 @@ class SPre(SuperOperator, Operation):
     """
 
     _rules = OrderedDict()  # see end of module
-    _simplifications = [match_replace, ]
+    simplifications = [match_replace, ]
 
     _order_name = 'A_SPre'  # "SPre" should go before "SPost"
 
@@ -232,7 +232,7 @@ class SPost(SuperOperator, Operation):
     _order_index = -1
 
     _rules = OrderedDict()  # see end of module
-    _simplifications = [match_replace, ]
+    simplifications = [match_replace, ]
 
     _order_name = 'B_SPost'  # "SPost" should go before "SPre"
 
@@ -263,7 +263,7 @@ class SuperOperatorTimesOperator(Operator, Operation):
     """
 
     _rules = OrderedDict()  # see end of module
-    _simplifications = [match_replace, ]
+    simplifications = [match_replace, ]
 
     def __init__(self, sop, op):
         assert isinstance(sop, SuperOperator)

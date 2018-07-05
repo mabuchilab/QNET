@@ -143,7 +143,7 @@ class LocalOperator(Operator, metaclass=ABCMeta):
         :attr:`_arg_names` class attribute)
     """
 
-    _simplifications = [implied_local_space(keys=['hs', ]), ]
+    simplifications = [implied_local_space(keys=['hs', ]), ]
 
     _identifier = None  # must be overridden by subclasses!
     _dagger = False  # do representations include a dagger?
@@ -334,7 +334,7 @@ class LocalSigma(LocalOperator):
     _arg_names = ('j', 'k')
     _scalar_args = False  # args are labels, not scalar coefficients
     _rules = OrderedDict()
-    _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
+    simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
     def __init__(self, j, k, *, hs):
         if isinstance(hs, (str, int)):
@@ -450,7 +450,7 @@ class OperatorPlus(QuantumPlus, Operator):
 
     _neutral_element = ZeroOperator
     _binary_rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         assoc, scalars_to_op, orderby, filter_neutral,
         match_replace_binary]
 
@@ -463,14 +463,14 @@ class OperatorTimes(QuantumTimes, Operator):
 
     _neutral_element = IdentityOperator
     _binary_rules = OrderedDict()
-    _simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+    simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
 
 
 class ScalarTimesOperator(Operator, ScalarTimesQuantumExpression):
     """Product of a :class:`.Scalar` coefficient and an :class:`Operator`"""
 
     _rules = OrderedDict()
-    _simplifications = [match_replace, ]
+    simplifications = [match_replace, ]
 
     @staticmethod
     def has_minus_prefactor(c):
@@ -517,7 +517,7 @@ class Commutator(QuantumOperation, Operator):
     '''
 
     _rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         scalars_to_op, disjunct_hs_zero, commutator_order, match_replace]
     # TODO: doit method
 
@@ -588,7 +588,7 @@ class OperatorTrace(SingleQuantumOperation, Operator):
         op (Operator): The operator to take the trace of.
     '''
     _rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         scalars_to_op, implied_local_space(keys=['over_space', ]),
         match_replace, ]
 
@@ -638,7 +638,7 @@ class OperatorTrace(SingleQuantumOperation, Operator):
 class Adjoint(QuantumAdjoint, Operator):
     """Symbolic Adjoint of an operator"""
 
-    _simplifications = [
+    simplifications = [
         scalars_to_op, delegate_to_method('_adjoint')]
 
     def _pseudo_inverse(self):
@@ -694,7 +694,7 @@ class PseudoInverse(SingleQuantumOperation, Operator):
         (X X^+)^\dagger = X X^+
     """
     _rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         scalars_to_op, match_replace, delegate_to_method('_pseudo_inverse')]
 
     def _expand(self):
@@ -725,7 +725,7 @@ class NullSpaceProjector(SingleQuantumOperation, Operator):
     """
 
     _rules = OrderedDict()
-    _simplifications = [scalars_to_op, match_replace, ]
+    simplifications = [scalars_to_op, match_replace, ]
 
     def _expand(self):
         return self
@@ -738,7 +738,7 @@ class OperatorIndexedSum(QuantumIndexedSum, Operator):
     """Indexed sum over operators"""
 
     _rules = OrderedDict()
-    _simplifications = [
+    simplifications = [
         assoc_indexed, scalars_to_op, indexed_sum_over_kronecker,
         indexed_sum_over_const, match_replace, ]
 

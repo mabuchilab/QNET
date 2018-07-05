@@ -115,7 +115,7 @@ class Phase(LocalOperator):
     _identifier = 'Phase'
     _arg_names = ('phase', )
     _rules = OrderedDict()
-    _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
+    simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
     def _adjoint(self):
         return Phase.create(-self.phase.conjugate(), hs=self.space)
@@ -154,7 +154,7 @@ class Displace(LocalOperator):
     _nargs = 1
     _arg_names = ('displacement', )
     _rules = OrderedDict()
-    _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
+    simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
     def _adjoint(self):
         return Displace.create(-self.displacement, hs=self.space)
@@ -191,7 +191,7 @@ class Squeeze(LocalOperator):
     _identifier = "Squeeze"
     _arg_names = ('squeezing_factor', )
     _rules = OrderedDict()
-    _simplifications = [implied_local_space(keys=['hs', ]), match_replace]
+    simplifications = [implied_local_space(keys=['hs', ]), match_replace]
 
     def _adjoint(self):
         return Squeeze(-self.squeezing_factor, hs=self.space)
