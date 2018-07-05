@@ -47,11 +47,12 @@ class Expression(metaclass=ABCMeta):
     and and applies simplifications. It also uses memoization to cache all
     known (sub-)expression. This is possible because expressions are intended
     to be immutable. Any changes to an expression should be made through e.g.
-    :meth:`substitute`, which returns a new modified expression.
+    :meth:`substitute` or :meth:`apply_rule`, which returns a new modified
+    expression.
 
     Every expression has a well-defined list of positional and keyword
     arguments that uniquely determine the expression and that may be accessed
-    through the `args` and `kwargs` property. That is,
+    through the :attr:`args` and :attr:`kwargs` property. That is,
 
     ::
 
@@ -61,10 +62,19 @@ class Expression(metaclass=ABCMeta):
 
     Class attributes:
         instance_caching (bool):  Flag to indicate whether the :meth:`create`
-            class method should cache the instantiation of instances
+            class method should cache the instantiation of instances. If True,
+            repeated calls to :meth:`create` with the same arguments return
+            instantly, instead of re-evaluating all simplifications and rules.
         simplifications (list): List of callable simplifications that
             :meth:`create` will use to process its positional and keyword
-            arguments
+            arguments. Each callable must take three parameters (the class, the
+            list `args` of positional arguments given to :meth:`create` and a
+            dictionary `kwargs` of keyword arguments given to :meth:`create`)
+            and return either a tuple of new `args` and `kwargs` (which are
+            then handed to the next callable), or an :class:`Expression` (which
+            is directly returned as the result of the call to :meth:`create`).
+            The built-in available simplification callables are in
+            :mod:`~qnet.algebra.core.algebraic_properties`
     """
     # Note: all subclasses of Exression that override `__init__` or `create`
     # *must* call the corresponding superclass method *at the end*. Otherwise,
@@ -91,11 +101,25 @@ class Expression(metaclass=ABCMeta):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        """Instead of directly instantiating, it is recommended to use create,
-        which applies simplifications to the args and keyword arguments
-        according to the :attr:`simplifications` class attribute, and returns
-        an appropriate object (which may or may not be an instance of the
-        original class)
+        """Instantiate while applying automatic simplifications
+
+        Instead of directly instantiating `cls`, it is recommended to use
+        :meth:`create`, which applies simplifications to the args and keyword
+        arguments according to the :attr:`simplifications` class attribute, and
+        returns an appropriate object (which may or may not be an instance of
+        the original `cls`).
+
+        Two simplifications of particular importance are :func:`.match_replace`
+        and :func:`.match_replace_binary` which apply rule-based
+        simplifications.
+
+        The :func:`.temporary_rules` context manager may be used to allow
+        temporary modification of the automatic simplifications that
+        :meth:`create` uses, in particular the rules for
+        :func:`.match_replace` and :func:`.match_replace_binary`. Inside the
+        managed context, the :attr:`simplifications` class attribute may be
+        modified and rules can be managed with :meth:`add_rule` and
+        :meth:`del_rules`.
         """
         global LEVEL
         if LOG:

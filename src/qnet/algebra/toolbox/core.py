@@ -56,9 +56,9 @@ def temporary_rules(*classes, clear=False):
     `clear` is False). Upon leaving the managed context all original rules will
     be restored, removing any local rules.
 
-    The classes' :attr:`~.Expression.simplifications` attribute is also
+    The `classes`' :obj:`simplifications <.Expression>` attribute is also
     protected from permanent modification. Locally modifying
-    :attr:`~.Expression.simplifications` should be done with care, but allows
+    :obj:`simplifications <.Expression>` should be done with care, but allows
     complete control over the creation of expressions.
     """
     orig_instances = []
