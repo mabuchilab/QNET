@@ -8,7 +8,7 @@ from ..core.operator_algebra import (
 from ..pattern_matching import wc, pattern
 
 
-__all__ = ['expand_commutators_leibniz', 'evaluate_commutators']
+__all__ = ['expand_commutators_leibniz']
 
 
 def expand_commutators_leibniz(expr, expand_expr=True):
@@ -56,19 +56,3 @@ def expand_commutators_leibniz(expr, expand_expr=True):
     else:
         res = _apply_rules(expr, rules)
     return res
-
-
-def evaluate_commutators(expr):
-    """Evaluate all commutators in `expr`.
-
-    All commutators are evaluated as the explicit formula
-
-    .. math::
-
-        [A, B] = A B - B A
-
-    """
-    A = wc('A', head=Operator)
-    B = wc('B', head=Operator)
-    return _apply_rules(
-        expr, [(pattern(Commutator, A, B), lambda A, B: A*B - B*A)])

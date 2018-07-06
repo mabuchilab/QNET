@@ -568,6 +568,7 @@ def test_scalar_indexed_sum(braket):
 
     expr = ScalarIndexedSum.create(i, IndexOverRange(i, 1, 2))
     assert expr == ScalarIndexedSum(i, IndexOverRange(i, 1, 2))
+    assert isinstance(expr.doit(), ScalarValue)
     assert expr.doit() == 3
 
     assert expr.real == expr

@@ -21,7 +21,7 @@ from sympy import (
 from sympy.core.sympify import SympifyError
 
 from .exceptions import CannotSimplify
-from ..pattern_matching import ProtoExpr, pattern
+from ..pattern_matching import ProtoExpr
 from ...utils.singleton import Singleton
 
 __all__ = [
@@ -417,6 +417,101 @@ class Expression(metaclass=ABCMeta):
         else:
             return self.create(*new_args, **new_kwargs)
 
+    def doit(self, classes=None, recursive=True, **kwargs):
+        """Rewrite (sub-)expressions in a more explicit form
+
+        Return a modified expression that is more explicit than the original
+        expression. The definition of "more explicit" is decided by the
+        relevant subclass, e.g. a :meth:`Commutator <.Commutator.doit>` is
+        written out according to its definition.
+
+        Args:
+            classes (None or list): an optional list of classes. If given,
+                only (sub-)expressions that an instance of one of the classes
+                in the list will be rewritten.
+            recursive (bool): If True, also rewrite any sub-expressions of any
+                rewritten expression. Note that :meth:`doit` always recurses
+                into sub-expressions of expressions not affected by it.
+            kwargs: Any remaining keyword arguments may be used by the
+                :meth:`doit` method of a particular expression.
+
+        Example:
+
+            Consider the following expression::
+
+                >>> from sympy import IndexedBase
+                >>> i = IdxSym('i'); N = symbols('N')
+                >>> Asym, Csym = symbols('A, C', cls=IndexedBase)
+                >>> A = lambda i: OperatorSymbol(StrLabel(Asym[i]), hs=0)
+                >>> B = OperatorSymbol('B', hs=0)
+                >>> C = lambda i: OperatorSymbol(StrLabel(Csym[i]), hs=0)
+                >>> def show(expr):
+                ...     print(unicode(expr, show_hs_label=False))
+                >>> expr = Sum(i, 1, 3)(Commutator(A(i), B) + C(i)) / N
+                >>> show(expr)
+                1/N (∑_{i=1}^{3} (Ĉ_i + [Â_i, B̂]))
+
+            Calling :meth:`doit` without parameters rewrites both the indexed
+            sum and the commutator::
+
+                >>> show(expr.doit())
+                1/N (Ĉ₁ + Ĉ₂ + Ĉ₃ + Â₁ B̂ + Â₂ B̂ + Â₃ B̂ - B̂ Â₁ - B̂ Â₂ - B̂ Â₃)
+
+            A non-recursive call only expands the sum, as it does not recurse
+            into the expanded summands::
+
+                >>> show(expr.doit(recursive=False))
+                1/N (Ĉ₁ + Ĉ₂ + Ĉ₃ + [Â₁, B̂] + [Â₂, B̂] + [Â₃, B̂])
+
+            We can selectively expand only the sum or only the commutator::
+
+                >>> show(expr.doit(classes=[IndexedSum]))
+                1/N (Ĉ₁ + Ĉ₂ + Ĉ₃ + [Â₁, B̂] + [Â₂, B̂] + [Â₃, B̂])
+
+                >>> show(expr.doit(classes=[Commutator]))
+                1/N (∑_{i=1}^{3} (Ĉ_i - B̂ Â_i + Â_i B̂))
+
+            Also we can pass a keyword argument that expands the sum only to
+            the 2nd term, as documented in :meth:`.Commutator.doit`
+
+                >>> show(expr.doit(classes=[IndexedSum], max_terms=2))
+                1/N (Ĉ₁ + Ĉ₂ + [Â₁, B̂] + [Â₂, B̂])
+        """
+        in_classes = (
+            (classes is None) or
+            any([isinstance(self, cls) for cls in classes]))
+        if in_classes:
+            new = self._doit(**kwargs)
+        else:
+            new = self
+        if (new == self) or recursive:
+            new_args = []
+            for arg in new.args:
+                if isinstance(arg, Expression):
+                    new_args.append(arg.doit(
+                        classes=classes, recursive=recursive, **kwargs))
+                else:
+                    new_args.append(arg)
+            new_kwargs = OrderedDict([])
+            for (key, val) in new.kwargs.items():
+                if isinstance(val, Expression):
+                    new_kwargs[key] = val.doit(
+                        classes=classes, recursive=recursive, **kwargs)
+                else:
+                    new_kwargs[key] = val
+            new = new.__class__.create(*new_args, **new_kwargs)
+            if new != self and recursive:
+                new = new.doit(classes=classes, recursive=True, **kwargs)
+        return new
+
+    def _doit(self, **kwargs):
+        """Non-recursively rewrite expression in a more explicit form"""
+        # Any subclass that overrides :meth:`_doit` should also override
+        # :meth:`doit` with a stub (calling ``super().doit`` only), but
+        # also provide the documentation for :meth:`_doit` (since :meth:`_doit`
+        # won't be rendered by Sphinx)
+        return self
+
     def apply(self, func, *args, **kwargs):
         """Apply `func` to expression.
 
@@ -684,44 +779,6 @@ def _apply_rules(expr, rules):
                     path[-1] += 1
     else:
         return _apply_rules_no_recurse(expr, rules)
-
-
-def _simplify_by_method(expr, *method_names, head=None, **kwargs):
-    """Simplify `expr` by calling all of the given methods on it, if possible.
-
-    Args:
-        expr: The expression to simplify
-        method_names: One or more method names. Any subexpression that has a
-            method with any of the `method_names` will be replaced by the
-            result of calling the method.
-        head (None or type or list): An optional list of classes to which the
-            simplification should be restricted
-        kwargs: keyword arguments to be passed to all methods
-
-    Note:
-        If giving multiple `method_names`, all the methods must take all of the
-        `kwargs`
-    """
-
-    method_names_set = set(method_names)
-
-    def has_any_wanted_method(expr):
-        return len(method_names_set.intersection(dir(expr))) > 0
-
-    def apply_methods(expr, method_names, **kwargs):
-        for mtd in method_names:
-            if hasattr(expr, mtd):
-                try:
-                    expr = getattr(expr, mtd)(**kwargs)
-                except TypeError:
-                    # mtd turns out to not actually be a method (not callable)
-                    pass
-        return expr
-
-    pat = pattern(head=head, wc_name='X', conditions=(has_any_wanted_method, ))
-
-    return _apply_rules(
-        expr, [(pat, lambda X: apply_methods(X, method_names, **kwargs))])
 
 
 def _free_symbols(expr):

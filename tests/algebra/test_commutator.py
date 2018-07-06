@@ -7,7 +7,7 @@ from qnet.algebra.core.operator_algebra import (
 from qnet.algebra.library.spin_algebra import Jz, Jplus, SpinSpace
 from qnet.algebra.library.fock_operators import Destroy, Create
 from qnet.algebra.toolbox.commutator_manipulation import (
-    expand_commutators_leibniz, evaluate_commutators)
+    expand_commutators_leibniz)
 
 
 def test_disjunct_hs():
@@ -158,9 +158,9 @@ def test_commutator_expand_evaluate():
     res = (B * C * D * Commutator(A, E) + B * C * Commutator(A, D) * E +
            B * Commutator(A, C) * D * E + Commutator(A, B) * C * D * E)
     assert expand_commutators_leibniz(expr) == res
-    assert evaluate_commutators(expr) == (
+    assert expr.doit([Commutator]) == (
         A * B * C * D * E - B * C * D * E * A)
-    assert evaluate_commutators(res).expand() == (
+    assert res.doit([Commutator]).expand() == (
         A * B * C * D * E - B * C * D * E * A)
 
     assert expand_commutators_leibniz(expr, expand_expr=False) == (

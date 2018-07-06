@@ -2,9 +2,7 @@
 
 from abc import ABCMeta
 
-import attr
-
-from .abstract_algebra import Operation
+from .abstract_algebra import Expression, Operation
 from .exceptions import InfiniteSumError
 from ..pattern_matching import wc
 from ...utils.indices import (
@@ -75,16 +73,21 @@ class IndexedSum(Operation, metaclass=ABCMeta):
 
     @property
     def terms(self):
+        """Iterator over the terms of the sum
+
+        Yield from the (possibly) infinite list of terms of the indexed sum, if
+        the sum was written out explicitly. Each yielded term in an instance of
+        :class:`.Expression`
+        """
+        from qnet.algebra.core.scalar_algebra import ScalarValue
         for mapping in yield_from_ranges(self.ranges):
             term = self.term.substitute(mapping)
-            try:
-                term = term.apply_rules(rules=[(
-                    wc('label', head=SymbolicLabelBase),
-                    lambda label: label.evaluate(mapping))])
-            except AttributeError:
-                # for ScalarIndexedSum, term may be a scalar that doesn't have
-                # a `apply_rules` method
-                pass
+            if isinstance(term, ScalarValue._val_types):
+                term = ScalarValue.create(term)
+            term = term.apply_rule(
+                wc('label', head=SymbolicLabelBase),
+                lambda label: label.evaluate(mapping))
+            assert isinstance(term, Expression)
             yield term
 
     def __len__(self):
@@ -97,7 +100,35 @@ class IndexedSum(Operation, metaclass=ABCMeta):
                     "Cannot determine length from non-finite ranges")
         return length
 
-    def doit(self, indices=None, max_terms=None):
+    def doit(
+            self, classes=None, recursive=True, indices=None, max_terms=None,
+            **kwargs):
+        """Write out the indexed sum explicitly
+
+        If `classes` is None or :class:`IndexedSum` is in `classes`,
+        (partially) write out the indexed sum in to an explicit sum of terms.
+        If `recursive` is True, write out each of the new sum's summands by
+        calling its :meth:`doit` method.
+
+        Args:
+            classes (None or list): see :meth:`.Expression.doit`
+            recursive (bool): see :meth:`.Expression.doit`
+            indices (list): List of :class:`IdxSym` indices for which the sum
+                should be expanded. If `indices` is a subset of the indices
+                over which the sum runs, it will be partially expanded. If not
+                given, expand the sum completely
+            max_terms (int): Number of terms after which to truncate the sum.
+                This is particularly useful for infinite sums. If not given,
+                expand all terms of the sum. Cannot be combined with `indices`
+            kwargs: keyword arguments for recursive calls to
+                :meth:`doit`. See :meth:`.Expression.doit`
+        """
+        return super().doit(
+            classes, recursive, indices=indices, max_terms=max_terms, **kwargs)
+
+    def _doit(self, **kwargs):
+        indices = kwargs.get('indices', None)
+        max_terms = kwargs.get('max_terms', None)
         if indices is None:
             return self._doit_full(max_terms=max_terms)
         else:
@@ -144,8 +175,7 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             else:
                 other_ranges.append(index_range)
         if selected_range is None:
-            raise ValueError(
-                "Index %s does not appear in %s" % (ind_sym, self))
+            return self
         res_term = None
         for i, mapping in enumerate(selected_range.iter()):
             res_summand = self.term.substitute(mapping)

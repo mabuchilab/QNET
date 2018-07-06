@@ -4,7 +4,7 @@ from qnet import (
     OperatorIndexedSum, Create, KetPlus, ScalarTimesKet,
     KetIndexedSum, BasisKet, CoherentStateKet, KetSymbol, Bra, TensorKet,
     BraKet, KetBra, IdxSym, StrLabel, FockIndex, IndexOverFockSpace,
-    IndexOverList, IndexOverRange, expand_indexed_sum)
+    IndexOverList, IndexOverRange, IndexedSum)
 import sympy
 from sympy import symbols, IndexedBase, Indexed
 
@@ -172,9 +172,9 @@ def test_coherent_state():
         psi_focksum_inf)
 
     assert(
-        expand_indexed_sum(psi_focksum_3) ==
-        expand_indexed_sum(psi_focksum_inf, max_terms=3))
-    psi_expanded_3 = expand_indexed_sum(psi_focksum_3)
+        psi_focksum_3.doit([IndexedSum]) ==
+        psi_focksum_inf.doit([IndexedSum], max_terms=3))
+    psi_expanded_3 = psi_focksum_3.doit([IndexedSum])
     assert(
         psi_expanded_3 ==
         (sympy.exp(-alpha*alpha.conjugate()/2) *
@@ -186,7 +186,7 @@ def test_coherent_state():
 
     psi = CoherentStateKet(alpha, hs=hs1)
     assert(
-        expand_indexed_sum(psi.to_fock_representation()) ==
+        psi.to_fock_representation().doit([IndexedSum]) ==
         psi_expanded_3.substitute({hs0: hs1}))
 
 
@@ -279,9 +279,6 @@ def test_partial_expansion():
     assert expr.doit(indices=[i, j]) == expr.doit(indices=[j, i])
 
     assert expr.doit(indices=[i, j, k]) == expr.doit()
-
-    with pytest.raises(ValueError):
-        expr.doit(indices=[i.prime])
 
     with pytest.raises(ValueError):
         expr.doit(indices=[i], max_terms=10)

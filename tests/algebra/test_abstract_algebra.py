@@ -1,26 +1,20 @@
-from sympy import symbols
+from sympy import symbols, Indexed
 import unittest
 from collections import OrderedDict
 
-from qnet.algebra.core.abstract_algebra import (
-    Operation)
-from qnet.algebra.core.abstract_quantum_algebra import (
-    ScalarTimesQuantumExpression)
+
+from qnet import (
+    Operation, ScalarTimesQuantumExpression, IndexedSum, CannotSimplify,
+    IndexOverRange, IdxSym, pattern, pattern_head, wc, Operator,
+    LocalProjector, LocalOperator, OperatorTimes, OperatorSymbol, Commutator,
+    ZeroOperator, OperatorPlus, Displace, LocalSpace, StrLabel, Sum,
+    OperatorIndexedSum)
+
 from qnet.algebra.core.algebraic_properties import (
     assoc, assoc_indexed, idem,
     orderby, filter_neutral, match_replace, match_replace_binary,
     indexed_sum_over_const)
-from qnet.algebra.core.indexed_operations import (
-    IndexedSum)
-from qnet.algebra.core.exceptions import CannotSimplify
-from qnet.utils.indices import IndexOverRange, IdxSym
 from qnet.utils.ordering import expr_order_key
-from qnet.algebra.pattern_matching import pattern, pattern_head, wc
-from qnet.algebra.core.operator_algebra import (
-    Operator, LocalProjector, LocalOperator, OperatorTimes, OperatorSymbol,
-    Commutator, ZeroOperator, OperatorPlus)
-from qnet.algebra.library.fock_operators import Displace
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 
 import pytest
 
@@ -152,3 +146,35 @@ def test_show_rules(capsys):
     LocalOperator.show_rules()
     out = capsys.readouterr()[0]
     assert out == ''
+
+
+def test_nested_doit():
+    """Test a complete doit-invocation on a nested expression"""
+    # This tests some tricky edge cases, augmenting the doctest
+
+    def A(i):
+        if isinstance(i, IdxSym):
+            return OperatorSymbol(StrLabel(Indexed('A', i)), hs=0)
+        else:
+            return OperatorSymbol("A_%s" % i, hs=0)
+
+    i, j = symbols('i, j', cls=IdxSym)
+
+    expr = Sum(i, 1, 3)(Sum(j, 1, 2)(Commutator(A(i), A(j))))
+    assert expr.doit(max_terms=2, recursive=False) == Commutator(A(1), A(2))
+
+    # testing the "tail" of the recursion
+    assert (
+        expr.doit(max_terms=2, classes=([OperatorIndexedSum])) ==
+        Commutator(A(1), A(2)))
+    assert expr.doit(max_terms=2) == A(1) * A(2) - A(2) * A(1)
+
+    expr = Sum(i, 1, 3)(Sum(j, 1, 3)(Commutator(A(i), A(j))))
+    assert expr.doit() == ZeroOperator
+    # testing that `indices=(i, )` does not throw an error in the recursion,
+    # when i no longer occurs in the sum
+    A_1, A_2, A_3 = (A(i).substitute({i: n}) for n in (1, 2, 3))
+    assert expr.doit(indices=(i, )) == Sum(j, 1, 3)(
+        OperatorPlus(
+            -A(j) * A_1, -A(j) * A_2, -A(j) * A_3,
+            A_1 * A(j), A_2 * A(j), A_3 * A(j)))

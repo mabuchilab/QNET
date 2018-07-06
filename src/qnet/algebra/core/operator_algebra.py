@@ -539,6 +539,19 @@ class Commutator(QuantumOperation, Operator):
         """Left side of the commutator"""
         return self.operands[1]
 
+    def doit(self, classes=None, recursive=True, **kwargs):
+        """Write out commutator
+
+        Write out the commutator according to its definition
+        $[\Op{A}, \Op{B}] = \Op{A}\Op{B} - \Op{A}\Op{B}$.
+
+        See :meth:`.Expression.doit`.
+        """
+        return super().doit(classes, recursive, **kwargs)
+
+    def _doit(self, **kwargs):
+        return self.A * self.B - self.B * self.A
+
     def _expand(self):
         A = self.A.expand()
         B = self.B.expand()
