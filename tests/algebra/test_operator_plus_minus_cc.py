@@ -1,8 +1,7 @@
 from sympy import Symbol, I
 
 from qnet.algebra.core.operator_algebra import (
-    LocalSigma, rewrite_with_operator_pm_cc, OperatorPlusMinusCC,
-    expand_operator_pm_cc)
+    LocalSigma, rewrite_with_operator_pm_cc, OperatorPlusMinusCC)
 from qnet.algebra.library.fock_operators import Destroy, Create
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.printing import srepr
@@ -28,7 +27,7 @@ def test_simple_cc():
             "OperatorPlusMinusCC(OperatorTimes(Destroy(hs=LocalSpace('c', "
             "dimension=3)), LocalSigma('e', 'g', hs=LocalSpace('q1', "
             "basis=('g', 'e')))), sign=-1)")
-    expanded = simplified.apply_rules(rules=expand_operator_pm_cc())
+    expanded = simplified.doit()
     assert expanded == jc_expr
 
 
@@ -46,5 +45,5 @@ def test_scalar_coeff_cc():
     simplified = rewrite_with_operator_pm_cc(jc_expr)
     assert (
         simplified == I * kappa * OperatorPlusMinusCC(a1.dag() * a2, sign=-1))
-    expanded = simplified.apply_rules(rules=expand_operator_pm_cc())
+    expanded = simplified.doit()
     assert expanded == I * kappa * (a1.dag() * a2 - a1 * a2.dag())

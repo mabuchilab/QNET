@@ -42,10 +42,9 @@ __all__ = [
     'OperatorPlus', 'OperatorPlusMinusCC', 'OperatorSymbol', 'OperatorTimes',
     'OperatorTrace', 'PseudoInverse', 'ScalarTimesOperator',
     'LocalProjector', 'adjoint', 'rewrite_with_operator_pm_cc',
-    'decompose_space', 'expand_operator_pm_cc', 'factor_coeff',
-    'factor_for_trace', 'get_coeffs', 'II', 'IdentityOperator',
-    'ZeroOperator', 'OperatorDerivative', 'Commutator', 'OperatorIndexedSum',
-    'tr']
+    'decompose_space', 'factor_coeff', 'factor_for_trace', 'get_coeffs', 'II',
+    'IdentityOperator', 'ZeroOperator', 'OperatorDerivative', 'Commutator',
+    'OperatorIndexedSum', 'tr']
 
 __private__ = []
 # anything not in __all__ must be in __private__
@@ -693,6 +692,19 @@ class OperatorPlusMinusCC(SingleQuantumOperation, Operator):
     def _adjoint(self):
         return OperatorPlusMinusCC(self.operand.adjoint(), sign=self._sign)
 
+    def doit(self, classes=None, recursive=True, **kwargs):
+        """Write out the complex conjugate summand
+
+        See :meth:`.Expression.doit`.
+        """
+        return super().doit(classes, recursive, **kwargs)
+
+    def _doit(self, **kwargs):
+        if self._sign > 0:
+            return self.operand + self.operand.adjoint()
+        else:
+            return self.operand - self.operand.adjoint()
+
 
 class PseudoInverse(SingleQuantumOperation, Operator):
     r"""Symbolic pseudo-inverse :math:`X^+` of an operator :math:`X`
@@ -960,24 +972,6 @@ def rewrite_with_operator_pm_cc(expr):
                 pattern(ScalarTimesOperator, d, B)),
             _scal_combine_operator_pm_cc)
         return expr.rebuild()
-
-
-def expand_operator_pm_cc():
-    """Return a list of rules that can be used in `simplify` to expand
-    instances of :class:`OperatorPlusMinusCC`
-
-    Inverse of :func:`create_operator_pm_cc`.
-    """
-    # TODO: replace this functionality with a `doit` method
-    A = wc("A", head=Operator)
-    return OrderedDict([
-        ('pmCCexpand1', (
-            pattern(OperatorPlusMinusCC, A, sign=+1),
-            lambda A: A + A.dag())),
-        ('pmCCexpand2', (
-            pattern(OperatorPlusMinusCC, A, sign=-1),
-            lambda A: A - A.dag())),
-    ])
 
 
 Operator._zero = ZeroOperator
