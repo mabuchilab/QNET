@@ -17,7 +17,8 @@ from .abstract_quantum_algebra import (
     QuantumDerivative, ensure_local_space, _series_expand_combine_prod)
 from .algebraic_properties import (
     accept_bras, assoc, assoc_indexed, basis_ket_zero_outside_hs,
-    filter_neutral, match_replace, match_replace_binary, orderby)
+    filter_neutral, match_replace, match_replace_binary, orderby,
+    collect_summands)
 from .exceptions import OverlappingSpaces, UnequalSpaces, SpaceTooLargeError
 from .hilbert_space_algebra import FullSpace, TrivialSpace
 from qnet.algebra.core.algebraic_properties import (
@@ -406,7 +407,7 @@ class KetPlus(State, QuantumPlus):
     _neutral_element = ZeroKet
     _binary_rules = OrderedDict()
     simplifications = [
-        accept_bras, assoc, orderby, filter_neutral, match_replace_binary]
+        accept_bras, assoc, orderby, collect_summands, match_replace_binary]
 
     order_key = FullCommutativeHSOrder
 

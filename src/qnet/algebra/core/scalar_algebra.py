@@ -13,7 +13,7 @@ from .abstract_quantum_algebra import (
 from .algebraic_properties import (
     assoc, assoc_indexed, convert_to_scalars, filter_neutral,
     indexed_sum_over_const, scalar_indexed_sum_over_kronecker, match_replace,
-    match_replace_binary, orderby)
+    match_replace_binary, orderby, collect_scalar_summands)
 from .hilbert_space_algebra import TrivialSpace
 from ...utils.singleton import Singleton, singleton_object
 from ...utils.ordering import KeyTuple
@@ -850,7 +850,7 @@ class ScalarPlus(QuantumPlus, Scalar):
     _neutral_element = Zero
     _binary_rules = OrderedDict()
     simplifications = [
-        assoc, convert_to_scalars, orderby, filter_neutral,
+        assoc, convert_to_scalars, orderby, collect_scalar_summands,
         match_replace_binary]
 
     def conjugate(self):

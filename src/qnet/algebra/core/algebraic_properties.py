@@ -1,5 +1,6 @@
 import logging
 
+from collections import OrderedDict
 from sympy import Mul as SympyMul, KroneckerDelta as SympyKroneckerDelta
 
 from .abstract_algebra import LOG, LEVEL, LOG_NO_MATCH
@@ -15,7 +16,7 @@ __private__ = [
     'disjunct_hs_zero', 'commutator_order', 'accept_bras',
     'basis_ket_zero_outside_hs', 'indexed_sum_over_const',
     'indexed_sum_over_kronecker', 'scalar_indexed_sum_over_kronecker',
-    'derivative_via_diff']
+    'derivative_via_diff', 'collect_summands', 'collect_scalar_summands']
 
 
 def assoc(cls, ops, kwargs):
@@ -119,6 +120,109 @@ def filter_neutral(cls, ops, kwargs):
     else:
         # the original list of operands consists only of neutral elements
         return ops[0]
+
+
+def collect_summands(cls, ops, kwargs):
+    """Collect summands that occur multiple times into a single summand
+
+    Also filters out zero-summands.
+
+    Example:
+        >>> A, B, C = (OperatorSymbol(s, hs=0) for s in ('A', 'B', 'C'))
+        >>> collect_summands(
+        ...     OperatorPlus, (A, B, C, ZeroOperator, 2 * A, B, -C) , {})
+        ((3 * A^(0), 2 * B^(0)), {})
+        >>> collect_summands(OperatorPlus, (A, -A), {})
+        ZeroOperator
+        >>> collect_summands(OperatorPlus, (B, A, -B), {})
+        A^(0)
+    """
+    from qnet.algebra.core.abstract_quantum_algebra import (
+        ScalarTimesQuantumExpression)
+    coeff_map = OrderedDict()
+    for op in ops:
+        if isinstance(op, ScalarTimesQuantumExpression):
+            coeff, term = op.coeff, op.term
+        else:
+            coeff, term = 1, op
+        if term in coeff_map:
+            coeff_map[term] += coeff
+        else:
+            coeff_map[term] = coeff
+    fops = []
+    for (term, coeff) in coeff_map.items():
+        op = coeff * term
+        if not op.is_zero:
+            fops.append(op)
+    if len(fops) == 0:
+        return cls._zero
+    elif len(fops) == 1:
+        return fops[0]
+    else:
+        return tuple(fops), kwargs
+
+
+def collect_scalar_summands(cls, ops, kwargs):
+    """Collect :class:`ValueScalar` and :class:`ScalarExpression` summands
+
+    Example:
+        >>> srepr(collect_scalar_summands(Scalar, (1, 2, 3), {}))
+        'ScalarValue(6)'
+        >>> collect_scalar_summands(Scalar, (1, 1, -1), {})
+        One
+        >>> collect_scalar_summands(Scalar, (1, -1), {})
+        Zero
+
+        >>> Psi = KetSymbol("Psi", hs=0)
+        >>> Phi = KetSymbol("Phi", hs=0)
+        >>> braket = BraKet.create(Psi, Phi)
+
+        >>> collect_scalar_summands(Scalar, (1, braket, -1), {})
+        <Psi|Phi>^(0)
+        >>> collect_scalar_summands(Scalar, (1, 2 * braket, 2, 2 * braket), {})
+        ((3, 4 * <Psi|Phi>^(0)), {})
+        >>> collect_scalar_summands(Scalar, (2 * braket, -braket, -braket), {})
+        Zero
+    """
+    # This routine is required because there is no
+    # "ScalarTimesQuantumExpression" for scalars: we have to extract
+    # coefficiencts from ScalarTimes instead
+    from qnet.algebra.core.scalar_algebra import (
+        Zero, One, Scalar, ScalarTimes, ScalarValue)
+    a_0 = Zero
+    coeff_map = OrderedDict()
+    for op in ops:
+        if isinstance(op, ScalarValue) or isinstance(op, Scalar._val_types):
+            a_0 += op
+            continue
+        elif isinstance(op, ScalarTimes):
+            if isinstance(op.operands[0], ScalarValue):
+                coeff = op.operands[0]
+                term = op.operands[1]
+                for sub_op in op.operands[2:]:
+                    term *= sub_op
+            else:
+                coeff, term = One, op
+        else:
+            coeff, term = One, op
+        if term in coeff_map:
+            coeff_map[term] += coeff
+        else:
+            coeff_map[term] = coeff
+    if a_0 == Zero:
+        fops = []
+    else:
+        fops = [a_0]
+    for (term, coeff) in coeff_map.items():
+        op = coeff * term
+        if not op.is_zero:
+            fops.append(op)
+    if len(fops) == 0:
+        return cls._zero
+    elif len(fops) == 1:
+        return fops[0]
+    else:
+        return tuple(fops), kwargs
 
 
 def match_replace(cls, ops, kwargs):

@@ -135,17 +135,17 @@ def test_ascii_equation():
     assert ascii(eq_1) == 'H^(0) = a^(0)H * a^(0)'
     assert ascii(eq_1.set_tag(1)) == 'H^(0) = a^(0)H * a^(0)    (1)'
     assert ascii(eq, show_hs_label=False).strip() == (r'''
-                                                                   H = a^H * a
-                                                               1 + H = a^H * a
-                                                                     = 1 + a^H * a
-                                                                     = (1 + a^H * a) * (1 + a^H * a)          (3)
-                                                               2 + H = 1 + (1 + a^H * a) * (1 + a^H * a)      (4)
-                                                                     = 2 + a^H * a^H * a * a + 3 * a^H * a
-                                                   (2 + H) * (2 + H) = 2 + a^H * a^H * a * a + 3 * a^H * a    (5)
-                                                   4 + 4 * H + H * H = 2 + a^H * a^H * a * a + 3 * a^H * a
-                           (4 + 4 * H + H * H) * (4 + 4 * H + H * H) = 2 + a^H * a^H * a * a + 3 * a^H * a    (6)
-16 + 32 * H + H * H * H * H + 8 * H * H + 8 * H * H * H + 16 * H * H = 2 + a^H * a^H * a * a + 3 * a^H * a
-                                                                     = 3 + a^H * a^H * a * a + 3 * a^H * a
+                                                       H = a^H * a
+                                                   1 + H = a^H * a
+                                                         = 1 + a^H * a
+                                                         = (1 + a^H * a) * (1 + a^H * a)          (3)
+                                                   2 + H = 1 + (1 + a^H * a) * (1 + a^H * a)      (4)
+                                                         = 2 + a^H * a^H * a * a + 3 * a^H * a
+                                       (2 + H) * (2 + H) = 2 + a^H * a^H * a * a + 3 * a^H * a    (5)
+                                       4 + 4 * H + H * H = 2 + a^H * a^H * a * a + 3 * a^H * a
+               (4 + 4 * H + H * H) * (4 + 4 * H + H * H) = 2 + a^H * a^H * a * a + 3 * a^H * a    (6)
+16 + 32 * H + H * H * H * H + 8 * H * H * H + 24 * H * H = 2 + a^H * a^H * a * a + 3 * a^H * a
+                                                         = 3 + a^H * a^H * a * a + 3 * a^H * a
     '''.strip())
 
 

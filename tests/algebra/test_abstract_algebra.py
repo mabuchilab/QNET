@@ -135,15 +135,15 @@ def test_rule_manipulation_exceptions():
 
 
 def test_show_rules(capsys):
-    OperatorPlus.show_rules('R002', 'R004')
+    OperatorTimes.show_rules('R002', 'R004')
     out = capsys.readouterr()[0]
     assert 'R002' in out
     assert 'R004' in out
     assert 'R001' not in out
     with pytest.raises(AttributeError):
-        OperatorPlus.show_rules('R002', 'R004', attr='bogus')
+        OperatorTimes.show_rules('R002', 'R004', attr='bogus')
 
-    LocalOperator.show_rules()
+    LocalOperator.show_rules()  # has no rules
     out = capsys.readouterr()[0]
     assert out == ''
 

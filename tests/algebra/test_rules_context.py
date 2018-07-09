@@ -3,7 +3,7 @@ import pytest
 from qnet.algebra.core.hilbert_space_algebra import LocalSpace
 from qnet.algebra.core.operator_algebra import (
     OperatorSymbol, ScalarTimesOperator, OperatorPlus, Operator,
-    IdentityOperator, OperatorTimes)
+    IdentityOperator, OperatorTimes, Commutator)
 from qnet.algebra.toolbox.core import temporary_rules
 from qnet.algebra.pattern_matching import wc, pattern_head, pattern
 from qnet.printing import srepr
@@ -13,44 +13,31 @@ from qnet.algebra.core.algebraic_properties import scalars_to_op
 def test_no_rules():
     """Test creation of expr when rule application for one or more operation is
     suppressed"""
-    h1 = LocalSpace("h1")
-    a = OperatorSymbol("a", hs=h1)
-    hs_repr = "LocalSpace('h1')"
+    A, B = (OperatorSymbol(s, hs=0) for s in ('A', 'B'))
+    expr = lambda: Commutator.create(2 * A, 2 * (3 * B))
+    myrepr = lambda e: srepr(e, cache={A: 'A', B: 'B'})
     assert (
-        srepr(2*a*3 + 3 * (2*a*3)) ==
-        "ScalarTimesOperator(ScalarValue(24), OperatorSymbol('a', hs=" +
-        hs_repr + "))")
+        myrepr(expr()) ==
+        'ScalarTimesOperator(ScalarValue(12), Commutator(A, B))')
     with temporary_rules(ScalarTimesOperator, clear=True):
-        expr = 2*a*3 + 3 * (2*a*3)
-        print(srepr(expr))
         assert (
-            srepr(expr) ==
-            "ScalarTimesOperator(ScalarValue(4), "
-            "ScalarTimesOperator(ScalarValue(3), "
-            "ScalarTimesOperator(ScalarValue(2), OperatorSymbol('a', hs=" +
-            hs_repr + "))))")
-    with temporary_rules(OperatorPlus, clear=True):
-        expr = 2*a*3 + 3 * (2*a*3)
-        print(srepr(expr))
+            myrepr(expr()) ==
+            'ScalarTimesOperator(ScalarValue(4), '
+            'ScalarTimesOperator(ScalarValue(3), Commutator(A, B)))')
+    with temporary_rules(Commutator, clear=True):
         assert (
-            srepr(expr) ==
-            "OperatorPlus(ScalarTimesOperator(ScalarValue(6), "
-            "OperatorSymbol('a', hs=" +
-            hs_repr + ")), "
-            "ScalarTimesOperator(ScalarValue(18), OperatorSymbol('a', hs=" +
-            hs_repr + ")))")
-    with temporary_rules(OperatorPlus, ScalarTimesOperator, clear=True):
-        expr = 2*a*3 + 3 * (2*a*3)
-        print(srepr(expr))
-        summand_repr = (
-            "ScalarTimesOperator(ScalarValue(3), ScalarTimesOperator("
-            "ScalarValue(2), OperatorSymbol('a', hs="+hs_repr+")))")
-        assert (srepr(expr) == (
-            "OperatorPlus(" + summand_repr +
-            ", ScalarTimesOperator(ScalarValue(3), " + summand_repr + "))"))
-    assert (srepr(2*a*3 + 3 * (2*a*3)) ==
-            "ScalarTimesOperator(ScalarValue(24), "
-            "OperatorSymbol('a', hs="+hs_repr+"))")
+            myrepr(expr()) ==
+            'Commutator(ScalarTimesOperator(ScalarValue(2), A), '
+            'ScalarTimesOperator(ScalarValue(6), B))')
+    with temporary_rules(Commutator, ScalarTimesOperator, clear=True):
+        assert (
+            myrepr(expr()) ==
+            'Commutator(ScalarTimesOperator(ScalarValue(2), A), '
+            'ScalarTimesOperator(ScalarValue(2), '
+            'ScalarTimesOperator(ScalarValue(3), B)))')
+    assert (
+        myrepr(expr()) ==
+        'ScalarTimesOperator(ScalarValue(12), Commutator(A, B))')
 
 
 def test_extra_rules():

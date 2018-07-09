@@ -204,24 +204,26 @@ def test_tex_equation():
             '  \\hat{H}^{(0)} = \\hat{a}^{(0)\\dagger} \\hat{a}^{(0)}',
             '\\tag{1}\\end{equation}',
             ''])
-    assert (
-        latex(
-            eq, show_hs_label=False, tex_op_macro=r'\Op{{{name}}}')
-        .split("\n") == [
-            '\\begin{align}',
-            '  \\Op{H} &= \\Op{a}^{\\dagger} \\Op{a}\\\\',
-            '  \\mathbb{1} + \\Op{H} &= \\Op{a}^{\\dagger} \\Op{a}\\\\',
-            '   &= \\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\\\',
-            '   &= \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right) \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right)\\tag{3}\\\\',
-            '  2 + \\Op{H} &= \\mathbb{1} + \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right) \\left(\\mathbb{1} + \\Op{a}^{\\dagger} \\Op{a}\\right)\\tag{4}\\\\',
-            '   &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
-            '  \\left(2 + \\Op{H}\\right) \\left(2 + \\Op{H}\\right) &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\tag{5}\\\\',
-            '  4 + 4 \\Op{H} + \\Op{H} \\Op{H} &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
-            '  \\left(4 + 4 \\Op{H} + \\Op{H} \\Op{H}\\right) \\left(4 + 4 \\Op{H} + \\Op{H} \\Op{H}\\right) &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\tag{6}\\\\',
-            '  16 + 32 \\Op{H} + \\Op{H} \\Op{H} \\Op{H} \\Op{H} + 8 \\Op{H} \\Op{H} + 8 \\Op{H} \\Op{H} \\Op{H} + 16 \\Op{H} \\Op{H} &= 2 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}\\\\',
-            '   &= 3 + \\Op{a}^{\\dagger} \\Op{a}^{\\dagger} \\Op{a} \\Op{a} + 3 \\Op{a}^{\\dagger} \\Op{a}',
-            '\\end{align}',
-            ''])
+    tex_lines = (
+        latex(eq, show_hs_label=False, tex_op_macro=r'\Op{{{name}}}')
+        .split("\n"))
+    expected = [
+        r'\begin{align}',
+        r'  \Op{H} &= \Op{a}^{\dagger} \Op{a}\\',
+        r'  \mathbb{1} + \Op{H} &= \Op{a}^{\dagger} \Op{a}\\',
+        r'   &= \mathbb{1} + \Op{a}^{\dagger} \Op{a}\\',
+        r'   &= \left(\mathbb{1} + \Op{a}^{\dagger} \Op{a}\right) \left(\mathbb{1} + \Op{a}^{\dagger} \Op{a}\right)\tag{3}\\',
+        r'  2 + \Op{H} &= \mathbb{1} + \left(\mathbb{1} + \Op{a}^{\dagger} \Op{a}\right) \left(\mathbb{1} + \Op{a}^{\dagger} \Op{a}\right)\tag{4}\\',
+        r'   &= 2 + \Op{a}^{\dagger} \Op{a}^{\dagger} \Op{a} \Op{a} + 3 \Op{a}^{\dagger} \Op{a}\\',
+        r'  \left(2 + \Op{H}\right) \left(2 + \Op{H}\right) &= 2 + \Op{a}^{\dagger} \Op{a}^{\dagger} \Op{a} \Op{a} + 3 \Op{a}^{\dagger} \Op{a}\tag{5}\\',
+        r'  4 + 4 \Op{H} + \Op{H} \Op{H} &= 2 + \Op{a}^{\dagger} \Op{a}^{\dagger} \Op{a} \Op{a} + 3 \Op{a}^{\dagger} \Op{a}\\',
+        r'  \left(4 + 4 \Op{H} + \Op{H} \Op{H}\right) \left(4 + 4 \Op{H} + \Op{H} \Op{H}\right) &= 2 + \Op{a}^{\dagger} \Op{a}^{\dagger} \Op{a} \Op{a} + 3 \Op{a}^{\dagger} \Op{a}\tag{6}\\',
+        r'  16 + 32 \Op{H} + \Op{H} \Op{H} \Op{H} \Op{H} + 8 \Op{H} \Op{H} \Op{H} + 24 \Op{H} \Op{H} &= 2 + \Op{a}^{\dagger} \Op{a}^{\dagger} \Op{a} \Op{a} + 3 \Op{a}^{\dagger} \Op{a}\\',
+        r'   &= 3 + \Op{a}^{\dagger} \Op{a}^{\dagger} \Op{a} \Op{a} + 3 \Op{a}^{\dagger} \Op{a}',
+        r'\end{align}',
+        r'']
+    for i, line in enumerate(tex_lines):
+        assert line == expected[i]
 
 
 def test_tex_operator_elements():

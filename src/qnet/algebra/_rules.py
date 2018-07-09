@@ -49,18 +49,6 @@ def _algebraic_rules_scalar():
 
     indranges__ = wc("indranges__", head=IndexRangeBase)
 
-    ScalarPlus._binary_rules.update(check_rules_dict([
-        ('R001', (
-            pattern_head(a, b),
-            lambda a, b: a + b)),
-        ('R002', (
-            pattern_head(x, x),
-            lambda x: 2*x)),
-        ('R003', (
-            pattern_head(x, pattern(ScalarTimes, -1, x)),
-            lambda x: Zero)),
-    ]))
-
     ScalarTimes._binary_rules.update(check_rules_dict([
         ('R001', (
             pattern_head(a, b),
@@ -164,23 +152,6 @@ def _algebraic_rules_operator():
         ('R005', (
             pattern_head(-1, A_plus),
             lambda A: OperatorPlus.create(*[-1 * op for op in A.args]))),
-    ]))
-
-    OperatorPlus._binary_rules.update(check_rules_dict([
-        ('R001', (
-            pattern_head(
-                pattern(ScalarTimesOperator, u, A),
-                pattern(ScalarTimesOperator, v, A)),
-            lambda u, v, A: (u + v) * A)),
-        ('R002', (
-            pattern_head(pattern(ScalarTimesOperator, u, A), A),
-            lambda u, A: (u + 1) * A)),
-        ('R003', (
-            pattern_head(A, pattern(ScalarTimesOperator, v, A)),
-            lambda v, A: (1 + v) * A)),
-        ('R004', (
-            pattern_head(A, A),
-            lambda A: 2 * A)),
     ]))
 
     OperatorTimes._binary_rules.update(check_rules_dict([
@@ -494,23 +465,6 @@ def _algebraic_rules_superop():
             lambda u, v, sA: (u * v) * sA)),
     ]))
 
-    SuperOperatorPlus._binary_rules.update(check_rules_dict([
-        ('R001', (
-            pattern_head(
-                pattern(ScalarTimesSuperOperator, u, sA),
-                pattern(ScalarTimesSuperOperator, v, sA)),
-            lambda u, v, sA: (u + v) * sA)),
-        ('R002', (
-            pattern_head(pattern(ScalarTimesSuperOperator, u, sA), sA),
-            lambda u, sA: (u + 1) * sA)),
-        ('R003', (
-            pattern_head(sA, pattern(ScalarTimesSuperOperator, v, sA)),
-            lambda v, sA: (1 + v) * sA)),
-        ('R004', (
-            pattern_head(sA, sA),
-            lambda sA: 2 * sA)),
-    ]))
-
     SuperOperatorTimes._binary_rules.update(check_rules_dict([
         ('R001', (
             pattern_head(pattern(ScalarTimesSuperOperator, u, sA), sB),
@@ -772,23 +726,6 @@ def _algebraic_rules_state():
         ('R021', (
             pattern_head(A, sum),
             lambda A, sum: KetIndexedSum.create(A * sum.term, *sum.ranges))),
-    ]))
-
-    KetPlus._binary_rules.update(check_rules_dict([
-        ('R001', (
-            pattern_head(
-                pattern(ScalarTimesKet, u, Psi),
-                pattern(ScalarTimesKet, v, Psi)),
-            lambda u, v, Psi: (u + v) * Psi)),
-        ('R002', (
-            pattern_head(pattern(ScalarTimesKet, u, Psi), Psi),
-            lambda u, Psi: (u + 1) * Psi)),
-        ('R003', (
-            pattern_head(Psi, pattern(ScalarTimesKet, v, Psi)),
-            lambda v, Psi: (1 + v) * Psi)),
-        ('R004', (
-            pattern_head(Psi, Psi),
-            lambda Psi: 2 * Psi)),
     ]))
 
     TensorKet._binary_rules.update(check_rules_dict([

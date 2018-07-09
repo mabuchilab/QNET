@@ -529,22 +529,7 @@ class QuantumTimes(QuantumOperation, metaclass=ABCMeta):
             self.__class__._times_cls.create(*ops_not_on_spc))
 
     def _expand(self):
-        eops = [o.expand() for o in self.operands]
-        # store tuples of summands of all expanded factors
-        eopssummands = [
-            eo.operands if isinstance(eo, self.__class__._plus_cls) else (eo,)
-            for eo in eops]
-        # iterate over a cartesian product of all factor summands, form product
-        # of each tuple and sum over result
-        summands = []
-        for combo in cartesian_product(*eopssummands):
-            summand = self.__class__._times_cls.create(*combo)
-            summands.append(summand)
-        ret = self.__class__._plus_cls.create(*summands)
-        if isinstance(ret, self.__class__._plus_cls):
-            return ret.expand()
-        else:
-            return ret
+        return _expand_product(self.operands)
 
     def _series_expand(self, param, about, order):
         assert len(self.operands) > 1
@@ -633,12 +618,7 @@ class ScalarTimesQuantumExpression(
         return self.operands[1].space
 
     def _expand(self):
-        c, t = self.operands
-        et = t.expand()
-        if isinstance(et, self.__class__._plus_cls):
-            summands = [c * eto for eto in et.operands]
-            return self.__class__._plus_cls.create(*summands)
-        return c * et
+        return _expand_product(self.operands)
 
     def _series_expand(self, param, about, order):
         ce = self.coeff.series_expand(param, about, order)
@@ -1118,3 +1098,26 @@ def _evaluate_at(expr, sym, val):
     except AttributeError:
         # for explicit Expression
         return expr.substitute({sym: val})
+
+
+def _expand_product(factors):
+    eops = [o.expand() for o in factors]
+    # store tuples of summands of all expanded factors
+    eopssummands = [
+        eo.operands if isinstance(eo, eo.__class__._plus_cls) else (eo,)
+        for eo in eops]
+    # iterate over a cartesian product of all factor summands, form product
+    # of each tuple and sum over result
+    summands = []
+    for combo in cartesian_product(*eopssummands):
+        summand = combo[0]
+        for c in combo[1:]:
+            summand *= c
+        summands.append(summand)
+    ret = summands[0]
+    for summand in summands[1:]:
+        ret += summand
+    if isinstance(ret, ret.__class__._plus_cls):
+        return ret.expand()
+    else:
+        return ret

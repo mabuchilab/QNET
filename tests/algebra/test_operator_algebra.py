@@ -769,3 +769,22 @@ def test_custom_identifier():
         assert ascii(expr) == '1 + b^(0)H * b^(0)'
         expr = expr.substitute({hs: LocalSpace(0)})
         assert ascii(expr) == '1 + a^(0)H * a^(0)'
+
+
+def test_create_destroy_product_expand():
+    a = Destroy(hs=1)
+    a_dag = Create(hs=1)
+
+    expr = a * a * a_dag * a_dag
+    result = expr.expand()
+    expected = 4 * a_dag * a + a_dag * a_dag * a * a + 2
+    assert result == expected
+
+    expr = a * a * a * a_dag * a_dag * a_dag
+    result = expr.expand()
+    expected = (
+        6 +
+        18 * a_dag * a +
+        9 * a_dag * a_dag * a * a +
+        a_dag * a_dag * a_dag * a * a * a)
+    assert result == expected

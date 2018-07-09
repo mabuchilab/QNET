@@ -464,8 +464,8 @@ def test_scalar_times_expr_conversion(braket):
             assert isinstance(expr, ScalarTimesOperator)
             assert isinstance(expr.coeff, Scalar)
             assert expr.coeff == coeff
-    assert One * A is A
-    assert A * One is A
+    assert One * A == A
+    assert A * One == A
     assert Zero * A is ZeroOperator
     assert A * Zero is ZeroOperator
 
@@ -499,6 +499,9 @@ def test_scalar_plus(braket):
 
     expr = ScalarPlus.create(1, braket, -1)
     assert expr == braket
+
+    expr = ScalarPlus.create(1, braket, -1, 3 * braket)
+    assert expr == 4 * braket
 
     expr = ScalarPlus.create(1, braket, alpha)
     assert expr == (1 + alpha) + braket

@@ -16,7 +16,7 @@ from .abstract_quantum_algebra import (
     QuantumDerivative)
 from .algebraic_properties import (
     assoc, filter_neutral, match_replace, match_replace_binary, orderby,
-    delegate_to_method)
+    delegate_to_method, collect_summands)
 from .exceptions import BadLiouvillianError, CannotSymbolicallyDiagonalize
 from .hilbert_space_algebra import TrivialSpace
 from .matrix_algebra import Matrix
@@ -122,7 +122,7 @@ class SuperOperatorPlus(QuantumPlus, SuperOperator):
 
     _neutral_element = ZeroSuperOperator
     _binary_rules = OrderedDict()
-    simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+    simplifications = [assoc, orderby, collect_summands, match_replace_binary]
 
 
 class SuperCommutativeHSOrder(DisjunctCommutativeHSOrder):

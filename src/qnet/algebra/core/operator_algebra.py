@@ -21,13 +21,14 @@ from .algebraic_properties import (
     assoc, assoc_indexed, commutator_order, delegate_to_method,
     disjunct_hs_zero, filter_neutral, implied_local_space, match_replace,
     match_replace_binary, orderby, scalars_to_op, indexed_sum_over_const,
-    indexed_sum_over_kronecker)
+    indexed_sum_over_kronecker, collect_summands)
 from .exceptions import CannotSimplify
 from .hilbert_space_algebra import (
     HilbertSpace, LocalSpace, ProductSpace, TrivialSpace, )
 from .scalar_algebra import Scalar, ScalarValue, is_scalar
 from ..pattern_matching import pattern, pattern_head, wc
-from ...utils.indices import SymbolicLabelBase
+from ...utils.indices import (
+    SymbolicLabelBase, IdxSym, IndexOverFockSpace, FockIndex)
 from ...utils.ordering import FullCommutativeHSOrder
 from ...utils.singleton import Singleton, singleton_object
 
@@ -450,8 +451,7 @@ class OperatorPlus(QuantumPlus, Operator):
     _neutral_element = ZeroOperator
     _binary_rules = OrderedDict()
     simplifications = [
-        assoc, scalars_to_op, orderby, filter_neutral,
-        match_replace_binary]
+        assoc, scalars_to_op, orderby, collect_summands, match_replace_binary]
 
 
 class OperatorTimes(QuantumTimes, Operator):

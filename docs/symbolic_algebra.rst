@@ -288,7 +288,7 @@ There are quite a few built-in replacement rules, e.g., mode operators products 
 Or for higher powers one can use the ``expand()`` method::
 
     >>> (Destroy(hs=1) * Destroy(hs=1) * Destroy(hs=1) * Create(hs=1) * Create(hs=1) * Create(hs=1)).expand()
-    6 + â^(1)† â^(1)† â^(1)† â⁽¹⁾ â⁽¹⁾ â⁽¹⁾ + 2 â^(1)† â^(1)† â⁽¹⁾ â⁽¹⁾ + 6 â^(1)† â⁽¹⁾ + 7 â^(1)† â^(1)† â⁽¹⁾ â⁽¹⁾ + 12 â^(1)† â⁽¹⁾
+    6 + â^(1)† â^(1)† â^(1)† â⁽¹⁾ â⁽¹⁾ â⁽¹⁾ + 9 â^(1)† â^(1)† â⁽¹⁾ â⁽¹⁾ + 18 â^(1)† â⁽¹⁾
 
 
 .. _state_algebra:

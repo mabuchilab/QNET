@@ -277,6 +277,16 @@ def test_expand_ketbra():
         KetBra(BasisKet('1', hs=hs), BasisKet('1', hs=hs)))
 
 
+@pytest.mark.xfail
+def test_expand_indexed_operator_times_let():
+    hs = LocalSpace(1, basis=('g', 'e'))
+    j = IdxSym('j')
+    expr = OperatorTimesKet(
+        LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs),
+        BasisKet(FockIndex(j), hs=hs))
+    assert expr.expand() == None
+
+
 def eval_lb(expr, mapping):
     """Evaluate symbolic labels with the given mapping"""
     return _apply_rules(expr, rules=[(
