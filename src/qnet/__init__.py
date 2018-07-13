@@ -12,11 +12,10 @@ For interactive usage, the package should be initialized as follows::
 
 import qnet._flat_api_tools
 import qnet.algebra._rules
-from sympy import symbols
 
 __doc__ += qnet._flat_api_tools.__doc__
 
-__all__ = ['symbols']  # will be extended by _import_submodules
+__all__ = []  # will be extended by _import_submodules
 
 __version__ = "2.0.0-dev"
 

@@ -1,3 +1,4 @@
+import sympy
 from contextlib import contextmanager
 from collections import OrderedDict
 
@@ -5,7 +6,8 @@ from ..core.abstract_algebra import Expression
 
 
 __all__ = [
-    "no_instance_caching", "temporary_instance_cache", "temporary_rules"]
+    "no_instance_caching", "temporary_instance_cache", "temporary_rules",
+    "symbols"]
 
 
 @contextmanager
@@ -97,3 +99,40 @@ def temporary_rules(*classes, clear=False):
             cls._rules = orig_rules[i]
         if orig_binary_rules[i] is not None:
             cls._binary_rules = orig_binary_rules[i]
+
+
+def symbols(names, **args):
+    """The :func:`~sympy.core.symbol.symbols` function from SymPy
+
+    This can be used to generate QNET symbols as well::
+
+        >>> A, B, C = symbols('A B C', cls=OperatorSymbol, hs=0)
+        >>> srepr(A)
+        "OperatorSymbol('A', hs=LocalSpace('0'))"
+        >>> C1, C2 = symbols('C_1:3', cls=CircuitSymbol, cdim=2)
+        >>> srepr(C1)
+        "CircuitSymbol('C_1', cdim=2)"
+
+    Basically, the `cls` keyword argument can be any instantiator, i.e. a class
+    or callable that receives a symbol name as the single positional argument.
+    Any keyword arguments not handled by :func:`symbols` directly (see
+    :func:`sympy.core.symbol.symbols` documentation) is passed on to the
+    instantiator. Obviously, this is extremely flexible.
+
+    Note:
+        :func:`symbol` does not pass *positional* arguments to the
+        instantiator. Two possible workarounds to create symbols with e.g. a
+        scalar argument are::
+
+            >>> t = symbols('t', positive=True)
+            >>> A_t, B_t = symbols(
+            ...     'A B', cls=lambda s: OperatorSymbol(s, t, hs=0))
+            >>> srepr(A_t, cache={t: 't'})
+            "OperatorSymbol('A', t, hs=LocalSpace('0'))"
+            >>> A_t, B_t = (OperatorSymbol(s, t, hs=0) for s in ('A', 'B'))
+            >>> srepr(B_t, cache={t: 't'})
+            "OperatorSymbol('B', t, hs=LocalSpace('0'))"
+    """
+    # this wraps the sympy symbols function (instead of just importing and
+    # exposing it directly) solely for the extra documentation
+    return sympy.symbols(names, **args)
