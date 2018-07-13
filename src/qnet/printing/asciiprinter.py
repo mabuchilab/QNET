@@ -388,8 +388,11 @@ class QnetAsciiPrinter(QnetBasePrinter):
         return self._spaced_product_sym.join(
             [self.parenthesize(op, prec, **kwargs) for op in expr.operands])
 
-    def _print_Commutator(self, expr):
-        return "[" + self.doprint(expr.A) + ", " + self.doprint(expr.B) + "]"
+    def _print_Commutator(self, expr, adjoint=False):
+        res = "[" + self.doprint(expr.A) + ", " + self.doprint(expr.B) + "]"
+        if adjoint:
+            res += "^" + self._dagger_sym
+        return res
 
     def _print_OperatorTrace(self, expr, adjoint=False):
         s = self._render_hs_label(expr._over_space)

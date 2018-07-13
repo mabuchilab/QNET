@@ -308,6 +308,7 @@ def test_tex_operator_operations():
     A = OperatorSymbol("A", hs=hs1)
     B = OperatorSymbol("B", hs=hs1)
     C = OperatorSymbol("C", hs=hs2)
+    psi = KetSymbol('Psi', hs=hs1)
     gamma = symbols('gamma', positive=True)
     assert latex(A.dag()) == r'\hat{A}^{(q_{1})\dagger}'
     assert latex(A + B) == r'\hat{A}^{(q_{1})} + \hat{B}^{(q_{1})}'
@@ -348,6 +349,11 @@ def test_tex_operator_operations():
             r'\hat{C}^{(q_{2})}\right)')
     assert (latex(Commutator(A, B)) ==
             r'\left[\hat{A}^{(q_{1})}, \hat{B}^{(q_{1})}\right]')
+    expr = (Commutator(A, B) * psi).dag()
+    assert (
+        latex(expr, show_hs_label=False) ==
+        r'\left\langle \Psi \right\rvert \left[\hat{A}, '
+        r'\hat{B}\right]^{\dagger}')
 
 
 def test_tex_ket_elements():

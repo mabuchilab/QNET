@@ -203,10 +203,13 @@ class QnetLatexPrinter(QnetAsciiPrinter):
             else:
                 return label
 
-    def _print_Commutator(self, expr):
-        return (
+    def _print_Commutator(self, expr, adjoint=False):
+        res = (
             r'\left[' + self.doprint(expr.A) + ", " + self.doprint(expr.B) +
             r'\right]')
+        if adjoint:
+            res += "^{%s}" % self._dagger_sym
+        return res
 
     def _print_OperatorTrace(self, expr, adjoint=False):
         s = self._render_hs_label(expr._over_space)

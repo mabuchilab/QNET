@@ -212,6 +212,7 @@ def test_ascii_operator_operations():
     B = OperatorSymbol("B", hs=hs1)
     C = OperatorSymbol("C", hs=hs2)
     D = OperatorSymbol("D", hs=hs1)
+    psi = KetSymbol('Psi', hs=hs1)
     gamma = symbols('gamma', positive=True)
     assert ascii(A + B) == 'A^(q_1) + B^(q_1)'
     assert ascii(A * B) == 'A^(q_1) * B^(q_1)'
@@ -245,6 +246,8 @@ def test_ascii_operator_operations():
     expr = 2 * A - sqrt(gamma) * (B + C)
     assert ascii(expr) == '2 * A^(q_1) - sqrt(gamma) * (B^(q_1) + C^(q_2))'
     assert ascii(Commutator(A, B)) == r'[A^(q_1), B^(q_1)]'
+    expr = (Commutator(A, B) * psi).dag()
+    assert ascii(expr, show_hs_label=False) == r'<Psi| [A, B]^H'
 
 
 def test_ascii_ket_elements():

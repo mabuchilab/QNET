@@ -217,6 +217,7 @@ def test_unicode_operator_operations():
     A = OperatorSymbol("A", hs=hs1)
     B = OperatorSymbol("B", hs=hs1)
     C = OperatorSymbol("C", hs=hs2)
+    psi = KetSymbol('Psi', hs=hs1)
     gamma = symbols('gamma', positive=True)
     assert unicode(A + B) == 'A\u0302^(q\u2081) + B\u0302^(q\u2081)'
     #                         Â^(q₁) + B̂^(q₁)
@@ -255,6 +256,8 @@ def test_unicode_operator_operations():
     assert (unicode(Commutator(A, B)) ==
             '[A\u0302^(q\u2081), B\u0302^(q\u2081)]')
     #       [Â^(q₁), B̂^(q₁)]
+    expr = (Commutator(A, B) * psi).dag()
+    assert unicode(expr, show_hs_label=False) == r'⟨Ψ| [Â, B̂]^†'
 
 
 def test_unicode_ket_elements():
