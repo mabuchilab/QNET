@@ -299,18 +299,14 @@ class QnetAsciiPrinter(QnetBasePrinter):
                     label_j=self._render_state_label(expr.k),
                     space=self._render_hs_label(expr.space))
         else:
-            if adjoint:
-                identifier = "%s_%s,%s" % (expr.identifier, expr.k, expr.j)
+            if expr.j == expr.k:
+                identifier = "%s_%s" % (expr._identifier_projector, expr.j)
             else:
-                identifier = "%s_%s,%s" % (expr.identifier, expr.j, expr.k)
+                if adjoint:
+                    identifier = "%s_%s,%s" % (expr.identifier, expr.k, expr.j)
+                else:
+                    identifier = "%s_%s,%s" % (expr.identifier, expr.j, expr.k)
             return self._render_op(identifier, expr._hs, dagger=adjoint)
-
-    def _print_LocalProjector(self, expr, adjoint=False):
-        if self._settings['sig_as_ketbra']:
-            return self._print_LocalSigma(expr, adjoint=False)
-        else:
-            identifier = "%s_%s" % (expr.identifier, expr.j)
-            return self._render_op(identifier, expr._hs, dagger=False)
 
     def _print_IdentityOperator(self, expr):
         return "1"

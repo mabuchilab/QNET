@@ -11,7 +11,7 @@ from qnet import (
     ScalarTimesOperator, OperatorTimes, OperatorDerivative, Jz, Jplus, Jminus,
     Destroy, Create, Phase, Displace, Matrix, identity_matrix, LocalSpace,
     TrivialSpace, ProductSpace, FockIndex, SpinSpace, ascii, BasisNotSetError,
-    adjoint, NoConjugateMatrix)
+    adjoint, NoConjugateMatrix, BasisKet, ZeroKet)
 
 
 def test_identity_singleton():
@@ -788,3 +788,49 @@ def test_create_destroy_product_expand():
         9 * a_dag * a_dag * a * a +
         a_dag * a_dag * a_dag * a * a * a)
     assert result == expected
+
+
+def test_issue76():
+    """Test resolution of #76"""
+    ket_0 = BasisKet(0, hs=0)
+    ket_1 = BasisKet(1, hs=0)
+    bra_0 = ket_0.dag()
+    bra_1 = ket_1.dag()
+    sig_10 = LocalSigma(1, 0, hs=0)
+    sig_01 = LocalSigma(0, 1, hs=0)
+    sig_11 = LocalSigma(1, 1, hs=0)
+    P0 = LocalProjector(0, hs=0)
+    P1 = LocalProjector(1, hs=0)
+    ZeroBra = ZeroKet.dag()
+
+    # first, verify LocalSigma
+
+    # ket
+    expr = sig_10 * ket_1
+    assert expr == ZeroKet
+    expr = sig_01 * ket_1
+    assert expr == ket_0
+    expr = sig_11 * ket_1
+    assert expr == ket_1
+    # bra
+    expr = bra_1 * sig_10
+    assert expr == bra_0
+    expr = bra_1 * sig_01
+    assert expr == ZeroBra
+    expr = bra_1 * sig_11
+    assert expr == bra_1
+
+    # second, LocalProjector
+    # (Mote: at the time of the issue, LocalProjector was a subclass of
+    # LocalSigma. The resolution was to make it a function only)
+
+    # ket
+    expr = P1 * ket_1
+    assert expr == ket_1
+    expr = P0 * ket_1
+    assert expr == ZeroKet
+    # bra
+    expr = bra_1 * P1
+    assert expr == bra_1
+    expr = bra_1 * P0
+    assert expr == ZeroBra

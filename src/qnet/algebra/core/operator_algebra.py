@@ -325,11 +325,17 @@ class LocalSigma(LocalOperator):
     Printers should represent this operator either in braket notation, or using
     the operator identifier
 
-        >>> LocalSigma(0, 0, hs=0).identifier
+        >>> LocalSigma(0, 1, hs=0).identifier
         'sigma'
+
+    For ``j == k``, an alternative (fixed) identifier may be used
+
+        >>> LocalSigma(0, 0, hs=0)._identifier_projector
+        'Pi'
     '''
 
     _identifier = "sigma"
+    _identifier_projector = "Pi"
     _rx_identifier = re.compile('^[A-Za-z][A-Za-z0-9]*$')
     _arg_names = ('j', 'k')
     _scalar_args = False  # args are labels, not scalar coefficients
@@ -416,7 +422,7 @@ class LocalSigma(LocalOperator):
         return LocalSigma(j=self.k, k=self.j, hs=self.space)
 
 
-class LocalProjector(LocalSigma):
+def LocalProjector(j, *, hs):
     """A projector onto a specific level of a :class:`.LocalSpace`
 
     Args:
@@ -424,20 +430,7 @@ class LocalProjector(LocalSigma):
             is projected
         hs (HilbertSpace): The Hilbert space on which the operator acts
     """
-    _identifier = "Pi"
-    _arg_names = ('j', 'k')  # necessary for super().__init__
-
-    def __init__(self, j, *, hs):
-        super().__init__(j=j, k=j, hs=hs)
-
-    @property
-    def args(self):
-        """One-element tuple containing eigenstate label `j` that the projector
-        projects onto"""
-        return (self.j,)
-
-    def _adjoint(self):
-        return self
+    return LocalSigma(j, j, hs=hs)
 
 
 ###############################################################################

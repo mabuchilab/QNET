@@ -7,7 +7,7 @@ from .core.exceptions import CannotSimplify, IncompatibleBlockStructures
 from .core.hilbert_space_algebra import (
     HilbertSpace, LocalSpace, ProductSpace, TrivialSpace)
 from .core.operator_algebra import (
-    Adjoint, Commutator, IdentityOperator, LocalOperator, LocalProjector,
+    Adjoint, Commutator, IdentityOperator, LocalOperator,
     LocalSigma, Operator, OperatorIndexedSum, OperatorPlus, OperatorTimes,
     OperatorTrace, PseudoInverse, ScalarTimesOperator, ZeroOperator,
     decompose_space, factor_for_trace)
@@ -127,7 +127,7 @@ def _algebraic_rules_operator():
     H_ProductSpace = wc("H", head=ProductSpace)
 
     localsigma = wc(
-        'localsigma', head=(LocalSigma, LocalProjector), kwargs={'hs': ls})
+        'localsigma', head=LocalSigma, kwargs={'hs': ls})
 
     ra = wc("ra", head=(int, str, SymbolicLabelBase))
     rb = wc("rb", head=(int, str, SymbolicLabelBase))
@@ -176,24 +176,6 @@ def _algebraic_rules_operator():
                 pattern(LocalSigma, rc, rd, hs=ls)),
             lambda ls, ra, rb, rc, rd: (
                 KroneckerDelta(rb, rc) * LocalSigma.create(ra, rd, hs=ls)))),
-        ('R006', (
-            pattern_head(
-                pattern(LocalSigma, ra, rb, hs=ls),
-                pattern(LocalProjector, rc, hs=ls)),
-            lambda ls, ra, rb, rc: (
-                KroneckerDelta(rb, rc) * LocalSigma.create(ra, rc, hs=ls)))),
-        ('R007', (
-            pattern_head(
-                pattern(LocalProjector, ra, hs=ls),
-                pattern(LocalSigma, rc, rd, hs=ls)),
-            lambda ls, ra, rc, rd: (
-                KroneckerDelta(ra, rc) * LocalSigma.create(ra, rd, hs=ls)))),
-        ('R008', (
-            pattern_head(
-                pattern(LocalProjector, ra, hs=ls),
-                pattern(LocalProjector, rc, hs=ls)),
-            lambda ls, ra, rc: (
-                KroneckerDelta(ra, rc) * LocalProjector(ra, hs=ls)))),
 
         # Harmonic oscillator rules
         ('R009', (
@@ -322,10 +304,6 @@ def _algebraic_rules_operator():
         ('R001', (
             pattern_head(0, hs=ls), lambda ls: IdentityOperator))
     ]))
-    LocalSigma._rules.update(check_rules_dict([
-        ('R001', (
-            pattern_head(n, n, hs=ls), lambda n, ls: LocalProjector(n, hs=ls)))
-    ]))
 
     OperatorTrace._rules.update(check_rules_dict([
         ('R001', (
@@ -362,9 +340,6 @@ def _algebraic_rules_operator():
             pattern_head(pattern(LocalSigma, n, m, hs=ls), over_space=ls),
             lambda ls, n, m: KroneckerDelta(n, m) * IdentityOperator)),
         ('R011', (
-            pattern_head(pattern(LocalProjector, n, hs=ls), over_space=ls),
-            lambda ls, n: IdentityOperator)),
-        ('R012', (
             pattern_head(A, over_space=ls),
             lambda ls, A: factor_for_trace(ls, A))),
     ]))
@@ -373,9 +348,6 @@ def _algebraic_rules_operator():
         ('R001', (
             pattern_head(pattern(LocalSigma, m, n, hs=ls)),
             lambda ls, m, n: LocalSigma(n, m, hs=ls))),
-        ('R002', (
-            pattern_head(pattern(LocalProjector, m, hs=ls)),
-            lambda ls, m: LocalProjector(m, hs=ls))),
     ]))
 
     Commutator._rules.update(check_rules_dict([
@@ -402,16 +374,14 @@ def _algebraic_rules_operator():
         ('R006', (
             pattern_head(
                 wc('A', head=(
-                    Create, Destroy, LocalSigma, LocalProjector, Phase,
-                    Displace)),
+                    Create, Destroy, LocalSigma, Phase, Displace)),
                 wc('B', head=(
-                    Create, Destroy, LocalSigma, LocalProjector, Phase,
-                    Displace))),
+                    Create, Destroy, LocalSigma, Phase, Displace))),
             lambda A, B: A * B - B * A)),
         ('R007', (
             pattern_head(
-                wc('A', head=(LocalSigma, LocalProjector, Jplus, Jminus, Jz)),
-                wc('B', head=(LocalSigma, LocalProjector, Jplus, Jminus, Jz))),
+                wc('A', head=(LocalSigma, Jplus, Jminus, Jz)),
+                wc('B', head=(LocalSigma, Jplus, Jminus, Jz))),
             lambda A, B: A * B - B * A)),
     ]))
 

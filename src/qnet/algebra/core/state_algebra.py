@@ -144,7 +144,7 @@ class State(QuantumExpression, metaclass=ABCMeta):
                 return Bra.create(self.ket * other.ket)
         elif isinstance(other, Operator):
             if self.isbra:
-                return Bra.create(other * self.ket)
+                return Bra.create(other.adjoint() * self.ket)
         try:
             return super().__mul__(other)
         except AttributeError:
