@@ -31,8 +31,8 @@ __private__ = []  # anything not in __all__ must be in __private__
 
 LEVEL = 0  # for debugging create method
 
-LOG = True  # emit debug logging messages?
-LOG_NO_MATCH = True  # also log non-matching rules? (very verbose!)
+LOG = False  # emit debug logging messages?
+LOG_NO_MATCH = False  # also log non-matching rules? (very verbose!)
 # Note: you may manually set the above variables to True for debugging. Some
 # tests (e.g. the tests for the algebraic rules) will also automatically
 # activate this logging functionality, as they rely on inspecting the debug

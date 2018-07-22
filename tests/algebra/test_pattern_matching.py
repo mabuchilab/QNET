@@ -388,6 +388,31 @@ def test_findall():
                .findall(expr.substitute({c: c_local}))) == 2
 
 
+def test_finditer():
+    h1 = LocalSpace("h1")
+    a = OperatorSymbol("a", hs=h1)
+    b = OperatorSymbol("b", hs=h1)
+    c = OperatorSymbol("c", hs=h1)
+    h1_custom = LocalSpace("h1", local_identifiers={'Create': 'c'})
+    c_local = Create(hs=h1_custom)
+
+    expr = 2 * (a * b * c - b * c * a + a * b)
+    pat = wc('sym', head=OperatorSymbol)
+    for m in pat.finditer(expr):
+        assert 'sym' in m
+    matches = list(pat.finditer(expr))
+    assert len(matches) == 8
+    op_symbols = [m['sym'] for m in matches]
+    assert set(op_symbols) == {a, b, c}
+
+    op = wc(head=Operator)
+    three_factors = pattern(OperatorTimes, op, op, op).findall(expr)
+    assert three_factors == [a * b * c, b * c * a]
+    assert len(list(pattern(LocalOperator).finditer(expr))) == 0
+    assert len(list(pattern(LocalOperator)
+                    .finditer(expr.substitute({c: c_local})))) == 2
+
+
 def test_wc_names():
     """Test the wc_names property"""
     ra = wc("ra", head=(int, str))

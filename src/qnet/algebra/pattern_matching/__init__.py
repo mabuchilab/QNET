@@ -349,7 +349,12 @@ class Pattern():
         return res
 
     def findall(self, expr):
-        """Return a list of all matching (sub-)expressions in `expr`"""
+        """list of all matching (sub-)expressions in `expr`
+
+        See also:
+            :meth:`finditer` yields the matches (:class:`MatchDict` instances)
+            for the matched expressions.
+        """
         result = []
         try:
             for arg in expr.args:
@@ -361,6 +366,26 @@ class Pattern():
         if self.match(expr):
             result.append(expr)
         return result
+
+    def finditer(self, expr):
+        """Return an iterator over all matches in `expr`
+
+        Iterate over all :class:`MatchDict` results of matches for any
+        matching (sub-)expressions in `expr`. The order of the matches conforms
+        to the equivalent matched expressions returned by :meth:`findall`.
+        """
+        try:
+            for arg in expr.args:
+                for m in self.finditer(arg):
+                    yield m
+            for arg in expr.kwargs.values():
+                for m in self.finditer(arg):
+                    yield m
+        except AttributeError:
+            pass
+        m = self.match(expr)
+        if m:
+            yield m
 
     @property
     def wc_names(self):
