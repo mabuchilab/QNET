@@ -630,7 +630,13 @@ class BraKet(ScalarExpression, Operation):
 
 
 class KetBra(Operator, Operation):
-    """Outer product of two states"""
+    """Outer product of two states
+
+    Args:
+        ket (State): The left factor in the product
+        bra (State): The right factor in the product. Note that this is *not* a
+            :class:`Bra` instance.
+    """
     _rules = OrderedDict()
     simplifications = [match_replace]
 
@@ -640,14 +646,21 @@ class KetBra(Operator, Operation):
 
     @property
     def ket(self):
+        """The left factor in the product"""
         return self.operands[0]
 
     @property
     def bra(self):
+        """The co-state right factor in the product
+
+        This is a :class:`Bra` instance (unlike the `bra` given to the
+        constructor
+        """
         return Bra(self.operands[1])
 
     @property
     def space(self):
+        """The Hilbert space of the states being multiplied"""
         return self.operands[0].space
 
     def _adjoint(self):
@@ -698,7 +711,7 @@ class KetIndexedSum(State, QuantumIndexedSum):
 
 
 def _check_kets(*ops, same_space=False, disjunct_space=False):
-    """Check that all operands are from the same Hilbert space."""
+    """Check that all operands are Kets from the same Hilbert space."""
     if not all([(isinstance(o, State) and o.isket) for o in ops]):
         raise TypeError("All operands must be Kets")
     if same_space:
