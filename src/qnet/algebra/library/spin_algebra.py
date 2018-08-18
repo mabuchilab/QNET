@@ -90,7 +90,7 @@ class SpinSpace(LocalSpace):
         bottom = -spin
         if basis is None:
             basis = tuple([
-                SpinIndex(bottom + n).evaluate({}) for n in range(dimension)])
+                SpinIndex._sym_to_str(bottom + n) for n in range(dimension)])
         else:
             # sometimes people don't think and use some of the "canonical" TLS
             # labels in the wrong order. We can catch it, so why not?

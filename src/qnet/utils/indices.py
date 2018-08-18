@@ -255,6 +255,25 @@ class SpinIndex(StrLabel):
             else:
                 return "%d/%d" % (int(numer), int(denom))
 
+    @staticmethod
+    def _sym_to_str(sym):
+        if sym.is_integer:
+            int_val = int(sym)
+            if int_val > 0:
+                return "+" + str(int_val)
+            else:
+                return str(int_val)
+        else:  # half-integer
+            numer, denom = sym.as_numer_denom()
+            if not (numer.is_integer and denom == 2):
+                raise ValueError(
+                    "SpinIndex must evaluate to an integer or "
+                    "half-integer, not %s" % str(sym))
+            if numer > 0:
+                return "+%d/%d" % (int(numer), int(denom))
+            else:
+                return "%d/%d" % (int(numer), int(denom))
+
 
 # Index Ranges
 
