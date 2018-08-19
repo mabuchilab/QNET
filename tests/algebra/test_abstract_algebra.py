@@ -173,8 +173,7 @@ def test_nested_doit():
     assert expr.doit() == ZeroOperator
     # testing that `indices=(i, )` does not throw an error in the recursion,
     # when i no longer occurs in the sum
-    A_1, A_2, A_3 = (A(i).substitute({i: n}) for n in (1, 2, 3))
     assert expr.doit(indices=(i, )) == Sum(j, 1, 3)(
         OperatorPlus(
-            -A(j) * A_1, -A(j) * A_2, -A(j) * A_3,
-            A_1 * A(j), A_2 * A(j), A_3 * A(j)))
+             A(1) * A(j), A(2) * A(j), A(3) * A(j),
+             -A(j) * A(1), -A(j) * A(2), -A(j) * A(3)))

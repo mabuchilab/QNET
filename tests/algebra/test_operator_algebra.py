@@ -3,7 +3,7 @@ import pytest
 
 from numpy import (
     array as np_array, int_ as np_int, float_ as np_float)
-from sympy import symbols, sqrt, I, exp, sympify, Idx
+from sympy import symbols, sqrt, I, exp, sympify
 
 from qnet import (
     OperatorSymbol, II, IdentityOperator, ZeroOperator, OperatorPlus,
@@ -11,7 +11,7 @@ from qnet import (
     ScalarTimesOperator, OperatorTimes, OperatorDerivative, Jz, Jplus, Jminus,
     Destroy, Create, Phase, Displace, Matrix, identity_matrix, LocalSpace,
     TrivialSpace, ProductSpace, FockIndex, SpinSpace, ascii, BasisNotSetError,
-    adjoint, NoConjugateMatrix, BasisKet, ZeroKet)
+    adjoint, NoConjugateMatrix, BasisKet, ZeroKet, IdxSym)
 
 
 def test_identity_singleton():
@@ -165,7 +165,7 @@ def test_local_sigma_raise_jk():
     assert sig.raise_jk(j_incr=-2, k_incr=-2) == ZeroOperator
     assert sig.raise_jk(j_incr=-1, k_incr=1) == LocalSigma(0, 1, hs=hil_ge)
     # symbolic labels
-    i = Idx('i')
+    i = IdxSym('i')
     sig = LocalProjector(FockIndex(i), hs='1')
     assert sig.raise_jk() == sig
     assert (

@@ -286,13 +286,11 @@ def test_unicode_ket_elements():
 def test_unicode_symbolic_labels():
     """Test unicode representation of symbols with symbolic labels"""
     i = IdxSym('i')
-    i_sym = symbols('i')
     j = IdxSym('j')
     hs0 = LocalSpace(0)
     hs1 = LocalSpace(1)
     Psi = IndexedBase('Psi')
     assert unicode(BasisKet(FockIndex(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
-    assert unicode(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2 i⟩⁽⁰⁾'
     assert unicode(KetSymbol(StrLabel(2 * i), hs=hs0)) == '|2 i⟩⁽⁰⁾'
     assert (
         unicode(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Ψ_ij⟩^(0⊗1)')

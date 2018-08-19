@@ -84,9 +84,6 @@ class IndexedSum(Operation, metaclass=ABCMeta):
             term = self.term.substitute(mapping)
             if isinstance(term, ScalarValue._val_types):
                 term = ScalarValue.create(term)
-            term = term.apply_rule(
-                wc('label', head=SymbolicLabelBase),
-                lambda label: label.evaluate(mapping))
             assert isinstance(term, Expression)
             yield term
 
@@ -188,9 +185,7 @@ class IndexedSum(Operation, metaclass=ABCMeta):
                     "Cannot expand %s: more than %s terms"
                     % (self, self._expand_limit))
         if len(other_ranges) == 0:
-            res = res_term.apply_rules(rules=[(
-                wc('label', head=SymbolicLabelBase),
-                lambda label: label.evaluate(mapping))])
+            res = res_term
         else:
             res = self.__class__.create(res_term, *other_ranges)
             res = res._doit_over_indices(indices=indices)

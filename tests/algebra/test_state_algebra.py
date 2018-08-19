@@ -1,6 +1,6 @@
 import unittest
 
-from sympy import sqrt, exp, I, pi, Idx, IndexedBase, symbols, factorial
+from sympy import sqrt, exp, I, pi, IndexedBase, symbols, factorial
 
 from qnet.algebra.core.abstract_algebra import _apply_rules
 from qnet.algebra.core.scalar_algebra import ScalarValue
@@ -291,23 +291,19 @@ def eval_lb(expr, mapping):
     """Evaluate symbolic labels with the given mapping"""
     return _apply_rules(expr, rules=[(
         wc('label', head=SymbolicLabelBase),
-        lambda label: label.evaluate(mapping))])
+        lambda label: label.substitute(mapping))])
 
 
 def test_ket_symbolic_labels():
     """Test that we can instantiate Kets with symbolic labels"""
-    i = Idx('i')
-    i_sym = symbols('i')
-    j = Idx('j')
+    i = IdxSym('i')
+    j = IdxSym('j')
     hs0 = LocalSpace(0)
     hs1 = LocalSpace(1)
     Psi = IndexedBase('Psi')
 
     assert (
         eval_lb(BasisKet(FockIndex(2 * i), hs=hs0), {i: 2}) ==
-        BasisKet(4, hs=hs0))
-    assert (
-        eval_lb(BasisKet(FockIndex(2 * i_sym), hs=hs0), {i_sym: 2}) ==
         BasisKet(4, hs=hs0))
     with pytest.raises(TypeError) as exc_info:
         BasisKet(IntIndex(2 * i), hs=hs0)
@@ -326,7 +322,7 @@ def test_ket_symbolic_labels():
         eval_lb(KetSymbol(FockIndex(2 * i), hs=hs0), {i: 2})
     assert "type of label must be str" in str(exc_info.value)
 
-    assert StrLabel(Psi[i, j]).evaluate({i: 'i', j: 'j'}) == 'Psi_ij'
+    assert StrLabel(Psi[i, j]).substitute({i: 'i', j: 'j'}) == 'Psi_ij'
     assert(
         eval_lb(
             KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1), {i: 'i', j: 'j'}) ==

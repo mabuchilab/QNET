@@ -2,7 +2,7 @@ from functools import partial
 
 import pytest
 
-from sympy import symbols, sqrt, exp, I, Rational, Idx, IndexedBase
+from sympy import symbols, sqrt, exp, I, Rational, IndexedBase
 
 from qnet import (
     CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,
@@ -30,7 +30,7 @@ def test_ascii_scalar():
     assert latex(1j) == '1i'
     assert latex('foo') == 'foo'
 
-    i = Idx('i')
+    i = IdxSym('i')
     alpha = IndexedBase('alpha')
     assert latex(i) == 'i'
     assert latex(alpha[i]) == r'\alpha_{i}'
@@ -408,18 +408,14 @@ def test_tex_ket_elements():
 
 def test_tex_symbolic_labels():
     """Test tex representation of symbols with symbolic labels"""
-    i = Idx('i')
-    i_sym = symbols('i')
-    j = Idx('j')
+    i = IdxSym('i')
+    j = IdxSym('j')
     hs0 = LocalSpace(0)
     hs1 = LocalSpace(1)
     Psi = IndexedBase('Psi')
     with configure_printing(tex_use_braket=True):
         assert (
             latex(BasisKet(FockIndex(2 * i), hs=hs0)) ==
-            r'\Ket{2 i}^{(0)}')
-        assert (
-            latex(BasisKet(FockIndex(2 * i_sym), hs=hs0)) ==
             r'\Ket{2 i}^{(0)}')
         assert (latex(
             KetSymbol(StrLabel(2 * i), hs=hs0)) ==

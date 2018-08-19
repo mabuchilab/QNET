@@ -30,7 +30,7 @@ def test_ascii_scalar():
     assert ascii(1j) == ascii(ScalarValue(1j)) == '1j'
     assert ascii('foo') == 'foo'
 
-    i = Idx('i')
+    i = IdxSym('i')
     alpha = IndexedBase('alpha')
     assert ascii(i) == ascii(ScalarValue(i)) == 'i'
     assert ascii(alpha[i]) == ascii(ScalarValue(alpha[i])) == 'alpha_i'
@@ -281,14 +281,12 @@ def test_ascii_ket_elements():
 
 def test_ascii_symbolic_labels():
     """Test ascii representation of symbols with symbolic labels"""
-    i = Idx('i')
-    i_sym = symbols('i')
-    j = Idx('j')
+    i = IdxSym('i')
+    j = IdxSym('j')
     hs0 = LocalSpace(0)
     hs1 = LocalSpace(1)
     Psi = IndexedBase('Psi')
     assert ascii(BasisKet(FockIndex(2 * i), hs=hs0)) == '|2*i>^(0)'
-    assert ascii(BasisKet(FockIndex(2 * i_sym), hs=hs0)) == '|2*i>^(0)'
     assert ascii(KetSymbol(StrLabel(2 * i), hs=hs0)) == '|2*i>^(0)'
     assert (
         ascii(KetSymbol(StrLabel(Psi[i, j]), hs=hs0*hs1)) == '|Psi_ij>^(0*1)')

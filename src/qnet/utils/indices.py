@@ -8,7 +8,7 @@ from sympy.core.cache import cacheit as sympy_cacheit
 from ._attrs import immutable_attribs
 
 __all__ = [
-    'IdxSym', 'IntIndex', 'FockIndex', 'StrLabel', 'SpinIndex',
+    'IdxSym', 'IntIndex', 'FockIndex', 'StrLabel', 'FockLabel', 'SpinIndex',
     'IndexOverList', 'IndexOverRange', 'IndexOverFockSpace']
 
 __private__ = [
@@ -185,11 +185,31 @@ class IdxSym(sympy.Symbol):
 
 @immutable_attribs
 class SymbolicLabelBase(metaclass=ABCMeta):
-    """Base class for symbolic labels"""
-    expr = attr.ib(validator=attr.validators.instance_of(sympy.Basic))
+    """Base class for symbolic labels
+
+    A symbolic label is a SymPy expression that contains one or more
+    :class:`IdxSym`, and can be rendered into an integer or string label by
+    substituting integer values for each :class:`IdxSym`.
+
+    See :class:`IntIndex` for an example.
+    """
+    expr = attr.ib()
+
+    @expr.validator
+    def _validate_expr(self, attribute, value):
+        if not isinstance(value, sympy.Basic):
+            raise ValueError("expr must be a sympy formula")
+        if not self._has_idx_syms(value):
+            raise ValueError("expr must contain at least one IdxSym")
+
+    @staticmethod
+    def _has_idx_syms(expr):
+        return any([isinstance(sym, IdxSym) for sym in expr.free_symbols])
 
     @abstractmethod
-    def evaluate(self, mapping):
+    def _render(self, expr):
+        """Render `expr` into a a label. It can be assumed that `expr` does not
+        contain any :class:`IdxSym`"""
         pass
 
     def _sympy_(self):
@@ -198,15 +218,40 @@ class SymbolicLabelBase(metaclass=ABCMeta):
         return self.expr
 
     def substitute(self, var_map):
-        return self.__class__(expr=self.expr.subs(var_map))
+        """Substitute in the expression describing the label.
+
+        If the result of the substitution no longer contains any
+        :class:`IdxSym`, this returns a "rendered" label.
+        """
+        new_expr = self.expr.subs(var_map)
+        if self._has_idx_syms(new_expr):
+            return self.__class__(expr=new_expr)
+        else:
+            return self._render(new_expr)
 
     @property
     def free_symbols(self):
+        """Free symbols in the expression describing the label"""
         return self.expr.free_symbols
 
 
 class IntIndex(SymbolicLabelBase):
-    """A symbolic label that evaluates to an integer"""
+    """A symbolic label that evaluates to an integer
+
+    The label can be rendered via :meth:`substitute`::
+
+        >>> i, j = symbols('i, j', cls=IdxSym)
+        >>> idx = IntIndex(i+j)
+        >>> idx.substitute({i: 1, j:1})
+        2
+
+    An "incomplete" substitution (anything that still leaves a :class:`IdxSym`
+    in the label expression) will result in another :class:`IntIndex`
+    instance::
+
+        >>> idx.substitute({i: 1})
+        IntIndex(Add(IdxSym('j', integer=True), Integer(1)))
+    """
 
     def __mul__(self, other):
         return other * self.expr
@@ -214,8 +259,8 @@ class IntIndex(SymbolicLabelBase):
     def __add__(self, other):
         return self.expr + other
 
-    def evaluate(self, mapping):
-        return int(self.expr.subs(mapping))
+    def _render(self, expr):
+        return int(expr)
 
 
 class FockIndex(IntIndex):
@@ -223,52 +268,75 @@ class FockIndex(IntIndex):
 
 
 class StrLabel(SymbolicLabelBase):
-    """Symbolic label that evaluates to a string"""
+    """Symbolic label that evaluates to a string
 
-    def evaluate(self, mapping):
+    Example:
+        >>> i = symbols('i', cls=IdxSym)
+        >>> A = symbols('A', cls=sympy.IndexedBase)
+        >>> lbl = StrLabel(A[i])
+        >>> lbl.substitute({i: 1})
+        'A_1'
+    """
+
+    def _render(self, expr):
         from qnet.printing.sympy import SympyStrPrinter
-        return SympyStrPrinter().doprint(self.expr.subs(mapping))
+        return SympyStrPrinter().doprint(expr)
+
+
+@immutable_attribs
+class FockLabel(StrLabel):
+    """Symbolic label that evaluates to the label of a basis state
+
+    This evaluates first to an index, and then to the label for the basis state
+    of the Hilbert space for that index::
+
+        >>> hs = LocalSpace('tls', basis=('g', 'e'))
+        >>> i = symbols('i', cls=IdxSym)
+        >>> lbl = FockLabel(i, hs=hs)
+        >>> lbl.substitute({i: 0})
+        'g'
+    """
+    hs = attr.ib()
+
+    def _render(self, expr):
+        i = int(expr)
+        return self.hs.basis_labels[i]
 
 
 class SpinIndex(StrLabel):
     """Symbolic label for a spin degree of freedom
 
-    This evaluates to a string representation of an integer or half-integer
+    This evaluates to a string representation of an integer or half-integer.
+    For values of e.g.  1, -1, 1/2, -1/2, the rendered resulting string is
+    "+1", "-1", "+1/2", "-1/2", respectively (in agreement with the convention
+    for the basis labels in a spin degree of freedom)
+
+        >>> i = symbols('i', cls=IdxSym)
+        >>> lbl = SpinIndex(i/2)
+        >>> lbl.substitute({i: 1})
+        '+1/2'
+
+    Rendering an expression that is not integer or half-integer valued results
+    in a :exc:`ValueError`.
     """
 
-    def evaluate(self, mapping):
-        sym = self.expr.subs(mapping)
-        if sym.is_integer:
-            int_val = int(sym)
-            if int_val > 0:
-                return "+" + str(int_val)
-            else:
-                return str(int_val)
-        else:  # half-integer
-            numer, denom = sym.as_numer_denom()
-            if not (numer.is_integer and denom == 2):
-                raise ValueError(
-                    "SpinIndex must evaluate to an integer or half-integer, "
-                    "not %s" % str(sym))
-            if numer > 0:
-                return "+%d/%d" % (int(numer), int(denom))
-            else:
-                return "%d/%d" % (int(numer), int(denom))
+    def _render(self, expr):
+        return self._static_render(expr)
 
     @staticmethod
-    def _sym_to_str(sym):
-        if sym.is_integer:
-            int_val = int(sym)
+    def _static_render(expr):
+        if expr.is_integer:
+            int_val = int(expr)
             if int_val > 0:
                 return "+" + str(int_val)
             else:
                 return str(int_val)
         else:  # half-integer
-            numer, denom = sym.as_numer_denom()
+            numer, denom = expr.as_numer_denom()
             if not (numer.is_integer and denom == 2):
                 raise ValueError(
                     "SpinIndex must evaluate to an integer or "
-                    "half-integer, not %s" % str(sym))
+                    "half-integer, not %s" % str(expr))
             if numer > 0:
                 return "+%d/%d" % (int(numer), int(denom))
             else:
