@@ -183,7 +183,9 @@ class Eq():
 
         Like :meth:`apply_mtd`, but modifying only the right-hand-side.
         """
-        new_lhs = None
+        new_lhs = self.lhs
+        if cont:
+            new_lhs = None
         new_rhs = getattr(self.rhs, mtd)(*args, **kwargs)
         new_tag = tag
         return self._update(new_lhs, new_rhs, new_tag, cont)
