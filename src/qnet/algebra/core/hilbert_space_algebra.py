@@ -18,7 +18,7 @@ from .abstract_algebra import (
 from .algebraic_properties import (
     assoc, idem, filter_neutral, convert_to_spaces, empty_trivial, )
 from .exceptions import AlgebraError, BasisNotSetError
-from ...utils.indices import SymbolicLabelBase, FockIndex
+from ...utils.indices import SymbolicLabelBase, FockIndex, FockLabel
 from ...utils.ordering import KeyTuple
 from ...utils.singleton import Singleton, singleton_object
 
@@ -208,7 +208,8 @@ class LocalSpace(HilbertSpace, Expression):
     """
     _rx_label = re.compile('^[A-Za-z0-9.+-]+(_[A-Za-z0-9().+-]+)?$')
 
-    _basis_label_types = (int, str, FockIndex)  # acceptable types for labels
+    _basis_label_types = (int, str, FockIndex, FockLabel)
+    # acceptable types for labels
 
     def __init__(
             self, label, *, basis=None, dimension=None, local_identifiers=None,
@@ -295,8 +296,9 @@ class LocalSpace(HilbertSpace, Expression):
         """return tuple (label, ind) from `label_or_index`
 
         If `label_or_int` is a :class:`.SymbolicLabelBase` sub-instance, it
-        will be returned unchanged for both `label` and `ind`. No checks are
-        performed in this case.
+        will be stored in the `label` attribute, and the `ind` attribute will
+        return the value of the label's :attr:`.FockIndex.fock_index`
+        attribute.  No checks are performed for symbolic labels.
 
         :meth:`_check_basis_label_type` is called on `label_or_index`.
 
@@ -337,7 +339,13 @@ class LocalSpace(HilbertSpace, Expression):
                 label = str(label_or_index)
         elif isinstance(label_or_index, SymbolicLabelBase):
             label = label_or_index
-            ind = label_or_index
+            try:
+                ind = label_or_index.fock_index
+            except AttributeError:
+                raise TypeError(
+                    "label_or_index must define a fock_index attribute in "
+                    "order to be used for identifying a level in a Hilbert "
+                    "space")
         else:
             raise TypeError(
                 "label_or_index must be an int or str, or SymbolicLabelBase, "

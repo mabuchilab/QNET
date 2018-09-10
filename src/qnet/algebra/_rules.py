@@ -175,7 +175,10 @@ def _algebraic_rules_operator():
                 pattern(LocalSigma, ra, rb, hs=ls),
                 pattern(LocalSigma, rc, rd, hs=ls)),
             lambda ls, ra, rb, rc, rd: (
-                KroneckerDelta(rb, rc) * LocalSigma.create(ra, rd, hs=ls)))),
+                KroneckerDelta(
+                    BasisKet(rb, hs=ls).index,
+                    BasisKet(rc, hs=ls).index) *
+                LocalSigma.create(ra, rd, hs=ls)))),
 
         # Harmonic oscillator rules
         ('R009', (
@@ -338,7 +341,11 @@ def _algebraic_rules_operator():
             lambda ls: ZeroOperator)),
         ('R010', (
             pattern_head(pattern(LocalSigma, n, m, hs=ls), over_space=ls),
-            lambda ls, n, m: KroneckerDelta(n, m) * IdentityOperator)),
+            lambda ls, n, m:
+                KroneckerDelta(
+                    BasisKet(n, hs=ls).index,
+                    BasisKet(m, hs=ls).index) *
+                IdentityOperator)),
         ('R011', (
             pattern_head(A, over_space=ls),
             lambda ls, A: factor_for_trace(ls, A))),
@@ -567,7 +574,7 @@ def _algebraic_rules_state():
     A_local = wc("A", head=LocalOperator)
     B_local = wc("B", head=LocalOperator)
 
-    nsym = wc("nsym", head=(int, str, SympyBasic))
+    int_str_label = wc("lb", head=(int, str))
 
     Psi = wc("Psi", head=State)
     Phi = wc("Phi", head=State)
@@ -578,6 +585,8 @@ def _algebraic_rules_state():
     ls = wc("ls", head=LocalSpace)
 
     basisket = wc('basisket', BasisKet, kwargs={'hs': ls})
+    ket_a = wc('a', BasisKet)
+    ket_b = wc('b', BasisKet)
 
     indranges__ = wc("indranges__", head=IndexRangeBase)
     sum = wc('sum', head=KetIndexedSum)
@@ -619,7 +628,10 @@ def _algebraic_rules_state():
             pattern_head(
                 pattern(LocalSigma, n, m, hs=ls),
                 pattern(BasisKet, k, hs=ls)),
-            lambda ls, n, m, k: KroneckerDelta(m, k) * BasisKet(n, hs=ls))),
+            lambda ls, n, m, k:
+                KroneckerDelta(
+                    BasisKet(m, hs=ls).index, BasisKet(k, hs=ls).index) *
+                BasisKet(n, hs=ls))),
 
         # harmonic oscillator
         ('R006', (  # a^+ |n> = sqrt(n+1) * |n+1>
@@ -726,13 +738,9 @@ def _algebraic_rules_state():
             lambda Phi: 0)),
         ('R003', (
             pattern_head(
-                pattern(BasisKet, m, hs=ls), pattern(BasisKet, n, hs=ls)),
-            lambda ls, m, n: KroneckerDelta(m, n))),
-        ('R004', (
-            pattern_head(
-                pattern(BasisKet, nsym, hs=ls),
-                pattern(BasisKet, nsym, hs=ls)),
-            lambda ls, nsym: 1)),
+                ket_a, ket_b),
+            lambda a, b: KroneckerDelta(a.index, b.index))),
+        # 'R004' -- deleted
         ('R005', (
             pattern_head(Psi_tensor, Phi_tensor),
             lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create))),

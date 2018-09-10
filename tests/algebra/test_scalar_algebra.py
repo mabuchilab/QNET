@@ -1,13 +1,14 @@
 from qnet import (
     ScalarTimesOperator, OperatorSymbol, KetSymbol, BraKet, IdxSym,
     KetIndexedSum, BasisKet, FockIndex, LocalSpace, IndexOverRange,
-    ZeroOperator, Bra, ZeroKet, Sum)
+    ZeroOperator, Bra, ZeroKet, Sum, KroneckerDelta)
 from qnet.algebra.core.scalar_algebra import (
     Scalar, ScalarExpression, ScalarValue, ScalarPlus, ScalarTimes,
     ScalarPower, sqrt, Zero, One, ScalarIndexedSum)
 from sympy import (
     Basic as SympyBasic, symbols, sympify, SympifyError, sqrt as sympy_sqrt,
-    IndexedBase, zoo as sympy_infinity, I)
+    IndexedBase, zoo as sympy_infinity, I,
+    KroneckerDelta as SympyKroneckerDelta)
 
 import pytest
 import numpy as np
@@ -922,3 +923,32 @@ def test_forwarded_attributes():
         five.is_positive
     with pytest.raises(AttributeError):
         five.as_numer_denom()
+
+
+def test_kronecker_delta():
+    """Test of KroneckerDelta, in addition to the doctest"""
+    i, j = IdxSym('i'), IdxSym('j')
+
+    delta_ij = KroneckerDelta(i, j)
+    assert isinstance(delta_ij, Scalar)
+    assert delta_ij != Zero
+    assert delta_ij != One
+    assert isinstance(delta_ij.val, SympyKroneckerDelta)
+    assert delta_ij.substitute({i: 1, j: 1}) == One
+    assert delta_ij.substitute({i: 0, j: 1}) == Zero
+
+    delta_i1 = KroneckerDelta(i, 1)
+    assert isinstance(delta_i1, Scalar)
+    assert delta_i1 != Zero
+    assert delta_i1 != One
+    assert isinstance(delta_i1.val, SympyKroneckerDelta)
+    assert delta_i1.substitute({i: 1}) == One
+    assert delta_i1.substitute({i: 0}) == Zero
+
+    delta_1i = KroneckerDelta(1, i)
+    assert isinstance(delta_1i, Scalar)
+    assert delta_1i != Zero
+    assert delta_1i != One
+    assert isinstance(delta_1i.val, SympyKroneckerDelta)
+    assert delta_i1.substitute({i: 1}) == One
+    assert delta_i1.substitute({i: 0}) == Zero

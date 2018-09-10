@@ -290,7 +290,7 @@ class BasisKet(LocalKet, KetSymbol):
     @property
     def args(self):
         """Tuple containing `label_or_index` as its only element."""
-        if self.space.has_basis:
+        if self.space.has_basis or isinstance(self.label, SymbolicLabelBase):
             return (self.label, )
         else:
             return (self.index, )
@@ -299,13 +299,23 @@ class BasisKet(LocalKet, KetSymbol):
     def index(self):
         """The index of the state in the Hilbert space basis
 
-        >>> hs =  LocalSpace('tls', basis=('g', 'e'))
+        >>> hs = LocalSpace('tls', basis=('g', 'e'))
         >>> BasisKet('g', hs=hs).index
         0
         >>> BasisKet('e', hs=hs).index
         1
         >>> BasisKet(1, hs=hs).index
         1
+
+        For a :class:`BasisKet` with an indexed label, this may return a sympy
+        expression::
+
+        >>> hs = SpinSpace('s', spin='3/2')
+        >>> i = symbols('i', cls=IdxSym)
+        >>> lbl = SpinIndex(i/2, hs)
+        >>> ket = BasisKet(lbl, hs=hs)
+        >>> ket.index
+        i/2 + 3/2
         """
         return self._index
 
@@ -330,11 +340,17 @@ class BasisKet(LocalKet, KetSymbol):
             ZeroKet
 
         """
-        try:
-            next_index = self.space.next_basis_label_or_index(self.index, n)
-            return BasisKet(next_index, hs=self.space)
-        except IndexError:
-            return ZeroKet
+        if isinstance(self.label, SymbolicLabelBase):
+            next_label = self.space.next_basis_label_or_index(
+                self.label, n)
+            return BasisKet(next_label, hs=self.space)
+        else:
+            try:
+                next_index = self.space.next_basis_label_or_index(
+                    self.index, n)
+                return BasisKet(next_index, hs=self.space)
+            except IndexError:
+                return ZeroKet
 
     def prev(self, n=1):
         """Move down by `n` steps in the Hilbert space, cf. :meth:`next`.

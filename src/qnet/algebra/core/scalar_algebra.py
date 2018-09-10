@@ -1105,40 +1105,33 @@ class ScalarDerivative(QuantumDerivative, Scalar):
 def KroneckerDelta(i, j):
     """Kronecker delta symbol
 
-    If ``i == j``, return :class:`One`.
-    Otherwise, if `i` and `j` are Sympy or
-    :class:`.SymbolicLabelBase` objects, return a :class:`ScalarValue` wrapping
-    SymPy's :class:`~sympy.functions.special.tensor_functions.KroneckerDelta`,
-    or :class:`Zero` otherwise::
+    Return :class:`One` (`i` equals `j`)), :class:`Zero` (`i` and `j` are
+    non-symbolic an unequal), or a :class:`ScalarValue` wrapping SymPy's
+    :class:`~sympy.functions.special.tensor_functions.KroneckerDelta`.
 
         >>> i, j = IdxSym('i'), IdxSym('j')
-        >>> a, b = FockIndex(IdxSym('a')), FockIndex(IdxSym('b'))
         >>> KroneckerDelta(i, i)
         One
         >>> KroneckerDelta(1, 2)
         Zero
         >>> KroneckerDelta(i, j)
         KroneckerDelta(i, j)
-        >>> KroneckerDelta(a, b)
-        KroneckerDelta(a, b)
 
-    Unlike in Sympy's
-    :class:`~sympy.functions.special.tensor_functions.KroneckerDelta`,
-    `i` and `j` will not be sympified
+    Raises:
+        TypeError: if `i` or `j` is not an integer or sympy expression. There
+        is no automatic sympification of `i` and `j`.
     """
-    from qnet.algebra.core.scalar_algebra import ScalarValue, Zero, One
+    from qnet.algebra.core.scalar_algebra import ScalarValue, One
+    if not isinstance(i, (int, sympy.Basic)):
+        raise TypeError(
+            "i is not an integer or sympy expression: %s" % type(i))
+    if not isinstance(j, (int, sympy.Basic)):
+        raise TypeError(
+            "j is not an integer or sympy expression: %s" % type(j))
     if i == j:
         return One
     else:
-        if isinstance(i, sympy.Basic) and isinstance(j, sympy.Basic):
-            return ScalarValue(sympy.KroneckerDelta(i, j))
-        elif (
-                isinstance(i, SymbolicLabelBase) and
-                isinstance(j, SymbolicLabelBase)):
-            return ScalarValue(sympy.KroneckerDelta(i.expr, j.expr))
-
-        else:
-            return Zero
+        return ScalarValue.create(sympy.KroneckerDelta(i, j))
 
 
 def sqrt(scalar):

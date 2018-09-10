@@ -212,11 +212,6 @@ class SymbolicLabelBase(metaclass=ABCMeta):
         contain any :class:`IdxSym`"""
         pass
 
-    def _sympy_(self):
-        # sympyfication allows the symbolic label to be used in other sympy
-        # expressions (which happens in some algebraic rules)
-        return self.expr
-
     def substitute(self, var_map):
         """Substitute in the expression describing the label.
 
@@ -266,6 +261,10 @@ class IntIndex(SymbolicLabelBase):
 class FockIndex(IntIndex):
     """Symbolic index labeling a basis state in a :class:`.LocalSpace`"""
 
+    @property
+    def fock_index(self):
+        return self.expr
+
 
 class StrLabel(SymbolicLabelBase):
     """Symbolic label that evaluates to a string
@@ -302,7 +301,25 @@ class FockLabel(StrLabel):
         i = int(expr)
         return self.hs.basis_labels[i]
 
+    @property
+    def fock_index(self):
+        return self.expr
 
+    def substitute(self, var_map):
+        """Substitute in the expression describing the label.
+
+        If the result of the substitution no longer contains any
+        :class:`IdxSym`, this returns a "rendered" label.
+        """
+        new_expr = self.expr.subs(var_map)
+        new_hs = self.hs.substitute(var_map)
+        if self._has_idx_syms(new_expr):
+            return self.__class__(expr=new_expr, hs=new_hs)
+        else:
+            return self._render(new_expr)
+
+
+@immutable_attribs
 class SpinIndex(StrLabel):
     """Symbolic label for a spin degree of freedom
 
@@ -312,13 +329,21 @@ class SpinIndex(StrLabel):
     for the basis labels in a spin degree of freedom)
 
         >>> i = symbols('i', cls=IdxSym)
-        >>> lbl = SpinIndex(i/2)
+        >>> hs = SpinSpace('s', spin='1/2')
+        >>> lbl = SpinIndex(i/2, hs)
         >>> lbl.substitute({i: 1})
         '+1/2'
 
     Rendering an expression that is not integer or half-integer valued results
     in a :exc:`ValueError`.
     """
+    hs = attr.ib()
+
+    @hs.validator
+    def _validate_hs(self, attribute, value):
+        from qnet.algebra.library.spin_algebra import SpinSpace
+        if not isinstance(value, SpinSpace):
+            raise ValueError("hs must be a SpinSpace instance")
 
     def _render(self, expr):
         return self._static_render(expr)
@@ -341,6 +366,23 @@ class SpinIndex(StrLabel):
                 return "+%d/%d" % (int(numer), int(denom))
             else:
                 return "%d/%d" % (int(numer), int(denom))
+
+    @property
+    def fock_index(self):
+        return self.expr + self.hs.spin
+
+    def substitute(self, var_map):
+        """Substitute in the expression describing the label.
+
+        If the result of the substitution no longer contains any
+        :class:`IdxSym`, this returns a "rendered" label.
+        """
+        new_expr = self.expr.subs(var_map)
+        new_hs = self.hs.substitute(var_map)
+        if self._has_idx_syms(new_expr):
+            return self.__class__(expr=new_expr, hs=new_hs)
+        else:
+            return self._render(new_expr)
 
 
 # Index Ranges

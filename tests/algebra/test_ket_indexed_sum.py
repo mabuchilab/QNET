@@ -376,9 +376,13 @@ def test_tls_norm():
     """Test that calculating the norm of a TLS state results in 1"""
     hs = LocalSpace('tls', dimension=2)
     i = IdxSym('i')
+
+    ket_i = BasisKet(FockIndex(i), hs=hs)
+    nrm = BraKet.create(ket_i, ket_i)
+    assert nrm == 1
+
     psi = KetIndexedSum(
-        (1/sympy.sqrt(2)) * BasisKet(FockIndex(i), hs=hs),
-        IndexOverFockSpace(i, hs))
+        (1/sympy.sqrt(2)) * ket_i, IndexOverFockSpace(i, hs))
     nrm = BraKet.create(psi, psi)
     assert nrm == 1
 

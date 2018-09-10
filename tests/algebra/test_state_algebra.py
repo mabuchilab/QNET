@@ -3,12 +3,13 @@ import unittest
 from sympy import sqrt, exp, I, pi, IndexedBase, symbols, factorial
 
 from qnet.algebra.core.abstract_algebra import _apply_rules
-from qnet.algebra.core.scalar_algebra import ScalarValue
+from qnet.algebra.core.scalar_algebra import (
+    ScalarValue, KroneckerDelta, Zero, One)
 from qnet.algebra.toolbox.core import temporary_rules
 from qnet.algebra.core.operator_algebra import (
         OperatorSymbol, LocalSigma, IdentityOperator, OperatorPlus)
 from qnet.algebra.library.spin_algebra import (
-    Jz, Jplus, Jminus, SpinSpace)
+    Jz, Jplus, Jminus, SpinSpace,SpinBasisKet)
 
 from qnet.algebra.library.fock_operators import (
     Destroy, Create, Phase,
@@ -20,8 +21,8 @@ from qnet.algebra.core.state_algebra import (
     KetBra, KetIndexedSum)
 from qnet.algebra.core.exceptions import UnequalSpaces
 from qnet.utils.indices import (
-    IdxSym, FockIndex, IntIndex, StrLabel, SymbolicLabelBase,
-    IndexOverFockSpace, IndexOverRange)
+    IdxSym, FockIndex, IntIndex, StrLabel, FockLabel, SymbolicLabelBase,
+    IndexOverFockSpace, IndexOverRange, SpinIndex)
 from qnet.algebra.pattern_matching import wc
 import pytest
 
@@ -277,14 +278,108 @@ def test_expand_ketbra():
         KetBra(BasisKet('1', hs=hs), BasisKet('1', hs=hs)))
 
 
-@pytest.mark.xfail
-def test_expand_indexed_operator_times_let():
-    hs = LocalSpace(1, basis=('g', 'e'))
+def test_orthonormality_fock():
+    """Test orthonormality of Fock space BasisKets (including symbolic)"""
+    hs = LocalSpace('tls', basis=('g', 'e'))
+    i = IdxSym('i')
     j = IdxSym('j')
-    expr = OperatorTimesKet(
-        LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs),
-        BasisKet(FockIndex(j), hs=hs))
-    assert expr.expand() == None
+    ket_0 = BasisKet(0, hs=hs)
+    bra_0 = ket_0.dag()
+    ket_1 = BasisKet(1, hs=hs)
+    ket_g = BasisKet('g', hs=hs)
+    bra_g = ket_g.dag()
+    ket_e = BasisKet('e', hs=hs)
+    ket_i = BasisKet(FockIndex(i), hs=hs)
+    ket_j = BasisKet(FockIndex(j), hs=hs)
+    bra_i = ket_i.dag()
+    ket_i_lb = BasisKet(FockLabel(i, hs=hs), hs=hs)
+    ket_j_lb = BasisKet(FockLabel(j, hs=hs), hs=hs)
+    bra_i_lb = ket_i_lb.dag()
+
+    assert bra_0 * ket_1 == Zero
+    assert bra_0 * ket_0 == One
+
+    assert bra_g * ket_g == One
+    assert bra_g * ket_e == Zero
+    assert bra_0 * ket_g == One
+    assert bra_0 * ket_e == Zero
+    assert bra_g * ket_0 == One
+    assert bra_g * ket_1 == Zero
+
+    delta_ij = KroneckerDelta(i, j)
+    delta_i0 = KroneckerDelta(i, 0)
+    delta_0j = KroneckerDelta(0, j)
+    assert bra_i * ket_j == delta_ij
+    assert bra_i * ket_0 == delta_i0
+    assert bra_0 * ket_j == delta_0j
+    assert bra_i * ket_g == delta_i0
+    assert bra_g * ket_j == delta_0j
+    assert delta_ij.substitute({i: 0, j: 0}) == One
+    assert delta_ij.substitute({i: 0, j: 1}) == Zero
+    assert delta_i0.substitute({i: 0}) == One
+    assert delta_i0.substitute({i: 1}) == Zero
+
+    delta_ij = KroneckerDelta(i, j)
+    delta_ig = KroneckerDelta(i, 0)
+    delta_gj = KroneckerDelta(0, j)
+    assert bra_i_lb * ket_j_lb == delta_ij
+    assert bra_i_lb * ket_0 == delta_ig
+    assert bra_0 * ket_j_lb == delta_gj
+    assert bra_i_lb * ket_g == delta_ig
+    assert bra_g * ket_j_lb == delta_gj
+    assert delta_ij.substitute({i: 0, j: 0}) == One
+    assert delta_ij.substitute({i: 0, j: 1}) == Zero
+    assert delta_ig.substitute({i: 0}) == One
+    assert delta_ig.substitute({i: 1}) == Zero
+
+
+def test_orthonormality_spin():
+    hs = SpinSpace('s', spin='1/2')
+    i = IdxSym('i')
+    j = IdxSym('j')
+    ket_dn = SpinBasisKet(-1, 2, hs=hs)
+    ket_up = SpinBasisKet(1, 2, hs=hs)
+    bra_dn = ket_dn.dag()
+    ket_i = BasisKet(SpinIndex(i/2, hs), hs=hs)
+    bra_i = ket_i.dag()
+    ket_j = BasisKet(SpinIndex(j/2, hs), hs=hs)
+
+    assert bra_dn * ket_dn == One
+    assert bra_dn * ket_up == Zero
+
+    delta_ij = KroneckerDelta((i+1)/2, (j+1)/2)
+    delta_i_dn = KroneckerDelta((i+1)/2, 0)
+    delta_dn_j = KroneckerDelta(0, (j+1)/2)
+
+    assert bra_i * ket_j == delta_ij
+    assert bra_i * ket_dn == delta_i_dn
+    assert bra_dn * ket_j == delta_dn_j
+    assert delta_ij.substitute({i: 0, j: 0}) == One
+    assert delta_ij.substitute({i: 0, j: 1}) == Zero
+
+
+def test_indexed_local_sigma():
+    """Test that brakets involving indexed symbols evaluate to Kronecker
+    deltas"""
+    hs = LocalSpace('tls', basis=('g', 'e'))
+    i = IdxSym('i')
+    j = IdxSym('j')
+    ket_i = BasisKet(FockIndex(i), hs=hs)
+    ket_j = BasisKet(FockIndex(j), hs=hs)
+
+    expr = LocalSigma('g', 'e', hs=hs) * ket_i
+    expected = KroneckerDelta(i, 1) * BasisKet('g', hs=hs)
+    assert expr == expected
+    assert expr == LocalSigma(0, 1, hs=hs) * ket_i
+
+    braopket = BraKet(
+        ket_i, OperatorTimesKet(
+            (LocalSigma('g', 'e', hs=hs) + LocalSigma('e', 'g', hs=hs)),
+            ket_j))
+    expr = braopket.expand()
+    assert expr == (
+        KroneckerDelta(i, 0) * KroneckerDelta(1, j) +
+        KroneckerDelta(i, 1) * KroneckerDelta(0, j))
 
 
 def eval_lb(expr, mapping):
