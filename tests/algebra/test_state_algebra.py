@@ -347,9 +347,9 @@ def test_orthonormality_spin():
     assert bra_dn * ket_dn == One
     assert bra_dn * ket_up == Zero
 
-    delta_ij = KroneckerDelta((i+1)/2, (j+1)/2)
-    delta_i_dn = KroneckerDelta((i+1)/2, 0)
-    delta_dn_j = KroneckerDelta(0, (j+1)/2)
+    delta_ij = KroneckerDelta(i, j, simplify=False)
+    delta_i_dn = KroneckerDelta(i, -1, simplify=False)
+    delta_dn_j = KroneckerDelta(-1, j, simplify=False)
 
     assert bra_i * ket_j == delta_ij
     assert bra_i * ket_dn == delta_i_dn

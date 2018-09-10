@@ -5,6 +5,7 @@ from itertools import product as cartesian_product
 
 import numpy
 import sympy
+from sympy.concrete.delta import _simplify_delta
 from numpy import complex128, float64, int64
 
 from .abstract_quantum_algebra import (
@@ -1102,7 +1103,7 @@ class ScalarDerivative(QuantumDerivative, Scalar):
     pass
 
 
-def KroneckerDelta(i, j):
+def KroneckerDelta(i, j, simplify=True):
     """Kronecker delta symbol
 
     Return :class:`One` (`i` equals `j`)), :class:`Zero` (`i` and `j` are
@@ -1116,6 +1117,16 @@ def KroneckerDelta(i, j):
         Zero
         >>> KroneckerDelta(i, j)
         KroneckerDelta(i, j)
+
+    By default, the Kronecker delta is returned in a simplified form, e.g::
+
+        >>> KroneckerDelta((i+1)/2, (j+1)/2)
+        KroneckerDelta(i, j)
+
+    This may be suppressed by setting `simplify` to False::
+
+        >>> KroneckerDelta((i+1)/2, (j+1)/2, simplify=False)
+        KroneckerDelta(i/2 + 1/2, j/2 + 1/2)
 
     Raises:
         TypeError: if `i` or `j` is not an integer or sympy expression. There
@@ -1131,7 +1142,10 @@ def KroneckerDelta(i, j):
     if i == j:
         return One
     else:
-        return ScalarValue.create(sympy.KroneckerDelta(i, j))
+        delta = sympy.KroneckerDelta(i, j)
+        if simplify:
+            delta = _simplify_delta(delta)
+        return ScalarValue.create(delta)
 
 
 def sqrt(scalar):
