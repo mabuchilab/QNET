@@ -1,6 +1,6 @@
 import pytest
 
-from sympy import Rational
+from sympy import Rational, symbols
 
 from qnet.algebra.core.hilbert_space_algebra import (
     LocalSpace, ProductSpace, TrivialSpace, FullSpace)
@@ -9,7 +9,7 @@ from qnet.algebra.library.fock_operators import Destroy
 from qnet.algebra.library.spin_algebra import SpinSpace, SpinBasisKet
 from qnet.algebra.core.state_algebra import (
     KetSymbol, BasisKet, TrivialKet)
-
+from qnet.utils.indices import IdxSym, StrLabel
 
 def test_instantiate_with_basis():
     """Test that a local space can be instantiated with an explicit basis"""
@@ -232,3 +232,15 @@ def test_hs_basis_states():
         FullSpace.dimension
     with pytest.raises(BasisNotSetError):
         FullSpace.basis_states
+
+
+def test_hilbertspace_free_symbols():
+    """Test that Hilbert spaces with an indexed name return the index symbol in
+    free_symbols"""
+    i, j = symbols('i, j', cls=IdxSym)
+    assert LocalSpace(1).free_symbols == set()
+    hs_i = LocalSpace(StrLabel(i))
+    hs_j = LocalSpace(StrLabel(j))
+    assert hs_i.free_symbols == {i}
+    assert hs_j.free_symbols == {j}
+    assert (hs_i * hs_j).free_symbols == {i, j}

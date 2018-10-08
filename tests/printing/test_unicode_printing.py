@@ -90,6 +90,7 @@ def test_unicode_hilbert_elements():
     assert unicode(LocalSpace('kappa')) == 'ℌ_κ'
     assert unicode(TrivialSpace) == 'ℌ_null'
     assert unicode(FullSpace) == 'ℌ_total'
+    assert unicode(LocalSpace(StrLabel(IdxSym('i')))) == 'ℌ_i'
 
 
 def test_unicode_hilbert_operations():

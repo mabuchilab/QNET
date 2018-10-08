@@ -628,18 +628,26 @@ class Expression(metaclass=ABCMeta):
     def free_symbols(self):
         """Set of free SymPy symbols contained within the expression."""
         if self._free_symbols is None:
-            res = set()
-            self._free_symbols = res.union(
+            res = set.union(
+                set([]), # dummy arg (union fails without arguments)
+                *[_free_symbols(val) for val in self.kwargs.values()])
+            res.update(
+                set([]), # dummy arg (update fails without arguments)
                 *[_free_symbols(arg) for arg in self.args])
+            self._free_symbols = res
         return self._free_symbols
 
     @property
     def bound_symbols(self):
         """Set of bound SymPy symbols in the expression"""
         if self._bound_symbols is None:
-            res = set()
-            self._bound_symbols = res.union(
+            res = set.union(
+                set([]), # dummy arg (union fails without arguments)
+                *[_bound_symbols(val) for val in self.kwargs.values()])
+            res.update(
+                set([]), # dummy arg (update fails without arguments)
                 *[_bound_symbols(arg) for arg in self.args])
+            self._bound_symbols = res
         return self._bound_symbols
 
     @property

@@ -88,6 +88,7 @@ def test_ascii_hilbert_elements():
         LocalSpace('\kappa')
     assert ascii(TrivialSpace) == 'H_null'
     assert ascii(FullSpace) == 'H_total'
+    assert ascii(LocalSpace(StrLabel(IdxSym('i')))) == 'H_i'
 
 
 def test_ascii_hilbert_operations():

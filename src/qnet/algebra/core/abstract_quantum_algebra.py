@@ -385,6 +385,7 @@ class QuantumSymbol(QuantumExpression, metaclass=ABCMeta):
             # labels should be included in the free_symbols, too
         except AttributeError:
             res = set()
+        res.update(self._hs.free_symbols)
         return res.union(*[sym.free_symbols for sym in self.sym_args])
 
     def _adjoint(self):

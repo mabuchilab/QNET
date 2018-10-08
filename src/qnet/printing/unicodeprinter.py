@@ -2,6 +2,7 @@
 from sympy.printing.pretty.pretty_symbology import modifier_dict
 from sympy.printing.conventions import split_super_sub
 
+from ..utils.indices import StrLabel
 from .asciiprinter import QnetAsciiPrinter
 from .sympy import SympyUnicodePrinter
 from ._unicode_mappings import render_unicode_sub_super
@@ -76,6 +77,8 @@ class QnetUnicodePrinter(QnetAsciiPrinter):
 
     def _render_str(self, string):
         """Returned a unicodified version of the string"""
+        if isinstance(string, StrLabel):
+            string = string._render(string.expr)
         string = str(string)
         if len(string) == 0:
             return ''

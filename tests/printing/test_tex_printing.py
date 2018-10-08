@@ -143,6 +143,7 @@ def test_tex_hilbert_elements():
     assert latex(LocalSpace('kappa')) == r'\mathcal{H}_{\kappa}'
     assert latex(TrivialSpace) == r'\mathcal{H}_{\text{null}}'
     assert latex(FullSpace) == r'\mathcal{H}_{\text{total}}'
+    assert latex(LocalSpace(StrLabel(IdxSym('i')))) == '\mathcal{H}_{i}'
 
 
 def test_tex_hilbert_operations():

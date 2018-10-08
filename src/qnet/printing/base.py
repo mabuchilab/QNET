@@ -4,6 +4,7 @@ from sympy.core.basic import Basic as SympyBasic
 from sympy.printing.printer import Printer as SympyPrinter
 
 from ..algebra.core.scalar_algebra import Scalar
+from ..utils.indices import StrLabel
 from .sympy import SympyStrPrinter
 from ._render_head_repr import render_head_repr
 
@@ -84,6 +85,8 @@ class QnetBasePrinter(SympyPrinter):
         super().__init__(settings=qnet_settings)
 
     def _render_str(self, string):
+        if isinstance(string, StrLabel):
+            string = string._render(string.expr)
         return str(string)
 
     def emptyPrinter(self, expr):

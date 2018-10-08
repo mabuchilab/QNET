@@ -8,6 +8,7 @@ from sympy.printing.conventions import split_super_sub
 from numpy import complex128
 
 from ..utils.singleton import Singleton
+from ..utils.indices import StrLabel
 from .asciiprinter import QnetAsciiPrinter
 from ._precedence import precedence, PRECEDENCE
 from .sympy import SympyLatexPrinter
@@ -72,6 +73,8 @@ class QnetLatexPrinter(QnetAsciiPrinter):
 
     def _render_str(self, string):
         """Returned a texified version of the string"""
+        if isinstance(string, StrLabel):
+            string = string._render(string.expr)
         string = str(string)
         if len(string) == 0:
             return ''

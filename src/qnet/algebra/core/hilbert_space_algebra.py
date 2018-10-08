@@ -18,7 +18,7 @@ from .abstract_algebra import (
 from .algebraic_properties import (
     assoc, idem, filter_neutral, convert_to_spaces, empty_trivial, )
 from .exceptions import AlgebraError, BasisNotSetError
-from ...utils.indices import SymbolicLabelBase, FockIndex, FockLabel
+from ...utils.indices import SymbolicLabelBase, FockIndex, FockLabel, StrLabel
 from ...utils.ordering import KeyTuple
 from ...utils.singleton import Singleton, singleton_object
 
@@ -172,7 +172,8 @@ class LocalSpace(HilbertSpace, Expression):
     """Hilbert space for a single degree of freedom.
 
     Args:
-        label (str or int): label (subscript) of the Hilbert space
+        label (str or int or StrLabel): label (subscript) of the
+            Hilbert space
         basis (tuple or None): Set an explicit basis for the Hilbert space
             (tuple of labels for the basis states)
         dimension (int or None): Specify the dimension $n$ of the Hilbert
@@ -245,10 +246,12 @@ class LocalSpace(HilbertSpace, Expression):
             raise TypeError(
                 "local_identifier must map class names to identifier strings")
 
-        label = str(label)
-        if not self._rx_label.match(label):
-            raise ValueError("label '%s' does not match pattern '%s'"
-                             % (label, self._rx_label.pattern))
+        if not isinstance(label, StrLabel):
+            label = str(label)
+            if not self._rx_label.match(label):
+                raise ValueError(
+                    "label '%s' does not match pattern '%s'"
+                    % (label, self._rx_label.pattern))
         if basis is None:
             if dimension is not None:
                 basis = tuple([str(i) for i in range(dimension)])

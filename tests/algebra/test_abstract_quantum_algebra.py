@@ -5,7 +5,8 @@ from qnet import (
     CIdentity, CircuitZero, IdxSym, BasisKet, OperatorSymbol, FockIndex,
     KetIndexedSum, OperatorIndexedSum, StrLabel, LocalSpace,
     IndexOverList, IndexOverFockSpace, IndexOverRange, Sum, ScalarExpression,
-    QuantumDerivative, OperatorDerivative, Scalar, ScalarTimes)
+    QuantumDerivative, OperatorDerivative, Scalar, ScalarTimes, Create,
+    Destroy)
 import sympy
 from sympy import IndexedBase, symbols
 
@@ -273,3 +274,15 @@ def test_quantum_symbols_with_symargs():
     assert series[0] == OperatorSymbol("A", beta, (alpha + 1)**2, hs=0)
     assert series[2] == half * OperatorDerivative(
         A, derivs=((t[i], 2),), vals=((t[i], beta),))
+
+
+def test_quantum_symbols_with_indexedhs():
+    """Test the fee_symbols method for objects that have a Hilbert space with a
+    sybmolic label, for the example of an OperatorSymbol"""
+    i, j = symbols('i, j', cls=IdxSym)
+    hs_i = LocalSpace(StrLabel(i))
+    hs_j = LocalSpace(StrLabel(j))
+    A = OperatorSymbol("A", hs=hs_i*hs_j)
+    assert A.free_symbols == {i, j}
+    expr = (Create(hs=hs_i)*Destroy(hs=hs_i))
+    assert expr.free_symbols == {i, }
