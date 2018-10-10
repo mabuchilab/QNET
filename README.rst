@@ -14,6 +14,10 @@ QNET
    :alt: Travis Continuous Integration
    :target: https://travis-ci.org/mabuchilab/QNET
 
+.. image:: https://ci.appveyor.com/api/projects/status/x6sh1ko8eivt5xdh?svg=true
+   :alt: Appveyor Continuous Integration
+   :target: https://ci.appveyor.com/project/goerz/qnet
+
 .. image:: https://coveralls.io/repos/github/mabuchilab/QNET/badge.svg?branch=develop
    :alt: Coveralls
    :target: https://coveralls.io/github/mabuchilab/QNET?branch=develop
