@@ -14,6 +14,8 @@ environment:
 
 install:
   # We need wheel installed to build wheels
+  - ps: choco install -y miktex
+  - refreshenv
   - set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PYTHON%\Scripts;%PATH%
   - echo PATH %PATH%
   - conda config --set always_yes yes
@@ -41,7 +43,6 @@ test_script:
   - echo CONDA_PREFIX %CONDA_PREFIX%
   - activate test-environment
   - echo CONDA_PREFIX %CONDA_PREFIX%
-  - type "C:\Python35-x64\lib\site-packages\pyx\text.py"
   - "%PYTHON%\\python.exe -m pytest --doctest-modules --cov=qnet src tests docs/*.rst"
 
 #after_test:
