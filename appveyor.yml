@@ -8,11 +8,24 @@ environment:
     # isn't covered by this document) at the time of writing.
 
     - PYTHON: "C:\\Python35-x64"
+      MINICONDA: C:\Miniconda3
     - PYTHON: "C:\\Python36-x64"
+      MINICONDA: C:\Miniconda3
 
 install:
   # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe -m pip install -e .[simulation,visualization,dev]"
+  - set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PATH%
+  - echo PATH %PATH%
+  - conda config --set always_yes yes
+  - conda update -q conda
+  - conda info -a
+  - conda create -q -n test-environment python=%PYTHON_VERSION% anaconda pytest-cov pytest-xdist coverage sphinx_rtd_theme flake8
+  - echo CONDA_PREFIX %CONDA_PREFIX%
+  - activate test-environment
+  - echo CONDA_PREFIX %CONDA_PREFIX%
+  - conda install -y -c conda-forge qutip
+  - "%PYTHON%\\python.exe -m pip install -e .[visualization,dev]"
+  - "%PYTHON%\\python.exe -m pip install coveralls"
 
 build: off
 
@@ -24,6 +37,10 @@ test_script:
   # Note that you must use the environment variable %PYTHON% to refer to
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python version you want to use on PATH.
+  - echo PATH %PATH%
+  - echo CONDA_PREFIX %CONDA_PREFIX%
+  - activate test-environment
+  - echo CONDA_PREFIX %CONDA_PREFIX%
   - "%PYTHON%\\python.exe -m pytest --doctest-modules --cov=qnet src tests docs/*.rst"
 
 #after_test:
