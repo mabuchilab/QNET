@@ -9,6 +9,7 @@ except ImportError as e:
     print("PyX is not installed. Please install PyX for circuit visualization purposes.")
     raise e
 
+import shutil
 import qnet.algebra.core.circuit_algebra as ca
 from qnet.printing import latex as tex  # TODO tex -> latex
 from qnet.algebra.core.circuit_algebra import Component
@@ -30,6 +31,14 @@ VUNIT = -1.     # Basic unit for the height of a single Circuit object,
 RHMARGIN = .1   # Relative horizontal margin between gridline and Circuit object
 RVMARGIN = .2   # Relative vertical margin between gridline and Circuit object
 RPLENGTH = .4   # Relative width of a channel permutation
+
+GS_CANDIDATES = ['gs', 'mgs', 'rungs', 'gswin32c']
+for gs in GS_CANDIDATES:
+    if shutil.which(gs) is not None:
+        GS = gs
+        break
+else:
+    GS = None
 
 
 
@@ -303,8 +312,15 @@ def draw_circuit(circuit, filename, direction = 'lr',
     except ValueError as e:
         print( ("No graphics returned for circuit {!r}".format(circuit)))
         return False
-    if any(filename.endswith(suffix) for suffix in ('.pdf', '.eps', '.ps')):
+    ps_suffixes = ['.pdf', '.eps', '.ps']
+    gs_suffixes = ['.png', '.jpg']
+    if any(filename.endswith(suffix) for suffix in ps_suffixes):
         c.writetofile(filename)
-    elif any(filename.endswith(suffix) for suffix in ('.png', '.jpg')):
-        c.writeGSfile(filename)
+    elif any(filename.endswith(suffix) for suffix in gs_suffixes):
+        if GS is None:
+            raise FileNotFoundError(
+                "No Ghostscript executable available. Ghostscript is required for "
+                "rendering to {}.".format(", ".join(gs_suffixes))
+            )
+        c.writeGSfile(filename, gs=GS)
     return True
