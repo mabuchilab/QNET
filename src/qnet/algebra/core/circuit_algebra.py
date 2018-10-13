@@ -218,7 +218,7 @@ class Circuit(metaclass=ABCMeta):
         if not fname:
 
             tmp_dir = gettempdir()
-            fname = tmp_dir + "/tmp_{}.png".format(hash(time))
+            fname = os.path.join(tmp_dir, "tmp_{}.png".format(hash(time)))
 
         if circuit_visualization.draw_circuit(self, fname):
             done = False

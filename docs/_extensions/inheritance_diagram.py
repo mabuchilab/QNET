@@ -47,6 +47,7 @@ import re
 import sys
 from hashlib import md5
 from collections import defaultdict
+import os
 
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
@@ -455,12 +456,12 @@ def html_visit_inheritance_diagram(self, node):
     for child in node:
         if child.get('refuri') is not None:
             if graphviz_output_format == 'SVG':
-                urls[child['reftitle']] = "../" + child.get('refuri')
+                urls[child['reftitle']] = os.path.join("..", child.get('refuri'))
             else:
                 urls[child['reftitle']] = child.get('refuri')
         elif child.get('refid') is not None:
             if graphviz_output_format == 'SVG':
-                urls[child['reftitle']] = '../' + current_filename + '#' + child.get('refid')
+                urls[child['reftitle']] = os.path.join('..', current_filename + '#' + child.get('refid'))
             else:
                 urls[child['reftitle']] = '#' + child.get('refid')
 

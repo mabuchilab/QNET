@@ -3,6 +3,7 @@
 
 """The setup script."""
 
+import os
 from setuptools import setup, find_packages
 
 
@@ -33,7 +34,7 @@ dev_requirements = [
 dev_requirements.append('better-apidoc>=0.2.0')
 
 
-version = get_version('./src/qnet/__init__.py')
+version = get_version(os.path.join('.', 'src', 'qnet', '__init__.py'))
 
 setup(
     name='QNET',

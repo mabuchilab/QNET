@@ -14,7 +14,7 @@ import unittest
 class TestVisualizationPNG(unittest.TestCase):
 
     def setUp(self):
-        self.fname = gettempdir()  + '/tmp.png'
+        self.fname = path.join(gettempdir(), 'tmp.png')
 
     def tearDown(self):
         if path.exists(self.fname):
@@ -77,7 +77,7 @@ class TestVisualizationPNG(unittest.TestCase):
 
 class TestVisualizationEPS(unittest.TestCase):
     def setUp(self):
-        self.fname = gettempdir() + '/tmp.eps'
+        self.fname = path.join(gettempdir(), 'tmp.eps')
 
     def tearDown(self):
         if path.exists(self.fname):
@@ -143,7 +143,7 @@ class TestVisualizationEPS(unittest.TestCase):
 
 class TestVisualizationPDF(unittest.TestCase):
     def setUp(self):
-        self.fname = gettempdir() + '/tmp.pdf'
+        self.fname = path.join(gettempdir(), 'tmp.pdf')
 
     def tearDown(self):
         if path.exists(self.fname):
