@@ -7,27 +7,29 @@ environment:
     # The list here is complete (excluding Python 2.6, which
     # isn't covered by this document) at the time of writing.
 
-    - PYTHON: "C:\\Python35-x64"
+    - PYTHON_VERSION: 3.5
       MINICONDA: C:\Miniconda3
-    - PYTHON: "C:\\Python36-x64"
+    - PYTHON_VERSION: 3.6
       MINICONDA: C:\Miniconda3
 
 install:
-  # We need wheel installed to build wheels
-  - appveyor DownloadFile https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x86/miktex-portable-2.9.6753.exe
   - nuget install 7ZipCLI -ExcludeVersion
-  - set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PYTHON%\Scripts;c:\miktex\texmfs\install\miktex\bin;%appveyor_build_folder%\7ZipCLI\tools;%PATH%
+  - set PATH=%appveyor_build_folder%\7ZipCLI\tools;%PATH%
   - if not exist c:\miktex\texmfs\install\miktex\bin\pdflatex.exe appveyor DownloadFile https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x86/miktex-portable-2.9.6753.exe
   - if not exist c:\miktex\texmfs\install\miktex\bin\pdflatex.exe 7z x miktex-portable-2.9.6753.exe -oC:\miktex >NUL
+  - set PATH=c:\miktex\texmfs\install\miktex\bin;%PATH%
   - initexmf --set-config-value "[MPM]AutoInstall=1"
-  - conda.exe config --set always_yes yes
+  - "%MINICONDA%\\Scripts\\activate"
+  - conda config --set always_yes yes
   - conda update -q conda
   - conda info -a
-  - conda create -q -n test-environment -c conda-forge python=%PYTHON_VERSION% qutip
-  - activate test-environment
+  - conda create -q -n test_env python=%PYTHON_VERSION%
+  - activate test_env
+  - conda config --append channels conda-forge
+  - conda install matplotlib "sympy<1.2" qutip
   - echo CONDA_PREFIX %CONDA_PREFIX%
   - echo PATH %PATH%
-  - cmd: "%CONDA_PREFIX%\\python.exe -m pip install -e .[visualization,dev]"
+  - pip install -e .[visualization,dev]
 
 build: off
 
@@ -39,13 +41,12 @@ test_script:
   # Note that you must use the environment variable %PYTHON% to refer to
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python version you want to use on PATH.
-  - set PATH=%MINICONDA%;%MINICONDA%\\Scripts;%PYTHON%\Scripts;c:\miktex\texmfs\install\miktex\bin;%PATH%
-  - activate test-environment
+  - set PATH=c:\miktex\texmfs\install\miktex\bin;%PATH%
+  - "%MINICONDA%\\Scripts\\activate"
+  - activate test_env
   - echo CONDA_PREFIX %CONDA_PREFIX%
   - echo PATH %PATH%
-  - set doclist=
-  - for /f "tokens=*" %%F in ('dir /b /s docs\*.rst') do call set doclist=%%doclist%% "%%~F"
-  - cmd: "%CONDA_PREFIX%\\python.exe -m pytest --doctest-modules --cov=qnet src tests %doclist%"
+  - ps: pytest --doctest-modules --cov=qnet src tests (get-item docs\*.rst).FullName
 
 #after_test:
   # This step builds your wheels.
