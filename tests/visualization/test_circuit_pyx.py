@@ -3,7 +3,7 @@ from qnet.algebra.core.circuit_algebra import (
     as cid, Feedback, SLH)
 from qnet.algebra.library.fock_operators import Destroy, Create
 from qnet.algebra.core.matrix_algebra import Matrix, identity_matrix
-from qnet.visualization.circuit_pyx import draw_circuit
+from qnet.visualization.circuit_pyx import draw_circuit, GS
 from os import path, remove
 from tempfile import gettempdir
 import pyx
@@ -29,7 +29,7 @@ class TestVisualizationPNG(unittest.TestCase):
 
         c.text(0, 0, "Hello, world!")
         c.stroke(pyx.path.line(0, 0, 2, 0))
-        c.writeGSfile(self.fname)
+        c.writeGSfile(self.fname, gs=GS)
         self.assertTrue(path.exists(self.fname))
         remove(self.fname)
 

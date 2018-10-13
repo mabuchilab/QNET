@@ -7,7 +7,7 @@ import pytest
 from sympy import (
     symbols, sqrt, exp, I, Float, Pow, Mul, Integer, Symbol, Rational,
     factorial)
-from numpy import array, float64, complex128, int64
+from numpy import array, float64, complex128, int64, int32
 
 from qnet import(
     CircuitSymbol, CIdentity, CircuitZero, CPermutation, SeriesProduct,

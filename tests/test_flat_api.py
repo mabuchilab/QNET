@@ -14,7 +14,7 @@ def get_leaf_modules(package_path):
         for f in files:
             if f.endswith(".py") and not f == "__init__.py":
                 full_file = os.path.relpath(os.path.join(path, f), start=root)
-                module = full_file.replace("/", ".")[:-3]
+                module = full_file.replace(os.sep, ".")[:-3]
                 res.append(module)
     return res
 
