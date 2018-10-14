@@ -1,0 +1,29 @@
+environment:
+
+  matrix:
+    - PYTHON_VERSION: 3.5
+      MINICONDA: C:\Miniconda3
+    - PYTHON_VERSION: 3.6
+      MINICONDA: C:\Miniconda3
+
+install:
+  - appveyor DownloadFile https://miktex.org/download/ctan/systems/win32/miktex/setup/windows-x86/miktex-portable.exe
+  - 7z x miktex-portable.exe -o%APPVEYOR_BUILD_FOLDER%\miktex >NUL
+  - set PATH=%APPVEYOR_BUILD_FOLDER%\miktex\texmfs\install\miktex\bin;%PATH%
+  - where latex
+  - initexmf --set-config-value "[MPM]AutoInstall=1"
+  - initexmf --mkmaps
+  - "%MINICONDA%\\Scripts\\activate"
+  - conda config --set always_yes yes
+  - conda create -q -n test_env python=%PYTHON_VERSION%
+  - activate test_env
+  - echo CONDA_PREFIX %CONDA_PREFIX%
+  - echo PATH %PATH%
+  - conda config --append channels conda-forge
+  - conda install qutip "sympy<1.2"
+  - pip install -e .[visualization,dev]
+
+build: off
+
+test_script:
+  - ps: pytest --doctest-modules --cov=qnet src tests (get-item docs\*.rst).FullName
