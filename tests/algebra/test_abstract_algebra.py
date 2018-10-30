@@ -177,3 +177,8 @@ def test_nested_doit():
         OperatorPlus(
              A(1) * A(j), A(2) * A(j), A(3) * A(j),
              -A(j) * A(1), -A(j) * A(2), -A(j) * A(3)))
+
+
+def test_create_with_mutable_args():
+    hs = LocalSpace.create(0, basis=['g', 'e'], local_identifiers={'Destroy': 'b'})
+    assert hs.instance_caching

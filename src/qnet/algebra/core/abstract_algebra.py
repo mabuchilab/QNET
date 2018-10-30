@@ -23,6 +23,7 @@ from sympy.core.sympify import SympifyError
 from .exceptions import CannotSimplify
 from ..pattern_matching import ProtoExpr
 from ...utils.singleton import Singleton
+from ...utils.containers import nested_tuple
 
 __all__ = [
     'Expression', 'Operation', 'substitute']
@@ -195,7 +196,7 @@ class Expression(metaclass=ABCMeta):
         identical by definition (although `expr1 is expr2` generally only holds
         for explicit Singleton instances)
         """
-        return (cls,) + tuple(args) + tuple(sorted(kwargs.items()))
+        return (cls,) + nested_tuple(args) + nested_tuple(kwargs)
 
     @classmethod
     def _rules_attr(cls):

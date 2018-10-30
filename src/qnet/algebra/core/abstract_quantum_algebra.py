@@ -693,8 +693,8 @@ class QuantumDerivative(SingleQuantumOperation):
         the :meth:`~QuantumExpression._diff` method of `op` and evaluating the
         result at the given `vals`.
         """
-        # Expression._get_instance_key won't work with mutable dicts, so we
-        # must convert `derivs` and `vals` to a tuple structure
+        # To ensure stable ordering in Expression._get_instance_key, we explicitly
+        # convert `derivs` and `vals` to a tuple structure with a custom sorting key.
         if not isinstance(derivs, tuple):
             derivs = cls._dict_to_ordered_tuple(dict(derivs))
         if not (isinstance(vals, tuple) or vals is None):
