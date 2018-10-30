@@ -16,8 +16,8 @@ install:
   - conda create -q -n test_env python=$TRAVIS_PYTHON_VERSION
   - conda activate test_env
   - conda config --append channels conda-forge
-  - conda install qutip "sympy<1.2"
-  - pip install -e .[visualization,dev]
+  - conda install qutip
+  - pip install -e .[simulation,visualization,dev]
   - pip install coveralls
 
 script:

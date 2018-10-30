@@ -20,8 +20,8 @@ install:
   - echo CONDA_PREFIX %CONDA_PREFIX%
   - echo PATH %PATH%
   - conda config --append channels conda-forge
-  - conda install qutip "sympy<1.2"
-  - pip install -e .[visualization,dev]
+  - conda install qutip
+  - pip install -e .[simulation,visualization,dev]
 
 build: off
 

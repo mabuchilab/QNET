@@ -25,7 +25,7 @@ try:
 except OSError:
     history = ''
 
-requirements = ['sympy', 'scipy', 'numpy', 'attrs', 'uniseg']
+requirements = ['sympy<1.2', 'scipy', 'numpy', 'attrs', 'uniseg']
 
 dev_requirements = [
     'coverage', 'pytest', 'pytest-cov', 'pytest-xdist', 'twine', 'pep8',

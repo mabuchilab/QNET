@@ -1,6 +1,6 @@
 .PHONY: clean clean-test clean-pyc clean-build clean-venvs line pep8 docs dist install develop help
 .DEFAULT_GOAL := help
-CONDA_PACKAGES =  anaconda pytest-cov pytest-xdist coverage sphinx_rtd_theme flake8
+CONDA_PACKAGES = qutip
 TESTENV =
 #TESTENV = MATPLOTLIBRC=tests
 TESTOPTIONS = --doctest-modules --cov=qnet
@@ -55,9 +55,9 @@ test:  test35 test36 ## run tests on every Python version
 
 
 .venv/py35/bin/py.test:
-	@conda create -y -m -p .venv/py35 python=3.5 $(CONDA_PACKAGES)
+	@conda create -y -m --override-channels -c defaults -p .venv/py35 python=3.5
 	@# if the conda installation does not work, simply comment out the following line, and let pip handle it
-	@conda install -y -c conda-forge -p .venv/py35 qutip
+	@conda install -y --override-channels -c defaults -c conda-forge -p .venv/py35 $(CONDA_PACKAGES)
 	@.venv/py35/bin/pip install -e .[simulation,visualization,dev]
 
 test35: .venv/py35/bin/py.test ## run tests for Python 3.5
@@ -66,9 +66,9 @@ test35: .venv/py35/bin/py.test ## run tests for Python 3.5
 
 
 .venv/py36/bin/py.test:
-	@conda create -y -m -p .venv/py36 python=3.6 $(CONDA_PACKAGES)
+	@conda create -y -m --override-channels -c defaults -p .venv/py36 python=3.6
 	@# if the conda installation does not work, simply comment out the following line, and let pip handle it
-	@conda install -y -c conda-forge -p .venv/py36 qutip
+	@conda install -y --override-channels -c defaults -c conda-forge -p .venv/py36 $(CONDA_PACKAGES)
 	@.venv/py36/bin/pip install -e .[simulation,visualization,dev]
 
 test36: .venv/py36/bin/py.test ## run tests for Python 3.6
