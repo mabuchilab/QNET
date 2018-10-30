@@ -568,9 +568,6 @@ class SLH(Circuit, Expression):
     def __iter__(self):
         return iter((self.S, self.L, self.H))
 
-    def __len__(self):
-        return 3
-
     def _coherent_input(self, *input_amps):
         return super(SLH, self)._coherent_input(*input_amps).toSLH()
 
