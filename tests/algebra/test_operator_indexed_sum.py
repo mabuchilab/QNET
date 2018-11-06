@@ -4,10 +4,7 @@ from qnet import (
     IdxSym, IndexOverList, OperatorSymbol, OperatorIndexedSum, StrLabel,
     KroneckerDelta, FockIndex, LocalSpace, IndexOverFockSpace, LocalSigma)
 
-import pytest
 
-
-@pytest.mark.xfail
 def test_operator_kronecker_sum():
     """Test that Kronecker delta are eliminiated from indexed sums over
     operators"""

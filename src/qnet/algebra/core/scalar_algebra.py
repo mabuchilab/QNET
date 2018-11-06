@@ -13,7 +13,7 @@ from .abstract_quantum_algebra import (
     QuantumTimes, QuantumDerivative)
 from .algebraic_properties import (
     assoc, assoc_indexed, convert_to_scalars, filter_neutral,
-    indexed_sum_over_const, scalar_indexed_sum_over_kronecker, match_replace,
+    indexed_sum_over_const, indexed_sum_over_kronecker, match_replace,
     match_replace_binary, orderby, collect_scalar_summands)
 from .hilbert_space_algebra import TrivialSpace
 from ...utils.singleton import Singleton, singleton_object
@@ -943,7 +943,7 @@ class ScalarIndexedSum(QuantumIndexedSum, Scalar):
 
     _rules = OrderedDict()
     simplifications = [
-        assoc_indexed, scalar_indexed_sum_over_kronecker,
+        assoc_indexed, indexed_sum_over_kronecker,
         indexed_sum_over_const, match_replace]
 
     @classmethod

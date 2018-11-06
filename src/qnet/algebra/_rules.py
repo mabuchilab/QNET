@@ -22,7 +22,7 @@ from .core.scalar_algebra import (
 from .core.state_algebra import (
     BasisKet, Bra, BraKet, CoherentStateKet, State, KetBra, KetIndexedSum,
     KetPlus, LocalKet, OperatorTimesKet, ScalarTimesKet, TensorKet, TrivialKet,
-    ZeroKet)
+    ZeroKet, KetSymbol)
 from .core.super_operator_algebra import (
     IdentitySuperOperator, SPost, SPre, ScalarTimesSuperOperator, SuperAdjoint,
     SuperOperator, SuperOperatorPlus, SuperOperatorTimes,
@@ -574,8 +574,7 @@ def _algebraic_rules_state():
     A_local = wc("A", head=LocalOperator)
     B_local = wc("B", head=LocalOperator)
 
-    int_str_label = wc("lb", head=(int, str))
-
+    Psi_sym = wc("Psi", head=KetSymbol)
     Psi = wc("Psi", head=State)
     Phi = wc("Phi", head=State)
     Psi_local = wc("Psi", head=LocalKet)
@@ -732,15 +731,19 @@ def _algebraic_rules_state():
         # All rules must result in scalars or objects in the TrivialSpace
         ('R001', (
             pattern_head(Phi, ZeroKet),
-            lambda Phi: 0)),
+            lambda Phi: Zero)),
         ('R002', (
             pattern_head(ZeroKet, Phi),
-            lambda Phi: 0)),
+            lambda Phi: Zero)),
         ('R003', (
-            pattern_head(
-                ket_a, ket_b),
+            pattern_head(ket_a, ket_b),
             lambda a, b: KroneckerDelta(a.index, b.index))),
-        # 'R004' -- deleted
+        ('R004', (
+            pattern_head(Psi_sym, Psi_sym),
+            lambda Psi: One)),
+            # we're assuming every KetSymbol is normalized. If we ever want
+            # to allow non-normalized states, the best thing to dou would be to
+            # add a `norm` attribute
         ('R005', (
             pattern_head(Psi_tensor, Phi_tensor),
             lambda Psi, Phi: tensor_decompose_kets(Psi, Phi, BraKet.create))),

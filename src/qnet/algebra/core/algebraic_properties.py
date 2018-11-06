@@ -1,11 +1,16 @@
 import logging
+import itertools
+from functools import partial
 
 from collections import OrderedDict
-from sympy import Mul as SympyMul, KroneckerDelta as SympyKroneckerDelta
+import sympy
+from sympy.concrete.delta import (
+    _has_simple_delta, _extract_delta as _sympy_extract_delta)
 
 from .abstract_algebra import LOG, LEVEL, LOG_NO_MATCH
 from .exceptions import CannotSimplify
-from ..pattern_matching import ProtoExpr, match_pattern
+from ..pattern_matching import ProtoExpr, Pattern, match_pattern
+from ...utils.indices import IdxSym
 
 __all__ = []
 __private__ = [
@@ -15,8 +20,25 @@ __private__ = [
     'delegate_to_method', 'scalars_to_op', 'convert_to_scalars',
     'disjunct_hs_zero', 'commutator_order', 'accept_bras',
     'basis_ket_zero_outside_hs', 'indexed_sum_over_const',
-    'indexed_sum_over_kronecker', 'scalar_indexed_sum_over_kronecker',
-    'derivative_via_diff', 'collect_summands', 'collect_scalar_summands']
+    'indexed_sum_over_kronecker', 'derivative_via_diff', 'collect_summands',
+    'collect_scalar_summands']
+
+
+_RESOLVE_KRONECKER_WITH_PIECEWISE = False
+# Handling indexed sums over Kronecker deltas correctly in the most general
+# cases requires substituting it with a Piecewise function (the delta is zero
+# outside of the range covered by the summmation index). This incurrs
+# considerable numerical overhead. In many cases, one gets correct results
+# while ignoring the range of the summation, with less effort. In that case,
+# you may speed calculations by settings this flag to False, at your own risk.
+#
+# An exmple where one gets the wrong result by ignoring the summation range is
+# this:
+#
+#   i, j = symbols('i, j', cls=IdxSym)
+#   sum = Sum(i, (1, 2, 3))(Sum(j, (3, 4))(KroneckerDelta(i, j)))
+#
+#   The wrong result is 3, the correct result is 1
 
 
 def assoc(cls, ops, kwargs):
@@ -641,65 +663,285 @@ def indexed_sum_over_const(cls, ops, kwargs):
         return (new_term, ) + tuple(new_ranges), kwargs
 
 
+def _ranges_key(r, delta_indices):
+    """Sorting key for ranges.
+
+    When used with ``reverse=True``, this can be used to sort index ranges into
+    the order we would prefer to eliminate them by evaluating KroneckerDeltas:
+    First, eliminate primed indices, then indices names higher in the alphabet.
+    """
+    idx = r.index_symbol
+    if idx in delta_indices:
+        return (r.index_symbol.primed, r.index_symbol.name)
+    else:
+        # ranges that are not in delta_indices should remain in the original
+        # order
+        return (0, ' ')
+
+
 def indexed_sum_over_kronecker(cls, ops, kwargs):
     """Execute sums over KroneckerDelta prefactors"""
+    from qnet.algebra.core.abstract_quantum_algebra import QuantumExpression
+    term, *ranges = ops
+    assert isinstance(term, QuantumExpression)
+    deltas = set(Pattern(head=sympy.KroneckerDelta).findall(term))
+    if len(deltas) == 0:
+        return ops, kwargs  # nothing to do
+    else:  # the term contains at least one KroneckerDelta
+        delta_indices = set.union(*[set(
+            [idx for idx in delta.free_symbols if isinstance(idx, IdxSym)])
+            for delta in deltas])
+        ranges = sorted(  # sort in the order we'd prefer to eliminate
+            ranges,
+            key=partial(_ranges_key, delta_indices=delta_indices),
+            reverse=True)
+        buffer = [(term, ranges)]
+        i = 0  # position in buffer that we're currently handling
+        i_range = 0  # position of index-range for current buffer item
+        while i < len(buffer):
+            t, rs = buffer[i]
+            if rs[i_range].index_symbol in delta_indices:
+                new_items, flag = _deltasummation(t, rs, i_range)
+                new_rs = new_items[0][1]  # same for all new_items
+                buffer = buffer[:i] + new_items + buffer[i + 1:]
+                assert flag in [1, 2, 3]
+                if flag == 2:
+                    i_range += 1
+                    # * for flag == 1, leaving i_range unchanged will
+                    # effectively to to the next range (as the current range
+                    # was removed)
+                    # * for flag == 3, buffer[i] has changed, and we'll want to
+                    # call it again with the same i_range
+            else:
+                # if the index symbol doesn't occur in any KroneckerDelta,
+                # there is no chance _deltasummation will do anything; so we
+                # just skip to the next index
+                i_range += 1
+                new_rs = rs
+            if i_range >= len(new_rs):
+                # if we've exhausted the index-ranges for the current buffer
+                # item, go to the next buffer item
+                i += 1
+                i_range = 0
+        if len(buffer) == 1 and buffer[0] == (term, ranges):
+            return ops, kwargs  # couldn't resolve deltas
+        else:
+            (t, rs) = buffer[0]
+            res = t
+            if len(rs) > 0:
+                res = cls.create(t, *rs, **kwargs)
+            for (t, rs) in buffer[1:]:
+                if len(rs) > 0:
+                    t = cls.create(t, *rs, **kwargs)
+                res += t
+            return res
+
+
+def _factors_for_expand_delta(expr):
+    """Yield factors from expr, mixing sympy and QNET
+
+    Auxiliary routine for :func:`_expand_delta`.
+    """
+    from qnet.algebra.core.scalar_algebra import ScalarValue
     from qnet.algebra.core.abstract_quantum_algebra import (
         ScalarTimesQuantumExpression)
-    term, *ranges = ops
-    try:
-        correct_structure = (
-            isinstance(term, ScalarTimesQuantumExpression) and
-            (isinstance(term.coeff.val, SympyMul) or
-                isinstance(term.coeff.val, SympyKroneckerDelta)) and
-            len(ranges) >= 2)
-    except AttributeError:
-        assert not hasattr(term.coeff, 'val')  # not a ScalarValue
-        correct_structure = False
-    if correct_structure:
-        coeff = term.coeff.val
-        bound_symbols = set([r.index_symbol for r in ranges])
-        if isinstance(coeff, SympyKroneckerDelta):
-            factors = (coeff, )
+    if isinstance(expr, ScalarTimesQuantumExpression):
+        yield from _factors_for_expand_delta(expr.coeff)
+        yield expr.term
+    elif isinstance(expr, ScalarValue):
+        yield from _factors_for_expand_delta(expr.val)
+    elif isinstance(expr, sympy.Basic) and expr.is_Mul:
+        yield from expr.args
+    else:
+        yield expr
+
+
+def _expand_delta(expr, idx):
+    """Expand the first :class:`sympy.Add` containing a simple
+    :class:`sympy.KroneckerDelta`.
+
+    Auxiliary routine for :func:`_deltasummation`. Adapted from SymPy. The
+    input `expr` may be a :class:`.QuantumExpression` or a
+    `:class:`sympy.Basic` instance.
+
+    Returns a list of summands. The elements of the list may be
+    :class:`.QuantumExpression` or a `:class:`sympy.Basic` instances. There is
+    no guarantee of type stability: an input :class:`.QuantumExpression` may
+    result in a :class:`sympy.Basic` instance in the `summands`.
+    """
+    found_first_delta = False
+    summands = None
+    for factor in _factors_for_expand_delta(expr):
+        need_to_expand = False
+        if not found_first_delta and isinstance(factor, sympy.Basic):
+            if factor.is_Add and _has_simple_delta(factor, idx):
+                need_to_expand = True
+        if need_to_expand:
+            found_first_delta = True
+            if summands is None:
+                summands = list(factor.args)
+            else:
+                summands = [summands[0]*t for t in factor.args]
         else:
-            factors = coeff.args
-        for factor in factors:
-            if isinstance(factor, SympyKroneckerDelta):
-                i, j = factor.args
-                assert i in bound_symbols and j in bound_symbols
-                if i.primed > j.primed:
-                    # we prefer eliminating indices with more prime dashes
-                    i, j = j, i
-                term = term.substitute({factor: 1, j: i})
-                ranges = [r for r in ranges if r.index_symbol != j]
-        ops = (term,) + tuple(ranges)
-    return ops, kwargs
+            if summands is None:
+                summands = [factor, ]
+            else:
+                summands = [t*factor for t in summands]
+    return summands
 
 
-def scalar_indexed_sum_over_kronecker(cls, ops, kwargs):
-    """Execute sums over KroneckerDelta factors"""
+def _split_sympy_quantum_factor(expr):
+    """Split a product into sympy and qnet factors
+
+    This is a helper routine for applying some sympy transformation on an
+    arbitrary product-like expression in QNET. The idea is this::
+
+        expr -> sympy_factor, quantum_factor
+        sympy_factor -> sympy_function(sympy_factor)
+        expr -> sympy_factor * quantum_factor
+    """
+    from qnet.algebra.core.abstract_quantum_algebra import (
+        QuantumExpression, ScalarTimesQuantumExpression)
+    from qnet.algebra.core.scalar_algebra import ScalarValue, ScalarTimes, One
+    if isinstance(expr, ScalarTimesQuantumExpression):
+        sympy_factor, quantum_factor = _split_sympy_quantum_factor(expr.coeff)
+        quantum_factor *= expr.term
+    elif isinstance(expr, ScalarValue):
+        sympy_factor = expr.val
+        quantum_factor = expr._one
+    elif isinstance(expr, ScalarTimes):
+        sympy_factor = sympy.S(1)
+        quantum_factor = expr._one
+        for op in expr.operands:
+            op_sympy, op_quantum = _split_sympy_quantum_factor(op)
+            sympy_factor *= op_sympy
+            quantum_factor *= op_quantum
+    elif isinstance(expr, sympy.Basic):
+        sympy_factor = expr
+        quantum_factor = One
+    else:
+        sympy_factor = sympy.S(1)
+        quantum_factor = expr
+    assert isinstance(sympy_factor, sympy.Basic)
+    assert isinstance(quantum_factor, QuantumExpression)
+    return sympy_factor, quantum_factor
+
+
+def _extract_delta(expr, idx):
+    """Extract a "simple" Kronecker delta containing `idx` from `expr`.
+
+    Assuming `expr` can be written as the product of a Kronecker Delta and a
+    `new_expr`, return a tuple of the sympy.KroneckerDelta instance and
+    `new_expr`. Otherwise, return a tuple of None and the original `expr`
+    (possibly converted to a :class:`.QuantumExpression`).
+
+    On input, `expr` can be a :class:`QuantumExpression` or a
+    :class:`sympy.Basic` object. On output, `new_expr` is guaranteed to be a
+    :class:`QuantumExpression`.
+    """
+    from qnet.algebra.core.abstract_quantum_algebra import QuantumExpression
     from qnet.algebra.core.scalar_algebra import ScalarValue
-    term, *ranges = ops
-    correct_structure = (
-        isinstance(term, ScalarValue) and
-        (isinstance(term.val, SympyMul) or
-            isinstance(term.val, SympyKroneckerDelta)))
-    if correct_structure:
-        bound_symbols = set([r.index_symbol for r in ranges])
-        if isinstance(term.val, SympyKroneckerDelta):
-            factors = (term.val, )
-        else:
-            factors = term.val.args
-        for factor in factors:
-            if isinstance(factor, SympyKroneckerDelta):
-                i, j = factor.args
-                assert i in bound_symbols and j in bound_symbols
-                if i.primed > j.primed:
-                    # we prefer eliminating indices with more prime dashes
-                    i, j = j, i
-                term = term.substitute({factor: 1, j: i})
-                ranges = [r for r in ranges if r.index_symbol != j]
-        ops = (term,) + tuple(ranges)
-    return ops, kwargs
+    sympy_factor, quantum_factor = _split_sympy_quantum_factor(expr)
+    delta, new_expr = _sympy_extract_delta(sympy_factor, idx)
+    if delta is None:
+        new_expr = expr
+    else:
+        new_expr = new_expr * quantum_factor
+    if isinstance(new_expr, ScalarValue._val_types):
+        new_expr = ScalarValue.create(new_expr)
+    assert isinstance(new_expr, QuantumExpression)
+    return delta, new_expr
+
+
+def _deltasummation(term, ranges, i_range):
+    """Partially execute a summation for `term` with a Kronecker Delta for one
+    of the summation indices.
+
+    This implements the solution to the core sub-problem in
+    :func:`indexed_sum_over_kronecker`
+
+    Args:
+        term (QuantumExpression): term of the sum
+        ranges (list): list of all summation index ranges
+            (class:`IndexRangeBase` instances)
+        i_range (int): list-index of element in `ranges` which should be
+            eliminated
+
+    Returns:
+        ``(result, flag)`` where `result` is a list
+        of ``(new_term, new_ranges)`` tuples and `flag` is an integer.
+
+    There are three possible cases, indicated by the returned `flag`. Consider
+    the following setup::
+
+        >>> i, j, k = symbols('i, j, k', cls=IdxSym)
+        >>> i_range = IndexOverList(i, (0, 1))
+        >>> j_range = IndexOverList(j, (0, 1))
+        >>> ranges = [i_range, j_range]
+        >>> def A(i, j):
+        ...    from sympy import IndexedBase
+        ...    return OperatorSymbol(StrLabel(IndexedBase('A')[i, j]), hs=0)
+
+    1. If executing the sum produces a single non-zero term, result will be
+    ``[(new_term, new_ranges)]`` where `new_ranges` contains the input `ranges`
+    without the eliminated range specified by `i_range`.  This should be the
+    most common case for calls to:func:`_deltasummation`::
+
+        >>> term = KroneckerDelta(i, j) * A(i, j)
+        >>> result, flag = _deltasummation(term, [i_range, j_range], 1)
+        >>> assert result == [(A(i, i), [i_range])]
+        >>> assert flag == 1
+
+    2. If executing the sum for the index symbol specified via `index_range`
+    does not reduce the sum, the result will be the list ``[(term, ranges)]``
+    with unchanged `term` and `ranges`::
+
+        >>> term = KroneckerDelta(j, k) * A(i, j)
+        >>> result, flag = _deltasummation(term, [i_range, j_range], 0)
+        >>> assert result == [(term, [i_range, j_range])]
+        >>> assert flag == 2
+
+    This case also covers if there is no Kroncker delta in the term::
+
+        >>> term = A(i, j)
+        >>> result, flag = _deltasummation(term, [i_range, j_range], 0)
+        >>> assert result == [(term, [i_range, j_range])]
+        >>> assert flag == 2
+
+    3. If `term` does not contain a Kronecker delta as a factor, but in a
+    sum that can be expanded, the result will be a list of
+    ``[(summand1, ranges), (summand2, ranges), ...]`` for the summands of that
+    expansion. In this case, `:func:`_deltasummation` should be called again
+    for every tuple in the list, with the same `i_range`::
+
+        >>> term = (KroneckerDelta(i, j) + 1) * A(i, j)
+        >>> result, flag = _deltasummation(term, [i_range, j_range], 1)
+        >>> assert result == [
+        ...     (A(i, j), [i_range, j_range]),
+        ...     (KroneckerDelta(i,j) * A(i, j), [i_range, j_range])]
+        >>> assert flag == 3
+    """
+    from qnet.algebra.core.abstract_quantum_algebra import QuantumExpression
+    idx = ranges[i_range].index_symbol
+    summands = _expand_delta(term, idx)
+    if len(summands) > 1:
+        return [(summand, ranges) for summand in summands], 3
+    else:
+        delta, expr = _extract_delta(summands[0], idx)
+    if not delta:
+        return [(term, ranges)], 2
+    solns = sympy.solve(delta.args[0] - delta.args[1], idx)
+    assert len(solns) > 0  # I can't think of an example that might cause this
+    #     if len(solns) == 0:
+    #         return [(term._zero, [])], 4
+    if len(solns) != 1:
+        return [(term, ranges)], 2
+    value = solns[0]
+    new_term = expr.substitute({idx: value})
+    if _RESOLVE_KRONECKER_WITH_PIECEWISE:
+        new_term *= ranges[i_range].piecewise_one(value)
+    assert isinstance(new_term, QuantumExpression)
+    return [(new_term, ranges[:i_range] + ranges[i_range+1:])], 1
 
 
 def derivative_via_diff(cls, ops, kwargs):

@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 
 import attr
 import sympy
+from sympy import Piecewise
 from sympy.core.cache import cacheit as sympy_cacheit
 
 from ._attrs import immutable_attribs
@@ -415,6 +416,16 @@ class IndexRangeBase(metaclass=ABCMeta):
     def substitute(self, var_map):
         raise NotImplementedError()
 
+    @abstractmethod
+    def piecewise_one(self, expr):
+        """Value of 1 for all index values in the range, 0 otherwise
+
+        A :class:`~sympy.functions.elementary.piecewise.Piecewise` object that
+        is 1 for any value of `expr` in the range of possible index values,
+        and 0 otherwise.
+        """
+        raise NotImplementedError()
+
 
 @immutable_attribs
 class IndexOverList(IndexRangeBase):
@@ -441,6 +452,11 @@ class IndexOverList(IndexRangeBase):
         new_values = tuple(
             [var_map.get(element, element) for element in self.values])
         return self.__class__(index_symbol=new_index_symbol, values=new_values)
+
+    def piecewise_one(self, expr):
+        return Piecewise(
+            (1, sympy.FiniteSet(*self.values).contains(expr)),
+            (0, True))
 
 
 @immutable_attribs
@@ -469,7 +485,7 @@ class IndexOverRange(IndexRangeBase):
             self.step)
 
     def __len__(self):
-        return self.to - self.start_from + 1
+        return len(self.range)
 
     def __contains__(self, val):
         return val in self.range
@@ -479,6 +495,11 @@ class IndexOverRange(IndexRangeBase):
         return self.__class__(
             index_symbol=new_index_symbol, start_from=self.start_from,
             to=self.to, step=self.step)
+
+    def piecewise_one(self, expr):
+        return Piecewise(
+            (1, sympy.FiniteSet(*list(self.range)).contains(expr)),
+            (0, True))
 
 
 @immutable_attribs
@@ -516,3 +537,12 @@ class IndexOverFockSpace(IndexRangeBase):
         new_index_symbol = var_map.get(self.index_symbol, self.index_symbol)
         new_hs = var_map.get(self.hs, self.hs)
         return self.__class__(index_symbol=new_index_symbol, hs=new_hs)
+
+    def piecewise_one(self, expr):
+        if self.hs._dimension is None:
+            to_val = sympy.oo
+        else:
+            to_val = self.hs.dimension
+        return Piecewise(
+            (1, sympy.Interval(0, to_val).as_relational(expr)),
+            (0, True))
