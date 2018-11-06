@@ -21,7 +21,7 @@ install:
   - echo PATH %PATH%
   - conda config --append channels conda-forge
   - conda install qutip
-  - pip install -e .[simulation,visualization,dev]
+  - pip install .[simulation,visualization,dev]
 
 build: off
 

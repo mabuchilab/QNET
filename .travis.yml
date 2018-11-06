@@ -17,7 +17,7 @@ install:
   - conda activate test_env
   - conda config --append channels conda-forge
   - conda install qutip
-  - pip install -e .[simulation,visualization,dev]
+  - pip install .[simulation,visualization,dev]
   - pip install coveralls
 
 script:
