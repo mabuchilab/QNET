@@ -110,7 +110,7 @@ def test_tex_circuit_operations():
     perm = CPermutation.create((2, 1, 0, 3))
 
     assert (latex(A << B << C) ==
-            'A_{\\text{test}} \\lhd B_{\\text{test}} \\lhd C_{\\text{test}}')
+            r'A_{\text{test}} \lhd B_{\text{test}} \lhd C_{\text{test}}')
     assert (latex(A + B + C) ==
             r'A_{\text{test}} \boxplus B_{\text{test}} '
             r'\boxplus C_{\text{test}}')
@@ -143,7 +143,7 @@ def test_tex_hilbert_elements():
     assert latex(LocalSpace('kappa')) == r'\mathcal{H}_{\kappa}'
     assert latex(TrivialSpace) == r'\mathcal{H}_{\text{null}}'
     assert latex(FullSpace) == r'\mathcal{H}_{\text{total}}'
-    assert latex(LocalSpace(StrLabel(IdxSym('i')))) == '\mathcal{H}_{i}'
+    assert latex(LocalSpace(StrLabel(IdxSym('i')))) == r'\mathcal{H}_{i}'
 
 
 def test_tex_hilbert_operations():
@@ -195,15 +195,15 @@ def test_tex_equation():
     )
     assert (
         latex(eq_1).split("\n") == [
-            '\\begin{equation}',
-            '  \\hat{H}^{(0)} = \\hat{a}^{(0)\\dagger} \\hat{a}^{(0)}',
-            '\\end{equation}',
+            r'\begin{equation}',
+            r'  \hat{H}^{(0)} = \hat{a}^{(0)\dagger} \hat{a}^{(0)}',
+            r'\end{equation}',
             ''])
     assert (
         latex(eq_1.set_tag(1)).split("\n") == [
-            '\\begin{equation}',
-            '  \\hat{H}^{(0)} = \\hat{a}^{(0)\\dagger} \\hat{a}^{(0)}',
-            '\\tag{1}\\end{equation}',
+            r'\begin{equation}',
+            r'  \hat{H}^{(0)} = \hat{a}^{(0)\dagger} \hat{a}^{(0)}',
+            r'\tag{1}\end{equation}',
             ''])
     tex_lines = (
         latex(eq, show_hs_label=False, tex_op_macro=r'\Op{{{name}}}')

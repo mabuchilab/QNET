@@ -85,7 +85,7 @@ def test_ascii_hilbert_elements():
     assert ascii(LocalSpace('local')) == 'H_local'
     assert ascii(LocalSpace('kappa')) == 'H_kappa'
     with pytest.raises(ValueError):
-        LocalSpace('\kappa')
+        LocalSpace(r'\kappa')
     assert ascii(TrivialSpace) == 'H_null'
     assert ascii(FullSpace) == 'H_total'
     assert ascii(LocalSpace(StrLabel(IdxSym('i')))) == 'H_i'
