@@ -28,7 +28,7 @@ except OSError:
 requirements = ['sympy<1.2', 'scipy', 'numpy', 'attrs', 'uniseg']
 
 dev_requirements = [
-    'coverage', 'pytest', 'pytest-cov', 'pytest-xdist', 'twine', 'pep8',
+    'coverage', 'coveralls', 'pytest', 'pytest-cov', 'pytest-xdist', 'twine', 'pep8',
     'flake8', 'wheel', 'sphinx', 'sphinx-autobuild', 'sphinx_rtd_theme',
     'sphinx-autodoc-typehints', 'ipython']
 dev_requirements.append('better-apidoc>=0.2.0')

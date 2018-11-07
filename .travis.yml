@@ -18,7 +18,6 @@ install:
   - conda config --append channels conda-forge
   - conda install qutip
   - pip install .[simulation,visualization,dev]
-  - pip install coveralls
 
 script:
   - pytest --doctest-modules --cov=qnet src tests docs/*.rst
