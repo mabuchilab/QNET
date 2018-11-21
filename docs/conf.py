@@ -66,7 +66,8 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3.6', None),
     'sympy': ('http://docs.sympy.org/latest/', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-    'matplotlib': ('https://matplotlib.org/', None)
+    'matplotlib': ('https://matplotlib.org/', None),
+    'qutip': ('http://qutip.org/docs/latest/', None),
 }
 
 # Add any paths that contain templates here, relative to this directory.
