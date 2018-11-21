@@ -30,11 +30,18 @@ def replace_dollar(content):
     #    sys.stdout.write("\n")
     return content
 
+
 def rewrite_rst(app, docname, source):
-    source[0] = replace_dollar(source[0])
+    # We specifically must not transform *.ipynb files, because this interacts
+    # badly with the npsphinx plugin, producing broken math. We thus restrict
+    # ourselfs to *.rst files (which include the autogenrated API)
+    if app.env.doc2path(docname).endswith('rst'):
+        source[0] = replace_dollar(source[0])
+
 
 def rewrite_autodoc(app, what, name, obj, options, lines):
     lines[:] = [replace_dollar(L) for L in lines]
+
 
 def setup(app):
     app.connect('source-read', rewrite_rst)
