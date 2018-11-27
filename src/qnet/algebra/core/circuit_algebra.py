@@ -1316,9 +1316,6 @@ class SeriesInverse(Circuit, Operation):
     def _creduce(self):
         return self.operand.creduce().series_inverse()
 
-    def _substitute(self, var_map, **kwargs):
-        return substitute(self, var_map).series_inverse()
-
 
 ###############################################################################
 # Constructor Routines
