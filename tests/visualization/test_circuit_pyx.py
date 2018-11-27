@@ -6,6 +6,7 @@ from qnet.algebra.core.circuit_algebra import (
     CPermutation,
     CircuitSymbol,
     circuit_identity as cid,
+    SeriesInverse,
     Feedback,
     SLH,
 )
@@ -53,6 +54,10 @@ class InfrastructureAndCases:
     def testDrawSymbol(self):
         self.assertCanBeDrawn(CircuitSymbol("b", cdim=1))
         self.assertCanBeDrawn(CircuitSymbol("b", cdim=2))
+
+    def testDrawSeriesInverse(self):
+        self.assertCanBeDrawn(SeriesInverse(CircuitSymbol("b", cdim=1)))
+        self.assertCanBeDrawn(SeriesInverse(CircuitSymbol("b", cdim=2)))
 
     def testDrawCPermutation(self):
         self.assertCanBeDrawn(CPermutation((0, 2, 3, 1)))
