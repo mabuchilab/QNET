@@ -1610,12 +1610,12 @@ def getABCD(slh, a0=None, doubled_up=True):
     return map(SympyMatrix, (A, B, C, D, a, c))
 
 
-def move_drive_to_H(slh, which=None):
-    r'''Move coherent drives from the Lindblad operators to the Hamiltonian
+def move_drive_to_H(slh, which=None, expand_simplify=True):
+    r'''Move coherent drives from the Lindblad operators to the Hamiltonian.
 
-    For the given `slh` model, move inhomogeneities in the Lindblad
-    operators (resulting from the presence of a coherent drive, see
-    :class:`.CoherentDriveCC`) to the Hamiltonian.
+    For the given SLH model, move inhomogeneities in the Lindblad operators (resulting
+    from the presence of a coherent drive, see :class:`CoherentDriveCC`) to the
+    Hamiltonian.
 
     This exploits the invariance of the Lindblad master equation under the
     transformation  (cf. Breuer and Pettrucione, Ch 3.2.1)
@@ -1630,18 +1630,32 @@ def move_drive_to_H(slh, which=None):
                     (\alpha_j \Op{L}_j^{\dagger} - \alpha_j^* \Op{L}_j)
         \end{align}
 
-    In the context of SLH, this transformation is achieved by feeding `slh`
-    into
+    In the context of SLH, this transformation is achieved by feeding `slh` into
 
     .. math::
         \SLH(\identity, -\mat{\alpha}, 0)
 
-    where $\mat{\alpha}$ has the components $\alpha_i$.
+    where $\mat{\alpha}$ has the elements $\alpha_i$.
 
-    The `which` argument allows to select which subscripts $i$ (circuit
-    dimensions) should be tranformed. The default is all dimensions. If `slh`
-    does not contain any inhomogeneities, it is invariant under the
-    transformation.
+    Parameters
+    ----------
+    slh : SLH
+        SLH model to transform. If `slh` does not contain any inhomogeneities, it is
+        invariant under the transformation.
+
+    which : sequence or None
+        Sequence of circuit dimensions to apply the transform to. If None, all
+        dimensions are transformed.
+
+    expand_simplify : bool
+        if True, expand and simplify the new SLH object before returning. This has no
+        effect if `slh` does not contain any inhomogeneities.
+
+    Returns
+    -------
+    new_slh : SLH
+        Transformed SLH model.
+
     '''
     if which is None:
         which = []
@@ -1654,9 +1668,10 @@ def move_drive_to_H(slh, which=None):
 
     if np.all(np.array(scalarcs) == 0):
         return slh
-    else:
-        return (SLH(identity_matrix(slh.cdim), scalarcs, 0)
-                << slh).expand().simplify_scalar()
+    new_slh = SLH(identity_matrix(slh.cdim), scalarcs, 0) << slh
+    if expand_simplify:
+        return new_slh.expand().simplify_scalar()
+    return new_slh
 
 
 def prepare_adiabatic_limit(slh, k=None):
