@@ -17,7 +17,7 @@ from qnet.algebra.core.circuit_algebra import Component
 __all__ = ['draw_circuit_canvas', 'draw_circuit']
 
 pyx.text.set(pyx.text.LatexRunner)
-pyx.text.preamble(r'\usepackage{amsmath}')
+pyx.text.preamble(r'\usepackage{amsmath,amssymb}')
 
 
 HUNIT = +4      # Basic unit for the width of a single Circuit object
