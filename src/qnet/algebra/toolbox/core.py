@@ -47,10 +47,12 @@ def temporary_instance_cache(*classes):
 def temporary_rules(*classes, clear=False):
     """Allow temporary modification of rules for :meth:`~.Expression.create`
 
-    For every one of the given `classes`, temporarily disable all rules
-    (processed by :func:`.match_replace` or :func:`.match_replace_binary`).
-    Implies :func:`temporary_instance_cache`. If `clear` is given as True, all
-    existing rules are temporarily cleared from the given classes.
+    For every one of the given `classes`, protect the rules (processed by
+    :func:`.match_replace` or :func:`.match_replace_binary`) associated with
+    that class from modification beyond the managed context.
+    Implies :func:`temporary_instance_cache`. If `clear` is given as
+    True, all existing rules are temporarily cleared from the given classes on
+    entering the managed context.
 
     Within the managed context, :meth:`~.Expression.add_rule` may be used for
     any class in `classes` to define local rules, or
