@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 from ..core.hilbert_space_algebra import LocalSpace
 from ..core.algebraic_properties import implied_local_space, match_replace
-from ..core.operator_algebra import LocalOperator
+from ..core.operator_algebra import LocalOperator, PseudoInverse
 from ...utils.properties_for_args import properties_for_args
 
 __all__ = [
@@ -32,6 +32,9 @@ class Destroy(LocalOperator):
 
     def _adjoint(self):
         return Create(hs=self.space)
+
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
 
     @property
     def identifier(self):
@@ -72,6 +75,9 @@ class Create(LocalOperator):
 
     def _adjoint(self):
         return Destroy(hs=self.space)
+
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
 
     @property
     def identifier(self):

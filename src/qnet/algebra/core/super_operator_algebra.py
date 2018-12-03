@@ -21,7 +21,7 @@ from .exceptions import BadLiouvillianError, CannotSymbolicallyDiagonalize
 from .hilbert_space_algebra import TrivialSpace
 from .matrix_algebra import Matrix
 from .operator_algebra import (
-    Operator, OperatorPlus, ZeroOperator, sympyOne)
+    Operator, OperatorPlus, ZeroOperator, sympyOne, Adjoint, PseudoInverse)
 from .scalar_algebra import is_scalar, One
 from ...utils.ordering import DisjunctCommutativeHSOrder, KeyTuple
 from ...utils.singleton import Singleton, singleton_object
@@ -306,7 +306,10 @@ class SuperOperatorTimesOperator(Operator, Operation):
         return sop.simplify_scalar(func=func) * op.simplify_scalar(func=func)
 
     def _adjoint(self):
-        return SuperAdjoint(self)
+        return Adjoint(self)
+
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
 
     def _diff(self, sym):
         return self.sop.diff(sym) * self.op + self.sop * self.op.diff(sym)

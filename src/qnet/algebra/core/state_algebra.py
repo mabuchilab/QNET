@@ -24,7 +24,7 @@ from .hilbert_space_algebra import FullSpace, TrivialSpace
 from qnet.algebra.core.algebraic_properties import (
     indexed_sum_over_const,
     indexed_sum_over_kronecker)
-from .operator_algebra import Operator, OperatorPlus
+from .operator_algebra import Operator, OperatorPlus, PseudoInverse
 from .scalar_algebra import ScalarExpression
 from ...utils.indices import (
     FockIndex, IdxSym, IndexOverFockSpace, IndexOverRange, SymbolicLabelBase, )
@@ -681,6 +681,9 @@ class KetBra(Operator, Operation):
 
     def _adjoint(self):
         return KetBra.create(*reversed(self.operands))
+
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
 
     def _diff(self, sym):
         ket, bra = self.operands

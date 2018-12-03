@@ -6,7 +6,7 @@ For a list of all properties and methods of an operator object, see the
 documentation for the basic :class:`Operator` class.
 """
 import re
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 from collections import OrderedDict, defaultdict
 from itertools import product as cartesian_product
 
@@ -60,9 +60,22 @@ class Operator(QuantumExpression, metaclass=ABCMeta):
     """Base class for all quantum operators."""
 
     def pseudo_inverse(self):
-        """The pseudo-Inverse of the Operator, i.e., it inverts the operator on
-        the orthogonal complement of its nullspace"""
-        return PseudoInverse.create(self)
+        """Pseudo-inverse $\Op{X}^+$ of the operator $\Op{X}$
+
+        It is defined via the relationship
+
+        .. math::
+
+            \Op{X} \Op{X}^+ \Op{X} =  \Op{X}  \\
+            \Op{X}^+ \Op{X} \Op{X}^+ =  \Op{X}^+  \\
+            (\Op{X}^+ \Op{X})^\dagger = \Op{X}^+ \Op{X}  \\
+            (\Op{X} \Op{X}^+)^\dagger = \Op{X} \Op{X}^+
+        """
+        return self._pseudo_inverse()
+
+    @abstractmethod
+    def _pseudo_inverse(self):
+        raise NotImplementedError(self.__class__.__name__)
 
     def expand_in_basis(self, basis_states=None, hermitian=False):
         """Write the operator as an expansion into all
@@ -231,7 +244,8 @@ class OperatorSymbol(QuantumSymbol, Operator):
 
     See :class:`.QuantumSymbol`.
     """
-    pass
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
 
 
 @singleton_object
@@ -421,6 +435,9 @@ class LocalSigma(LocalOperator):
     def _adjoint(self):
         return LocalSigma(j=self.k, k=self.j, hs=self.space)
 
+    def _pseudo_inverse(self):
+        return self._adjoint()
+
 
 def LocalProjector(j, *, hs):
     """A projector onto a specific level of a :class:`.LocalSpace`
@@ -446,6 +463,9 @@ class OperatorPlus(QuantumPlus, Operator):
     simplifications = [
         assoc, scalars_to_op, orderby, collect_summands, match_replace_binary]
 
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
+
 
 class OperatorTimes(QuantumTimes, Operator):
     """Product of operators
@@ -456,6 +476,10 @@ class OperatorTimes(QuantumTimes, Operator):
     _neutral_element = IdentityOperator
     _binary_rules = OrderedDict()
     simplifications = [assoc, orderby, filter_neutral, match_replace_binary]
+
+    def _pseudo_inverse(self):
+        return self.__class__.create(
+                *[o._pseudo_inverse() for o in reversed(self.operands)])
 
 
 class ScalarTimesOperator(Operator, ScalarTimesQuantumExpression):
@@ -496,7 +520,8 @@ class OperatorDerivative(QuantumDerivative, Operator):
 
     See :class:`.QuantumDerivative`.
     """
-    pass
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
 
 
 class Commutator(QuantumOperation, Operator):
@@ -577,6 +602,9 @@ class Commutator(QuantumOperation, Operator):
     def _adjoint(self):
         return Commutator(self.B.adjoint(), self.A.adjoint())
 
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
+
 
 class OperatorTrace(SingleQuantumOperation, Operator):
     r'''(Partial) trace of an operator
@@ -639,6 +667,9 @@ class OperatorTrace(SingleQuantumOperation, Operator):
         # to counteract here with an inverse rule
         return Adjoint(self)
 
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
+
 
 class Adjoint(QuantumAdjoint, Operator):
     """Symbolic Adjoint of an operator"""
@@ -679,16 +710,15 @@ class OperatorPlusMinusCC(SingleQuantumOperation, Operator):
     def _expand(self):
         return self
 
-    def _pseudo_inverse(self):
-        return OperatorPlusMinusCC(
-            self.operand.pseudo_inverse(), sign=self._sign)
-
     def _diff(self, sym):
         return OperatorPlusMinusCC(
             self.operands._diff(sym), sign=self._sign)
 
     def _adjoint(self):
         return OperatorPlusMinusCC(self.operand.adjoint(), sign=self._sign)
+
+    def _pseudo_inverse(self):
+        return PseudoInverse(self.doit())
 
     def doit(self, classes=None, recursive=True, **kwargs):
         """Write out the complex conjugate summand
@@ -705,20 +735,21 @@ class OperatorPlusMinusCC(SingleQuantumOperation, Operator):
 
 
 class PseudoInverse(SingleQuantumOperation, Operator):
-    r"""Symbolic pseudo-inverse :math:`X^+` of an operator :math:`X`
+    r"""Unevaluated pseudo-inverse $\Op{X}^+$ of an operator $\Op{X}$
 
     It is defined via the relationship
 
     .. math::
 
-        X X^+ X =  X  \\
-        X^+ X X^+ =  X^+  \\
-        (X^+ X)^\dagger = X^+ X  \\
-        (X X^+)^\dagger = X X^+
+        \Op{X} \Op{X}^+ \Op{X} =  \Op{X}  \\
+        \Op{X}^+ \Op{X} \Op{X}^+ =  \Op{X}^+  \\
+        (\Op{X}^+ \Op{X})^\dagger = \Op{X}^+ \Op{X}  \\
+        (\Op{X} \Op{X}^+)^\dagger = \Op{X} \Op{X}^+
     """
-    _rules = OrderedDict()
     simplifications = [
-        scalars_to_op, match_replace, delegate_to_method('_pseudo_inverse')]
+        scalars_to_op, delegate_to_method('_pseudo_inverse')]
+    # `PseudoInverse` does not use rules because it delegates to
+    # `_pseudo_inverse`, cf. `Adjoint`
 
     def _expand(self):
         return self
@@ -756,6 +787,9 @@ class NullSpaceProjector(SingleQuantumOperation, Operator):
     def _adjoint(self):
         return Adjoint(self)
 
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
+
 
 class OperatorIndexedSum(QuantumIndexedSum, Operator):
     """Indexed sum over operators"""
@@ -764,6 +798,9 @@ class OperatorIndexedSum(QuantumIndexedSum, Operator):
     simplifications = [
         assoc_indexed, scalars_to_op, indexed_sum_over_kronecker,
         indexed_sum_over_const, match_replace, ]
+
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
 
 
 ###############################################################################

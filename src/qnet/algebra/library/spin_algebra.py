@@ -8,7 +8,7 @@ from sympy import sympify, sqrt
 
 from ..core.hilbert_space_algebra import LocalSpace
 from ..core.state_algebra import BasisKet
-from ..core.operator_algebra import LocalOperator
+from ..core.operator_algebra import LocalOperator, PseudoInverse
 from ...utils.indices import SpinIndex
 
 __all__ = [
@@ -312,6 +312,9 @@ class Jz(SpinOperator):
     def _adjoint(self):
         return self
 
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
+
 
 class Jplus(SpinOperator):
     """Raising operator of a spin space
@@ -345,6 +348,9 @@ class Jplus(SpinOperator):
     def _adjoint(self):
         return Jminus(hs=self.space)
 
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
+
 
 class Jminus(SpinOperator):
     """Lowering operator on a spin space
@@ -377,6 +383,9 @@ class Jminus(SpinOperator):
 
     def _adjoint(self):
         return Jplus(hs=self.space)
+
+    def _pseudo_inverse(self):
+        return PseudoInverse(self)
 
 
 def Jpjmcoeff(ls, m, shift=False) -> sympy.Expr:

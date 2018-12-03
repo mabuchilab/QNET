@@ -351,12 +351,6 @@ def _algebraic_rules_operator():
             lambda ls, A: factor_for_trace(ls, A))),
     ]))
 
-    PseudoInverse._rules.update(check_rules_dict([
-        ('R001', (
-            pattern_head(pattern(LocalSigma, m, n, hs=ls)),
-            lambda ls, m, n: LocalSigma(n, m, hs=ls))),
-    ]))
-
     Commutator._rules.update(check_rules_dict([
         ('R001', (
             pattern_head(A, A), lambda A: ZeroOperator)),
