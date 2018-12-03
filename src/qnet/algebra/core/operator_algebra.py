@@ -645,6 +645,11 @@ class Adjoint(QuantumAdjoint, Operator):
 
     simplifications = [
         scalars_to_op, delegate_to_method('_adjoint')]
+    # The reason that Adjoint does not have have `match_replace` in
+    # `simplifications`, respectively a `_rules` class attribute is that the
+    # `_adjoint` property that we delegate to is mandatory. Thus, if we had
+    # rules on top of that, it would create the confusing situation of the rule
+    # contradicting the `_adjoint` property.
 
     def _pseudo_inverse(self):
         return self.operand.pseudo_inverse().adjoint()
