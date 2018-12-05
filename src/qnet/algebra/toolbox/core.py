@@ -21,8 +21,10 @@ def no_instance_caching():
     # Expression.instance_caching
     orig_flag = Expression.instance_caching
     Expression.instance_caching = False
-    yield
-    Expression.instance_caching = orig_flag
+    try:
+        yield
+    finally:
+        Expression.instance_caching = orig_flag
 
 
 @contextmanager
@@ -38,9 +40,11 @@ def temporary_instance_cache(*classes):
     for cls in classes:
         orig_instances.append(cls._instances)
         cls._instances = {}
-    yield
-    for i, cls in enumerate(classes):
-        cls._instances = orig_instances[i]
+    try:
+        yield
+    finally:
+        for i, cls in enumerate(classes):
+            cls._instances = orig_instances[i]
 
 
 @contextmanager
@@ -92,15 +96,16 @@ def temporary_rules(*classes, clear=False):
         except AttributeError:
             orig_binary_rules.append(None)
 
-    yield
-
-    for i, cls in enumerate(classes):
-        cls._instances = orig_instances[i]
-        cls.simplifications = orig_simplifications[i]
-        if orig_rules[i] is not None:
-            cls._rules = orig_rules[i]
-        if orig_binary_rules[i] is not None:
-            cls._binary_rules = orig_binary_rules[i]
+    try:
+        yield
+    finally:
+        for i, cls in enumerate(classes):
+            cls._instances = orig_instances[i]
+            cls.simplifications = orig_simplifications[i]
+            if orig_rules[i] is not None:
+                cls._rules = orig_rules[i]
+            if orig_binary_rules[i] is not None:
+                cls._binary_rules = orig_binary_rules[i]
 
 
 def symbols(names, **args):

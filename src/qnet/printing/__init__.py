@@ -284,10 +284,12 @@ def configure_printing(**kwargs):
         A^(1) + B^(1)
     """
     freeze = init_printing(_freeze=True, **kwargs)
-    yield
-    for obj, attr_map in freeze.items():
-        for attr, val in attr_map.items():
-            setattr(obj, attr, val)
+    try:
+        yield
+    finally:
+        for obj, attr_map in freeze.items():
+            for attr, val in attr_map.items():
+                setattr(obj, attr, val)
 
 
 def ascii(expr, cache=None, **settings):
