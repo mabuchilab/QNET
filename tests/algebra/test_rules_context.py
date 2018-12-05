@@ -88,3 +88,31 @@ def test_temporary_simplifications():
         OperatorPlus.simplifications.remove(scalars_to_op)
         assert scalars_to_op not in OperatorPlus.simplifications
     assert scalars_to_op in OperatorPlus.simplifications
+
+
+def test_exception_teardown():
+    """Test that teardown works when breaking out due to an exception"""
+    class TemporaryRulesException(Exception):
+        pass
+    h1 = LocalSpace("h1")
+    a = OperatorSymbol("a", hs=h1)
+    b = OperatorSymbol("b", hs=h1)
+    hs_repr = "LocalSpace('h1')"
+    rule_name = 'extra'
+    rule = (pattern_head(6, a), lambda: b)
+    simplifications = OperatorPlus.simplifications
+    try:
+        with temporary_rules(ScalarTimesOperator, OperatorPlus):
+            ScalarTimesOperator.add_rule(rule_name, rule[0], rule[1])
+            OperatorPlus.simplifications.remove(scalars_to_op)
+            raise TemporaryRulesException
+    except TemporaryRulesException:
+        assert rule not in ScalarTimesOperator._rules.values()
+        assert scalars_to_op in OperatorPlus.simplifications
+    finally:
+        # Even if this failed we don't want to make a mess for other tests
+        try:
+            ScalarTimesOperator.del_rules(rule_name)
+        except KeyError:
+            pass
+        OperatorPlus.simplifications = simplifications

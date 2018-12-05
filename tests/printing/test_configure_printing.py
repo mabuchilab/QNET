@@ -163,3 +163,18 @@ def test_custom_repr():
         assert repr(A) == "OperatorSymbol('A', hs=LocalSpace('1'))"
     assert repr(A) in ['Â⁽¹⁾', 'A^(1)']
 
+
+def test_exception_teardown():
+    """Test that teardown works when breaking out due to an exception"""
+    class ConfigurePrintingException(Exception):
+        pass
+    init_printing(show_hs_label=True, repr_format='ascii')
+    try:
+        with configure_printing(show_hs_label=False, repr_format='srepr'):
+            raise ConfigurePrintingException
+    except ConfigurePrintingException:
+        A = OperatorSymbol('A', hs=1)
+        assert repr(A) == 'A^(1)'
+    finally:
+        # Even if this failed we don't want to make a mess for other tests
+        init_printing(reset=True)
