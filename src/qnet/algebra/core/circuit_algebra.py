@@ -548,7 +548,7 @@ class SLH(Circuit, Expression):
         if noises is not None:
             if not isinstance(noises, Matrix):
                 noises = Matrix(noises)
-            LambdaT = (noises.adjoint() * noises.transpose()).transpose()
+            LambdaT = (noises.adjoint().transpose() * noises.transpose()).transpose()
             assert noises.shape == L.shape
             S = self.S
             summands.append((adjoint(noises) * S.adjoint() * (X * L - L * X))
