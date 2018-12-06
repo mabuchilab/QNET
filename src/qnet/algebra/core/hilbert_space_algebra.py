@@ -67,6 +67,12 @@ class HilbertSpace(metaclass=ABCMeta):
         if other == FullSpace:
             return False
         else:
+            for ls in self.local_factors:
+                if isinstance(ls.label, StrLabel):
+                    return False
+            for ls in other.local_factors:
+                if isinstance(ls.label, StrLabel):
+                    return False
             return set(self.local_factors).isdisjoint(set(other.local_factors))
 
     def is_tensor_factor_of(self, other):

@@ -1,5 +1,5 @@
-from qnet.algebra.core.operator_algebra import OperatorSymbol
-from qnet.algebra.core.hilbert_space_algebra import LocalSpace
+from qnet import (
+    OperatorSymbol, LocalSpace, IdxSym, symbols, StrLabel, Create, Destroy)
 
 
 def test_operator_times_order():
@@ -17,3 +17,12 @@ def test_operator_times_order():
     assert (B2_m * B1_m).operands == (B2_m, B1_m)
     assert ((B4+A3) * (A2+A1)).operands == (A1+A2, A3+B4)
 
+
+def test_indexed_hs_not_disjoint():
+    i, j = symbols('i, j', cls=IdxSym)
+    hs_i = LocalSpace(StrLabel(i))
+    hs_j = LocalSpace(StrLabel(j))
+    assert not hs_i.isdisjoint(hs_i)
+    assert not hs_i.isdisjoint(hs_j)
+    expr = Create(hs=hs_j) * Destroy(hs=hs_i)
+    assert expr.args == (Create(hs=hs_j), Destroy(hs=hs_i))
